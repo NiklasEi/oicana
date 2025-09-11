@@ -1,5 +1,9 @@
 # Oicana
+*Dynamic PDF Generation based on Typst*
 
+https://oicana.com
+
+Oicana offers seamless PDF templating across multiple platforms. Define your templates in Typst, specify dynamic inputs, and generate high quality PDFs from any environment - whether it's a web browser, server application, or desktop software.
 
 > **Oicana is in Alpha! It is rough around the edges and has a limited number of integrations.**
 
@@ -34,15 +38,6 @@ The [getting started guide][getting-started] will show you how to
 3. Add dynamic inputs to the template
 
 If you would like to dive in head first, check out [the example templates][example-templates].
-
-## Development
-
-The package includes automated tests using [`tytanic`][tytanic]. Run them with `tt run` after following
-the package's installation instructions.
-
-The formatter [`typstyle`][typstyle] is used to format the integration.
-
-You can install the package locally with [`typship install local`][typship].
 
 ## Licensing
 

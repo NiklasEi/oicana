@@ -9,7 +9,7 @@
 /// #import "@preview/oicana:0.1.0": setup
 ///
 /// #let read-project-file(path) = return read(path, encoding: none);
-/// #let (input, oicana-image) = setup(read-project-file);
+/// #let (input, oicana-image, config) = setup(read-project-file);
 /// ```
 /// With the following inputs configured in the projects `typst.toml` manifest
 /// ```toml
@@ -22,16 +22,16 @@
 /// [[tool.oicana.inputs]]
 /// type = "blob"
 /// key = "logo"
-/// default = { bytes = "logo.jpg", meta = { image_format = "jpg" } }
+/// default = { file = "logo.jpg", meta = { image_format = "jpg" } }
 /// ```
 /// You can now use `input` and `oicana-image` like so:
 /// ```typst
-/// #let issuing-date = input.invoice.issuingDate
+/// #let issuing-date = input.invoice.buyer.name
 /// #let logo = oicana-image("logo")
 /// ```
 /// -> (dictionary, function)
 #let setup(
-  /// Function to read a project file through
+  /// Function to read a project file at the given path.
   ///
   /// This method gives Oicana access to the project files. You can define it like:
   /// ```typst
