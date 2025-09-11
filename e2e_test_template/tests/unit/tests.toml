@@ -1,0 +1,12 @@
+tests_version = 1
+
+
+[[test]]
+name = "no-meta-blob"
+mode = "development"
+
+
+[[test.inputs]]
+type = "blob"
+key = "development-blob"
+file = "../input.txt"

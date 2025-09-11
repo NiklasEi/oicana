@@ -20,6 +20,8 @@ oicana_world = { workspace = true }
 oicana_template = { workspace = true }
 oicana = { workspace = true, features = ["native"] }
 
+typst = { workspace = true }
+
 serde = { workspace = true, features = ["derive"] }
 toml = { workspace = true }
 thiserror = { workspace = true }

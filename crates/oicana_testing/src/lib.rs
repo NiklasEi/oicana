@@ -17,6 +17,7 @@ use oicana_input::{
 };
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
+use typst::foundations::Dict;
 
 /// Methods to collect test cases
 pub mod collect;
@@ -111,7 +112,10 @@ impl Test {
                     let value = read(&file_path)
                         .map_err(|source| PrepareTestError::Io { file_path, source })?;
                     let mut blob_value: Blob = value.into();
-                    blob_value.metadata = Deserialize::deserialize(blob.meta)?;
+                    blob_value.metadata = match blob.meta {
+                        Some(meta) => Deserialize::deserialize(meta)?,
+                        None => Dict::new(),
+                    };
                     inputs.with_input(BlobInput::new(blob.key, blob_value));
                 }
             }
@@ -250,7 +254,7 @@ pub struct BlobInputValue {
     /// Path to the file.
     pub file: String,
     /// Meta information for this input value.
-    pub meta: toml::Value,
+    pub meta: Option<toml::Value>,
 }
 
 #[cfg(test)]
