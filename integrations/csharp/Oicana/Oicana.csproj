@@ -10,6 +10,8 @@
         <Version>0.1.0-alpha.3</Version>
         <PackageReadmeFile>Readme.md</PackageReadmeFile>
         <GenerateDocumentationFile>true</GenerateDocumentationFile>
+        <PackageLicenseFile>LICENSE.md</PackageLicenseFile>
+        <PackageProjectUrl>https://oicana.com</PackageProjectUrl>
     </PropertyGroup>
 
     <PropertyGroup>
@@ -19,6 +21,7 @@
 
     <ItemGroup>
       <None Include="Readme.md" Pack="true" PackagePath="\" />
+      <None Include="../../../LICENSE.md" Pack="true" PackagePath="\" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(Configuration)' == 'Debug'">
