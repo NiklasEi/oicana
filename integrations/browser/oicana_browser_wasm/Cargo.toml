@@ -1,0 +1,41 @@
+[package]
+name = "oicana-browser-wasm"
+version = "0.1.0-alpha.1"
+description = "Oicana integration for WASM in the browser."
+publish = false
+keywords = { workspace = true }
+categories = { workspace = true }
+rust-version = { workspace = true }
+authors = { workspace = true }
+edition = { workspace = true }
+homepage = { workspace = true }
+repository = { workspace = true }
+license = "PolyForm-Noncommercial-1.0.0"
+readme = "README.md"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+oicana_world = { workspace = true }
+oicana_files = { workspace = true }
+oicana_input = { workspace = true }
+oicana_export = { workspace = true, features = ["png", "pdf", "svg"]}
+
+typst = { workspace = true }
+
+wasm-bindgen = { workspace = true }
+serde-wasm-bindgen = { workspace = true }
+console_error_panic_hook = { workspace = true }
+once_cell = { workspace = true }
+js-sys = { workspace = true }
+console_log = { workspace = true }
+log = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+
+[lints]
+workspace = true
+
+[package.metadata.wasm-pack.profile.release]
+wasm-opt = ["-O", "-all"] # Todo: is all really the right call here? --enable-bulk-memory is not enough

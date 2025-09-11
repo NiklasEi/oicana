@@ -1,0 +1,30 @@
+name: 'Install Oicana CLI Tool'
+description: 'Install a previously built and archived tool'
+inputs:
+  tool:
+    description: 'Name of the tool to install'
+    required: true
+  bin:
+    description: 'Name of the tool binary if different from the tool name'
+    required: false
+    default: ''
+
+runs:
+  using: 'composite'
+  steps:
+  - name: install ${{ inputs.tool }}
+    uses: actions/download-artifact@v4
+    with:
+      name: ${{ inputs.tool }}
+      path: ${{ runner.temp }}/download
+  - name: Make binary executable
+    shell: bash
+    run: |
+      # Use tool name as binary name if bin input is empty
+      BINARY_NAME="${{ inputs.bin }}"
+      if [ -z "$BINARY_NAME" ]; then
+        BINARY_NAME="${{ inputs.tool }}"
+      fi
+
+      cp "${{ runner.temp }}/download/$BINARY_NAME" "$HOME/.cargo/bin/$BINARY_NAME"
+      chmod +x "$HOME/.cargo/bin/$BINARY_NAME"

@@ -1,0 +1,60 @@
+tests_version = 1
+
+
+[[test]]
+name = "development"
+mode = "development"
+
+
+
+[[test]]
+name = "production"
+
+[[test.inputs]]
+type = "blob"
+key = "development-blob"
+file = "input.txt"
+meta = { image_format = "jpeg", foo = 42, bar = ["input", "two"] }
+
+[[test.inputs]]
+type = "json"
+key = "development-json"
+file = "input.json"
+
+
+
+[[test]]
+name = "all-inputs"
+
+[[test.inputs]]
+type = "blob"
+key = "default-blob"
+file = "input.txt"
+meta = { image_format = "jpeg", foo = 42, bar = ["input", "two"] }
+
+[[test.inputs]]
+type = "json"
+key = "default-json"
+file = "input.json"
+
+[[test.inputs]]
+type = "blob"
+key = "development-blob"
+file = "input.txt"
+meta = { image_format = "jpeg", foo = 43, bar = ["input", "two"] }
+
+[[test.inputs]]
+type = "json"
+key = "development-json"
+file = "input.json"
+
+[[test.inputs]]
+type = "blob"
+key = "both-blob"
+file = "input.txt"
+meta = { image_format = "jpeg", foo = 44, bar = ["input", "two"] }
+
+[[test.inputs]]
+type = "json"
+key = "both-json"
+file = "input.json"

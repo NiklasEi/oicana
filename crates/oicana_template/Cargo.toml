@@ -1,0 +1,32 @@
+[package]
+name = "oicana_template"
+description = "Package and validate Oicana templates."
+keywords = { workspace = true }
+categories = { workspace = true }
+version = { workspace = true }
+rust-version = { workspace = true }
+authors = { workspace = true }
+edition = { workspace = true }
+homepage = { workspace = true }
+repository = { workspace = true }
+license-file = { workspace = true }
+readme = { workspace = true }
+
+[dependencies]
+oicana_input = { workspace = true }
+
+toml = { workspace = true }
+log = { workspace = true }
+typst = { workspace = true }
+thiserror = { workspace = true }
+unicode-ident = { workspace = true }
+chrono = { workspace = true }
+zip = { workspace = true, default-features = false, features = ["zstd", "time"] }
+walkdir = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
+
+[dev-dependencies]
+tempfile = "3"
+
+[lints]
+workspace = true

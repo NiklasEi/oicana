@@ -1,0 +1,1 @@
+This Oicana template is used for automated e2e tests in different integrations.

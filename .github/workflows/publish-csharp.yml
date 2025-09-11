@@ -1,0 +1,118 @@
+name: publish csharp
+
+# This workflow builds and publishes the C# integration
+# 
+# It requires the secret NUGET_TOKEN with rights to push to the nuget.org package 
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'oicana_csharp-v[0-9]+.[0-9]+.[0-9]+*'
+
+permissions:
+  contents: write
+
+env:
+  LIB_NAME: oicana_csharp
+
+jobs:
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Install rust toolchain
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: stable
+      - name: Build release
+        run: cargo build --release -p ${{ env.LIB_NAME }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: oicana-csharp-linux
+          path: target/release/lib${{ env.LIB_NAME }}.so
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Install rust toolchain
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: stable
+      - name: Build release
+        run: cargo build --release -p ${{ env.LIB_NAME }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: oicana-csharp-windows
+          path: target/release/${{ env.LIB_NAME }}.dll
+  build-mac-x86:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Install rust toolchain
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: stable
+          targets: x86_64-apple-darwin
+      - name: Build release
+        run: cargo build --release -p ${{ env.LIB_NAME }} --target=x86_64-apple-darwin
+      - uses: actions/upload-artifact@v4
+        with:
+          name: oicana-csharp-macos-x86
+          path: target/x86_64-apple-darwin/release/lib${{ env.LIB_NAME }}.dylib
+  build-mac-arm:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Install rust toolchain
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: stable
+          targets: aarch64-apple-darwin
+      - name: Build release
+        run: cargo build --release -p ${{ env.LIB_NAME }} --target=aarch64-apple-darwin
+      - uses: actions/upload-artifact@v4
+        with:
+          name: oicana-csharp-macos-arm
+          path: target/aarch64-apple-darwin/release/lib${{ env.LIB_NAME }}.dylib
+  package-nuget:
+    runs-on: ubuntu-latest
+    needs: [build-linux, build-windows, build-mac-x86, build-mac-arm]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: oicana-csharp-linux
+          path: integrations/csharp/Oicana/runtimes/linux-x64/native
+      - uses: actions/download-artifact@v4
+        with:
+          name: oicana-csharp-windows
+          path: integrations/csharp/Oicana/runtimes/win-x64/native
+      - uses: actions/download-artifact@v4
+        with:
+          name: oicana-csharp-macos-x86
+          path: integrations/csharp/Oicana/runtimes/osx-x64/native
+      - uses: actions/download-artifact@v4
+        with:
+          name: oicana-csharp-macos-arm
+          path: integrations/csharp/Oicana/runtimes/osx-arm64/native
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8'
+      - name: Build release
+        run: dotnet build integrations/csharp/Oicana --configuration Release
+      - name: Pack release
+        run: dotnet pack integrations/csharp/Oicana
+      - uses: actions/upload-artifact@v4
+        with:
+          name: oicana-csharp-nuget
+          path: integrations/csharp/Oicana/bin/Release/Oicana.*.nupkg
+      - name: push package to nuget.org
+        run: dotnet nuget push integrations/csharp/Oicana/Oicana.csproj -s nuget.org -k $NUGET_TOKEN
+        env:
+          NUGET_TOKEN: ${{ secrets.NUGET_TOKEN }}

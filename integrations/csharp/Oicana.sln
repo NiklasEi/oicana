@@ -1,0 +1,28 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Oicana", "Oicana\Oicana.csproj", "{392515F7-84A9-469E-9943-7886E1DAE69B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Oicana.Test", "Oicana.Test\Oicana.Test.csproj", "{70D910E5-5CF9-4DD1-BDA2-AE0F7F580DB2}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{392515F7-84A9-469E-9943-7886E1DAE69B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{392515F7-84A9-469E-9943-7886E1DAE69B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{392515F7-84A9-469E-9943-7886E1DAE69B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{392515F7-84A9-469E-9943-7886E1DAE69B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{70D910E5-5CF9-4DD1-BDA2-AE0F7F580DB2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{70D910E5-5CF9-4DD1-BDA2-AE0F7F580DB2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{70D910E5-5CF9-4DD1-BDA2-AE0F7F580DB2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{70D910E5-5CF9-4DD1-BDA2-AE0F7F580DB2}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal

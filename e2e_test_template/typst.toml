@@ -1,0 +1,39 @@
+[package]
+name = "oicana-e2e-test"
+version = "0.1.0"
+entrypoint = "main.typ"
+
+[tool.oicana]
+manifest_version = 1
+
+[[tool.oicana.inputs]]
+type = "blob"
+key = "default-blob"
+default = { file = "default.txt", meta = { image_format = "png", foo = 5, bar = ["default", "two"] } }
+
+[[tool.oicana.inputs]]
+type = "blob"
+key = "development-blob"
+development = { file = "development.txt", meta = { image_format = "png", foo = 5, bar = ["development", "two"] } }
+
+[[tool.oicana.inputs]]
+type = "blob"
+key = "both-blob"
+development = { file = "development.txt", meta = { image_format = "png", foo = 5, bar = ["development", "two"] } }
+default = { file = "default.txt", meta = { image_format = "png", foo = 5, bar = ["default", "two"] } }
+
+[[tool.oicana.inputs]]
+type = "json"
+key = "default-json"
+default = "default.json"
+
+[[tool.oicana.inputs]]
+type = "json"
+key = "development-json"
+development = "development.json"
+
+[[tool.oicana.inputs]]
+type = "json"
+key = "both-json"
+development = "development.json"
+default = "default.json"

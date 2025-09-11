@@ -1,0 +1,36 @@
+[package]
+name = "oicana_csharp"
+description = "Oicana integration for C#."
+version = "0.1.0-alpha.3"
+publish = false
+keywords = { workspace = true }
+categories = { workspace = true }
+rust-version = { workspace = true }
+authors = { workspace = true }
+edition = { workspace = true }
+homepage = { workspace = true }
+repository = { workspace = true }
+license-file = { workspace = true }
+readme = "README.md"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+oicana_world = { workspace = true }
+oicana_files = { workspace = true }
+oicana_input = { workspace = true }
+oicana_export = { workspace = true, features = ["png", "pdf", "svg"]}
+
+typst = { workspace = true }
+
+interoptopus = { workspace = true }
+dashmap = { workspace = true }
+once_cell = { workspace = true }
+serde_json = { workspace = true }
+
+[dev-dependencies]
+interoptopus_backend_csharp = { workspace = true }
+
+[lints]
+workspace = true

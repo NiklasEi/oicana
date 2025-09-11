@@ -1,0 +1,33 @@
+[package]
+name = "test_compare"
+description = "CLI for comparing Oicana test outputs."
+keywords = { workspace = true }
+categories = { workspace = true }
+version = { workspace = true }
+rust-version = { workspace = true }
+authors = { workspace = true }
+edition = { workspace = true }
+homepage = { workspace = true }
+repository = { workspace = true }
+license-file = { workspace = true }
+readme = { workspace = true }
+publish = false
+
+[[bin]]
+name = "test-compare"
+path = "src/main.rs"
+doc = false
+
+[dependencies]
+oicana_testing = { workspace = true }
+oicana_template = { workspace = true }
+
+log = { workspace = true }
+env_logger = { workspace = true }
+walkdir = { workspace = true }
+anyhow = { workspace = true }
+
+clap = { workspace = true, features = ["derive", "string"] }
+
+[lints]
+workspace = true

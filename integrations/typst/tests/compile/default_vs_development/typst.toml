@@ -1,0 +1,40 @@
+[package]
+name = "test"
+version = "0.1.0"
+entrypoint = "main.typ"
+authors = ["Oicana <hello@oicana.com>"]
+
+[tool.oicana]
+manifest_version = 1
+
+[[tool.oicana.inputs]]
+type = "blob"
+key = "default-blob"
+default = { file = "default.txt" }
+
+[[tool.oicana.inputs]]
+type = "blob"
+key = "development-blob"
+development = { file = "development.txt" }
+
+[[tool.oicana.inputs]]
+type = "blob"
+key = "both-blob"
+development = { file = "development.txt" }
+default = { file = "default.txt" }
+
+[[tool.oicana.inputs]]
+type = "json"
+key = "default-json"
+default = "default.json"
+
+[[tool.oicana.inputs]]
+type = "json"
+key = "development-json"
+development = "development.json"
+
+[[tool.oicana.inputs]]
+type = "json"
+key = "both-json"
+development = "development.json"
+default = "default.json"

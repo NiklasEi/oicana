@@ -1,0 +1,13 @@
+[package]
+name = "test"
+version = "0.1.0"
+entrypoint = "main.typ"
+authors = ["Oicana <hello@oicana.com>"]
+
+[tool.oicana]
+manifest_version = 1
+
+[[tool.oicana.inputs]]
+type = "blob"
+key = "file"
+default = { file = "file.txt", meta = {foo = "bar"} }

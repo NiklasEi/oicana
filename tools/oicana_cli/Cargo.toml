@@ -1,0 +1,71 @@
+[package]
+name = "oicana_cli"
+description = "CLI for working with Oicana templates."
+keywords = { workspace = true }
+categories = { workspace = true }
+version = { workspace = true }
+rust-version = { workspace = true }
+authors = { workspace = true }
+edition = { workspace = true }
+homepage = { workspace = true }
+repository = { workspace = true }
+# Explicitly link to copy of License file, because dist fails to copy from the root
+license-file = "LICENSE.md"
+readme = { workspace = true }
+
+[package.metadata.wix]
+upgrade-guid = "A66875E1-A3A6-42D9-A041-DF86329C57E3"
+path-guid = "89E5E149-F3FA-461F-8768-BF318A290402"
+license = false
+eula = false
+
+[[bin]]
+name = "oicana"
+path = "src/main.rs"
+doc = false
+
+[dependencies]
+oicana_files = { workspace = true, features = ["native"] }
+oicana_input = { workspace = true }
+oicana_template = { workspace = true }
+oicana_testing = { workspace = true }
+oicana_export = { workspace = true, features = ["pdf"] }
+oicana = { workspace = true, features = ["native"] }
+
+typst = { workspace = true }
+typst-render = { workspace = true }
+typst-svg = { workspace = true }
+
+log = { workspace = true }
+env_logger = { workspace = true }
+
+clap-verbosity = { workspace = true }
+clap = { workspace = true, features = ["derive"] }
+rayon = { workspace = true }
+
+chrono = { workspace = true }
+walkdir = { workspace = true }
+anyhow = { workspace = true }
+thiserror = { workspace = true }
+color-print = { workspace = true }
+indicatif = { workspace = true }
+console = { workspace = true }
+
+# pin, because psm 0.1.24 is breaking the windows builds
+psm = "=0.1.23"
+
+
+# Explicitly depend on OpenSSL if applicable, so that we can add the
+# `openssl/vendored` feature to it if `vendor-openssl` is enabled.
+[target.'cfg(not(any(target_os = "windows", target_os = "macos", target_os = "ios", target_os = "watchos", target_os = "tvos")))'.dependencies]
+openssl = { workspace = true, optional = true }
+
+[features]
+# Whether to vendor OpenSSL. Not applicable to Windows and macOS builds.
+vendor-openssl = ["openssl?/vendored"]
+
+[dev-dependencies]
+tempfile = { workspace = true }
+
+[lints]
+workspace = true

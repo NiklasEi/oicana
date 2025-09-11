@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+    "strict": true,
+    "target": "esnext",
+    "sourceMap": true,
+    "declaration": true,
+    "outDir": "dist",
+    "module": "esnext",
+    "moduleResolution": "node",
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true
+  },
+  "exclude": [
+    "dist/**",
+    "node_modules/**",
+    "**/*.test.ts/**",
+    "testOutput/**",
+    "test-setup.ts",
+    "vite.config.ts"
+  ]
+}

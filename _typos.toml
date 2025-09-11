@@ -1,0 +1,10 @@
+[default]
+locale = "en-us"
+extend-ignore-identifiers-re = [
+    "typ"
+]
+
+[default.extend-identifiers]
+temlpates = "templates"
+dependnecies = "dependencies"
+importign = "importing"

@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   width="169.99998mm"
+   height="169.99998mm"
+   viewBox="0 0 169.99999 169.99999"
+   version="1.1"
+   id="svg3"
+   sodipodi:docname="oicana.svg"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview1"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:document-units="mm">
+    <inkscape:page
+       x="0"
+       y="0"
+       width="169.99998"
+       height="169.99998"
+       id="page2"
+       margin="0"
+       bleed="0" />
+  </sodipodi:namedview>
+  <defs
+     id="defs3" />
+  <path
+     style="fill:#2464ef;fill-opacity:1;fill-rule:nonzero;stroke-width:1.518;stroke-dasharray:none;paint-order:markers fill stroke"
+     d="M 85,8.883 A 45.722,76.118 0 0 0 39.278,85 45.722,76.118 0 0 0 85,161.117 45.722,76.118 0 0 0 130.722,85 45.722,76.118 0 0 0 85,8.883 m -0.512,20.746 a 38.045,54.25 0 0 1 38.045,54.25 38.045,54.25 0 0 1 -38.045,54.249 38.045,54.25 0 0 1 -38.045,-54.25 38.045,54.25 0 0 1 38.045,-54.249"
+     id="path1" />
+  <path
+     style="fill:#2464ef;fill-opacity:1;fill-rule:nonzero;stroke-width:1.518;stroke-dasharray:none;paint-order:markers fill stroke"
+     d="m 86.158,56.794 -4.135,2.585 -2.611,-4.118 -3.737,-3.134 3.11,-3.756 1.825,-4.522 4.534,1.797 4.865,0.339 -0.308,4.866 1.181,4.732 z"
+     id="path2" />
+  <path
+     style="fill:#2464ef;fill-opacity:1;fill-rule:nonzero;stroke-width:1.518;stroke-dasharray:none;paint-order:markers fill stroke"
+     d="M 76.371,70.446 H 91.569 V 117.07 H 76.371 Z"
+     id="path3" />
+</svg>

@@ -1,0 +1,31 @@
+[package]
+name = "oicana"
+description = "Oicana for Rust - Dynamic PDF Generation with Typst."
+keywords = { workspace = true }
+categories = { workspace = true }
+version = { workspace = true }
+rust-version = { workspace = true }
+authors = { workspace = true }
+edition = { workspace = true }
+homepage = { workspace = true }
+repository = { workspace = true }
+license-file = { workspace = true }
+readme = { workspace = true }
+
+[features]
+native = ["oicana_files/native"]
+
+[dependencies]
+oicana_world = { workspace = true }
+oicana_files = { workspace = true }
+oicana_input = { workspace = true }
+oicana_template = { workspace = true }
+
+typst-pdf = { workspace = true }
+typst = { workspace = true }
+typst-render = { workspace = true }
+
+thiserror = { workspace = true }
+
+[lints]
+workspace = true
