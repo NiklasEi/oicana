@@ -8,3 +8,6 @@ extend-ignore-identifiers-re = [
 temlpates = "templates"
 dependnecies = "dependencies"
 importign = "importing"
+
+[files]
+extend-exclude = ["NOTICE"]
