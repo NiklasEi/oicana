@@ -25,20 +25,16 @@
         )[#text("C# Integration")]
       - #chapter("getting-started/inputs.typ", section: "2.4")[Template inputs]
     - #chapter("templates.typ", section: "3")[Oicana templates]
-      - #chapter(
-          "oicana-templates/development.typ",
-          section: "3.1",
-        )[Development]
-      - #chapter("oicana-templates/inputs.typ", section: "3.2")[Inputs]
+      - #chapter("oicana-templates/inputs.typ", section: "3.1")[Inputs]
       - #chapter(
           "oicana-templates/dependencies.typ",
-          section: "3.3",
+          section: "3.2",
         )[Dependencies]
         - #chapter(
             "oicana-templates/helpful-packages.typ",
-            section: "3.3.1",
+            section: "3.2.1",
           )[Helpful Packages]
-      - #chapter("oicana-templates/fonts.typ", section: "3.4")[Fonts]
+      - #chapter("oicana-templates/fonts.typ", section: "3.3")[Fonts]
     - #chapter("integrations.typ", section: "4")[Integrations]
     - #chapter("guides.typ", section: "5")[Guides]
     - #chapter("credits.typ", section: "6")[Credits]

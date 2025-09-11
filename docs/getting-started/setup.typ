@@ -1,6 +1,6 @@
 #import "../src/boxes.typ": *
 
-= Setup
+= Setup<getting-started-setup>
 
 To get started with Oicana, you need the CLI and an editor for Typst. Both is only necessary on machines used for Oicana template development. An end-user machine running your software which uses an Oicana integration, does not require any additional installation.
 
