@@ -97,7 +97,6 @@ jobs:
         with:
           name: liboicana_csharp.so
           path: ./target/release/liboicana_csharp.so
-          working-directory: ./integrations/csharp
 
   build-browser-wasm:
     runs-on: ubuntu-latest
