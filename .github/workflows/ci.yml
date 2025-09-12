@@ -11,8 +11,7 @@ jobs:
   crates-ci:
     strategy:
       matrix:
-        os: [ubuntu-latest]
-#        os: [windows-latest, ubuntu-latest, macos-latest]
+        os: [windows-latest, ubuntu-latest, macos-latest]
     runs-on: ${{ matrix.os }}
     timeout-minutes: 60
     steps:
