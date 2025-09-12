@@ -21,7 +21,7 @@ if (pre) {
 }
 }"
 
-#let local-code(header, id, body) = {
+#let code(header, id, body) = {
   context {
     if target() == "html" {
       html.elem("div", attrs: (

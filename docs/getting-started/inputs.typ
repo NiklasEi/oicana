@@ -18,7 +18,7 @@ The Oicana Typst package determines the current values of the defined inputs.
   See #docs-link(<dependencies>, "../oicana-templates/dependencies")[the template dependencies section] for more information.]
 
 Add the following to the top of your Oicana template to initialize the package:
-#local-code("main.typ", "getting-started-inputs-oicana-setup")[
+#code("main.typ", "getting-started-inputs-oicana-setup")[
   ```typst
   #import "@local/oicana:0.1.0": setup
 
@@ -32,7 +32,7 @@ Add the following to the top of your Oicana template to initialize the package:
 We will use a `json` input to pass a name into the template.
 
 Add the following to the end of the `typst.toml` file:
-#local-code("typst.toml", "getting-started-inputs-typst-toml-json-input")[
+#code("typst.toml", "getting-started-inputs-typst-toml-json-input")[
   ```toml
   [[tool.oicana.inputs]]
   type = "json"
@@ -61,7 +61,7 @@ While developing an Oicana template in a Typst editor, it will be compiled in de
 
 Let's extend our input with a `development` value. First create a `info.json` file in the template directory:
 
-#local-code("info.json", "getting-started-inputs-json-development")[
+#code("info.json", "getting-started-inputs-json-development")[
   ```json
   {
     "name": "Chuck Norris"
@@ -70,7 +70,7 @@ Let's extend our input with a `development` value. First create a `info.json` fi
 ]
 
 Then extend the input definition and set the `development` value to be `info.json`:
-#local-code("typst.toml", "getting-started-inputs-json-development-typst-toml")[
+#code("typst.toml", "getting-started-inputs-json-development-typst-toml")[
   ```toml
   [[tool.oicana.inputs]]
   type = "json"
@@ -80,7 +80,7 @@ Then extend the input definition and set the `development` value to be `info.jso
 ]
 
 In our template we can now use `input.info.name` and the preview will show "Chuck Norris".
-#local-code("main.typ", "getting-started-inputs-json-input")[
+#code("main.typ", "getting-started-inputs-json-input")[
   ```typst
   #import "@local/oicana:0.1.0": setup
 
@@ -102,7 +102,7 @@ The first argument is for `json` inputs and the second for `blob` inputs.
 
 Change the endpoint to set the name input we just defined.
 
-#local-code(
+#code(
   "Part of Program.cs",
   "csharp-integration-program-compile-endpoint-input",
 )[

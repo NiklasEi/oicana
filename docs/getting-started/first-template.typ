@@ -7,7 +7,7 @@ Create a new directory and open it in your IDE with Typst support, or start a ne
 
 Create a `main.typ` file with the following content (the online editor should already have created an empty `main.typ` for you):
 
-#local-code("main.typ", "getting-started-first-template-static-typst-file")[
+#code("main.typ", "getting-started-first-template-static-typst-file")[
   ```typst
   = Hello from Typst
 
@@ -25,7 +25,7 @@ The preview of `main.typ` should show the title and text.
 
 To make an Oicana template out of this Typst document, we need to put a `typst.toml` file next to `main.typ`.
 
-#local-code("typst.toml", "getting-started-first-template-typst-toml")[
+#code("typst.toml", "getting-started-first-template-typst-toml")[
   ```toml
   [package]
   name = "example"

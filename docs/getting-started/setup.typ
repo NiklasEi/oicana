@@ -1,4 +1,6 @@
 #import "../src/boxes.typ": *
+#import "../src/constants.typ": *
+#import "../src/docs-link.typ": *
 
 = Setup<getting-started-setup>
 
@@ -6,12 +8,9 @@ To get started with Oicana, you need the CLI and an editor for Typst. Both is on
 
 == Oicana CLI
 
-Install the Oicana CLI for template packaging, testing, and validation.
+#link(latest-cli)[Builds are published on GitHub]. With the CLI, you can test and package Oicana templates.
 
-#alpha-note[There are no distributed builds of the CLI yet.
-
-  With a clone of the repository and a working Rust setup, run `cargo install --path tools/oicana_cli` to install the CLI.
-]
+See the #docs-link(<cli>, "../cli")[CLI section for more information].
 
 == Typst Editor
 
