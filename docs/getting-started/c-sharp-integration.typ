@@ -15,14 +15,14 @@ We want to define a new endpoint to compile our Oicana template to a PDF and ret
 3. Add the `Oicana` nuget package as a dependency (`dotnet add Oicana`).
 4. Add the following code to the beginning of `Program.cs`:
 
-  #local-code("Part of Program.cs", "csharp-integration-program-load-file")[
+  #code("Part of Program.cs", "csharp-integration-program-load-file")[
     ```cs
     var file = await File.ReadAllBytesAsync("templates/example-0.1.0.zip");
     var template = new Template(templateFile);
     ```]
 5. Define the new endpoint and return the compiled PDF file.
 
-  #local-code(
+  #code(
     "Part of Program.cs",
     "csharp-integration-program-compile-endpoint",
   )[

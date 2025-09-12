@@ -56,7 +56,7 @@ impl TemplateManifest {
 
         let oicana_config = &self.tool.oicana;
 
-        if !oicana_config.tests.is_relative()
+        if oicana_config.tests.is_absolute()
             || (oicana_config.tests.exists() && !oicana_config.tests.is_dir())
         {
             return Err(ManifestValidationError::InvalidTestsPath);
@@ -117,7 +117,7 @@ impl ToolSection {
 }
 
 /// Error from the manifest file.
-#[derive(Debug, Error)]
+#[derive(Debug, Error, PartialEq, Eq)]
 pub enum ManifestValidationError {
     /// The manifest contains unknown keys.
     #[error("Unknown keys found in the manifest.")]
@@ -212,14 +212,14 @@ mod tests {
             OicanaConfig {
                 manifest_version: 1,
                 inputs: vec![],
-                tests: PathBuf::from("/absolute"),
+                tests: PathBuf::from(".").canonicalize().unwrap(),
             },
         );
 
-        assert!(matches!(
+        assert_eq!(
             manifest.validate(),
             Err(ManifestValidationError::InvalidTestsPath)
-        ));
+        );
     }
 
     #[test]
