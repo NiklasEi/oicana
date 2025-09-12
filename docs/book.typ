@@ -34,10 +34,12 @@
             "oicana-templates/helpful-packages.typ",
             section: "3.2.1",
           )[Helpful Packages]
-      - #chapter("oicana-templates/fonts.typ", section: "3.3")[Fonts]
-    - #chapter("integrations.typ", section: "4")[Integrations]
-    - #chapter("guides.typ", section: "5")[Guides]
-    - #chapter("credits.typ", section: "6")[Credits]
+        - #chapter("oicana-templates/fonts.typ", section: "3.3")[Fonts]
+        - #chapter("oicana-templates/tests.typ", section: "3.4")[Testing]
+    - #chapter("cli.typ", section: "4")[CLI]
+    - #chapter("integrations.typ", section: "5")[Integrations]
+    - #chapter("guides.typ", section: "6")[Guides]
+    - #chapter("credits.typ", section: "7")[Credits]
   ],
 )
 

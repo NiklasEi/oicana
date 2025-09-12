@@ -11,7 +11,7 @@ Inputs are defined in the template manifest. Integrations can list all inputs of
 
 The `type` property of the input definition should be `json`. The only other required property is `key`.
 
-#local-code("Part of typst.toml", "templates-input-json")[
+#code("Part of typst.toml", "templates-input-json")[
   ```toml
   [[tool.oicana.inputs]]
   type = "json"
@@ -24,7 +24,7 @@ To configure default or development values for the input, include json files in 
   "The json schema validation is not complete yet. You can set the property and maintain the schema, but at the moment it is ignored by Oicana.",
 )
 
-#local-code(
+#code(
   "Part of typst.toml",
   "templates-input-json-default-schema-development",
 )[
@@ -42,7 +42,7 @@ To configure default or development values for the input, include json files in 
 `blob` inputs can be used for binary data like images. Additional metadata can be used to further specify the type of binary data in the input.
 
 
-#local-code("Part of typst.toml", "templates-input-blob")[
+#code("Part of typst.toml", "templates-input-blob")[
   ```toml
   [[tool.oicana.inputs]]
   type = "blob"
