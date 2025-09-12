@@ -56,7 +56,7 @@ impl TemplateManifest {
 
         let oicana_config = &self.tool.oicana;
 
-        if !oicana_config.tests.is_relative()
+        if oicana_config.tests.is_absolute()
             || (oicana_config.tests.exists() && !oicana_config.tests.is_dir())
         {
             return Err(ManifestValidationError::InvalidTestsPath);
@@ -212,7 +212,7 @@ mod tests {
             OicanaConfig {
                 manifest_version: 1,
                 inputs: vec![],
-                tests: PathBuf::from("/absolute"),
+                tests: PathBuf::from(".").canonicalize().unwrap(),
             },
         );
 
