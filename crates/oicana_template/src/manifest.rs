@@ -117,7 +117,7 @@ impl ToolSection {
 }
 
 /// Error from the manifest file.
-#[derive(Debug, Error)]
+#[derive(Debug, Error, PartialEq, Eq)]
 pub enum ManifestValidationError {
     /// The manifest contains unknown keys.
     #[error("Unknown keys found in the manifest.")]
@@ -216,10 +216,10 @@ mod tests {
             },
         );
 
-        assert!(matches!(
+        assert_eq!(
             manifest.validate(),
             Err(ManifestValidationError::InvalidTestsPath)
-        ));
+        );
     }
 
     #[test]
