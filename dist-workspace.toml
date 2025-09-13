@@ -27,6 +27,9 @@ github-release = "announce"
 install-updater = false
 # Path that installers should place binaries in
 install-path = "CARGO_HOME"
+# Otherwise we cannot use latest Rust because the runner will be behind by couple versions
+# deprecated, see https://axodotdev.github.io/cargo-dist/book/reference/config.html?highlight=rust-toolchain-version#rust-toolchain-version
+rust-toolchain-version = "stable"
 
 [dist.min-glibc-version]
 # Override glibc version for specific target triplets.
