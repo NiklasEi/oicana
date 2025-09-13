@@ -69,3 +69,12 @@ tempfile = { workspace = true }
 
 [lints]
 workspace = true
+
+[package.metadata.binstall]
+pkg-url = "{ repo }/releases/download/oicana_cli-v{ version }/oicana_cli-{ target }{ archive-suffix }"
+bin-dir = "oicana{ binary-ext }"
+pkg-fmt = "txz"
+
+[package.metadata.binstall.overrides]
+x86_64-pc-windows-msvc = { pkg-fmt = "zip" }
+aarch64-pc-windows-msvc = { pkg-fmt = "zip" }
