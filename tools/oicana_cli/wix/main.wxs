@@ -61,7 +61,7 @@
     <Product
         Id='*'
         Name='oicana_cli'
-        UpgradeCode='A66875E1-A3A6-42D9-A041-DF86329C57E3'
+        UpgradeCode='CD91DE14-3590-4CE1-A8A1-0B385690480D'
         Manufacturer='Oicana'
         Language='1033'
         Codepage='1252'
@@ -110,7 +110,7 @@
                     -->
 
                     <Directory Id='Bin' Name='bin'>
-                        <Component Id='Path' Guid='89E5E149-F3FA-461F-8768-BF318A290402' KeyPath='yes'>
+                        <Component Id='Path' Guid='3690C951-9006-44C7-8B81-5056143147B5' KeyPath='yes'>
                             <Environment
                                 Id='PATH'
                                 Name='PATH'
