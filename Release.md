@@ -5,7 +5,7 @@
 The CLI is distributed through cargo-dist. Push a tag in the form of `oicana_cli-v0.0.0-alpha.1` to trigger the workflow.
 It will build and package the CLI for all platforms currently set up.
 
-The release pipline is configured to run with latest stable rust.
+The release pipeline is configured to run with latest stable rust.
 
 ### Updating dist
 
