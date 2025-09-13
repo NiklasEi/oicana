@@ -21,19 +21,29 @@ if (pre) {
 }
 }"
 
+
+
+
 #let code(header, id, body) = {
   context {
     if target() == "html" {
       html.elem("div", attrs: (
-        style: "overflow: auto; background-color: var(--searchbar-bg); color: var(--searchbar-fg); padding: .1em 1em; width: 100%; box-sizing: border-box; margin-bottom: .5em; position: relative;",
-      ))[#html.elem("div", attrs: (id: id))[#body] #html.elem("script", attrs: (
+        style: "overflow: auto; width: 100%; margin-bottom: .5em; position: relative;",
+      ))[
+        #html.elem("div", attrs: (id: id))[#body]
+        #html.elem("script", attrs: (
           type: "text/javascript",
           src: data-url("application/javascript", copy-function),
         ))
+        #html.elem(
+          "style",
+          [.zebraw-code-line{ padding-top: 0 !important; padding-bottom: 0 !important; }],
+        )
         #html.elem("button", attrs: (
           onclick: "copyToClipboard(\"" + id + "\")",
-          style: "position: absolute; top: 5px; right: 5px; padding: 3px;",
-        ))[Copy]]
+          style: "position: absolute; top: 10px; right: 10px; padding: 3px;",
+        ))[Copy]
+      ]
     } else {
       return zebraw(
         inset: (top: 4pt, bottom: 4pt),
