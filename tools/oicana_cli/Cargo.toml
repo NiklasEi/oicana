@@ -13,11 +13,6 @@ repository = { workspace = true }
 license-file = "LICENSE.md"
 readme = { workspace = true }
 
-[package.metadata.wix]
-upgrade-guid = "A66875E1-A3A6-42D9-A041-DF86329C57E3"
-path-guid = "89E5E149-F3FA-461F-8768-BF318A290402"
-license = false
-eula = false
 
 [[bin]]
 name = "oicana"
@@ -70,6 +65,9 @@ tempfile = { workspace = true }
 [lints]
 workspace = true
 
+[package.metadata.dist]
+dist = true
+
 [package.metadata.binstall]
 pkg-url = "{ repo }/releases/download/oicana_cli-v{ version }/oicana_cli-{ target }{ archive-suffix }"
 bin-dir = "oicana{ binary-ext }"
@@ -78,3 +76,9 @@ pkg-fmt = "txz"
 [package.metadata.binstall.overrides]
 x86_64-pc-windows-msvc = { pkg-fmt = "zip" }
 aarch64-pc-windows-msvc = { pkg-fmt = "zip" }
+
+[package.metadata.wix]
+upgrade-guid = "CD91DE14-3590-4CE1-A8A1-0B385690480D"
+path-guid = "3690C951-9006-44C7-8B81-5056143147B5"
+license = false
+eula = false
