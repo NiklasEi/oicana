@@ -3,7 +3,7 @@ name = "oicana_cli"
 description = "CLI for working with Oicana templates."
 keywords = { workspace = true }
 categories = { workspace = true }
-version = { workspace = true }
+version = "0.1.0-alpha.1-test"
 rust-version = { workspace = true }
 authors = { workspace = true }
 edition = { workspace = true }
