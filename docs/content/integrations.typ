@@ -10,7 +10,7 @@ https://www.npmjs.com/package/@oicana/browser
 Oicana can run in browsers as WebAssembly. The `@oicana/browser` npm package contains a typed interface for interaction with the `.wasm` file.
 To not blobk the UI, it's advisable to compile templates in a web worker.
 
-An example application using Oicana in a React app #link("https://github.com/oicana/oicana_example_browser_react/")[can be found on GitHub].
+An example application using Oicana in a React app #link("https://github.com/oicana/oicana-example-react/")[can be found on GitHub].
 
 === Initializing the WASM file
 
@@ -23,7 +23,7 @@ https://www.nuget.org/packages/Oicana
 
 The nuget package `Oicana` has a native interface to work with Oicana templates from C#sym.hash.
 
-An example ASP.NET project using the package #link("https://github.com/oicana/oicana_example_asp_net/")[can be found on GitHub].
+An example ASP.NET project using the package #link("https://github.com/oicana/oicana-example-asp-net/")[can be found on GitHub].
 
 == Work in progress integrations
 

@@ -11,7 +11,7 @@ Run `oicana -h` for a list of all commands and options.
 
 The command `oicana pack` can package an oicana template to be usable in all supported environments. It will bundle everything in an archive with fast compression.
 
-While packing, all required dependencies will be copied from the local Typst cache. If a package from the `preview` namespace is missing, it will be downloaded from Typst universe. You can install packages with any namespace by copying them in the correct location (see #docs-link(<dependencies>, "./oicana-templates/dependencies")[the documentation on template dependencies]).
+While packing, all required dependencies will be copied from the local Typst cache. If a package from the `preview` namespace is missing, it will be downloaded from Typst universe. You can install packages with any namespace by copying them in the correct location (see #docs-link(<dependencies>, "./templates/dependencies.html")[the documentation on template dependencies]).
 
 For a list of all command options, run `oicana pack -h`.
 
@@ -19,7 +19,7 @@ For a list of all command options, run `oicana pack -h`.
 
 With `oicana test` all tests of the currently targeted template will be executed.
 
-Learn more about testing Oicana templates in the #docs-link(<testing>, "./oicana-templates/tests")[testing section].
+Learn more about testing Oicana templates in the #docs-link(<testing>, "./templates/tests.html")[testing section].
 
 == Validation
 

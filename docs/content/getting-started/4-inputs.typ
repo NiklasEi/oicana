@@ -15,7 +15,7 @@ Template inputs are configured in the manifest file `typst.toml`. The Oicana Typ
   2. Clone the Oicana repository
   3. Run `typship install local` in `oicana/integrations/typst`
 
-  See #docs-link(<dependencies>, "../oicana-templates/dependencies")[the template dependencies section] for more information.]
+  See #docs-link(<dependencies>, "../templates/dependencies.html")[the template dependencies section] for more information.]
 
 \
 Add the following to the top of your `main.typ` file to initialize the package:
@@ -126,4 +126,4 @@ Change the endpoint to set the name input we just defined.
   ```]
 
 \
-Calling the endpoint now, will result in a PDF with the new name. Building on this minimal service, one could now start to accept inputs through the HTTP endpoint or add other inputs. Take a look at the open source #link("https://github.com/oicana/oicana_example_asp_net/")[ASP.NET example project on GitHub] for a more complete showcase of the Oicana C#sym.hash integration.
+Calling the endpoint now, will result in a PDF with the new name. Building on this minimal service, one could now start to accept inputs through the HTTP endpoint or add other inputs. Take a look at the open source #link("https://github.com/oicana/oicana-example-asp-net/")[ASP.NET example project on GitHub] for a more complete showcase of the Oicana C#sym.hash integration.
