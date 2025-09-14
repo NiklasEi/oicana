@@ -303,7 +303,7 @@ jobs:
       - name: serve docs
         run: |
           nohup shiroa serve book --mode static-html --workspace . > /tmp/shiroa.log 2>&1 &
-          echo $! > shiroa.pid
+          echo $! > /tmp/shiroa.pid
           sleep 5
         working-directory: docs
       - name: check for broken links
@@ -311,6 +311,6 @@ jobs:
       - name: clean up
         if: always()
         run: |
-          kill $(cat shiroa.pid) || true
+          kill $(cat /tmp/shiroa.pid) || true
           echo "::: Shiroa Logs :::"
           cat /tmp/shiroa.log || true
