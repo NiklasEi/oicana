@@ -291,3 +291,26 @@ jobs:
       uses: actions/checkout@v4
     - name: Spell Check Repo
       uses: crate-ci/typos@v1.35.5
+
+  check-docs-links:
+    name: Check for dead links in docs
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: typst-community/setup-shiroa@v1
+        with:
+          shiroa-version: 0.3.1-rc3
+      - name: serve docs
+        run: |
+          nohup shiroa serve book --mode static-html --workspace . > /tmp/shiroa.log 2>&1 &
+          echo $! > shiroa.pid
+          sleep 5
+        working-directory: docs
+      - name: check for broken links
+        run: npx linkinator http://localhost:25520 --recurse
+      - name: clean up
+        if: always()
+        run: |
+          kill $(cat shiroa.pid) || true
+          echo "::: Shiroa Logs :::"
+          cat /tmp/shiroa.log || true
