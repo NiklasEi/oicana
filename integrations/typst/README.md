@@ -17,6 +17,28 @@ Oicana offers seamless PDF templating across multiple platforms. Define your tem
 
 ## Example usage
 
+Considering an Oicana template with the following `typst.toml`:
+```toml
+[package]
+name = "example"
+version = "0.1.0"
+entrypoint = "main.typ"
+
+[tool.oicana]
+manifest_version = 1
+
+[[tool.oicana.inputs]]
+type = "json"
+key = "data"
+development = "data.json"
+
+[[tool.oicana.inputs]]
+type = "blob"
+key = "logo"
+development = { file = "company-logo.png" }
+```
+
+This package will collect the two inputs and prepare them for use in your Typst code. Previewing the following `main.typ` file in a Typst editor, would show the contents of the `data.json` and `company-logo.png` files:
 ```typst
 #import "@preview/oicana:0.1.0": setup
 
@@ -29,6 +51,8 @@ this is the current value of the input with the key "data":
 The image passed into the template with the input key "logo": \
 #oicana-image("logo")
 ```
+
+ If the template is compiled through one of the Oicana integrations (for example out of C# code), the input values given by the integration would be used instead of the defined `development` values from the manifest file.
 
 ## Getting started
 
@@ -47,8 +71,5 @@ Oicana itself is source available under PolyForm Noncommercial License 1.0.0. Fo
 
 
 [Oicana]: "https://oicana.com"
-[Typst web app]: "https://typst.app"
-[tytanic]: https://github.com/typst-community/tytanic
-[typstyle]: https://github.com/Enter-tainer/typstyle
-[typship]: https://github.com/sjfhsjfh/typship
 [example-templates]: https://github.com/oicana/oicana-example-templates
+[getting-started]: https://docs.oicana.com/getting-started
