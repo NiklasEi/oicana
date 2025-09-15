@@ -1,3 +1,7 @@
 [build]
 command = "rustup default stable && curl -L --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/cargo-bins/cargo-binstall/main/install-from-binstall-release.sh | bash && cargo binstall --git https://github.com/Myriad-Dreamin/shiroa shiroa@0.3.1 && shiroa build book --mode static-html --workspace ."
 publish = "book/dist"
+
+[[redirects]]
+from = "/getting-started"
+to = "/getting-started/1-setup"
