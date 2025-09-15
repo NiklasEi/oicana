@@ -1,9 +1,8 @@
 #import "/src/boxes.typ": *
 #import "/src/code.typ": *
 
-== Testing<testing>
 
-Oicana comes with test infrastructure for templates. To get started, create a directory called `tests` in a template directory.
+<testing>Oicana comes with test infrastructure for templates. To get started, create a directory called `tests` in a template directory.
 Here is an example test collection `tests.toml` defining two snapshot tests:
 
 #code("tests.toml", "templates-tests-maximal")[
@@ -24,14 +23,17 @@ Here is an example test collection `tests.toml` defining two snapshot tests:
   file = "data.json"
   ```]
 
+\
 All paths in a test collection are relative to its toml file. The collection above defines a single test with a `blob` input and a `json` input given as `logo.jpg` in the parent directory and `data.json` next to the test collection.
 Executing `oicana test` for this template, will compile it with those inputs and attempt to compare the output with a `with_logo.png` living next to the test collection.
 
+\
 The tests directory will be recursively searched for any test collection files in the form of `<optional-prefix.>tests.toml`.
 
+\
 #example[The example templates #link("https://github.com/oicana/oicana-example-templates/tree/main/templates/test/tests")[`test`] and #link("https://github.com/oicana/oicana-example-templates/tree/main/templates/invoice/tests")[`invoice`] both define some simple snapshot tests.]
 
-== Configuration
+== Full example configuration
 
 A maximal and documented example test collection:
 

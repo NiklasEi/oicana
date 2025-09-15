@@ -5,7 +5,7 @@
 
 There are two types of inputs. A `json` input contains structured data while a `blob` input passes bytes and optionally metadata to the template. For example, in an invoice the items and customer data could be a `json` input and the company logo could be a `blob` input.
 
-\
+== The Oicana Typst package
 Template inputs are configured in the manifest file `typst.toml`. The Oicana Typst package determines the current values of inputs.
 
 \
@@ -30,7 +30,7 @@ Add the following to the top of your `main.typ` file to initialize the package:
 \
 This snippet gives the Oicana package access to the Typst project's files. We can now use the return values from calling `setup` in the rest of the template.
 
-=== Defining inputs
+== Defining inputs
 
 We will use a `json` input to pass a name into the template. Add the following to the end of the `typst.toml` file:
 #code("typst.toml", "getting-started-inputs-typst-toml-json-input")[
@@ -48,7 +48,7 @@ While we develop the template, the value of the input will be `none`, because th
 
 === Default and Development values
 
-Inputs can define two different fallback values, `default` and `development`. These fallback values differ in priority based on which mode the template is compiled in. 
+Inputs can define two different fallback values, `default` and `development`. These fallback values differ in priority based on which mode the template is compiled in.
 
 \
 When compiling a template in development mode, input values have the priority
@@ -100,7 +100,7 @@ In our template we can now use `input.info.name` and the preview will show "Chuc
   Now we can pass names into the template from any Oicana integration. We will set the name out of C#sym.hash in the next step.
   ```]
 
-=== Inputs in the C#sym.hash integration
+== Inputs in the C#sym.hash integration
 
 With the input defined, we can update the packed template in the C#sym.hash project. Run `oicana pack` in the template directory and
 replace `example-0.1.0.zip` in the ASP.NET project with the new file.

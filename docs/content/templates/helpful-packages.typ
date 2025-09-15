@@ -1,5 +1,3 @@
-= Helpful packages
-
 An opinionated collection of useful Typst packages for Oicana template creation.
 
 == Drawing
