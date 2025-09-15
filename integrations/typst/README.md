@@ -17,7 +17,7 @@ Oicana offers seamless PDF templating across multiple platforms. Define your tem
 
 ## Example usage
 
-Considering an Oicana template with the following `typst.toml`:
+Considering a Typst project with the following `typst.toml`:
 ```toml
 [package]
 name = "example"
@@ -52,7 +52,9 @@ The image passed into the template with the input key "logo": \
 #oicana-image("logo")
 ```
 
- If the template is compiled through one of the Oicana integrations (for example out of C# code), the input values given by the integration would be used instead of the defined `development` values from the manifest file.
+ If compiled through one of the Oicana integrations (for example out of C# code), the input values given by the integration would be used instead of the defined `development` values from the manifest file.
+ 
+ A Typst project that configures Oicana in it's manifest file and uses the package `@preview/oicana` is called an [Oicana template in the documentation][oicana-template].
 
 ## Getting started
 
@@ -73,3 +75,4 @@ Oicana itself is source available under PolyForm Noncommercial License 1.0.0. Fo
 [Oicana]: "https://oicana.com"
 [example-templates]: https://github.com/oicana/oicana-example-templates
 [getting-started]: https://docs.oicana.com/getting-started
+[oicana-template]: https://docs.oicana.com/templates
