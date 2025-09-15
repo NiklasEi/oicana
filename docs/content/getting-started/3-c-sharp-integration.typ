@@ -18,23 +18,20 @@ We will define a new endpoint to compile our Oicana template to a PDF and return
 3. Read the template file and prepare it for compilation at the beginning of `Program.cs`:
 
   \
-  #code("Part of Program.cs", "csharp-integration-program-load-file")[
-    ```cs
-    using Oicana.Config;
-    using Oicana.Template;
+  #code("Part of Program.cs", ```cs
+  using Oicana.Config;
+  using Oicana.Template;
 
-    var templateFile =
-        await File.ReadAllBytesAsync("templates/example-0.1.0.zip");
-    var template = new Template(templateFile);
-    ```]
+  var templateFile =
+      await File.ReadAllBytesAsync("templates/example-0.1.0.zip");
+  var template = new Template(templateFile);
+  ```)
 
   \
 4. Replace the generated `/weatherforecast` endpoint with the following:
 
   #code(
     "Part of Program.cs",
-    "csharp-integration-program-compile-endpoint",
-  )[
     ```cs
     app.MapPost("compile", () =>
     {
@@ -47,7 +44,8 @@ We will define a new endpoint to compile our Oicana template to a PDF and return
         );
     })
     .WithOpenApi();
-    ```]
+    ```,
+  )
 
   This code defines a new POST endpoint at `/compile`. For every request, it compiles the template to PDF with two empty input lists and returns the file.
 

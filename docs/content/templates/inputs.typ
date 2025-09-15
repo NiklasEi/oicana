@@ -12,12 +12,11 @@ Inputs are defined in the template manifest. Integrations can list all inputs of
 
 The `type` property of the input definition must be `json`. The only other required property is `key`.
 
-#code("Part of typst.toml", "templates-input-json")[
-  ```toml
-  [[tool.oicana.inputs]]
-  type = "json"
-  key = "data"
-  ```]
+#code("Part of typst.toml", ```toml
+[[tool.oicana.inputs]]
+type = "json"
+key = "data"
+```)
 
 \
 A json schema file can be used for input validation.
@@ -28,26 +27,24 @@ A json schema file can be used for input validation.
 
 #code(
   "Part of typst.toml",
-  "templates-input-json-default-schema-development",
-)[
   ```toml
   [[tool.oicana.inputs]]
   type = "json"
   key = "data"
   schema = "data.schema.json"
-  ```]
+  ```,
+)
 
 === Blob inputs
 
 Blob inputs can be used for binary data like images. Additional metadata can be used to further specify the type of binary data in the input.
 
 
-#code("Part of typst.toml", "templates-input-blob")[
-  ```toml
-  [[tool.oicana.inputs]]
-  type = "blob"
-  key = "logo"
-  ```]
+#code("Part of typst.toml", ```toml
+[[tool.oicana.inputs]]
+type = "blob"
+key = "logo"
+```)
 
 As a common use case for blob inputs, images have special support in the `oicana` Typst package.
 
@@ -74,20 +71,19 @@ While developing an Oicana template in a Typst editor, it will be compiled in de
 \
 Considering a template with the files `development-data.json`, `default-data.json`, `development-logo.png`, and `default-logo.png`. It could define the following inputs:
 
-#code("Part of typst.toml", "templates-input-defaults")[
-  ```toml
-  [[tool.oicana.inputs]]
-  type = "json"
-  key = "data"
-  development = "development-data.json"
-  default = "default-data.json"
+#code("Part of typst.toml", ```toml
+[[tool.oicana.inputs]]
+type = "json"
+key = "data"
+development = "development-data.json"
+default = "default-data.json"
 
-  [[tool.oicana.inputs]]
-  type = "blob"
-  key = "logo"
-  development = { file = "development-logo.png", meta = { image_format = "png", foo = 5, bar = ["development", "two"] } }
-  default = { file = "default-logo.png", meta = { image_format = "png", foo = 5, bar = ["default", "two"] } }
-  ```]
+[[tool.oicana.inputs]]
+type = "blob"
+key = "logo"
+development = { file = "development-logo.png", meta = { image_format = "png", foo = 5, bar = ["development", "two"] } }
+default = { file = "default-logo.png", meta = { image_format = "png", foo = 5, bar = ["default", "two"] } }
+```)
 _The `default.meta` objects for blob fallback values are optional._
 
 \
