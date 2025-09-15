@@ -126,7 +126,7 @@ See [NOTICE](NOTICE) for a report of licenses in this project.
 [typst-universe]: https://typst.app/universe/
 [typst-packages]: https://github.com/typst/packages/
 [oicana-github]: https://github.com/oicana
-[oicana-example-templates]: https://github.com/oicana/oicana_example_templates
+[oicana-example-templates]: https://github.com/oicana/oicana-example-templates
 [typship]: https://github.com/sjfhsjfh/typship
 [napi]: https://napi.rs/
 [oicana-typst]: https://typst.app/universe/package/oicana
