@@ -292,7 +292,7 @@ jobs:
     - name: Spell Check Repo
       uses: crate-ci/typos@v1.35.5
 
-  check-docs-links:
+  validate-links:
     name: Check for dead links in docs
     runs-on: ubuntu-latest
     steps:
@@ -314,3 +314,6 @@ jobs:
           kill $(cat /tmp/shiroa.pid) || true
           echo "::: Shiroa Logs :::"
           cat /tmp/shiroa.log || true
+      - name: check readme links
+        # Todo: add main README.md after Typst package is available on Typst universe
+        run: npx linkinator integrations/typst/README.md integrations/csharp/Oicana/Readme.md integrations/browser/oicana-browser/README.md
