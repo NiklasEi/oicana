@@ -304,7 +304,7 @@ jobs:
         run: |
           nohup shiroa serve book --mode static-html --workspace . > /tmp/shiroa.log 2>&1 &
           echo $! > /tmp/shiroa.pid
-          sleep 5
+          sleep 15
         working-directory: docs
       - name: check for broken links
         run: npx linkinator http://localhost:25520 --recurse
