@@ -9,18 +9,9 @@ There are two types of inputs. A `json` input contains structured data while a `
 Template inputs are configured in the manifest file `typst.toml`. The Oicana Typst package determines the current values of inputs.
 
 \
-#alpha-note[The Typst package is not (#link("https://github.com/typst/packages/pull/3058")[yet]) published on Typst universe. You will have to install it locally.
-
-  1. Download and install #link("https://github.com/sjfhsjfh/typship/releases")[`the typship CLI`]
-  2. Clone the Oicana repository
-  3. Run `typship install local` in `oicana/integrations/typst`
-
-  See #docs-link(<dependencies>, "../templates/dependencies.html")[the template dependencies section] for more information.]
-
-\
 Add the following to the top of your `main.typ` file to initialize the package:
 #code("main.typ", ```typst
-#import "@local/oicana:0.1.0": setup
+#import "@preview/oicana:0.1.0": setup
 
 #let read-project-file(path) = return read(path, encoding: none);
 #let (input, oicana-image, oicana-config) = setup(read-project-file);
@@ -81,7 +72,7 @@ development = "info.json"
 \
 In our template we can now use `input.info.name` and the preview will show "Chuck Norris".
 #code("main.typ", ```typst
-#import "@local/oicana:0.1.0": setup
+#import "@preview/oicana:0.1.0": setup
 
 #let read-project-file(path) = return read(path, encoding: none);
 #let (input, oicana-image, oicana-config) = setup(read-project-file);
