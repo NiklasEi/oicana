@@ -67,8 +67,6 @@ The package needs minimal setup:
 
 [The example templates][oicana-example-templates] showcase how to use the return values of the setup function.
 
-> The package is not yet published in the Typst universe. You can install the package locally by running [`typship install local`][typship] in `./integrations/typst`.
-
 ### Testing
 
 Snapshot tests can be defined for every template. The CLI described in the next section has an `oicana test` command.
@@ -127,7 +125,6 @@ See [NOTICE](NOTICE) for a report of licenses in this project.
 [typst-packages]: https://github.com/typst/packages/
 [oicana-github]: https://github.com/oicana
 [oicana-example-templates]: https://github.com/oicana/oicana-example-templates
-[typship]: https://github.com/sjfhsjfh/typship
 [napi]: https://napi.rs/
 [oicana-typst]: https://typst.app/universe/package/oicana
 [docs]: https://docs.oicana.com

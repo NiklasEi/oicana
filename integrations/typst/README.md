@@ -52,9 +52,9 @@ The image passed into the template with the input key "logo": \
 #oicana-image("logo")
 ```
 
- If compiled through one of the Oicana integrations (for example out of C# code), the input values given by the integration would be used instead of the defined `development` values from the manifest file.
- 
- A Typst project that configures Oicana in it's manifest file and uses the package `@preview/oicana` is called an [Oicana template in the documentation][oicana-template].
+If compiled through one of the Oicana integrations (for example out of C# code), the input values given by the integration would be used instead of the defined `development` values from the manifest file.
+
+A Typst project that configures Oicana in its manifest file and uses the package `@preview/oicana` is called an [Oicana template in the documentation][oicana-template].
 
 ## Getting started
 
