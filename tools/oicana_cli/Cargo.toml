@@ -70,12 +70,12 @@ dist = true
 
 [package.metadata.binstall]
 pkg-url = "{ repo }/releases/download/oicana_cli-v{ version }/oicana_cli-{ target }{ archive-suffix }"
-bin-dir = "oicana{ binary-ext }"
+bin-dir = "oicana_cli-{ target }/oicana{ binary-ext }"
 pkg-fmt = "txz"
 
 [package.metadata.binstall.overrides]
-x86_64-pc-windows-msvc = { pkg-fmt = "zip" }
-aarch64-pc-windows-msvc = { pkg-fmt = "zip" }
+x86_64-pc-windows-msvc = { pkg-fmt = "zip", bin-dir = "oicana{ binary-ext }" }
+aarch64-pc-windows-msvc = { pkg-fmt = "zip", bin-dir = "oicana{ binary-ext }" }
 
 [package.metadata.wix]
 upgrade-guid = "CD91DE14-3590-4CE1-A8A1-0B385690480D"

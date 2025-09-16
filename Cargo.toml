@@ -12,6 +12,7 @@ members = [
     "tools/test_compare",
     "tools/oicana_cli",
 ]
+default-members = ["tools/oicana_cli"]
 resolver = "2"
 
 
