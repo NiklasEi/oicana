@@ -116,7 +116,9 @@ export class Template {
     exportFormat?: ExportFormat,
     compilationMode?: CompilationMode,
   ): Uint8Array {
-    for (const blob of blobInputs?.entries() ?? []) {
+    for (const blob of blobInputs instanceof Map
+      ? (blobInputs?.entries() ?? [])
+      : Object.entries<BlobWithMetadata>(blobInputs ?? {})) {
       if (blob[1].meta === undefined) {
         // Otherwise the FFI layer will fail to pass the blobs over to WASM
         blob[1].meta = {};
