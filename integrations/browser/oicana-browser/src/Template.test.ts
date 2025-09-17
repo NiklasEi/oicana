@@ -12,7 +12,7 @@ const asset = (file: string) => {
 describe('e2e test template', () => {
   it('development', async () => {
     const templateFile = await readFile(
-      '../../../e2e_test_template/oicana-e2e-test-0.1.0.zip',
+      '../../../e2e_test_template/oicana-e2e-test-x.y.z.zip',
     );
     const template = new Template('test', templateFile);
 
@@ -28,7 +28,7 @@ describe('e2e test template', () => {
 
   it('production', async () => {
     const templateFile = await readFile(
-      '../../../e2e_test_template/oicana-e2e-test-0.1.0.zip',
+      '../../../e2e_test_template/oicana-e2e-test-x.y.z.zip',
     );
     const template = new Template('test', templateFile);
 
@@ -50,7 +50,7 @@ describe('e2e test template', () => {
 
   it('all-inputs', async () => {
     const templateFile = await readFile(
-      '../../../e2e_test_template/oicana-e2e-test-0.1.0.zip',
+      '../../../e2e_test_template/oicana-e2e-test-x.y.z.zip',
     );
     const template = new Template('test', templateFile);
 
@@ -82,7 +82,7 @@ describe('e2e test template', () => {
 
   it('does not throw if inputs are objects, not Maps', async () => {
     const templateFile = await readFile(
-      '../../../e2e_test_template/oicana-e2e-test-0.1.0.zip',
+      '../../../e2e_test_template/oicana-e2e-test-x.y.z.zip',
     );
     const template = new Template('test', templateFile);
 
