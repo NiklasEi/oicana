@@ -212,7 +212,7 @@ jobs:
         working-directory: ./integrations/browser/oicana_browser_wasm/pkg
       - name: install browser integration
         run: |
-          npm i
+          # npm ci
           npm link @oicana/browser-wasm
         working-directory: ./integrations/browser/oicana-browser
       - name: test browser integration
