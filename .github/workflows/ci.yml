@@ -200,7 +200,7 @@ jobs:
         run: oicana test
         working-directory: ./e2e_test_template
       - name: pack e2e template
-        run: oicana pack
+        run: oicana pack -n {template}-x.y.z.zip
         working-directory: ./e2e_test_template
       - name: install browser-wasm
         uses: actions/download-artifact@v4
@@ -244,7 +244,7 @@ jobs:
         run: oicana test
         working-directory: ./e2e_test_template
       - name: pack e2e template
-        run: oicana pack
+        run: oicana pack -n {template}-x.y.z.zip
         working-directory: ./e2e_test_template
       - name: install csharp lib
         uses: actions/download-artifact@v4
