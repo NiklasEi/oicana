@@ -323,5 +323,4 @@ jobs:
           echo "::: Shiroa Logs :::"
           cat /tmp/shiroa.log || true
       - name: check readme links
-        # Todo: add main README.md after Typst package is available on Typst universe
-        run: npx linkinator integrations/typst/README.md integrations/csharp/Oicana/Readme.md integrations/browser/oicana-browser/README.md
+        run: npx linkinator README.md integrations/typst/README.md integrations/csharp/Oicana/Readme.md integrations/browser/oicana-browser/README.md
