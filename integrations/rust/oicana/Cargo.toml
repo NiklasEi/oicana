@@ -10,7 +10,6 @@ edition = { workspace = true }
 homepage = { workspace = true }
 repository = { workspace = true }
 license-file = { workspace = true }
-readme = { workspace = true }
 
 [features]
 native = ["oicana_files/native"]
