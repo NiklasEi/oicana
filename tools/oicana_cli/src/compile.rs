@@ -1,5 +1,6 @@
 use crate::compile::export::{export_image, export_pdf, ExportFormat, ImageExportFormat};
 use anyhow::{Context, Ok};
+use chrono::Utc;
 use clap::Args;
 use log::{info, warn};
 use oicana::Template;
@@ -7,7 +8,7 @@ use oicana_files::native::NativeTemplate;
 use oicana_input::input::blob::BlobInput;
 use oicana_input::input::json::JsonInput;
 use oicana_input::{CompilationConfig, TemplateInputs};
-use std::fs::{read, read_to_string};
+use std::fs::{self, read, read_to_string};
 use std::path::Path;
 
 mod export;
@@ -46,6 +47,15 @@ pub struct CompileArgs {
     blob: Vec<String>,
     #[arg(short, long, help = "Compile the template in development mode")]
     development: bool,
+    #[clap(short, long, help = "Output directory", default_value = "./output")]
+    out_dir: String,
+    #[clap(
+        short,
+        long,
+        help = "Name template for the artifacts",
+        default_value = "{template}_{millies}.{format}"
+    )]
+    name: String,
 }
 
 pub fn compile(args: CompileArgs) -> anyhow::Result<()> {
@@ -66,10 +76,24 @@ pub fn compile(args: CompileArgs) -> anyhow::Result<()> {
         println!("{warnings}");
     }
 
+    let out_dir = Path::new(&args.out_dir);
+    fs::create_dir_all(out_dir)?;
+
+    let file_name = args
+        .name
+        .replace("{template}", &name)
+        .replace(
+            "{version}",
+            &template.manifest().package.version.to_string(),
+        )
+        .replace("{millies}", &Utc::now().timestamp_millis().to_string())
+        .replace("{format}", args.format.file_ending());
+
+    let out = out_dir.join(file_name);
     match args.format {
-        ExportFormat::Pdf => export_pdf(&document, &name, &template)?,
-        ExportFormat::Png => export_image(&document, ImageExportFormat::Png, &name)?,
-        ExportFormat::Svg => export_image(&document, ImageExportFormat::Svg, &name)?,
+        ExportFormat::Pdf => export_pdf(&document, &out, &template)?,
+        ExportFormat::Png => export_image(&document, &out, ImageExportFormat::Png)?,
+        ExportFormat::Svg => export_image(&document, &out, ImageExportFormat::Svg)?,
     }
 
     Ok(())
