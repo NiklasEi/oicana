@@ -38,7 +38,7 @@ describe('e2e test template', () => {
     const blobInputs = new Map<string, BlobWithMetadata>();
     blobInputs.set('development-blob', {
       bytes: blob,
-      meta: { image_format: 'jpeg', foo: 42, bar: ['input', 'two'] },
+      meta: { image_format: 'jpeg', foo: 43, bar: ['input', 'two'] },
     });
     const jsonInputs = new Map<string, string>();
     jsonInputs.set('development-json', json.toString());
