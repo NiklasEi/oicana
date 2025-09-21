@@ -265,6 +265,29 @@ jobs:
       - name: compare test output
         run: test-compare e2e_test_template integrations/csharp/Oicana.Test/bin/Debug/net8.0/e2e/
 
+  e2e-test-cli:
+    runs-on: ubuntu-latest
+    needs:
+      - build-tools
+    steps:
+      - uses: actions/checkout@v5
+      - uses: ./.github/actions/install-tool
+        with:
+          tool: "oicana-cli"
+          bin: "oicana"
+      - uses: ./.github/actions/install-tool
+        with:
+          tool: "test-compare"
+      - name: test e2e template
+        run: oicana test
+        working-directory: ./e2e_test_template
+      - name: compile e2e template with cli
+        run: |
+          oicana compile --development -o output -f png
+        working-directory: e2e_test_template
+      - name: compare test output
+        run: test-compare e2e_test_template tools/oicana_cli/output
+
   typst-integration:
     runs-on: ubuntu-latest
     timeout-minutes: 5
