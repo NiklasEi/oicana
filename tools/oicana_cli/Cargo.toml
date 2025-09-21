@@ -45,6 +45,7 @@ thiserror = { workspace = true }
 color-print = { workspace = true }
 indicatif = { workspace = true }
 console = { workspace = true }
+serde_json = { workspace = true }
 
 # pin, because psm 0.1.24 is breaking the windows builds
 psm = "=0.1.23"
