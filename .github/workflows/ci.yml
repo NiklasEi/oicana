@@ -278,6 +278,12 @@ jobs:
       - uses: ./.github/actions/install-tool
         with:
           tool: "test-compare"
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: typship
+      - name: Install local Typst Oicana package
+        run: typship install local
+        working-directory: ./integrations/typst
       - name: test e2e template
         run: oicana test
         working-directory: ./e2e_test_template
