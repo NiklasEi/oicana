@@ -8,6 +8,7 @@ use oicana_files::native::NativeTemplate;
 use oicana_input::input::blob::BlobInput;
 use oicana_input::input::json::JsonInput;
 use oicana_input::{CompilationConfig, TemplateInputs};
+use std::collections::HashMap;
 use std::fs::{self, read, read_to_string};
 use std::path::Path;
 
@@ -45,6 +46,14 @@ pub struct CompileArgs {
         num_args = 0..
     )]
     blob: Vec<String>,
+    #[arg(
+        short = 'm',
+        long,
+        help = "Relative path to a json file to use as metadata for blob inputs.\nEvery blob metadata has to have a corresponding blob value.",
+        value_name = "KEY=VALUE",
+        num_args = 0..
+    )]
+    blob_meta: Vec<String>,
     #[arg(short, long, help = "Compile the template in development mode")]
     development: bool,
     #[clap(short, long, help = "Output directory", default_value = "./output")]
@@ -107,21 +116,41 @@ pub fn build_inputs(args: &CompileArgs) -> anyhow::Result<TemplateInputs> {
     for pair in &args.json {
         let parts: Vec<&str> = pair.splitn(2, '=').collect();
         if parts.len() == 2 {
-            let input = read_to_string(parts[1]).context("Failed to read json input file")?;
+            let input = read_to_string(parts[1]).context("Failed to read json input file.")?;
             inputs.with_input(JsonInput::new(parts[0], input));
         } else {
             warn!("Ignoring invalid key-value pair: {pair}");
         }
     }
 
+    let mut blobs = HashMap::new();
     for pair in &args.blob {
         let parts: Vec<&str> = pair.splitn(2, '=').collect();
         if parts.len() == 2 {
-            let blob = read(parts[1]).context("Failed to read blob input file")?;
-            inputs.with_input(BlobInput::new(parts[0], blob));
+            let blob = read(parts[1]).context("Failed to read blob input file.")?;
+            blobs.insert(parts[0].to_owned(), BlobInput::new(parts[0], blob));
         } else {
             warn!("Ignoring invalid key-value pair: {pair}");
         }
+    }
+    for pair in &args.blob_meta {
+        let parts: Vec<&str> = pair.splitn(2, '=').collect();
+        if parts.len() == 2 {
+            let Some(blob) = blobs.get_mut(parts[0]) else {
+                warn!("Ignoring blob meta key-value pair: {pair}, because no corresponding blob was passed.");
+                continue;
+            };
+            let meta =
+                read_to_string(parts[1]).context("Failed to read json file as blob metadata.")?;
+            blob.value.metadata = serde_json::from_str(&meta)
+                .context("Failed to convert blob metadata to a Typst dictionary.")?;
+        } else {
+            warn!("Ignoring invalid key-value pair: {pair}");
+        }
+    }
+
+    for (_, blob) in blobs {
+        inputs.with_input(blob);
     }
 
     Ok(inputs)
