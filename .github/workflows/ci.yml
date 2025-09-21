@@ -289,10 +289,11 @@ jobs:
         working-directory: ./e2e_test_template
       - name: compile e2e template with cli
         run: |
-          oicana compile --development -o output -f png
+          oicana compile --development -o output -f png -n e2e.development.png
+          oicana compile -o output -f png -n e2e.production.png -b development-blob=tests/input.txt -j development-json=tests/input.json
         working-directory: e2e_test_template
       - name: compare test output
-        run: test-compare e2e_test_template tools/oicana_cli/output
+        run: test-compare e2e_test_template e2e_test_template/output
 
   typst-integration:
     runs-on: ubuntu-latest
