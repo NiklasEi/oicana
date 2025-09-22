@@ -9,7 +9,7 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  crates-ci:
+  check-crates:
     strategy:
       matrix:
         os: [windows-latest, ubuntu-latest, macos-latest]
@@ -36,6 +36,28 @@ jobs:
         run: cargo clippy --workspace --all-targets --all-features -- -Dwarnings
       - name: check
         run: cargo check --all-features --all-targets
+
+  test-crates:
+    strategy:
+      matrix:
+        os: [windows-latest, ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/cache/restore@v4
+        with:
+          key: ${{ runner.os }}-stable--${{ hashFiles('**/Cargo.toml') }}-
+          restore-keys: |
+            ${{ runner.os }}-stable--${{ hashFiles('**/Cargo.toml') }}-
+            ${{ runner.os }}-stable--
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+      - uses: dtolnay/rust-toolchain@stable
       - name: run tests
         run: cargo test --all-targets --all-features
 
