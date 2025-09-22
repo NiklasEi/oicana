@@ -1814,7 +1814,7 @@ checksum = "e25be21376a772d15f97ae789845340a9651d3c4246ff5ebb6a2b35f9c37bd31"
 
 [[package]]
 name = "oicana"
-version = "0.1.0-alpha.1"
+version = "0.1.0-alpha.2"
 dependencies = [
  "oicana_files",
  "oicana_input",
@@ -1848,7 +1848,7 @@ dependencies = [
 
 [[package]]
 name = "oicana_cli"
-version = "0.1.0-alpha.1"
+version = "0.1.0-alpha.2"
 dependencies = [
  "anyhow",
  "chrono",
@@ -1895,7 +1895,7 @@ dependencies = [
 
 [[package]]
 name = "oicana_export"
-version = "0.1.0-alpha.1"
+version = "0.1.0-alpha.2"
 dependencies = [
  "oicana_world",
  "png 0.17.16",
@@ -1907,7 +1907,7 @@ dependencies = [
 
 [[package]]
 name = "oicana_files"
-version = "0.1.0-alpha.1"
+version = "0.1.0-alpha.2"
 dependencies = [
  "codespan-reporting",
  "dirs 5.0.1",
@@ -1927,7 +1927,7 @@ dependencies = [
 
 [[package]]
 name = "oicana_input"
-version = "0.1.0-alpha.1"
+version = "0.1.0-alpha.2"
 dependencies = [
  "log",
  "serde",
@@ -1937,7 +1937,7 @@ dependencies = [
 
 [[package]]
 name = "oicana_template"
-version = "0.1.0-alpha.1"
+version = "0.1.0-alpha.2"
 dependencies = [
  "chrono",
  "log",
@@ -1954,7 +1954,7 @@ dependencies = [
 
 [[package]]
 name = "oicana_testing"
-version = "0.1.0-alpha.1"
+version = "0.1.0-alpha.2"
 dependencies = [
  "image",
  "log",
@@ -1974,7 +1974,7 @@ dependencies = [
 
 [[package]]
 name = "oicana_world"
-version = "0.1.0-alpha.1"
+version = "0.1.0-alpha.2"
 dependencies = [
  "anyhow",
  "chrono",
@@ -3012,7 +3012,7 @@ dependencies = [
 
 [[package]]
 name = "test_compare"
-version = "0.1.0-alpha.1"
+version = "0.1.0-alpha.2"
 dependencies = [
  "anyhow",
  "clap",

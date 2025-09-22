@@ -17,7 +17,7 @@ resolver = "2"
 
 
 [workspace.package]
-version = "0.1.0-alpha.1"
+version = "0.1.0-alpha.2"
 # also change in ci.yml
 rust-version = "1.88"
 authors = ["Oicana <hello@oicana.com>"]
