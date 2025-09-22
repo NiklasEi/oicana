@@ -265,6 +265,37 @@ jobs:
       - name: compare test output
         run: test-compare e2e_test_template integrations/csharp/Oicana.Test/bin/Debug/net8.0/e2e/
 
+  e2e-test-cli:
+    runs-on: ubuntu-latest
+    needs:
+      - build-tools
+    steps:
+      - uses: actions/checkout@v5
+      - uses: ./.github/actions/install-tool
+        with:
+          tool: "oicana-cli"
+          bin: "oicana"
+      - uses: ./.github/actions/install-tool
+        with:
+          tool: "test-compare"
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: typship
+      - name: Install local Typst Oicana package
+        run: typship install local
+        working-directory: ./integrations/typst
+      - name: test e2e template
+        run: oicana test
+        working-directory: ./e2e_test_template
+      - name: compile e2e template with cli
+        run: |
+          oicana compile -o output -f png -n development.png --development
+          oicana compile -o output -f png -n production.png -b development-blob=tests/input.txt -m development-blob=tests/cli/development-blob-meta.json -j development-json=tests/input.json
+          oicana compile -o output -f png -n all-inputs.png -b development-blob=tests/input.txt -m development-blob=tests/cli/development-blob-meta.json -j development-json=tests/input.json -b default-blob=tests/input.txt -m default-blob=tests/cli/default-blob-meta.json -j default-json=tests/input.json -b both-blob=tests/input.txt -m both-blob=tests/cli/both-blob-meta.json -j both-json=tests/input.json
+        working-directory: e2e_test_template
+      - name: compare test output
+        run: test-compare e2e_test_template e2e_test_template/output
+
   typst-integration:
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -315,7 +346,7 @@ jobs:
           sleep 15
         working-directory: docs
       - name: check for broken links
-        run: npx linkinator http://localhost:25520 --recurse
+        run: npx linkinator http://localhost:25520 --recurse --skip https://www.npmjs.com/package/@oicana/browser
       - name: clean up
         if: always()
         run: |

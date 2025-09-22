@@ -43,7 +43,7 @@ public class E2ETests
                     """
                     {
                        "bar": ["input", "two"],
-                       "foo": 42
+                       "foo": 43
                     }
                     """)!.AsObject()
             }),

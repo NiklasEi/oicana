@@ -14,7 +14,7 @@ name = "production"
 type = "blob"
 key = "development-blob"
 file = "input.txt"
-meta = { image_format = "jpeg", foo = 42, bar = ["input", "two"] }
+meta = { image_format = "jpeg", foo = 43, bar = ["input", "two"] }
 
 [[test.inputs]]
 type = "json"
