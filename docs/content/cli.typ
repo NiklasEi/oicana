@@ -3,8 +3,13 @@
 #import "/src/docs-link.typ": *
 
 
-#link(latest-cli)[CLI builds are published on GitHub]
+#link(latest-cli)[CLI builds are published on GitHub]. You can pick and install the correct binary yourself or let a script do it for you.
 
+Shell script: #latest-cli-shell
+
+Powershell script: #latest-cli-powershell
+
+\
 Run `oicana -h` for a list of all commands and options.
 
 == Package a template
@@ -26,3 +31,7 @@ Learn more about testing Oicana templates in the #docs-link(<testing>, "./templa
 #note[The validation is work in progress. The command will currently only check if the manifest can be parsed.]
 
 Oicana templates are valid Typst projects. Inputs require additional configuration in their `typst.toml`.
+
+== Compilation
+
+For testing purposes, the CLI can compile not-packed Oicana templates. Inputs can be given as relative paths to files.
