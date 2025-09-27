@@ -55,6 +55,22 @@ type = "json"
 key = "data"
 file = "data.json"
 
+
+[[test]]
+name = "test_without_snapshot_comparison"
+snapshot = false # this disables comparing the test output with a snapshot file
+
+
+[[test]]
+name = "fuzz_json_input"
+snapshot = false
+
+[[test.inputs]]
+type = "json"
+key = "data"
+samples = 50 # this requires that the "data" input has a json schema configured in `typst.toml`
+
+
 # Any number of additional tests in this collection
 [[test]]
 name = "a_second_test"
