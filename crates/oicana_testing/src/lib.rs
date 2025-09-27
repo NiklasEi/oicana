@@ -7,7 +7,7 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use log::trace;
+use log::{debug, trace};
 use oicana_input::{
     input::{
         blob::{Blob, BlobInput},
@@ -15,7 +15,7 @@ use oicana_input::{
     },
     CompilationConfig, CompilationMode, TemplateInputs,
 };
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize};
 use thiserror::Error;
 use typst::foundations::Dict;
 
@@ -29,6 +29,8 @@ pub mod execution;
 pub struct Test {
     /// Inputs ready for test execution.
     pub inputs: TemplateInputs,
+    /// Json inputs to be fuzzed.
+    pub fuzzed_inputs: Option<FuzzJson>,
     /// Name of this test.
     pub name: String,
     /// Snapshot file
@@ -59,24 +61,35 @@ impl Test {
         collection_path: &Path,
         root: &Path,
     ) -> Result<Self, PrepareTestError> {
-        let maybe_snapshot = root.join(template_test.snapshot.unwrap_or(format!(
+        let snapshot_path = match template_test.snapshot {
+            None => Some(root.join(format!(
                 "{}{}.png",
                 collection_name
                     .as_ref()
                     .map(|name| format!("{name}."))
                     .unwrap_or("".to_owned()),
                 template_test.name
-            )));
-        let snapshot = if maybe_snapshot.is_file() {
-            Snapshot::Some(maybe_snapshot)
-        } else {
-            Snapshot::Missing(maybe_snapshot)
+            ))),
+            Some(SnapshotConfig::Path(path)) => Some(root.join(path)),
+            Some(SnapshotConfig::Disabled) => None,
         };
-        let inputs = Self::build_inputs(template_test.mode, template_test.inputs, root)?;
+        let snapshot = match snapshot_path {
+            Some(path) => {
+                if path.is_file() {
+                    Snapshot::Some(path)
+                } else {
+                    Snapshot::Missing(path)
+                }
+            }
+            None => Snapshot::None,
+        };
+        let (inputs, fuzzed_inputs) =
+            Self::build_inputs(template_test.mode, template_test.inputs, root)?;
         trace!("Collecting test {}", &template_test.name);
 
         Ok(Test {
             inputs,
+            fuzzed_inputs,
             collection: collection_path.to_path_buf(),
             descriptor: path_components
                 .iter()
@@ -94,19 +107,34 @@ impl Test {
         mode: CompilationMode,
         input_values: Vec<InputValue>,
         root: &Path,
-    ) -> Result<TemplateInputs, PrepareTestError> {
+    ) -> Result<(TemplateInputs, Option<FuzzJson>), PrepareTestError> {
         let mut inputs = TemplateInputs::new();
+        let mut fuzzed_input = None;
 
         inputs.with_config(CompilationConfig::new(mode));
 
         for input in input_values {
             match input {
-                InputValue::Json(json) => {
-                    let file_path = root.join(json.file);
-                    let value = read_to_string(&file_path)
-                        .map_err(|source| PrepareTestError::Io { file_path, source })?;
-                    inputs.with_input(JsonInput::new(json.key, value));
-                }
+                InputValue::Json(json_input) => match json_input {
+                    JsonInputValue {
+                        key,
+                        value: JsonTestValue::File { file },
+                    } => {
+                        let file_path = root.join(file);
+                        let value = read_to_string(&file_path)
+                            .map_err(|source| PrepareTestError::Io { file_path, source })?;
+                        inputs.with_input(JsonInput::new(key, value));
+                    }
+                    JsonInputValue {
+                        key,
+                        value: JsonTestValue::Fuzz { samples },
+                    } => {
+                        if fuzzed_input.is_some() {
+                            return Err(PrepareTestError::OnlyOneFuzzedInput);
+                        }
+                        let _ = fuzzed_input.insert(FuzzJson { samples, key });
+                    }
+                },
                 InputValue::Blob(blob) => {
                     let file_path = root.join(blob.file);
                     let value = read(&file_path)
@@ -121,8 +149,15 @@ impl Test {
             }
         }
 
-        Ok(inputs)
+        Ok((inputs, fuzzed_input))
     }
+}
+
+/// Json input to be fuzzed as part of the test execution.
+#[derive(Debug)]
+pub struct FuzzJson {
+    samples: usize,
+    key: String,
 }
 
 /// Error cases while preparing a test case for execution
@@ -140,6 +175,9 @@ pub enum PrepareTestError {
     /// The test does not have a snapshot file
     #[error("Failed to find snapshot file at '{0}'")]
     NoSnapshot(PathBuf),
+    /// Only one input can be fuzzed per test
+    #[error("Only one input can be fuzzed per test")]
+    OnlyOneFuzzedInput,
     /// Failed to convert metadata to Typst dict
     #[error("Failed to convert metadata to Typst dictionary '{0}'")]
     FailedToConvertMetadata(#[from] toml::de::Error),
@@ -147,6 +185,7 @@ pub enum PrepareTestError {
 
 /// A collection of test definitions
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
+#[serde(deny_unknown_fields)]
 pub struct TemplateTestCollection {
     /// Version of the test collection manifest.
     ///
@@ -165,6 +204,7 @@ impl TemplateTestCollection {
         let mut content = String::new();
         file.read_to_string(&mut content)?;
 
+        debug!("Parsing {:?} to template test collection.", path);
         let mut collection = toml::de::from_str::<TemplateTestCollection>(&content)?;
 
         if collection.name.is_none() {
@@ -202,19 +242,50 @@ pub enum TestCollectionError {
 
 /// A template test
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
+#[serde(deny_unknown_fields)]
 pub struct TemplateTest {
     /// Name of the test
     ///
     /// The name has to be unique for the template under test.
     pub name: String,
     /// Relative path to snapshot file for this test
-    pub snapshot: Option<String>,
+    #[serde(deserialize_with = "snapshot_config", default = "none")]
+    pub snapshot: Option<SnapshotConfig>,
     /// The input values for this test.
     #[serde(default = "Vec::new")]
     pub inputs: Vec<InputValue>,
     /// The input values for this test.
     #[serde(default = "production")]
     pub mode: CompilationMode,
+}
+
+fn none() -> Option<SnapshotConfig> {
+    None
+}
+
+fn snapshot_config<'de, D>(deserializer: D) -> Result<Option<SnapshotConfig>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    match serde_json::Value::deserialize(deserializer)? {
+        serde_json::Value::Bool(false) => Ok(Some(SnapshotConfig::Disabled)),
+        serde_json::Value::String(s) => Ok(Some(SnapshotConfig::Path(s))),
+        other => Err(serde::de::Error::invalid_type(
+            serde::de::Unexpected::Other(&format!("{:?}", other)),
+            &"a boolean false or a string",
+        )),
+    }
+}
+
+/// Configure or disable snapshot file comparison for the test
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
+#[serde(untagged, deny_unknown_fields)]
+pub enum SnapshotConfig {
+    /// This test should onlz be compiled
+    /// there will be no comparison of the output with a snapshot file
+    Disabled,
+    /// Relative path to the snapshot file for this test
+    Path(String),
 }
 
 fn production() -> CompilationMode {
@@ -243,7 +314,24 @@ pub struct JsonInputValue {
     /// Use this in the Typst code to refer to the current value of the input.
     pub key: String,
     /// Path to the file containing the JSON.
-    pub file: String,
+    #[serde(flatten)]
+    pub value: JsonTestValue,
+}
+
+/// Values for json inputs in tests
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
+#[serde(untagged, deny_unknown_fields)]
+pub enum JsonTestValue {
+    /// the input value should be fuzzed based on the json schema
+    Fuzz {
+        /// Number of fuzzing samples for this input
+        samples: usize,
+    },
+    /// The input value is a json file
+    File {
+        /// Relative path to the file that is the value of this iput for the test
+        file: String,
+    },
 }
 
 /// A blob input.
@@ -351,7 +439,7 @@ mod tests {
             &mut file,
             r#"
                         tests_version = 1
-        
+
                         [[test]]
                         name = "test"
                         "#
@@ -372,7 +460,7 @@ mod tests {
             &mut file,
             r#"
                         tests_version = 1
-        
+
                         [[test]]
                         name = "test"
                         mode = "dev"

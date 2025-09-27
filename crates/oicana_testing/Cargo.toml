@@ -24,10 +24,14 @@ typst = { workspace = true }
 
 serde = { workspace = true, features = ["derive"] }
 toml = { workspace = true }
+serde_json = { workspace = true }
 thiserror = { workspace = true }
 walkdir = { workspace = true }
 log = { workspace = true }
 image = { workspace = true }
+rand = { workspace = true }
+json_schema_fuzz = { workspace = true }
+json_schema_ast = { workspace = true }
 
 [dev-dependencies]
 tempfile = "3"
