@@ -1,18 +1,21 @@
 use std::{
-    fs, io,
+    fs::{self, File},
+    io,
     path::{Path, PathBuf},
 };
 
 use image::{GenericImageView, ImageError};
-use log::warn;
+use log::{debug, error};
 use oicana::{Template, TemplateInitializationError};
 use oicana_export::png::{export_merged_png, EncodingError};
 use oicana_files::native::{package_data_dir, NativeTemplate};
+use oicana_input::{input::json::JsonInput, input_definition::InputDefinition, TemplateInputs};
 use oicana_template::manifest::TemplateManifest;
 use oicana_world::{CompiledDocument, TemplateCompilationFailure};
+use rand::thread_rng;
 use thiserror::Error;
 
-use crate::Test;
+use crate::{Snapshot, Test};
 
 /// Context for test runners
 pub struct TestRunnerContext {
@@ -47,7 +50,88 @@ pub struct TestRunner {
 impl TestRunner {
     /// Run the test case
     pub fn run(&mut self, test: Test) -> Result<Vec<String>, TestExecutionError> {
-        let CompiledDocument { document, warnings } = self.instance.compile(test.inputs)?;
+        if let Some(fuzzed_input) = test.fuzzed_inputs {
+            let fuzzed_json_input = self
+                .instance
+                .manifest()
+                .tool
+                .oicana
+                .inputs
+                .iter()
+                .filter_map(|input| {
+                    let InputDefinition::Json(json) = input else {
+                        return None;
+                    };
+                    Some(json)
+                })
+                .find(|input| input.key == fuzzed_input.key);
+            let Some(fuzzed_json_input) = fuzzed_json_input else {
+                return Err(TestExecutionError::FuzzingSetup(format!(
+                    "Fuzzed input '{}' has no input definition in the manifest!",
+                    fuzzed_input.key
+                )));
+            };
+            let Some(schema_path) = &fuzzed_json_input.schema else {
+                return Err(TestExecutionError::FuzzingSetup(format!(
+                    "Fuzzed json input '{}' has no schema configured in the manifest!",
+                    fuzzed_input.key
+                )));
+            };
+            let schema = {
+                let schema_file = match File::open(schema_path) {
+                    Ok(file) => file,
+                    Err(error) => {
+                        return Err(TestExecutionError::FuzzingSetup(format!(
+                            "Failed to open schema file '{}': {}",
+                            schema_path, error
+                        )));
+                    }
+                };
+                let schema = match serde_json::from_reader(schema_file) {
+                    Ok(schema) => schema,
+                    Err(error) => {
+                        return Err(TestExecutionError::FuzzingSetup(format!(
+                            "Failed to parse schema file '{}': {}",
+                            schema_path, error
+                        )));
+                    }
+                };
+                match json_schema_ast::build_and_resolve_schema(&schema) {
+                    Ok(schema) => schema,
+                    Err(error) => {
+                        return Err(TestExecutionError::FuzzingSetup(format!(
+                            "Failed to build schema '{}': {}",
+                            schema_path, error
+                        )));
+                    }
+                }
+            };
+
+            let mut rng = thread_rng();
+
+            return (0..fuzzed_input.samples)
+                .map(|_| {
+                    let value = json_schema_fuzz::generate_value(&schema, &mut rng, u8::MAX);
+                    let mut inputs = test.inputs.clone();
+                    inputs.with_input(JsonInput::new(fuzzed_input.key.clone(), value.to_string()));
+                    debug!("Fuzzing the input '{}' with {}", fuzzed_input.key, value);
+
+                    self.run_with_inputs(inputs, &test.snapshot)
+                })
+                .map(|res| res.map(|vec| vec.into_iter()))
+                .collect::<Result<Vec<_>, _>>()
+                .map(|iterators| iterators.into_iter().flatten().collect());
+        }
+
+        self.run_with_inputs(test.inputs, &test.snapshot)
+    }
+
+    fn run_with_inputs(
+        &mut self,
+        inputs: TemplateInputs,
+        snapshot: &Snapshot,
+    ) -> Result<Vec<String>, TestExecutionError> {
+        let CompiledDocument { document, warnings } = self.instance.compile(inputs)?;
         let mut warnings = if let Some(warning) = warnings {
             vec![warning]
         } else {
@@ -55,7 +139,7 @@ impl TestRunner {
         };
 
         let image = export_merged_png(&document, 1.)?;
-        match test.snapshot {
+        match snapshot {
             crate::Snapshot::Missing(path) => {
                 warnings.push(format!(
                     "Writing snapshot file at {path:?}, because it was missing"
@@ -63,16 +147,16 @@ impl TestRunner {
                 fs::write(path, image)?;
             }
             crate::Snapshot::Some(path) => {
-                if !compare_images(&path, &image, 1)? {
+                if !compare_images(path, &image, 1)? {
                     let mut compare_path = path.clone();
                     if let Some(stem) = compare_path.file_stem() {
                         let mut new_name = stem.to_os_string();
                         new_name.push(".compare.png");
                         compare_path.set_file_name(new_name);
+                        fs::write(compare_path, image)?;
                     } else {
-                        warn!("Snapshot file had no file stem");
+                        error!("Snapshot file had no file stem!");
                     }
-                    fs::write(compare_path, image)?;
                     return Err(TestExecutionError::SnapshotMismatch);
                 }
             }
@@ -129,6 +213,9 @@ pub enum TestExecutionError {
     /// Failed to export png image
     #[error("{0}")]
     ExportError(#[from] EncodingError),
+    /// Failure during fuzzing setup
+    #[error("{0}")]
+    FuzzingSetup(String),
     /// Failed to write or read snapshot image
     #[error("Failed to write or read snapshot image: {0}")]
     Io(#[from] io::Error),

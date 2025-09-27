@@ -10,3 +10,14 @@ mode = "development"
 type = "blob"
 key = "development-blob"
 file = "../input.txt"
+
+
+[[test]]
+name = "fuzzing"
+mode = "development"
+snapshot = false
+
+[[test.inputs]]
+type = "json"
+key = "development-json"
+samples = 10

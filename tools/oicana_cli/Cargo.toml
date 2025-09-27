@@ -49,6 +49,7 @@ serde_json = { workspace = true }
 
 # pin, because psm 0.1.24 is breaking the windows builds
 psm = "=0.1.23"
+rand = "0.9.2"
 
 
 # Explicitly depend on OpenSSL if applicable, so that we can add the

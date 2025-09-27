@@ -96,6 +96,9 @@ indicatif = "0.18.0"
 console = { version = "0.16", default-features = false, features = ["ansi-parsing", "std"] }
 openssl = "0.10.72"
 image = "0.25.8"
+json_schema_fuzz = "0.2.2"
+json_schema_ast = "0.2.2"
+rand = "0.8.5"
 
 [workspace.lints.rust]
 missing_docs = "warn"
