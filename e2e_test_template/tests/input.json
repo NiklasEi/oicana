@@ -1,1 +1,1 @@
-{ "name": "Input" }
+{ "name": "Input", "foo": [41, "testing"] }

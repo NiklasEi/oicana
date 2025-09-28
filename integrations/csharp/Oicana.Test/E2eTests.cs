@@ -48,7 +48,7 @@ public class E2ETests
                     """)!.AsObject()
             }),
         };
-        var input = new TemplateJsonInput("development-json", JsonSerializer.Deserialize<JsonNode>("{ \"name\": \"Input\" }")!);
+        var input = new TemplateJsonInput("development-json", JsonSerializer.Deserialize<JsonNode>("{ \"name\": \"Input\", \"foo\": [41, \"testing\"] }")!);
         var document = template.Compile([input], blobInputs, CompilationOptions.Png(1.0f));
         using var fileStream = File.Create("e2e/production.png");
         document.CopyTo(fileStream);
@@ -97,9 +97,9 @@ public class E2ETests
         };
         var jsonInputs = new List<TemplateJsonInput>()
         {
-            new("default-json", JsonSerializer.Deserialize<JsonNode>("{ \"name\": \"Input\" }")!),
-            new("development-json", JsonSerializer.Deserialize<JsonNode>("{ \"name\": \"Input\" }")!),
-            new("both-json", JsonSerializer.Deserialize<JsonNode>("{ \"name\": \"Input\" }")!)
+            new("default-json", JsonSerializer.Deserialize<JsonNode>("{ \"name\": \"Input\", \"foo\": [41, \"testing\"] }")!),
+            new("development-json", JsonSerializer.Deserialize<JsonNode>("{ \"name\": \"Input\", \"foo\": [41, \"testing\"] }")!),
+            new("both-json", JsonSerializer.Deserialize<JsonNode>("{ \"name\": \"Input\", \"foo\": [41, \"testing\"] }")!)
         };
 
         var document = template.Compile(jsonInputs, blobInputs, CompilationOptions.Png(1.0f));
