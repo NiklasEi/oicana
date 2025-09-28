@@ -5,12 +5,14 @@ use anyhow::bail;
 use clap::Args;
 use console::{style, Emoji};
 use indicatif::HumanDuration;
-use oicana_testing::{collect::TemplateTests, execution::TestRunnerContext};
+use oicana_testing::{collect::TemplateTests, execution::TestRunnerContext, SnapshotMode};
 
 #[derive(Debug, Args)]
 pub struct TestArgs {
     #[clap(flatten)]
     target: TargetArgs,
+    #[arg(short, long, help = "Update snapshot files and create missing ones")]
+    update: bool,
 }
 
 static LOOKING_GLASS: Emoji<'_, '_> = Emoji("🔍", "");
@@ -50,7 +52,12 @@ pub fn test(args: TestArgs) -> anyhow::Result<()> {
     let tests: Vec<(TemplateDir, TemplateTests)> = templates
         .drain(..)
         .map(|template| {
-            let tests = template.gather_tests()?;
+            let mode = if args.update {
+                SnapshotMode::Update
+            } else {
+                SnapshotMode::Compare
+            };
+            let tests = template.gather_tests(mode)?;
             Ok((template, tests))
         })
         .collect::<anyhow::Result<Vec<_>>>()?;
@@ -77,7 +84,7 @@ pub fn test(args: TestArgs) -> anyhow::Result<()> {
 
         println!("  -> {}", style(&template_dir.manifest.package.name).bold());
         for test_warning in warnings {
-            println!("{warning}: {test_warning}")
+            println!("    ↳ {warning}: {test_warning}")
         }
 
         for test in tests {
@@ -94,7 +101,7 @@ pub fn test(args: TestArgs) -> anyhow::Result<()> {
                 Ok(warnings) => {
                     println!("  ↳ {descriptor} -> {ok}");
                     for warning in warnings {
-                        println!("    {warning}");
+                        println!("    ↳ {warning}");
                     }
                 }
             };
@@ -126,14 +133,18 @@ pub fn test(args: TestArgs) -> anyhow::Result<()> {
         println!("  -> {}", style(&template_dir.manifest.package.name).bold());
         for error in failures {
             println!("  ↳ {}", error.descriptor);
-            println!("{}", error.failure);
+            println!("    ↳ {}", error.failure);
         }
     }
 
-    println!("{}  Done in {}", SPARKLE, HumanDuration(started.elapsed()));
+    println!(
+        "{}  Tests took {}\n",
+        SPARKLE,
+        HumanDuration(started.elapsed())
+    );
 
     if !errors.is_empty() {
-        bail!("Test failed!")
+        bail!("Tests failed!")
     }
     anyhow::Ok(())
 }
