@@ -15,7 +15,7 @@ use oicana_world::{CompiledDocument, TemplateCompilationFailure};
 use rand::thread_rng;
 use thiserror::Error;
 
-use crate::{Snapshot, Test};
+use crate::{Snapshot, SnapshotMode, Test};
 
 /// Context for test runners
 pub struct TestRunnerContext {
@@ -140,27 +140,42 @@ impl TestRunner {
 
         let image = export_merged_png(&document, 1.)?;
         match snapshot {
-            crate::Snapshot::Missing(path) => {
-                warnings.push(format!(
-                    "Writing snapshot file at {path:?}, because it was missing"
-                ));
-                fs::write(path, image)?;
-            }
-            crate::Snapshot::Some(path) => {
+            Snapshot::Missing(path, mode) => match mode {
+                SnapshotMode::Update => {
+                    warnings.push(format!(
+                        "Writing snapshot file at {path:?}, because it was missing"
+                    ));
+                    fs::write(path, image)?;
+                }
+                SnapshotMode::Compare => {
+                    return Err(TestExecutionError::SnapshotMissing(path.clone()))
+                }
+            },
+            Snapshot::Some(path, mode) => {
                 if !compare_images(path, &image, 1)? {
                     let mut compare_path = path.clone();
                     if let Some(stem) = compare_path.file_stem() {
                         let mut new_name = stem.to_os_string();
-                        new_name.push(".compare.png");
+                        match mode {
+                            SnapshotMode::Compare => {
+                                new_name.push(".compare.png");
+                            }
+                            SnapshotMode::Update => {
+                                new_name.push(".png");
+                                warnings.push(format!("Overwriting snapshot file at '{path:?}'."));
+                            }
+                        }
                         compare_path.set_file_name(new_name);
                         fs::write(compare_path, image)?;
                     } else {
                         error!("Snapshot file had no file stem!");
                     }
-                    return Err(TestExecutionError::SnapshotMismatch);
+                    if matches!(mode, SnapshotMode::Compare) {
+                        return Err(TestExecutionError::SnapshotMismatch(path.clone()));
+                    }
                 }
             }
-            _ => (),
+            Snapshot::None => (),
         }
 
         Ok(warnings)
@@ -222,7 +237,10 @@ pub enum TestExecutionError {
     /// Failed to compare the snapshot
     #[error("Failed to compare the snapshot: {0}")]
     Comparison(#[from] ImageError),
-    /// The snapshot does not match the result
-    #[error("The snapshot does not match the result.")]
-    SnapshotMismatch,
+    /// The snapshot does not match the result. Rerun with `--update`/`-u` to update it.
+    #[error("The snapshot '{0}' does not match the result. Rerun with --update/-u to update it.")]
+    SnapshotMismatch(PathBuf),
+    /// The snapshot file is missing. Rerun with `--update`/`-u` to create it.
+    #[error("The snapshot file '{0}' is missing. Rerun with --update/-u to create it.")]
+    SnapshotMissing(PathBuf),
 }
