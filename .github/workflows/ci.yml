@@ -30,6 +30,8 @@ jobs:
             ~/.cargo/git/db/
             target/
       - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
       - name: check format
         run: cargo fmt --all -- --check
       - name: run clippy
@@ -78,8 +80,6 @@ jobs:
             ~/.cargo/git/db/
             target/
       - uses: dtolnay/rust-toolchain@stable
-        with:
-          components: rustfmt, clippy
       - name: Setup dotnet
         uses: actions/setup-dotnet@v5
         with:
@@ -113,7 +113,7 @@ jobs:
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
             target/
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-tolchain@stable
       - name: build oicana_csharp
         run: cargo build --release -p oicana_csharp
       - name: Upload liboicana_csharp
