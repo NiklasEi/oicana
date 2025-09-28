@@ -329,7 +329,7 @@ pub enum JsonTestValue {
     },
     /// The input value is a json file
     File {
-        /// Relative path to the file that is the value of this iput for the test
+        /// Relative path to the file that is the value of this input for the test
         file: String,
     },
 }
