@@ -47,9 +47,18 @@ pub enum Snapshot {
     /// The test has no snapshot and should not have one
     None,
     /// The test has no snapshot, but should have one at the given path
-    Missing(PathBuf),
+    Missing(PathBuf, SnapshotMode),
     /// The test has a snapshot file at the given path
-    Some(PathBuf),
+    Some(PathBuf, SnapshotMode),
+}
+
+/// What to do with the test snapshot file
+#[derive(Debug, Clone, Copy)]
+pub enum SnapshotMode {
+    /// Update the snapshot if it doesn't exist or comparison fails
+    Update,
+    /// Only compare the snapshot file and fail if it doesn't match
+    Compare,
 }
 
 impl Test {
@@ -59,6 +68,7 @@ impl Test {
         collection_name: Option<String>,
         path_components: &[String],
         collection_path: &Path,
+        snapshot_mode: SnapshotMode,
         root: &Path,
     ) -> Result<Self, PrepareTestError> {
         let snapshot_path = match template_test.snapshot {
@@ -76,9 +86,9 @@ impl Test {
         let snapshot = match snapshot_path {
             Some(path) => {
                 if path.is_file() {
-                    Snapshot::Some(path)
+                    Snapshot::Some(path, snapshot_mode)
                 } else {
-                    Snapshot::Missing(path)
+                    Snapshot::Missing(path, snapshot_mode)
                 }
             }
             None => Snapshot::None,
