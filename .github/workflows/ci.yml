@@ -30,6 +30,8 @@ jobs:
             ~/.cargo/git/db/
             target/
       - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
       - name: check format
         run: cargo fmt --all -- --check
       - name: run clippy

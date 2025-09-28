@@ -21,7 +21,7 @@ pub trait Input {
 }
 
 /// Combine template inputs.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct TemplateInputs {
     inputs: Dict,
     config: CompilationConfig,
@@ -70,13 +70,13 @@ impl TemplateInputs {
 /// Configuration for template compilation
 ///
 /// These values are passed into the template
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub struct CompilationConfig {
     mode: CompilationMode,
 }
 
 /// Modes of compilation
-#[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone, Copy)]
 #[serde(rename_all = "lowercase")]
 pub enum CompilationMode {
     /// Compile the template in production mode, ignoring development values for inputs.
