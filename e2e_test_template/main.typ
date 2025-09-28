@@ -14,6 +14,6 @@ Contains #input.len() inputs (should be 6)\
 `both-blob` has value: #str(input.both-blob.bytes)\
 `both-blob` has meta: #repr(input.both-blob.meta)\
 
-`default-json` has value: #input.default-json.name\
-`development-json` has value: #input.development-json.name\
-`both-json` has value: #input.both-json.name\
+`default-json` has value: #input.default-json\
+`development-json` has value: #input.development-json\
+`both-json` has value: #input.both-json\

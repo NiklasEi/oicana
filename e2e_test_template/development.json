@@ -1,1 +1,1 @@
-{ "name": "Development" }
+{ "name": "Development", "bar": [42, "development"] }

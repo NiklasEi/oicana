@@ -9,14 +9,17 @@ use log::trace;
 use thiserror::Error;
 use walkdir::WalkDir;
 
-use crate::{PrepareTestError, TemplateTestCollection, Test, TestCollectionError};
+use crate::{PrepareTestError, SnapshotMode, TemplateTestCollection, Test, TestCollectionError};
 
 /// Collect all tests from collection in a given directory
 ///
 /// This method will search recursively from the given path
 /// and collect all tests from test collections. Any file ending with
 /// `tests.toml` will be interpreted as a test collection.
-pub fn collect_tests(test_dir: &Path) -> Result<TemplateTests, CollectTestsError> {
+pub fn collect_tests(
+    test_dir: &Path,
+    snapshot_mode: SnapshotMode,
+) -> Result<TemplateTests, CollectTestsError> {
     let walk_dir = WalkDir::new(test_dir);
     let entries = walk_dir
         .into_iter()
@@ -66,6 +69,7 @@ pub fn collect_tests(test_dir: &Path) -> Result<TemplateTests, CollectTestsError
                 tests_collection.name.clone(),
                 &test_path_components,
                 collection_path,
+                snapshot_mode,
                 root,
             )?);
         }
@@ -148,7 +152,8 @@ mod tests {
         write_collection(&second_collection, Some("name".to_owned()));
 
         let TemplateTests { tests, warnings } =
-            collect_tests(tests_dir.path()).expect("Failed to collect tests");
+            collect_tests(tests_dir.path(), crate::SnapshotMode::Compare)
+                .expect("Failed to collect tests");
         assert!(warnings.is_empty());
         assert_eq!(tests.len(), 6);
 
@@ -183,7 +188,8 @@ mod tests {
         write_collection(&second_collection, None);
 
         let TemplateTests { tests, warnings } =
-            collect_tests(tests_dir.path()).expect("Failed to collect tests");
+            collect_tests(tests_dir.path(), crate::SnapshotMode::Compare)
+                .expect("Failed to collect tests");
         assert_eq!(warnings.len(), 2);
         assert_eq!(tests.len(), 4);
 

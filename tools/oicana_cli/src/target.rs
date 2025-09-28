@@ -2,7 +2,10 @@ use anyhow::bail;
 use clap::Args;
 use log::{debug, trace};
 use oicana_template::manifest::TemplateManifest;
-use oicana_testing::collect::{collect_tests, TemplateTests};
+use oicana_testing::{
+    collect::{collect_tests, TemplateTests},
+    SnapshotMode,
+};
 use std::{
     fs::read_to_string,
     path::{Path, PathBuf},
@@ -108,7 +111,10 @@ pub struct TemplateDir {
 
 impl TemplateDir {
     /// Collect all tests found in this template directory
-    pub fn gather_tests(&self) -> Result<TemplateTests, anyhow::Error> {
+    pub fn gather_tests(
+        &self,
+        snapshot_mode: SnapshotMode,
+    ) -> Result<TemplateTests, anyhow::Error> {
         let test_dir = self.path.join(&self.manifest.tool.oicana.tests);
         if !test_dir.exists() || !test_dir.is_dir() {
             debug!(
@@ -118,7 +124,7 @@ impl TemplateDir {
             return Ok(TemplateTests::default());
         }
 
-        let tests = collect_tests(&test_dir)?;
+        let tests = collect_tests(&test_dir, snapshot_mode)?;
 
         Ok(tests)
     }
@@ -129,6 +135,7 @@ mod tests {
     use std::{collections::BTreeMap, fs::File, path::PathBuf};
 
     use oicana_template::{manifest::TemplateManifest, OicanaConfig};
+    use oicana_testing::SnapshotMode;
     use tempfile::tempdir;
     use typst::syntax::package::PackageInfo;
 
@@ -170,14 +177,14 @@ mod tests {
             ),
         };
 
-        let mut result = template_dir.gather_tests();
+        let mut result = template_dir.gather_tests(SnapshotMode::Compare);
         assert!(result.is_ok());
         assert!(result.unwrap().tests.is_empty());
 
         let temp_file = tempdir.path().join("tests");
         File::create(temp_file).unwrap();
 
-        result = template_dir.gather_tests();
+        result = template_dir.gather_tests(SnapshotMode::Compare);
         assert!(result.is_ok());
         assert!(result.unwrap().tests.is_empty());
     }
