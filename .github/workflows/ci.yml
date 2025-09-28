@@ -78,6 +78,8 @@ jobs:
             ~/.cargo/git/db/
             target/
       - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
       - name: Setup dotnet
         uses: actions/setup-dotnet@v5
         with:
