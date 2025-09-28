@@ -113,7 +113,7 @@ jobs:
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
             target/
-      - uses: dtolnay/rust-tolchain@stable
+      - uses: dtolnay/rust-toolchain@stable
       - name: build oicana_csharp
         run: cargo build --release -p oicana_csharp
       - name: Upload liboicana_csharp
