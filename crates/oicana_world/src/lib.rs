@@ -25,9 +25,9 @@ pub struct CompiledDocument {
 #[derive(Error, Debug)]
 pub struct TemplateCompilationFailure {
     /// Error message that failed the compilation
-    error: String,
+    pub error: String,
     /// Warning messages from the template compilation
-    warnings: Option<String>,
+    pub warnings: Option<String>,
 }
 
 impl Display for TemplateCompilationFailure {
