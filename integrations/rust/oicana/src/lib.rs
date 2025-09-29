@@ -10,7 +10,7 @@ use oicana_files::{packed::PackedTemplate, TemplateFiles};
 use oicana_input::TemplateInputs;
 use oicana_template::manifest::TemplateManifest;
 use oicana_world::{
-    diagnostics::TemplateDiagnostics,
+    diagnostics::{DiagnosticColor, TemplateDiagnostics},
     manifest::{OicanaWorldFiles, OicanaWorldManifestError},
     world::{OicanaWorld, WorldCreationError},
     CompiledDocument, TemplateCompilationFailure,
@@ -68,6 +68,11 @@ impl<Files: TemplateFiles> Template<Files> {
     /// Return a file in the template project as bytes
     pub fn file(&self, id: FileId) -> FileResult<Bytes> {
         self.world.files.file(id)
+    }
+
+    /// Configure the coloring of diagnostic output from this template
+    pub fn set_diagnostic_color(&mut self, color: DiagnosticColor) {
+        self.world.color = color;
     }
 }
 
