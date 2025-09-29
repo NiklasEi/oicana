@@ -139,11 +139,11 @@ impl<Files: TemplateFiles> TemplateDiagnostics for OicanaWorld<Files> {
     }
 }
 
-/// Color mode for diagnostic logs
+/// Color mode for diagnostics
 #[derive(Debug)]
 pub enum DiagnosticColor {
-    /// No colors in diagnostic output
+    /// No colors in diagnostics
     None,
-    /// ANSI codes for colors in diagnostic output
+    /// ANSI codes for colors in diagnostics
     Ansi,
 }
