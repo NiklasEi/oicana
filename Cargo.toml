@@ -9,6 +9,7 @@ members = [
     "integrations/browser/oicana_browser_wasm",
     "integrations/csharp/oicana_csharp",
     "integrations/rust/oicana",
+    "integrations/node/oicana-node-native",
     "tools/test_compare",
     "tools/oicana_cli",
 ]
