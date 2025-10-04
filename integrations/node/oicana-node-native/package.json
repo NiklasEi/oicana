@@ -54,7 +54,8 @@
     "prepublishOnly": "napi prepublish -t npm",
     "test": "ava",
     "preversion": "napi build --platform && git add .",
-    "version": "napi version"
+    "version": "napi version",
+    "napi": "napi"
   },
   "devDependencies": {
     "@emnapi/core": "^1.5.0",
@@ -104,5 +105,14 @@
     "singleQuote": true,
     "arrowParens": "always"
   },
-  "packageManager": "yarn@4.10.3"
+  "packageManager": "yarn@4.10.3",
+  "optionalDependencies": {
+    "@oicana/node-native-win32-x64-msvc": "0.1.0-alpha.1",
+    "@oicana/node-native-darwin-x64": "0.1.0-alpha.1",
+    "@oicana/node-native-linux-x64-gnu": "0.1.0-alpha.1",
+    "@oicana/node-native-linux-arm64-gnu": "0.1.0-alpha.1",
+    "@oicana/node-native-darwin-arm64": "0.1.0-alpha.1",
+    "@oicana/node-native-linux-arm64-musl": "0.1.0-alpha.1",
+    "@oicana/node-native-win32-arm64-msvc": "0.1.0-alpha.1"
+  }
 }
