@@ -28,9 +28,9 @@ where
     }
 
     let walk_dir = WalkDir::new(src_dir);
-    let it = walk_dir
-        .into_iter()
-        .filter_entry(|entry| manifest.should_path_be_packed(entry.path()));
+    let it = walk_dir.into_iter().filter_entry(|entry| {
+        manifest.should_path_be_packed(entry.path().strip_prefix(src_dir).unwrap())
+    });
 
     zip_dir(
         &mut it.filter_map(|e| e.ok()),
