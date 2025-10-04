@@ -32,6 +32,25 @@ The tests directory will be recursively searched for any test collection files i
 \
 #example[The example templates #link("https://github.com/oicana/oicana-example-templates/tree/main/templates/test/tests")[`test`] and #link("https://github.com/oicana/oicana-example-templates/tree/main/templates/invoice/tests")[`invoice`] both define some simple snapshot tests.]
 
+== Json input fuzzing
+
+If you define and configure a schema for a json input, you can let Oicana fuzz that input as part of a snapshot test.
+
+#code("tests.toml", ```toml
+tests_version = 1
+
+[[test]]
+name = "fuzz_json_input"
+snapshot = false
+
+[[test.inputs]]
+type = "json"
+key = "data"
+samples = 50
+```)
+
+Setting `snapshot = false` means no image files are created and compared. This is often the right choice for fuzzing tests, because the image output is likely expected to be different for different json input values. The configuration of `50` samples will cause Oicana to compile the template with `50` random values for the json input that all satisfy the schema. If the schema is very large, it might make sense to increase the number of samples.
+
 == Full example configuration
 
 A maximal and documented example test collection:
