@@ -1,13 +1,17 @@
 #import "/src/boxes.typ": *
+#import "/src/code.typ": *
 #import "/src/constants.typ": *
 #import "/src/docs-link.typ": *
 
 
 #link(latest-cli)[CLI builds are published on GitHub]. You can pick and install the correct binary yourself or let a script do it for you.
 
-Shell script: #latest-cli-shell
+\
+Bash script:
+#code("Script to install Oicana CLI", latest-cli-shell)
 
-Powershell script: #latest-cli-powershell
+Powershell script:
+#code("Powershell script to install Oicana CLI", latest-cli-powershell)
 
 \
 Run `oicana -h` for a list of all commands and options.
