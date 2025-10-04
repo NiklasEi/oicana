@@ -92,7 +92,7 @@ The `compile` command will create `pdf`, `png`, or `svg` files from unpacked tem
 
 Example commands to compile templates:
 - `oicana compile templates/invoice -f pdf -j invoice=templates/invoice/invoice.json -b logo=templates/invoice/logo.jpg`
-- `oicana compile templates/test -j input=templates/test/sample.json`
+- `oicana compile templates/table -j input=templates/table/data.json`
 - `oicana compile templates/package -j input=templates/package/sample.json`
 
 

@@ -30,7 +30,7 @@ Executing `oicana test` for this template, will compile it with those inputs and
 The tests directory will be recursively searched for any test collection files in the form of `<optional-prefix.>tests.toml`.
 
 \
-#example[The example templates #link("https://github.com/oicana/oicana-example-templates/tree/main/templates/test/tests")[`test`] and #link("https://github.com/oicana/oicana-example-templates/tree/main/templates/invoice/tests")[`invoice`] both define some simple snapshot tests.]
+#example[The example templates #link("https://github.com/oicana/oicana-example-templates/tree/main/templates/table/tests")[`table`] and #link("https://github.com/oicana/oicana-example-templates/tree/main/templates/invoice/tests")[`invoice`] both define some simple snapshot tests.]
 
 == Json input fuzzing
 
