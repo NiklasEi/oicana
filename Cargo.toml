@@ -123,5 +123,4 @@ strip = true
 strip = true
 
 [profile.release.package."oicana_node_native"]
-lto   = true
 strip = "symbols"
