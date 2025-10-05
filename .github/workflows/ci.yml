@@ -92,19 +92,6 @@ jobs:
             git --no-pager diff --color=always './integrations/node/oicana-node-native/'
             exit 1
           fi
-      - name: Native - Build
-        run: yarn build
-        working-directory: integrations/node/oicana-node-native
-      - name: Native - Format
-        run: yarn format
-        working-directory: integrations/node/oicana-node-native
-      - name: Native - validate no changes
-        run: |
-          if [ -n "$(git status --porcelain './integrations/node/oicana-node-native/')" ]; then
-            echo "::error::Generated JS bindings are out of date! Update them and check in any changes."
-            git --no-pager diff --color=always './integrations/node/oicana-node-native/'
-            exit 1
-          fi
 
   check-browser-integration:
     runs-on: ubuntu-latest
@@ -257,6 +244,16 @@ jobs:
           path: |
             integrations/node/oicana-node-native/node-native.*.node
           if-no-files-found: error
+      - name: Format
+        run: yarn format
+        working-directory: integrations/node/oicana-node-native
+      - name: validate no changes
+        run: |
+          if [ -n "$(git status --porcelain './integrations/node/oicana-node-native/')" ]; then
+            echo "::error::Generated JS bindings are out of date! Update them and check in any changes."
+            git --no-pager diff --color=always './integrations/node/oicana-node-native/'
+            exit 1
+          fi
 
   build-tools:
     runs-on: ubuntu-latest
