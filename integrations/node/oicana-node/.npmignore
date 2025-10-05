@@ -1,0 +1,4 @@
+src/**/*.test.ts
+testOutput/
+vite.config.ts
+*.tgz

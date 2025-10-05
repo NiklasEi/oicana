@@ -1,0 +1,38 @@
+
+[package]
+authors      = { workspace = true }
+categories   = { workspace = true }
+edition      = "2021"
+homepage     = { workspace = true }
+keywords     = { workspace = true }
+license-file = { workspace = true }
+name         = "oicana_node_native"
+publish      = false
+repository   = { workspace = true }
+version      = "0.1.0-alpha.1"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+napi        = "3.0.0"
+napi-derive = "3.0.0"
+
+oicana_export = { workspace = true }
+oicana_files  = { workspace = true }
+oicana_input  = { workspace = true }
+oicana_world  = { workspace = true }
+
+typst        = { workspace = true }
+typst-pdf    = { workspace = true }
+typst-render = { workspace = true }
+
+serde      = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+
+[build-dependencies]
+napi-build = "2"
+
+[profile.release]
+lto   = true
+strip = "symbols"
