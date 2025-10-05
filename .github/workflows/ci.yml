@@ -63,7 +63,67 @@ jobs:
       - name: run tests
         run: cargo test --workspace --all-targets --all-features
 
-  validate-charp-bindings:
+  check-node-integration:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Setup node
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: yarn
+          cache-dependency-path: integrations/node/oicana-node-native/yarn.lock
+      - name: Native - Install dependencies
+        run: yarn install
+        working-directory: integrations/node/oicana-node-native
+      - name: Wrapper - Install dependencies
+        run: npm ci
+        working-directory: integrations/node/oicana-node
+      - name: Wrapper - lint
+        run: npm run lint
+        working-directory: integrations/node/oicana-node
+      - name: Native - Format
+        run: yarn format
+        working-directory: integrations/node/oicana-node-native
+      - name: Native - validate format was already correct
+        run: |
+          if [ -n "$(git status --porcelain './integrations/node/oicana-node-native/')" ]; then
+            echo "::error::Run `yarn format` in integrations/node/oicana-node-native."
+            git --no-pager diff --color=always './integrations/node/oicana-node-native/'
+            exit 1
+          fi
+      - name: Native - Build
+        run: yarn build
+        working-directory: integrations/node/oicana-node-native
+      - name: Native - Format
+        run: yarn format
+        working-directory: integrations/node/oicana-node-native
+      - name: Native - validate no changes
+        run: |
+          if [ -n "$(git status --porcelain './integrations/node/oicana-node-native/')" ]; then
+            echo "::error::Generated JS bindings are out of date! Update them and check in any changes."
+            git --no-pager diff --color=always './integrations/node/oicana-node-native/'
+            exit 1
+          fi
+
+  check-browser-integration:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Setup node
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: integrations/browser/oicana-browser/package-lock.json
+      - name: Install dependencies
+        run: npm ci
+        working-directory: integrations/browser/oicana-browser
+      - name: lint
+        run: npm run lint
+        working-directory: integrations/browser/oicana-browser
+
+  check-csharp-integration:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -84,6 +144,9 @@ jobs:
         uses: actions/setup-dotnet@v5
         with:
           dotnet-version: 8.0.x
+      - name: check format
+        run: dotnet format --verify-no-changes
+        working-directory: ./integrations/csharp
       - name: create bindings
         run: cargo run --example csharp_bindings -p oicana_csharp
       - name: format bindings
@@ -237,18 +300,6 @@ jobs:
       - build-node-native
     steps:
       - uses: actions/checkout@v5
-      - uses: actions/cache/restore@v4
-        with:
-          key: ${{ runner.os }}-stable--${{ hashFiles('**/Cargo.toml') }}-
-          restore-keys: |
-            ${{ runner.os }}-stable--${{ hashFiles('**/Cargo.toml') }}-
-            ${{ runner.os }}-stable--
-          path: |
-            ~/.cargo/bin/
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-            target/
       - uses: dtolnay/rust-toolchain@stable
       - uses: taiki-e/install-action@v2
         with:
@@ -295,18 +346,6 @@ jobs:
       - build-browser-wasm
     steps:
       - uses: actions/checkout@v5
-      - uses: actions/cache/restore@v4
-        with:
-          key: ${{ runner.os }}-stable--${{ hashFiles('**/Cargo.toml') }}-
-          restore-keys: |
-            ${{ runner.os }}-stable--${{ hashFiles('**/Cargo.toml') }}-
-            ${{ runner.os }}-stable--
-          path: |
-            ~/.cargo/bin/
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-            target/
       - uses: dtolnay/rust-toolchain@stable
       - uses: taiki-e/install-action@v2
         with:
