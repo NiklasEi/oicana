@@ -7,7 +7,8 @@ env:
   MACOSX_DEPLOYMENT_TARGET: '10.13'
   CARGO_INCREMENTAL: '1'
   PROJECT_DIR: "integrations/node/oicana-node-native"
-'on':
+
+on:
   workflow_dispatch:
   push:
     branches:
@@ -17,9 +18,11 @@ env:
       - '**/*.gitignore'
       - docs/**
   pull_request: null
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
+
 jobs:
   lint:
     name: Lint
@@ -283,11 +286,11 @@ jobs:
         working-directory: ${{ env.PROJECT_DIR }}
       - name: Publish
         run: |
-          if git log -1 --pretty=%B | grep "^oicana_node-v[0-9]\+\.[0-9]\+\.[0-9]\+$";
+          if git tag --points-at HEAD | grep -Eq "oicana_node-v[0-9]+\.[0-9]+\.[0-9]+$";
           then
             echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" >> ~/.npmrc
             npm publish --dry-run --access public
-          elif git log -1 --pretty=%B | grep "^oicana_node-v[0-9]\+\.[0-9]\+\.[0-9]\+";
+          elif git tag --points-at HEAD | grep -Eq "oicana_node-v[0-9]+\.[0-9]+\.[0-9]+";
           then
             echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" >> ~/.npmrc
             npm publish --dry-run --tag next --access public
