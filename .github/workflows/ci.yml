@@ -114,8 +114,6 @@ jobs:
         uses: actions/setup-node@v5
         with:
           node-version: 22
-          cache: npm
-          cache-dependency-path: integrations/browser/oicana-browser/package-lock.json
       - name: Install dependencies
         run: npm ci
         working-directory: integrations/browser/oicana-browser
