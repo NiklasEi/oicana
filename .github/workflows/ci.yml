@@ -279,7 +279,7 @@ jobs:
         working-directory: ./integrations/node/oicana-node-native
       - name: install node integration
         run: |
-          # npm i - enable when package is public
+          npm i
           npm link @oicana/node-native
         working-directory: ./integrations/node/oicana-node
       - name: test node integration
