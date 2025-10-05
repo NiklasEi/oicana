@@ -18,17 +18,17 @@ crate-type = ["cdylib"]
 napi        = "3.0.0"
 napi-derive = "3.0.0"
 
-oicana_files = { workspace = true }
-oicana_input = { workspace = true }
-oicana_world = { workspace = true }
 oicana_export = { workspace = true }
+oicana_files  = { workspace = true }
+oicana_input  = { workspace = true }
+oicana_world  = { workspace = true }
 
 typst        = { workspace = true }
 typst-pdf    = { workspace = true }
 typst-render = { workspace = true }
 
+serde      = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
-serde = { workspace = true, features = ["derive"] }
 
 [build-dependencies]
 napi-build = "2"
