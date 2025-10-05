@@ -5,7 +5,12 @@ export interface BlobWithMetadata {
   /** The byte content of the blob. */
   bytes: Uint8Array
   /** Metadata of the blob. */
-  meta: Record<string, string>
+  meta: string
+}
+
+export declare const enum CompilationMode {
+  Production = 0,
+  Development = 1
 }
 
 /**
@@ -14,28 +19,7 @@ export interface BlobWithMetadata {
  * Calling this method requires a previous call to [`register_template`] with the same template
  * identifier.
  */
-export declare function compileTemplate(
-  template: string,
-  jsonInputs: Record<string, string>,
-  blobInputs: Record<string, BlobWithMetadata>,
-  exportFormat: ExportFormat,
-): Buffer
-
-/** The supported export formats of a template. */
-export declare const enum ExportFormat {
-  /**
-   * Render the template into a png image.
-   *
-   * The image is not optimized for file size to speed up compiling.
-   */
-  Png = 0,
-  /**
-   * Render the template to a PDF file.
-   *
-   * The currently exported standard is PDF/A-3b
-   */
-  Pdf = 1,
-}
+export declare function compileTemplate(template: string, jsonInputs: Record<string, string>, blobInputs: Record<string, BlobWithMetadata>, exportFormat: string, compilationMode: CompilationMode): Buffer
 
 /**
  * Load the source of the given file in the template.
@@ -72,10 +56,4 @@ export const NOT_REGISTERED: string
  * compile it once with the given inputs. The Typst [`typst::World`] will be cached and reused for
  * subsequent calls to the other methods with the same template identifier.
  */
-export declare function registerTemplate(
-  template: string,
-  files: Uint8Array,
-  jsonInputs: Record<string, string>,
-  blobInputs: Record<string, BlobWithMetadata>,
-  exportFormat: ExportFormat,
-): Buffer
+export declare function registerTemplate(template: string, files: Uint8Array, jsonInputs: Record<string, string>, blobInputs: Record<string, BlobWithMetadata>, exportFormat: string, compilationMode: CompilationMode): Buffer

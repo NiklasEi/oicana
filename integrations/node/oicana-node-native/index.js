@@ -108,7 +108,24 @@ function requireNative() {
     }
   } else if (process.platform === 'win32') {
     if (process.arch === 'x64') {
+      if (process.report?.getReport?.()?.header?.osName?.startsWith?.('MINGW')) {
+        try {
+        return require('./node-native.win32-x64-gnu.node')
+      } catch (e) {
+        loadErrors.push(e)
+      }
       try {
+        const binding = require('@oicana/node-native-win32-x64-gnu')
+        const bindingPackageVersion = require('@oicana/node-native-win32-x64-gnu/package.json').version
+        if (bindingPackageVersion !== '0.1.0-alpha.1' && process.env.NAPI_RS_ENFORCE_VERSION_CHECK && process.env.NAPI_RS_ENFORCE_VERSION_CHECK !== '0') {
+          throw new Error(`Native binding package version mismatch, expected 0.1.0-alpha.1 but got ${bindingPackageVersion}. You can reinstall dependencies to fix this issue.`)
+        }
+        return binding
+      } catch (e) {
+        loadErrors.push(e)
+      }
+      } else {
+        try {
         return require('./node-native.win32-x64-msvc.node')
       } catch (e) {
         loadErrors.push(e)
@@ -122,6 +139,7 @@ function requireNative() {
         return binding
       } catch (e) {
         loadErrors.push(e)
+      }
       }
     } else if (process.arch === 'ia32') {
       try {
@@ -557,8 +575,8 @@ if (!nativeBinding) {
 }
 
 module.exports = nativeBinding
+module.exports.CompilationMode = nativeBinding.CompilationMode
 module.exports.compileTemplate = nativeBinding.compileTemplate
-module.exports.ExportFormat = nativeBinding.ExportFormat
 module.exports.getFile = nativeBinding.getFile
 module.exports.getSource = nativeBinding.getSource
 module.exports.inputs = nativeBinding.inputs
