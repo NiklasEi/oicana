@@ -286,6 +286,7 @@ jobs:
         working-directory: ${{ env.PROJECT_DIR }}
       - name: Publish
         run: |
+          git log -1 --pretty=%B
           if git log -1 --pretty=%B | grep -Eq "oicana_node-v[0-9]+\.[0-9]+\.[0-9]+$";
           then
             echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" >> ~/.npmrc
