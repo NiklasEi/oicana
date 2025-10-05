@@ -1,15 +1,14 @@
-
 [package]
+name         = "oicana_node_native"
+version      = "0.1.0-alpha.1"
+edition      = "2021"
+publish      = false
 authors      = { workspace = true }
 categories   = { workspace = true }
-edition      = "2021"
 homepage     = { workspace = true }
 keywords     = { workspace = true }
 license-file = { workspace = true }
-name         = "oicana_node_native"
-publish      = false
 repository   = { workspace = true }
-version      = "0.1.0-alpha.1"
 
 [lib]
 crate-type = ["cdylib"]
@@ -32,7 +31,3 @@ serde_json = { workspace = true }
 
 [build-dependencies]
 napi-build = "2"
-
-[profile.release]
-lto   = true
-strip = "symbols"
