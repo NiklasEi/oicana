@@ -12,7 +12,6 @@ env:
   push:
     branches:
       - main
-      - node_integration
     tags-ignore:
       - '**'
     paths-ignore:
