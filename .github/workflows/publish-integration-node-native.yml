@@ -286,11 +286,11 @@ jobs:
         working-directory: ${{ env.PROJECT_DIR }}
       - name: Publish
         run: |
-          if git tag --points-at HEAD | grep -Eq "oicana_node-v[0-9]+\.[0-9]+\.[0-9]+$";
+          if git log -1 --pretty=%B | grep -Eq "oicana_node-v[0-9]+\.[0-9]+\.[0-9]+$";
           then
             echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" >> ~/.npmrc
             npm publish --dry-run --access public
-          elif git tag --points-at HEAD | grep -Eq "oicana_node-v[0-9]+\.[0-9]+\.[0-9]+";
+          elif git log -1 --pretty=%B | grep -Eq "oicana_node-v[0-9]+\.[0-9]+\.[0-9]+";
           then
             echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" >> ~/.npmrc
             npm publish --dry-run --tag next --access public
