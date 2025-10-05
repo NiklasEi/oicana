@@ -1,13 +1,13 @@
 import test from 'ava'
 import fs from 'node:fs'
 
-import { registerTemplate, compileTemplate, ExportFormat } from '../index.js'
+import { registerTemplate, compileTemplate, CompilationMode } from '../index.js'
 
 const assetsDir = '../../../assets'
 
 test('Can register and render template', async (t) => {
   console.time('template registration')
-  const file = fs.readFileSync(`${assetsDir}/templates/test-0.1.0.zip`)
+  const file = fs.readFileSync(`${assetsDir}/templates/invoice-0.1.0.zip`)
   const result = registerTemplate(
     'invoice',
     file,
@@ -59,8 +59,9 @@ test('Can register and render template', async (t) => {
     ]
 }`,
     },
-    { banner: { bytes: fs.readFileSync(`${assetsDir}/logo/oicana_full_background_1024.png`), meta: {} } },
-    ExportFormat.Pdf,
+    { banner: { bytes: fs.readFileSync(`${assetsDir}/logo/oicana_full_background_1024.png`), meta: '{}' } },
+    JSON.stringify({ format: 'pdf' }),
+    CompilationMode.Development,
   )
   console.timeEnd('template registration')
   fs.writeFileSync('test.pdf', result)
@@ -126,10 +127,11 @@ test('Can register and render template', async (t) => {
     {
       banner: {
         bytes: fs.readFileSync(`${assetsDir}/logo/oicana_full_background_1024.png`),
-        meta: { imageFormat: 'png' },
+        meta: JSON.stringify({ image_format: 'png' }),
       },
     },
-    ExportFormat.Pdf,
+    JSON.stringify({ format: 'pdf' }),
+    CompilationMode.Development,
   )
   console.timeEnd('template render')
   fs.writeFileSync('test_2.pdf', secondResult)
