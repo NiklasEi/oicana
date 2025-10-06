@@ -252,6 +252,7 @@ jobs:
   publish:
     name: Publish
     runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
     permissions:
       contents: write
       id-token: write
@@ -286,17 +287,24 @@ jobs:
         working-directory: ${{ env.PROJECT_DIR }}
       - name: Publish
         run: |
-          git log -1 --pretty=%B
-          if git log -1 --pretty=%B | grep -Eq "oicana_node-v[0-9]+\.[0-9]+\.[0-9]+$";
+          name=$(node -p "require('./package.json').name")
+          version=$(node -p "require('./package.json').version")
+          echo "Checking if $name@$version already exists:"
+          if npm view $name@$version > /dev/null; then
+            echo "Version $version already exists on npmjs. Not publishing."
+            exit 0
+          else
+            echo "Version $version not found on npmjs. Proceeding to publish..."
+          fi
+
+          if echo $version | grep -Eq "[0-9]+\.[0-9]+\.[0-9]+$";
           then
             echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" >> ~/.npmrc
             npm publish --dry-run --access public
-          elif git log -1 --pretty=%B | grep -Eq "oicana_node-v[0-9]+\.[0-9]+\.[0-9]+";
+          elif echo $version | grep -Eq "[0-9]+\.[0-9]+\.[0-9]+";
           then
             echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" >> ~/.npmrc
             npm publish --dry-run --tag next --access public
-          else
-            echo "Not a release, skipping publish"
           fi
         working-directory: ${{ env.PROJECT_DIR }}
         env:
