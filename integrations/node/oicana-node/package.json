@@ -21,7 +21,9 @@
     "test": "vitest",
     "lint": "biome ci"
   },
-  "dependencies": {},
+  "dependencies": {
+    "@oicana/node-native": "0.1.0-alpha.1"
+  },
   "devDependencies": {
     "@biomejs/biome": "2.2.4",
     "@types/node": "24.6.2",
