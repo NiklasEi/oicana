@@ -252,7 +252,7 @@ jobs:
   publish:
     name: Publish
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/pull/22/merge'
     permissions:
       contents: write
       id-token: write
