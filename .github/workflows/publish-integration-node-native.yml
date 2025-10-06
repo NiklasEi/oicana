@@ -300,11 +300,13 @@ jobs:
           if echo $version | grep -Eq "[0-9]+\.[0-9]+\.[0-9]+$";
           then
             echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" >> ~/.npmrc
-            npm publish --dry-run --access public
+            # even a dry-run here will still trigger a publish of the optional dependencies through the 'prepublishOnly' script!
+            npm publish --access public
           elif echo $version | grep -Eq "[0-9]+\.[0-9]+\.[0-9]+";
           then
             echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" >> ~/.npmrc
-            npm publish --dry-run --tag next --access public
+            # even a dry-run here will still trigger a publish of the optional dependencies through the 'prepublishOnly' script!
+            npm publish --tag next --access public
           fi
         working-directory: ${{ env.PROJECT_DIR }}
         env:
