@@ -121,3 +121,6 @@ strip = true
 
 [profile.release.package."test_compare"]
 strip = true
+
+[profile.release.package."oicana_node_native"]
+strip = "symbols"

@@ -7,23 +7,22 @@ env:
   MACOSX_DEPLOYMENT_TARGET: '10.13'
   CARGO_INCREMENTAL: '1'
   PROJECT_DIR: "integrations/node/oicana-node-native"
-'on':
+
+on:
   workflow_dispatch:
   push:
     branches:
       - main
-    tags-ignore:
-      - '**'
     paths-ignore:
       - '**/*.md'
-      - LICENSE
       - '**/*.gitignore'
-      - .editorconfig
       - docs/**
   pull_request: null
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
+
 jobs:
   lint:
     name: Lint
@@ -253,6 +252,7 @@ jobs:
   publish:
     name: Publish
     runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
     permissions:
       contents: write
       id-token: write
@@ -287,16 +287,26 @@ jobs:
         working-directory: ${{ env.PROJECT_DIR }}
       - name: Publish
         run: |
-          if git log -1 --pretty=%B | grep "^oicana_node-v[0-9]\+\.[0-9]\+\.[0-9]\+$";
-          then
-            echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" >> ~/.npmrc
-            npm publish --access public
-          elif git log -1 --pretty=%B | grep "^oicana_node-v[0-9]\+\.[0-9]\+\.[0-9]\+";
-          then
-            echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" >> ~/.npmrc
-            npm publish --tag next --access public
+          name=$(node -p "require('./package.json').name")
+          version=$(node -p "require('./package.json').version")
+          echo "Checking if $name@$version already exists:"
+          if npm view $name@$version > /dev/null; then
+            echo "Version $version already exists on npmjs. Not publishing."
+            exit 0
           else
-            echo "Not a release, skipping publish"
+            echo "Version $version not found on npmjs. Proceeding to publish..."
+          fi
+
+          if echo $version | grep -Eq "[0-9]+\.[0-9]+\.[0-9]+$";
+          then
+            echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" >> ~/.npmrc
+            # even a dry-run here will still trigger a publish of the optional dependencies through the 'prepublishOnly' script!
+            npm publish --access public
+          elif echo $version | grep -Eq "[0-9]+\.[0-9]+\.[0-9]+";
+          then
+            echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" >> ~/.npmrc
+            # even a dry-run here will still trigger a publish of the optional dependencies through the 'prepublishOnly' script!
+            npm publish --tag next --access public
           fi
         working-directory: ${{ env.PROJECT_DIR }}
         env:
