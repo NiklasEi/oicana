@@ -1050,6 +1050,55 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@oicana/node-native-darwin-arm64@npm:0.1.0-alpha.1":
+  version: 0.1.0-alpha.1
+  resolution: "@oicana/node-native-darwin-arm64@npm:0.1.0-alpha.1"
+  conditions: os=darwin & cpu=arm64
+  languageName: node
+  linkType: hard
+
+"@oicana/node-native-darwin-x64@npm:0.1.0-alpha.1":
+  version: 0.1.0-alpha.1
+  resolution: "@oicana/node-native-darwin-x64@npm:0.1.0-alpha.1"
+  conditions: os=darwin & cpu=x64
+  languageName: node
+  linkType: hard
+
+"@oicana/node-native-linux-arm64-gnu@npm:0.1.0-alpha.1":
+  version: 0.1.0-alpha.1
+  resolution: "@oicana/node-native-linux-arm64-gnu@npm:0.1.0-alpha.1"
+  conditions: os=linux & cpu=arm64 & libc=glibc
+  languageName: node
+  linkType: hard
+
+"@oicana/node-native-linux-arm64-musl@npm:0.1.0-alpha.1":
+  version: 0.1.0-alpha.1
+  resolution: "@oicana/node-native-linux-arm64-musl@npm:0.1.0-alpha.1"
+  conditions: os=linux & cpu=arm64 & libc=musl
+  languageName: node
+  linkType: hard
+
+"@oicana/node-native-linux-x64-gnu@npm:0.1.0-alpha.1":
+  version: 0.1.0-alpha.1
+  resolution: "@oicana/node-native-linux-x64-gnu@npm:0.1.0-alpha.1"
+  conditions: os=linux & cpu=x64 & libc=glibc
+  languageName: node
+  linkType: hard
+
+"@oicana/node-native-win32-arm64-msvc@npm:0.1.0-alpha.1":
+  version: 0.1.0-alpha.1
+  resolution: "@oicana/node-native-win32-arm64-msvc@npm:0.1.0-alpha.1"
+  conditions: os=win32 & cpu=arm64
+  languageName: node
+  linkType: hard
+
+"@oicana/node-native-win32-x64-msvc@npm:0.1.0-alpha.1":
+  version: 0.1.0-alpha.1
+  resolution: "@oicana/node-native-win32-x64-msvc@npm:0.1.0-alpha.1"
+  conditions: os=win32 & cpu=x64
+  languageName: node
+  linkType: hard
+
 "@oicana/node-native@workspace:.":
   version: 0.0.0-use.local
   resolution: "@oicana/node-native@workspace:."
@@ -1057,6 +1106,13 @@ __metadata:
     "@emnapi/core": "npm:1.5.0"
     "@emnapi/runtime": "npm:1.5.0"
     "@napi-rs/cli": "npm:3.2.0"
+    "@oicana/node-native-darwin-arm64": "npm:0.1.0-alpha.1"
+    "@oicana/node-native-darwin-x64": "npm:0.1.0-alpha.1"
+    "@oicana/node-native-linux-arm64-gnu": "npm:0.1.0-alpha.1"
+    "@oicana/node-native-linux-arm64-musl": "npm:0.1.0-alpha.1"
+    "@oicana/node-native-linux-x64-gnu": "npm:0.1.0-alpha.1"
+    "@oicana/node-native-win32-arm64-msvc": "npm:0.1.0-alpha.1"
+    "@oicana/node-native-win32-x64-msvc": "npm:0.1.0-alpha.1"
     "@oxc-node/core": "npm:0.0.32"
     "@taplo/cli": "npm:0.7.0"
     "@tybys/wasm-util": "npm:0.10.0"
@@ -1069,6 +1125,21 @@ __metadata:
     prettier: "npm:3.6.2"
     tinybench: "npm:5.0.1"
     typescript: "npm:5.9.2"
+  dependenciesMeta:
+    "@oicana/node-native-darwin-arm64":
+      optional: true
+    "@oicana/node-native-darwin-x64":
+      optional: true
+    "@oicana/node-native-linux-arm64-gnu":
+      optional: true
+    "@oicana/node-native-linux-arm64-musl":
+      optional: true
+    "@oicana/node-native-linux-x64-gnu":
+      optional: true
+    "@oicana/node-native-win32-arm64-msvc":
+      optional: true
+    "@oicana/node-native-win32-x64-msvc":
+      optional: true
   languageName: unknown
   linkType: soft
 
