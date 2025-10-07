@@ -4,9 +4,9 @@ import {
   CompilationMode as NativeCompilationMode,
   registerTemplate,
 } from '@oicana/node-native';
-import { CompilationMode } from './CompilationMode';
-import type { ExportFormat } from './ExportFormat';
-import type { BlobWithMetadata } from './inputs';
+import { CompilationMode } from './CompilationMode.js';
+import type { ExportFormat } from './ExportFormat.js';
+import type { BlobWithMetadata } from './inputs/index.js';
 
 /**
  * A template
