@@ -5,8 +5,8 @@
     "sourceMap": true,
     "declaration": true,
     "outDir": "dist",
-    "module": "esnext",
-    "moduleResolution": "node",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true
   },
