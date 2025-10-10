@@ -15,7 +15,7 @@ use typst::foundations::{Bytes, Datetime};
 use typst::syntax::{FileId, Source, VirtualPath};
 use typst::text::{Font, FontBook};
 use typst::utils::LazyHash;
-use typst::{Library, World};
+use typst::{Library, LibraryExt, World};
 
 /// A world that provides access to fonts and template files.
 #[derive(Debug)]
