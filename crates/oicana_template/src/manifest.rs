@@ -150,10 +150,7 @@ fn is_id_continue(c: char) -> bool {
 
 #[cfg(test)]
 mod tests {
-    use std::{
-        collections::BTreeMap,
-        path::{Path, PathBuf},
-    };
+    use std::path::{Path, PathBuf};
 
     use typst::syntax::package::PackageInfo;
 
@@ -162,24 +159,8 @@ mod tests {
         OicanaConfig,
     };
 
-    // ToDo: use new methods from https://github.com/typst/typst/pull/6625 when released
     fn default_package_info() -> PackageInfo {
-        PackageInfo {
-            name: "test-package".into(),
-            version: "0.1.0".parse().unwrap(),
-            entrypoint: "main.typ".into(),
-            authors: vec![],
-            categories: vec![],
-            compiler: None,
-            description: None,
-            disciplines: vec![],
-            exclude: vec![],
-            homepage: None,
-            keywords: vec![],
-            license: None,
-            repository: None,
-            unknown_fields: BTreeMap::new(),
-        }
+        PackageInfo::new("test-package", "0.1.0".parse().unwrap(), "main.typ")
     }
 
     #[test]

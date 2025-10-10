@@ -10,6 +10,7 @@ pub fn export_merged_pdf<Diagnostics: TemplateDiagnostics>(
         ident: Smart::Auto,
         timestamp: None,
         page_ranges: None,
+        tagged: true,
         standards: PdfStandards::new(&[PdfStandard::A_3b])
             .expect("Invalid combination of PDF standards"),
     };
