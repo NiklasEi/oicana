@@ -17,6 +17,7 @@ use oicana_files::TemplateFiles;
 use oicana_input::input::blob::{Blob, BlobInput};
 use oicana_input::input::json::JsonInput;
 use oicana_input::{CompilationConfig, TemplateInputs};
+use oicana_world::diagnostics::DiagnosticColor;
 use oicana_world::manifest::OicanaWorldFiles;
 use oicana_world::world::OicanaWorld;
 use serde::Deserialize;
@@ -57,6 +58,7 @@ pub fn register_template(
   inputs.with_config(compilation_mode.into());
   let mut zip_world = OicanaWorld::new(files, inputs, manifest)
     .map_err(|error| Error::from_reason(error.to_string()))?;
+  zip_world.color = DiagnosticColor::None;
 
   let document = zip_world
     .compile()
@@ -158,7 +160,7 @@ fn export(
         .map(|pix_map| pix_map.into())
     }
     ExportFormat::Pdf => export_merged_pdf(document, world)
-      .map_err(|error| Error::from_reason(format!("Failed to encode PNG: {error:?}")))
+      .map_err(|error| Error::from_reason(format!("Failed to encode PDF: {error:?}")))
       .map(|pdf| pdf.into()),
     ExportFormat::Svg => {
       let svg = export_merged_svg(document);

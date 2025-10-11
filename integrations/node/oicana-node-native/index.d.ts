@@ -10,7 +10,7 @@ export interface BlobWithMetadata {
 
 export declare const enum CompilationMode {
   Production = 0,
-  Development = 1,
+  Development = 1
 }
 
 /**
@@ -19,13 +19,7 @@ export declare const enum CompilationMode {
  * Calling this method requires a previous call to [`register_template`] with the same template
  * identifier.
  */
-export declare function compileTemplate(
-  template: string,
-  jsonInputs: Record<string, string>,
-  blobInputs: Record<string, BlobWithMetadata>,
-  exportFormat: string,
-  compilationMode: CompilationMode,
-): Buffer
+export declare function compileTemplate(template: string, jsonInputs: Record<string, string>, blobInputs: Record<string, BlobWithMetadata>, exportFormat: string, compilationMode: CompilationMode): Buffer
 
 /**
  * Load the source of the given file in the template.
@@ -62,11 +56,4 @@ export const NOT_REGISTERED: string
  * compile it once with the given inputs. The Typst [`typst::World`] will be cached and reused for
  * subsequent calls to the other methods with the same template identifier.
  */
-export declare function registerTemplate(
-  template: string,
-  files: Uint8Array,
-  jsonInputs: Record<string, string>,
-  blobInputs: Record<string, BlobWithMetadata>,
-  exportFormat: string,
-  compilationMode: CompilationMode,
-): Buffer
+export declare function registerTemplate(template: string, files: Uint8Array, jsonInputs: Record<string, string>, blobInputs: Record<string, BlobWithMetadata>, exportFormat: string, compilationMode: CompilationMode): Buffer
