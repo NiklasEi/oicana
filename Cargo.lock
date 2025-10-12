@@ -2107,6 +2107,7 @@ version = "0.1.0-alpha.1"
 dependencies = [
  "console_error_panic_hook",
  "console_log",
+ "dashmap",
  "js-sys",
  "log",
  "oicana_export",
@@ -2118,6 +2119,7 @@ dependencies = [
  "serde-wasm-bindgen",
  "serde_json",
  "typst",
+ "uuid",
  "wasm-bindgen",
 ]
 
