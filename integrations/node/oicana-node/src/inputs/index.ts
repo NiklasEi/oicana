@@ -1,5 +1,5 @@
-import { BlobInputDefinition, BlobWithMetadata } from './BlobInput';
-import { JsonInputDefinition } from './JsonInput';
+import { BlobInputDefinition, BlobWithMetadata } from './BlobInput.js';
+import { JsonInputDefinition } from './JsonInput.js';
 
 export { JsonInputDefinition, BlobInputDefinition, BlobWithMetadata };
 

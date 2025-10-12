@@ -5,6 +5,7 @@ using Oicana.Inputs;
 using Oicana.Interop;
 using CompilationMode = Oicana.Config.CompilationMode;
 using CompilationOptions = Oicana.Config.CompilationOptions;
+using ExportOptions = Oicana.Config.ExportOptions;
 
 namespace Oicana.Test;
 
@@ -24,7 +25,7 @@ public class E2ETests
     {
         var template = new Template(_templateFile);
 
-        var document = template.Compile(new List<TemplateJsonInput>(), new List<TemplateBlobInput>(), CompilationOptions.Png(1.0f, CompilationMode.Development));
+        var document = template.Compile(new List<TemplateJsonInput>(), new List<TemplateBlobInput>(), new CompilationOptions(CompilationMode.Development), ExportOptions.Png(1.0f));
         using var fileStream = File.Create("e2e/development.png");
         document.CopyTo(fileStream);
     }
@@ -49,7 +50,7 @@ public class E2ETests
             }),
         };
         var input = new TemplateJsonInput("development-json", JsonSerializer.Deserialize<JsonNode>("{ \"name\": \"Input\", \"foo\": [41, \"testing\"] }")!);
-        var document = template.Compile([input], blobInputs, CompilationOptions.Png(1.0f));
+        var document = template.Compile([input], blobInputs, new CompilationOptions(CompilationMode.Production), ExportOptions.Png(1.0f));
         using var fileStream = File.Create("e2e/production.png");
         document.CopyTo(fileStream);
     }
@@ -102,7 +103,7 @@ public class E2ETests
             new("both-json", JsonSerializer.Deserialize<JsonNode>("{ \"name\": \"Input\", \"foo\": [41, \"testing\"] }")!)
         };
 
-        var document = template.Compile(jsonInputs, blobInputs, CompilationOptions.Png(1.0f));
+        var document = template.Compile(jsonInputs, blobInputs, new CompilationOptions(CompilationMode.Production), ExportOptions.Png(1.0f));
         using var fileStream = File.Create("e2e/all-inputs.png");
         document.CopyTo(fileStream);
     }
@@ -111,10 +112,10 @@ public class E2ETests
     public void GetsReadableErrors()
     {
         var template = new Template(_templateFile);
-        Action act = () => template.Compile(new List<TemplateJsonInput>(), new List<TemplateBlobInput>(), CompilationOptions.Png(1.0f));
+        Action act = () => template.Compile(new List<TemplateJsonInput>(), new List<TemplateBlobInput>(), new CompilationOptions(CompilationMode.Production), ExportOptions.Png(1.0f));
 
         act.Should()
             .Throw<OicanaException>()
-            .WithMessage("TemplateCompilationFailure { error: \"error: dictionary does not contain key \"development-blob\"\n   \u250c\u2500 /main.typ:11:41\n   \u2502\n11 \u2502 `development-blob` has value: #str(input.development-blob.bytes)\\\n   \u2502                                          ^^^^^^^^^^^^^^^^\n\n\", warnings: None }");
+            .WithMessage("error: dictionary does not contain key \"development-blob\"\n   \u250c\u2500 /main.typ:11:41\n   \u2502\n11 \u2502 `development-blob` has value: #str(input.development-blob.bytes)\n   \u2502                                          ^^^^^^^^^^^^^^^^\n\n");
     }
 }
