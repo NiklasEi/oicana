@@ -27,12 +27,14 @@ typst = { workspace = true }
 wasm-bindgen = { workspace = true }
 serde-wasm-bindgen = { workspace = true }
 console_error_panic_hook = { workspace = true }
-once_cell = { workspace = true }
 js-sys = { workspace = true }
 console_log = { workspace = true }
 log = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
+dashmap = { workspace = true }
+once_cell = { workspace = true }
+uuid = { workspace = true, features = ["v4", "js"] }
 
 [lints]
 workspace = true
