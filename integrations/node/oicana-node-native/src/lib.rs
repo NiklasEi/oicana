@@ -97,7 +97,7 @@ pub fn compile_template(
 }
 
 fn new_document_id(template_id: &str) -> String {
-  format!("{}:{}", Uuid::new_v4().to_string(), template_id)
+  format!("{}:{}", Uuid::new_v4(), template_id)
 }
 
 fn template_id_from_document_id(document_id: &str) -> &str {
