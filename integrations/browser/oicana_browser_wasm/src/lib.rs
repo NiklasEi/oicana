@@ -200,7 +200,7 @@ pub fn remove_world(template_id: String) -> Result<(), String> {
 }
 
 fn new_document_id(template_id: &str) -> String {
-    format!("{}:{}", Uuid::new_v4().to_string(), template_id)
+    format!("{}:{}", Uuid::new_v4(), template_id)
 }
 
 fn template_id_from_document_id(document_id: &str) -> &str {
@@ -220,7 +220,7 @@ pub fn export_document(document_id: String, export_format: JsValue) -> Result<Ui
     match export_format {
         ExportFormat::Png { pixels_per_pt } => {
             let start_time = get_current_time();
-            let pix_map_result = export_merged_png(&*document, pixels_per_pt);
+            let pix_map_result = export_merged_png(&document, pixels_per_pt);
             info!("Rendered image in {}ms", get_current_time() - start_time);
             pix_map_result
                 .map_err(|error| format!("Failed to encode PNG: {error:?}"))
@@ -233,10 +233,10 @@ pub fn export_document(document_id: String, export_format: JsValue) -> Result<Ui
                     "World '{template_id}' for the given document '{document_id}' not found!"
                 ));
             };
-            export_merged_pdf(&*document, &*world).map(|pdf| bytes_to_js_array(&pdf))
+            export_merged_pdf(&document, &*world).map(|pdf| bytes_to_js_array(&pdf))
         }
         ExportFormat::Svg => {
-            let svg = export_merged_svg(&*document);
+            let svg = export_merged_svg(&document);
 
             Ok(bytes_to_js_array(&svg))
         }
