@@ -2107,6 +2107,7 @@ version = "0.1.0-alpha.1"
 dependencies = [
  "console_error_panic_hook",
  "console_log",
+ "dashmap",
  "js-sys",
  "log",
  "oicana_export",
@@ -2118,6 +2119,7 @@ dependencies = [
  "serde-wasm-bindgen",
  "serde_json",
  "typst",
+ "uuid",
  "wasm-bindgen",
 ]
 
@@ -2167,6 +2169,7 @@ dependencies = [
  "once_cell",
  "serde_json",
  "typst",
+ "uuid",
 ]
 
 [[package]]
@@ -2215,6 +2218,7 @@ dependencies = [
 name = "oicana_node_native"
 version = "0.1.0-alpha.1"
 dependencies = [
+ "dashmap",
  "napi",
  "napi-build",
  "napi-derive",
@@ -2222,11 +2226,13 @@ dependencies = [
  "oicana_files",
  "oicana_input",
  "oicana_world",
+ "once_cell",
  "serde",
  "serde_json",
  "typst",
  "typst-pdf",
  "typst-render",
+ "uuid",
 ]
 
 [[package]]
@@ -4073,6 +4079,7 @@ version = "1.18.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2f87b8aa10b915a06587d0dec516c282ff295b475d94abf425d62b57710070a2"
 dependencies = [
+ "getrandom 0.3.2",
  "js-sys",
  "wasm-bindgen",
 ]

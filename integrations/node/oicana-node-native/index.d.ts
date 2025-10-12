@@ -23,9 +23,15 @@ export declare function compileTemplate(
   template: string,
   jsonInputs: Record<string, string>,
   blobInputs: Record<string, BlobWithMetadata>,
-  exportFormat: string,
   compilationMode: CompilationMode,
-): Buffer
+): string
+
+/**
+ * Export the given document
+ *
+ * Make sure to call `removeDocument` with the documentId afterwards, to free the memory.
+ */
+export declare function exportDocument(documentId: string, exportFormat: string): Buffer
 
 /**
  * Load the source of the given file in the template.
@@ -67,6 +73,15 @@ export declare function registerTemplate(
   files: Uint8Array,
   jsonInputs: Record<string, string>,
   blobInputs: Record<string, BlobWithMetadata>,
-  exportFormat: string,
   compilationMode: CompilationMode,
-): Buffer
+): string
+
+/** Remove the document from the cache. */
+export declare function removeDocument(documentId: string): void
+
+/**
+ * Remove the world from the cache.
+ *
+ * The template will have to be registered again before it can be compiled again.
+ */
+export declare function removeWorld(templateId: string): void

@@ -559,8 +559,11 @@ if (!nativeBinding) {
 module.exports = nativeBinding
 module.exports.CompilationMode = nativeBinding.CompilationMode
 module.exports.compileTemplate = nativeBinding.compileTemplate
+module.exports.exportDocument = nativeBinding.exportDocument
 module.exports.getFile = nativeBinding.getFile
 module.exports.getSource = nativeBinding.getSource
 module.exports.inputs = nativeBinding.inputs
 module.exports.NOT_REGISTERED = nativeBinding.NOT_REGISTERED
 module.exports.registerTemplate = nativeBinding.registerTemplate
+module.exports.removeDocument = nativeBinding.removeDocument
+module.exports.removeWorld = nativeBinding.removeWorld
