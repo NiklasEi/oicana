@@ -100,6 +100,7 @@ image = "0.25.8"
 json_schema_fuzz = "0.2.2"
 json_schema_ast = "0.2.2"
 rand = "0.8.5"
+uuid = "1.18.1"
 
 [workspace.lints.rust]
 missing_docs = "warn"

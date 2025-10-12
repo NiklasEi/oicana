@@ -26,8 +26,11 @@ typst        = { workspace = true }
 typst-pdf    = { workspace = true }
 typst-render = { workspace = true }
 
+dashmap    = { workspace = true }
+once_cell  = { workspace = true }
 serde      = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
+uuid       = { workspace = true, features = ["v4"] }
 
 [build-dependencies]
 napi-build = "2"

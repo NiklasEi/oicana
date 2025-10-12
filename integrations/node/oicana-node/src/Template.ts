@@ -1,12 +1,14 @@
 import {
   type BlobWithMetadata as BlobWithMetadataNative,
   compileTemplate,
+  exportDocument,
   CompilationMode as NativeCompilationMode,
   registerTemplate,
+  removeDocument,
 } from '@oicana/node-native';
-import { CompilationMode } from './CompilationMode';
-import type { ExportFormat } from './ExportFormat';
-import type { BlobWithMetadata } from './inputs';
+import { CompilationMode } from './CompilationMode.js';
+import type { ExportFormat } from './ExportFormat.js';
+import type { BlobWithMetadata } from './inputs/index.js';
 
 /**
  * A template
@@ -55,7 +57,6 @@ export class Template {
   ) {
     this.template = name;
     this.defaultCompilationMode = CompilationMode.Production;
-    const format = { format: 'pdf' };
 
     registerTemplate(
       this.template,
@@ -64,7 +65,6 @@ export class Template {
       this.convertBlobWithMetadata(
         blobInputs ?? new Map<string, BlobWithMetadata>(),
       ),
-      JSON.stringify(format),
       this.mapCompilationMode(compilationMode ?? CompilationMode.Development),
     );
   }
@@ -111,15 +111,19 @@ export class Template {
   ): Uint8Array {
     const format: ExportFormat = exportFormat ?? { format: 'pdf' };
 
-    return compileTemplate(
+    const document = compileTemplate(
       this.template,
       Object.fromEntries(jsonInputs ?? new Map<string, string>()),
       this.convertBlobWithMetadata(
         blobInputs ?? new Map<string, BlobWithMetadata>(),
       ),
-      JSON.stringify(format),
       this.mapCompilationMode(compilationMode ?? CompilationMode.Production),
     );
+    try {
+      return exportDocument(document, JSON.stringify(format));
+    } finally {
+      removeDocument(document);
+    }
   }
 
   /**

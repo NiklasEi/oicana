@@ -7,6 +7,7 @@
 #[macro_use]
 extern crate napi_derive;
 
+use dashmap::DashMap;
 use napi::bindgen_prelude::{Buffer, Result, Uint8Array};
 use napi::Error;
 use oicana_export::pdf::export_merged_pdf;
@@ -20,15 +21,15 @@ use oicana_input::{CompilationConfig, TemplateInputs};
 use oicana_world::diagnostics::DiagnosticColor;
 use oicana_world::manifest::OicanaWorldFiles;
 use oicana_world::world::OicanaWorld;
+use once_cell::sync::Lazy;
 use serde::Deserialize;
 use std::collections::HashMap;
 use std::io::Cursor;
 use std::str::FromStr;
-use std::sync::Mutex;
 use typst::foundations::Bytes;
 use typst::layout::PagedDocument;
 use typst::syntax::{FileId, VirtualPath};
-use typst::utils::once_cell::sync::OnceCell;
+use uuid::Uuid;
 
 /// Error string when a requested template is not registered yet. Call `[register_template]` before
 /// trying to use the template through a different method.
@@ -44,11 +45,8 @@ pub fn register_template(
   files: Uint8Array,
   json_inputs: HashMap<String, String>,
   blob_inputs: HashMap<String, BlobWithMetadata>,
-  export_format: String,
   compilation_mode: CompilationMode,
-) -> Result<Buffer> {
-  let export_format =
-    serde_json::from_str(&export_format).map_err(|error| Error::from_reason(error.to_string()))?;
+) -> Result<String> {
   let files = PackedTemplate::new(Cursor::new(files));
   let manifest = files
     .manifest()
@@ -64,9 +62,12 @@ pub fn register_template(
     .compile()
     .map_err(|error| Error::from_reason(error.to_string()))?;
 
-  let result = export(&document.document, &zip_world, export_format);
-  world().lock().unwrap().insert(template, zip_world);
-  result
+  let result_id = new_document_id(&template);
+
+  WORLD_CACHE.insert(template, zip_world);
+  DOCUMENT_CACHE.insert(result_id.clone(), document.document);
+
+  Ok(result_id)
 }
 
 /// Compile the identified template with the given inputs.
@@ -78,13 +79,9 @@ pub fn compile_template(
   template: String,
   json_inputs: HashMap<String, String>,
   blob_inputs: HashMap<String, BlobWithMetadata>,
-  export_format: String,
   compilation_mode: CompilationMode,
-) -> Result<Buffer> {
-  let export_format =
-    serde_json::from_str(&export_format).map_err(|error| Error::from_reason(error.to_string()))?;
-  let mut cache_lock = world().lock().unwrap();
-  let Some(world) = cache_lock.get_mut(&template) else {
+) -> Result<String> {
+  let Some(mut world) = WORLD_CACHE.get_mut(&template) else {
     return Err(Error::from_reason("Template was not registered"));
   };
   let mut inputs = prepare_inputs(json_inputs, blob_inputs);
@@ -95,7 +92,18 @@ pub fn compile_template(
     .compile()
     .map_err(|error| Error::from_reason(error.to_string()))?;
 
-  export(&document.document, world, export_format)
+  let result_id = new_document_id(&template);
+  DOCUMENT_CACHE.insert(result_id.clone(), document.document);
+
+  Ok(result_id)
+}
+
+fn new_document_id(template_id: &str) -> String {
+  format!("{}:{}", Uuid::new_v4(), template_id)
+}
+
+fn template_id_from_document_id(document_id: &str) -> &str {
+  &document_id[37..]
 }
 
 /// Load all input definitions for the given template.
@@ -104,8 +112,7 @@ pub fn compile_template(
 /// identifier.
 #[napi]
 pub fn inputs(template: String) -> Result<String> {
-  let mut cache_lock = world().lock().unwrap();
-  let Some(world) = cache_lock.get_mut(&template) else {
+  let Some(world) = WORLD_CACHE.get_mut(&template) else {
     return Err(Error::from_reason("Template was not registered"));
   };
   let oicana_config = &world.manifest().tool.oicana;
@@ -119,8 +126,7 @@ pub fn inputs(template: String) -> Result<String> {
 /// identifier.
 #[napi]
 pub fn get_source(template: String, file: String) -> Result<String> {
-  let mut cache_lock = world().lock().unwrap();
-  let Some(world) = cache_lock.get_mut(&template) else {
+  let Some(world) = WORLD_CACHE.get_mut(&template) else {
     return Err(Error::from_reason("Template was not registered"));
   };
   world
@@ -136,25 +142,29 @@ pub fn get_source(template: String, file: String) -> Result<String> {
 /// identifier.
 #[napi]
 pub fn get_file(template: String, file: String) -> Result<Buffer> {
-  let mut cache_lock = world().lock().unwrap();
-  let Some(world) = cache_lock.get_mut(&template) else {
+  let Some(world) = WORLD_CACHE.get_mut(&template) else {
     return Err(Error::from_reason("Template was not registered"));
   };
   let bytes = world
     .files
     .file(FileId::new(None, VirtualPath::new(file)))
     .map_err(|error| Error::from_reason(error.to_string()))?;
-  Ok(bytes.to_vec().into()) // This is currently copying!
+  Ok(bytes.to_vec().into()) // This is currently copying, although we own bytes here.
 }
 
-fn export(
-  document: &PagedDocument,
-  world: &OicanaWorld<PackedTemplate>,
-  export_format: ExportFormat,
-) -> Result<Buffer> {
+/// Export the given document
+///
+/// Make sure to call `removeDocument` with the documentId afterwards, to free the memory.
+#[napi]
+pub fn export_document(document_id: String, export_format: String) -> Result<Buffer> {
+  let Some(document) = DOCUMENT_CACHE.get(&document_id) else {
+    return Err(Error::from_reason("Document not found!"));
+  };
+  let export_format =
+    serde_json::from_str(&export_format).map_err(|error| Error::from_reason(error.to_string()))?;
   match export_format {
     ExportFormat::Png { pixels_per_pt } => {
-      let pix_map_result = export_merged_png(document, pixels_per_pt);
+      let pix_map_result = export_merged_png(&document, pixels_per_pt);
       pix_map_result
         .map_err(|error| Error::from_reason(format!("Failed to encode PNG: {error:?}")))
         .map(|pix_map| pix_map.into())
@@ -162,12 +172,41 @@ fn export(
     ExportFormat::Pdf => export_merged_pdf(document, world)
       .map_err(|error| Error::from_reason(format!("Failed to encode PDF: {error:?}")))
       .map(|pdf| pdf.into()),
+    ExportFormat::Pdf => {
+      let template_id = template_id_from_document_id(&document_id);
+      let Some(world) = WORLD_CACHE.get(template_id) else {
+        return Err(Error::from_reason(format!(
+          "World '{template_id}' for the given document '{document_id}' not found!"
+        )));
+      };
+
+      export_merged_pdf(&document, &*world)
+        .map_err(|error| Error::from_reason(format!("Failed to encode PNG: {error:?}")))
+        .map(|pdf| pdf.into())
+    }
     ExportFormat::Svg => {
-      let svg = export_merged_svg(document);
+      let svg = export_merged_svg(&document);
 
       Ok(svg.into())
     }
   }
+}
+
+/// Remove the document from the cache.
+#[napi]
+pub fn remove_document(document_id: String) -> Result<()> {
+  println!("Remove the document behind {}", document_id);
+  DOCUMENT_CACHE.remove(&document_id);
+  Ok(())
+}
+
+/// Remove the world from the cache.
+///
+/// The template will have to be registered again before it can be compiled again.
+#[napi]
+pub fn remove_world(template_id: String) -> Result<()> {
+  WORLD_CACHE.remove(&template_id);
+  Ok(())
 }
 
 fn prepare_inputs(
@@ -240,8 +279,6 @@ pub struct BlobWithMetadata {
   pub meta: String,
 }
 
-fn world() -> &'static Mutex<HashMap<String, OicanaWorld<PackedTemplate>>> {
-  static ZIPPED_WORLD: OnceCell<Mutex<HashMap<String, OicanaWorld<PackedTemplate>>>> =
-    OnceCell::new();
-  ZIPPED_WORLD.get_or_init(|| Mutex::new(HashMap::new()))
-}
+static WORLD_CACHE: Lazy<DashMap<String, OicanaWorld<PackedTemplate>>> = Lazy::new(DashMap::new);
+
+static DOCUMENT_CACHE: Lazy<DashMap<String, PagedDocument>> = Lazy::new(DashMap::new);

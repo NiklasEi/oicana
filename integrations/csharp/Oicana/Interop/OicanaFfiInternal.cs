@@ -50,8 +50,8 @@ namespace Oicana.Interop
         ///
         /// Additionally, the caller must ensure that no inputs are modified
         /// concurrently while this function is executing.
-        [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl, EntryPoint = "unsafe_compile_template_once")]
-        public static extern Buffer unsafe_compile_template_once(Buffer files, SliceFfiJsonInput json_inputs, SliceFfiBlobInput blob_inputs, CompilationOptions compilation_options);
+        [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl, EntryPoint = "unsafe_export_template_once")]
+        public static extern Buffer unsafe_export_template_once(Buffer files, SliceFfiJsonInput json_inputs, SliceFfiBlobInput blob_inputs, CompilationOptions compile_options, ExportOptions export_options);
 
         /// Register a template for the given identifier
         ///
@@ -68,6 +68,15 @@ namespace Oicana.Interop
         /// concurrently while this function is executing.
         [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl, EntryPoint = "unsafe_register_template")]
         public static extern Buffer unsafe_register_template(string template, Buffer files, SliceFfiJsonInput json_inputs, SliceFfiBlobInput blob_inputs, CompilationOptions compilation_options);
+
+        /// Export the given document
+        ///
+        /// # Safety
+        ///
+        /// The caller is responsible for ensuring that the provided
+        /// `document_id` pointer is valid and non-null
+        [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl, EntryPoint = "unsafe_export_document")]
+        public static extern Buffer unsafe_export_document(string document_id, ExportOptions export_options);
 
         /// Load the inputs of the given template.
         ///
@@ -110,8 +119,12 @@ namespace Oicana.Interop
         ///
         /// This method requires a previous successful call to [`unsafe_register_template`].
         /// Check if the returned buffer is an error before interpreting the content.
-        [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl, EntryPoint = "unregister_template")]
-        public static extern void unregister_template(string template);
+        [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl, EntryPoint = "remove_world")]
+        public static extern Buffer remove_world(string template_id);
+
+        /// Remove the document from the cache.
+        [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl, EntryPoint = "remove_document")]
+        public static extern Buffer remove_document(string document_id);
 
         /// Configure Oicana.
         [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl, EntryPoint = "configure")]
@@ -174,13 +187,8 @@ namespace Oicana.Interop
     [StructLayout(LayoutKind.Sequential)]
     internal partial struct CompilationOptions
     {
-        /// Formats that an Oicana template can be compiled into.
-        public CompilationTarget target;
         /// The mode of compilation
         public CompilationMode mode;
-        /// Pixels per pt
-        /// Only used for PNG export
-        public float px_per_pt;
     }
 
     /// Oicana Configuration.
@@ -190,6 +198,18 @@ namespace Oicana.Interop
     {
         /// Coloring for diagnostics like warnings and errors
         public DiagnosticColor color;
+    }
+
+    /// Options for exporting the template
+    [Serializable]
+    [StructLayout(LayoutKind.Sequential)]
+    internal partial struct ExportOptions
+    {
+        /// Formats that an Oicana template can be compiled into.
+        public CompilationTarget target;
+        /// Pixels per pt
+        /// Only used for PNG export
+        public float px_per_pt;
     }
 
     /// A collection of string keys with Buffers representing blob inputs
