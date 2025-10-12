@@ -2,6 +2,7 @@
 //!
 //! You most likely want to use the npm package `@oicana/browser` instead.
 
+use dashmap::DashMap;
 use js_sys::Uint8Array;
 use log::{info, warn, Level};
 use oicana_export::pdf::export_merged_pdf;
@@ -16,7 +17,7 @@ use oicana_world::diagnostics::DiagnosticColor;
 use oicana_world::get_current_time;
 use oicana_world::manifest::OicanaWorldFiles;
 use oicana_world::world::OicanaWorld;
-use once_cell::sync::OnceCell;
+use once_cell::sync::{Lazy, OnceCell};
 use serde::Deserialize;
 use serde_wasm_bindgen::from_value;
 use std::collections::HashMap;
@@ -25,6 +26,7 @@ use std::sync::Mutex;
 use typst::foundations::Bytes;
 use typst::layout::PagedDocument;
 use typst::syntax::{FileId, VirtualPath};
+use uuid::Uuid;
 use wasm_bindgen::prelude::wasm_bindgen;
 use wasm_bindgen::JsValue;
 
@@ -41,16 +43,13 @@ pub fn register_template(
     files: &Uint8Array,
     json_inputs: JsValue,
     blob_inputs: JsValue,
-    export_format: JsValue,
     compilation_mode: JsValue,
-) -> Result<Uint8Array, String> {
+) -> Result<String, String> {
     console_error_panic_hook::set_once();
     let _ = console_log::init_with_level(Level::Debug);
     let start = get_current_time();
 
     let mut inputs = prepare_inputs(json_inputs, blob_inputs)?;
-    let export_format: ExportFormat = from_value(export_format)
-        .map_err(|error| format!("Failed to convert to export format: {error:?}"))?;
     let compilation_mode: CompilationMode = from_value(compilation_mode)
         .map_err(|error| format!("Failed to convert to compilation mode: {error:?}"))?;
     inputs.with_config(compilation_mode.into());
@@ -69,10 +68,12 @@ pub fn register_template(
     let document_time = get_current_time();
     info!("Done compiling document in {}ms", document_time - start);
 
-    let result = export(&document.document, &world, export_format);
-    world_cache().lock().unwrap().insert(template, world);
+    let result_id = new_document_id(&template);
 
-    result
+    WORLD_CACHE.insert(template, world);
+    DOCUMENT_CACHE.insert(result_id.clone(), document.document);
+
+    Ok(result_id)
 }
 
 /// Compile the identified template with the given inputs.
@@ -84,19 +85,15 @@ pub fn compile_template(
     template: String,
     json_inputs: JsValue,
     blob_inputs: JsValue,
-    export_format: JsValue,
     compilation_mode: JsValue,
-) -> Result<Uint8Array, String> {
+) -> Result<String, String> {
     console_error_panic_hook::set_once();
     let _ = console_log::init_with_level(Level::Debug);
     let start = get_current_time();
 
-    let mut cache_lock = world_cache().lock().unwrap();
-    let Some(world) = cache_lock.get_mut(&template) else {
+    let Some(mut world) = WORLD_CACHE.get_mut(&template) else {
         return Err(NOT_REGISTERED.to_owned());
     };
-    let export_format: ExportFormat = from_value(export_format)
-        .map_err(|error| format!("Failed to convert to export format: {error:?}"))?;
     let compilation_mode: CompilationMode = from_value(compilation_mode)
         .map_err(|error| format!("Failed to convert to compilation mode: {error:?}"))?;
     let mut inputs = prepare_inputs(json_inputs, blob_inputs)?;
@@ -110,7 +107,10 @@ pub fn compile_template(
     }
     info!("Done preparing document in {}ms", document_time - start);
 
-    export(&document.document, world, export_format)
+    let result_id = new_document_id(&template);
+    DOCUMENT_CACHE.insert(result_id.clone(), document.document);
+
+    Ok(result_id)
 }
 
 /// Load all input definitions for the given template.
@@ -182,23 +182,61 @@ fn prepare_inputs(json_inputs: JsValue, blobs: JsValue) -> Result<TemplateInputs
     Ok(inputs)
 }
 
-fn export(
-    document: &PagedDocument,
-    world: &OicanaWorld<PackedTemplate>,
-    export_format: ExportFormat,
-) -> Result<Uint8Array, String> {
+/// Remove the document from the cache.
+#[wasm_bindgen]
+pub fn remove_document(document_id: String) -> Result<(), String> {
+    println!("Remove the document behind {}", document_id);
+    DOCUMENT_CACHE.remove(&document_id);
+    Ok(())
+}
+
+/// Remove the world from the cache.
+///
+/// The template will have to be registered again before it can be compiled again.
+#[wasm_bindgen]
+pub fn remove_world(template_id: String) -> Result<(), String> {
+    WORLD_CACHE.remove(&template_id);
+    Ok(())
+}
+
+fn new_document_id(template_id: &str) -> String {
+    format!("{}:{}", Uuid::new_v4(), template_id)
+}
+
+fn template_id_from_document_id(document_id: &str) -> &str {
+    &document_id[37..]
+}
+
+/// Export the given document
+///
+/// Make sure to call `removeDocument` with the documentId afterwards, to free the memory.
+#[wasm_bindgen]
+pub fn export_document(document_id: String, export_format: JsValue) -> Result<Uint8Array, String> {
+    let Some(document) = DOCUMENT_CACHE.get(&document_id) else {
+        return Err("Document not found!".to_owned());
+    };
+    let export_format: ExportFormat = from_value(export_format)
+        .map_err(|error| format!("Failed to convert to export format: {error:?}"))?;
     match export_format {
         ExportFormat::Png { pixels_per_pt } => {
             let start_time = get_current_time();
-            let pix_map_result = export_merged_png(document, pixels_per_pt);
+            let pix_map_result = export_merged_png(&document, pixels_per_pt);
             info!("Rendered image in {}ms", get_current_time() - start_time);
             pix_map_result
                 .map_err(|error| format!("Failed to encode PNG: {error:?}"))
                 .map(|pix_map| bytes_to_js_array(&pix_map))
         }
-        ExportFormat::Pdf => export_merged_pdf(document, world).map(|pdf| bytes_to_js_array(&pdf)),
+        ExportFormat::Pdf => {
+            let template_id = template_id_from_document_id(&document_id);
+            let Some(world) = WORLD_CACHE.get(template_id) else {
+                return Err(format!(
+                    "World '{template_id}' for the given document '{document_id}' not found!"
+                ));
+            };
+            export_merged_pdf(&document, &*world).map(|pdf| bytes_to_js_array(&pdf))
+        }
         ExportFormat::Svg => {
-            let svg = export_merged_svg(document);
+            let svg = export_merged_svg(&document);
 
             Ok(bytes_to_js_array(&svg))
         }
@@ -272,6 +310,10 @@ fn add_json_inputs(inputs: &mut TemplateInputs, json_inputs: JsValue) -> Result<
 
     Ok(())
 }
+
+static WORLD_CACHE: Lazy<DashMap<String, OicanaWorld<PackedTemplate>>> = Lazy::new(DashMap::new);
+
+static DOCUMENT_CACHE: Lazy<DashMap<String, PagedDocument>> = Lazy::new(DashMap::new);
 
 fn world_cache() -> &'static Mutex<HashMap<String, OicanaWorld<PackedTemplate>>> {
     static ZIPPED_WORLD: OnceCell<Mutex<HashMap<String, OicanaWorld<PackedTemplate>>>> =

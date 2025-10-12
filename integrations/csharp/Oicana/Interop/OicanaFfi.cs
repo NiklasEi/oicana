@@ -1,6 +1,7 @@
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
+using Oicana.Config;
 using Oicana.Inputs;
 
 namespace Oicana.Interop;
@@ -22,9 +23,10 @@ internal static class OicanaFfi
     /// <param name="jsonInputs">Json inputs for the compilation.</param>
     /// <param name="blobInputs">Blob inputs for the compilation.</param>
     /// <param name="compilationOptions">Options for the template compilation.</param>
+    /// <param name="exportOptions">Options for the document export.</param>
     /// <exception cref="OicanaException">If the template compilation fails.</exception>
-    /// <returns>Stream containing the compiled template exported as the given <see cref="Oicana.Config.CompilationTarget"/>.</returns>
-    public static Stream CompileTemplateOnce(byte[] templateFile, IList<TemplateJsonInput> jsonInputs, IList<TemplateBlobInput> blobInputs, Oicana.Config.CompilationOptions compilationOptions)
+    /// <returns>Stream containing the compiled template exported as the given <see cref="ExportTarget"/>.</returns>
+    public static Stream ExportTemplateOnce(byte[] templateFile, IList<TemplateJsonInput> jsonInputs, IList<TemplateBlobInput> blobInputs, Oicana.Config.CompilationOptions compilationOptions, Oicana.Config.ExportOptions exportOptions)
     {
         GCHandle fileHandle = GCHandle.Alloc(templateFile, GCHandleType.Pinned);
         IntPtr filePointer = fileHandle.AddrOfPinnedObject();
@@ -32,7 +34,7 @@ internal static class OicanaFfi
 
         PreparedInputs preparedInputs = PrepareInputs(jsonInputs, blobInputs);
 
-        var buffer = OicanaFfiInternal.unsafe_compile_template_once(fileBuffer, preparedInputs.JsonInputs, preparedInputs.BlobInputs, ConvertCompileOptions(compilationOptions));
+        var buffer = OicanaFfiInternal.unsafe_export_template_once(fileBuffer, preparedInputs.JsonInputs, preparedInputs.BlobInputs, ConvertCompileOptions(compilationOptions), ConvertExportOptions(exportOptions));
 
         preparedInputs.FreeAll();
         fileHandle.Free();
@@ -41,15 +43,15 @@ internal static class OicanaFfi
     }
 
     /// <summary>
-    /// Compile a template with the given id and inputs and export it to the specified <see cref="Oicana.Config.CompilationTarget"/>.
+    /// Compile a template with the given id and inputs and export it to the specified <see cref="ExportTarget"/>.
     /// </summary>
     /// <param name="templateId">Identifier of the template for the internal cache.</param>
     /// <param name="jsonInputs">Json inputs for the compilation.</param>
     /// <param name="blobInputs">Blob inputs for the compilation.</param>
     /// <param name="compilationOptions">Options for the template compilation.</param>
     /// <exception cref="OicanaException">If the template compilation fails.</exception>
-    /// <returns>Stream containing the compiled template exported as the given <see cref="Oicana.Config.CompilationTarget"/>.</returns>
-    public static Stream CompileTemplate(string templateId, IList<TemplateJsonInput> jsonInputs, IList<TemplateBlobInput> blobInputs, Oicana.Config.CompilationOptions compilationOptions)
+    /// <returns>Stream containing the compiled template exported as the given <see cref="ExportTarget"/>.</returns>
+    public static String CompileTemplate(string templateId, IList<TemplateJsonInput> jsonInputs, IList<TemplateBlobInput> blobInputs, Oicana.Config.CompilationOptions compilationOptions)
     {
         PreparedInputs preparedInputs = PrepareInputs(jsonInputs, blobInputs);
 
@@ -57,11 +59,11 @@ internal static class OicanaFfi
 
         preparedInputs.FreeAll();
 
-        return HandleBuffer(buffer);
+        return HandleStringBuffer(buffer);
     }
 
     /// <summary>
-    /// Register and compile a template with the given id and inputs and export it to the specified <see cref="Oicana.Config.CompilationTarget"/>.
+    /// Register and compile a template with the given id and inputs and export it to the specified <see cref="ExportTarget"/>.
     /// </summary>
     /// <param name="templateId">Identifier of the template for the internal cache.</param>
     /// <param name="templateFile">The packed Oicana template to compile.</param>
@@ -69,7 +71,7 @@ internal static class OicanaFfi
     /// <param name="blobInputs">Blob inputs for the compilation.</param>
     /// <param name="compilationOptions">Options for the template compilation.</param>
     /// <exception cref="OicanaException">If the template compilation fails.</exception>
-    /// <returns>Stream containing the compiled template exported as the given <see cref="Oicana.Config.CompilationTarget"/>.</returns>
+    /// <returns>Stream containing the compiled template exported as the given <see cref="ExportTarget"/>.</returns>
     public static Stream RegisterTemplate(string templateId, byte[] templateFile, IList<TemplateJsonInput> jsonInputs, IList<TemplateBlobInput> blobInputs, Oicana.Config.CompilationOptions compilationOptions)
     {
         GCHandle fileHandle = GCHandle.Alloc(templateFile, GCHandleType.Pinned);
@@ -87,12 +89,40 @@ internal static class OicanaFfi
     }
 
     /// <summary>
+    /// Export the given document
+    /// 
+    /// This method requires the document to be in the internal cache.
+    /// After the export it will not be removed from the cache automatically. It's the callers
+    /// responsibility to free the documents memory when no more exports are needed by calling
+    /// `RemoveDocument`.
+    /// </summary>
+    /// <param name="documentId">Id of document to export.</param>
+    /// <param name="exportOptions">Options for the document export.</param>
+    /// <exception cref="OicanaException">If the template compilation fails.</exception>
+    /// <returns>Stream containing the compiled template exported as the given <see cref="ExportTarget"/>.</returns>
+    public static Stream ExportDocument(string documentId, Oicana.Config.ExportOptions exportOptions)
+    {
+        var buffer = OicanaFfiInternal.unsafe_export_document(documentId, ConvertExportOptions(exportOptions));
+
+        return HandleBuffer(buffer);
+    }
+
+    /// <summary>
     /// Reset the world cache of the given template id
     /// </summary>
     /// <param name="id">The identifier of the template to reset.</param>
     public static void ResetTemplate(string id)
     {
-        OicanaFfiInternal.unregister_template(id);
+        OicanaFfiInternal.remove_world(id);
+    }
+
+    /// <summary>
+    /// Remove a document from the internal cache
+    /// </summary>
+    /// <param name="documentId">The identifier of the document to remove from the cache.</param>
+    public static void RemoveDocument(string documentId)
+    {
+        OicanaFfiInternal.remove_document(documentId);
     }
 
     /// <summary>
@@ -159,24 +189,32 @@ internal static class OicanaFfi
     {
         return new CompilationOptions()
         {
-            target = ConvertCompileTarget(compilationOptions.compilationTarget),
-            mode = ConvertCompilationMode(compilationOptions.compilationMode),
-            px_per_pt = compilationOptions.pixelsPerPt ?? 1.0f
+            mode = ConvertCompilationMode(compilationOptions.CompilationMode),
         };
     }
 
-    internal static Oicana.Interop.CompilationTarget ConvertCompileTarget(Oicana.Config.CompilationTarget compilationTarget)
+    internal static Oicana.Interop.ExportOptions ConvertExportOptions(
+        Oicana.Config.ExportOptions exportOptions)
     {
-        switch (compilationTarget)
+        return new ExportOptions()
         {
-            case Oicana.Config.CompilationTarget.Pdf:
+            target = ConvertCompileTarget(exportOptions.ExportTarget),
+            px_per_pt = exportOptions.PixelsPerPt ?? 1.0f
+        };
+    }
+
+    internal static Oicana.Interop.CompilationTarget ConvertCompileTarget(Oicana.Config.ExportTarget exportTarget)
+    {
+        switch (exportTarget)
+        {
+            case Oicana.Config.ExportTarget.Pdf:
                 return Oicana.Interop.CompilationTarget.Pdf;
-            case Oicana.Config.CompilationTarget.Png:
+            case Oicana.Config.ExportTarget.Png:
                 return Oicana.Interop.CompilationTarget.Png;
-            case Oicana.Config.CompilationTarget.Svg:
+            case Oicana.Config.ExportTarget.Svg:
                 return Oicana.Interop.CompilationTarget.Svg;
         }
-        throw new ArgumentException($"The compile target {nameof(compilationTarget)} is not supported.");
+        throw new ArgumentException($"The compile target {nameof(exportTarget)} is not supported.");
     }
 
     private static PreparedInputs PrepareInputs(IList<TemplateJsonInput> jsonInputs,
@@ -221,6 +259,18 @@ internal static class OicanaFfi
         return inputsPtr;
     }
 
+    private static String HandleStringBuffer(Buffer buffer)
+    {
+        var message = GetStringFromBuffer(buffer);
+
+        if (buffer.error)
+        {
+            throw new OicanaException(message);
+        }
+
+        return message;
+    }
+
     private static Stream HandleBuffer(Buffer buffer)
     {
         if (buffer.error)
@@ -236,6 +286,26 @@ internal static class OicanaFfi
         }
 
         return new RustMemoryStream(buffer);
+    }
+
+    public static string GetStringFromBuffer(Buffer buffer)
+    {
+        unsafe
+        {
+            try
+            {
+                UnmanagedMemoryStream stream = new UnmanagedMemoryStream((byte*)buffer.data.ToPointer(),
+                    buffer.len,
+                    buffer.len, FileAccess.Read);
+                var message = GetMessageFromStream(stream);
+                OicanaFfiInternal.unsafe_free_buffer(buffer);
+                return message;
+            }
+            catch (Exception ex)
+            {
+                return $"Failed to get string from Rust: {ex.Message}";
+            }
+        }
     }
 
     public static string GetMessageFromStream(Stream stream)

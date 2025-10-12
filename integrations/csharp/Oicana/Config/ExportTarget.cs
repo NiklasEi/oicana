@@ -3,7 +3,7 @@ namespace Oicana.Config;
 /// <summary>
 /// Formats that an Oicana template can be compiled into.
 /// </summary>
-public enum CompilationTarget
+public enum ExportTarget
 {
     /// <summary>
     /// Render the template to a PDF file.

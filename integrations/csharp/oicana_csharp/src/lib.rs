@@ -21,7 +21,9 @@ use std::io::Cursor;
 use std::slice;
 use std::sync::{Arc, Mutex};
 use typst::foundations::Bytes;
+use typst::layout::PagedDocument;
 use typst::syntax::{FileId, VirtualPath};
+use uuid::Uuid;
 
 /// Register a template for the given identifier
 ///
@@ -53,7 +55,8 @@ pub unsafe extern "C" fn unsafe_register_template(
             let world = WORLD_CACHE.get_mut(&template);
             let mut world = world.unwrap();
             let document_result = world.value_mut().compile();
-            Buffer::from_document_result(document_result, &world, compilation_options.target)
+
+            Buffer::from_document_result(document_result, template)
         }
         Err(error) => error,
     }
@@ -75,16 +78,23 @@ pub unsafe extern "C" fn unsafe_register_template(
 /// concurrently while this function is executing.
 #[ffi_function]
 #[no_mangle]
-pub unsafe extern "C" fn unsafe_compile_template_once(
+pub unsafe extern "C" fn unsafe_export_template_once(
     files: Buffer,
     json_inputs: FFISlice<FfiJsonInput>,
     blob_inputs: FFISlice<FfiBlobInput>,
-    compilation_options: CompilationOptions,
+    compile_options: CompilationOptions,
+    export_options: ExportOptions,
 ) -> Buffer {
-    match unsafe { prepare_world(files, json_inputs, blob_inputs, compilation_options.mode) } {
+    match unsafe { prepare_world(files, json_inputs, blob_inputs, compile_options.mode) } {
         Ok(mut world) => {
             let document_result = world.compile();
-            Buffer::from_document_result(document_result, &world, compilation_options.target)
+
+            match document_result {
+                Ok(document) => {
+                    Buffer::from_document_export(&document.document, export_options, &world)
+                }
+                Err(error) => Buffer::from_error(format!("{error}")),
+            }
         }
         Err(error) => error,
     }
@@ -128,7 +138,42 @@ pub unsafe extern "C" fn unsafe_compile_template(
     let world = world.value_mut();
     world.update_inputs(inputs);
     let document_result = world.compile();
-    Buffer::from_document_result(document_result, world, compilation_options.target)
+    let document = match document_result {
+        Ok(document) => document,
+        Err(error) => return Buffer::from_error(format!("{error}")),
+    };
+    let result_id = new_document_id(&template);
+
+    DOCUMENT_CACHE.insert(result_id.clone(), document.document);
+
+    Buffer::from_ok_string(result_id)
+}
+
+/// Export the given document
+///
+/// # Safety
+///
+/// The caller is responsible for ensuring that the provided
+/// `document_id` pointer is valid and non-null
+#[ffi_function]
+#[no_mangle]
+pub unsafe extern "C" fn unsafe_export_document(
+    document_id: AsciiPointer,
+    export_options: ExportOptions,
+) -> Buffer {
+    let document_id = document_id.as_str().unwrap();
+    let Some(document) = DOCUMENT_CACHE.get(document_id) else {
+        return Buffer::from_error("Document not found!".to_string());
+    };
+
+    let template_id = template_id_from_document_id(document_id);
+    let Some(world) = WORLD_CACHE.get(template_id) else {
+        return Buffer::from_error(format!(
+            "World '{template_id}' for the given document '{document_id}' not found!"
+        ));
+    };
+
+    Buffer::from_document_export(&document, export_options, &world)
 }
 
 /// Load the inputs of the given template.
@@ -138,7 +183,10 @@ pub unsafe extern "C" fn unsafe_compile_template(
 #[ffi_function]
 #[no_mangle]
 pub extern "C" fn inputs(template: AsciiPointer) -> Buffer {
-    let template = template.as_str().unwrap();
+    let template = match template.as_str() {
+        Ok(template) => template,
+        Err(error) => return Buffer::from_error(format!("{error:?}")),
+    };
     let world = WORLD_CACHE.get_mut(template);
     let Some(world) = world else {
         return Buffer::from_error(format!("The template '{template}' is not registered"));
@@ -200,16 +248,6 @@ pub extern "C" fn get_file(template: AsciiPointer, path: AsciiPointer) -> Buffer
     Buffer::from_ok(file.to_vec())
 }
 
-/// Clear the specified template from the internal cache.
-///
-/// This method requires a previous successful call to [`unsafe_register_template`].
-/// Check if the returned buffer is an error before interpreting the content.
-#[ffi_function]
-#[no_mangle]
-pub extern "C" fn unregister_template(template: AsciiPointer) {
-    WORLD_CACHE.remove(template.as_str().unwrap());
-}
-
 /// Frees a buffer allocated by `compile_template`.
 ///
 /// # Safety
@@ -253,6 +291,14 @@ pub extern "C" fn configure(config: Config) -> Buffer {
     }
 }
 
+fn new_document_id(template_id: &str) -> String {
+    format!("{}:{}", Uuid::new_v4(), template_id)
+}
+
+fn template_id_from_document_id(document_id: &str) -> &str {
+    &document_id[37..]
+}
+
 unsafe fn prepare_world(
     files: Buffer,
     json_inputs: FFISlice<FfiJsonInput>,
@@ -289,6 +335,33 @@ unsafe fn prepare_world(
         })
 }
 
+/// Remove the document from the cache.
+#[ffi_function]
+#[no_mangle]
+pub extern "C" fn remove_document(document_id: AsciiPointer) -> Buffer {
+    let document_id = match document_id.as_str() {
+        Ok(document_id) => document_id,
+        Err(error) => return Buffer::from_error(format!("{error:?}")),
+    };
+    DOCUMENT_CACHE.remove(document_id);
+    Buffer::from_ok(Vec::with_capacity(0))
+}
+
+/// Clear the specified template from the internal cache.
+///
+/// This method requires a previous successful call to [`unsafe_register_template`].
+/// Check if the returned buffer is an error before interpreting the content.
+#[ffi_function]
+#[no_mangle]
+pub extern "C" fn remove_world(template_id: AsciiPointer) -> Buffer {
+    let template_id = match template_id.as_str() {
+        Ok(template_id) => template_id,
+        Err(error) => return Buffer::from_error(format!("{error:?}")),
+    };
+    WORLD_CACHE.remove(template_id);
+    Buffer::from_ok(Vec::with_capacity(0))
+}
+
 /// Access to a piece of Rust memory.
 ///
 /// If [`Self::error`] is `true`, [`Self::data`] will point to a UTF-8 encoded error message.
@@ -306,7 +379,14 @@ pub struct Buffer {
 
 impl Buffer {
     fn from_error(error_string: String) -> Self {
-        let mut buf = error_string.into_bytes().into_boxed_slice();
+        Buffer {
+            error: true,
+            ..Buffer::from_ok_string(error_string)
+        }
+    }
+
+    fn from_ok_string(string: String) -> Self {
+        let mut buf = string.into_bytes().into_boxed_slice();
         let len = buf.len() as u32;
         let data = buf.as_mut_ptr();
         std::mem::forget(buf);
@@ -314,7 +394,7 @@ impl Buffer {
         Buffer {
             data,
             len,
-            error: true,
+            error: false,
         }
     }
 
@@ -331,33 +411,39 @@ impl Buffer {
         }
     }
 
+    fn from_document_export(
+        document: &PagedDocument,
+        export_options: ExportOptions,
+        world: &OicanaWorld<PackedTemplate>,
+    ) -> Buffer {
+        match export_options.target {
+            CompilationTarget::Pdf => match export_merged_pdf(document, world) {
+                Err(error) => Buffer::from_error(format!(
+                    "Error encoding compilation result as PDF: {error:?}"
+                )),
+                Ok(pdf) => Buffer::from_ok(pdf),
+            },
+            CompilationTarget::Png => match export_merged_png(document, 1.0) {
+                Err(error) => Buffer::from_error(format!(
+                    "Error encoding compilation result as PNG: {error:?}"
+                )),
+                Ok(png) => Buffer::from_ok(png),
+            },
+            CompilationTarget::Svg => Buffer::from_ok(export_merged_svg(document)),
+        }
+    }
+
+    /// Prepare a buffer hamdling compilation errors and result
     fn from_document_result(
         document_result: Result<CompiledDocument, TemplateCompilationFailure>,
-        world: &OicanaWorld<PackedTemplate>,
-        format: CompilationTarget,
+        template: String,
     ) -> Self {
         match document_result {
-            Ok(compilation_result) => match format {
-                CompilationTarget::Pdf => {
-                    match export_merged_pdf(&compilation_result.document, world) {
-                        Err(error) => Buffer::from_error(format!(
-                            "Error encoding compilation result as PDF: {error:?}"
-                        )),
-                        Ok(pdf) => Buffer::from_ok(pdf),
-                    }
-                }
-                CompilationTarget::Png => {
-                    match export_merged_png(&compilation_result.document, 1.0) {
-                        Err(error) => Buffer::from_error(format!(
-                            "Error encoding compilation result as PNG: {error:?}"
-                        )),
-                        Ok(png) => Buffer::from_ok(png),
-                    }
-                }
-                CompilationTarget::Svg => {
-                    Buffer::from_ok(export_merged_svg(&compilation_result.document))
-                }
-            },
+            Ok(compilation_result) => {
+                let result_id = new_document_id(&template);
+                DOCUMENT_CACHE.insert(result_id.clone(), compilation_result.document);
+                Buffer::from_ok_string(result_id)
+            }
             Err(error) => Buffer::from_error(format!("{error:?}")),
         }
     }
@@ -421,10 +507,17 @@ pub enum CompilationMode {
 #[repr(C)]
 #[derive(Copy, Clone, Debug)]
 pub struct CompilationOptions {
-    /// Formats that an Oicana template can be compiled into.
-    pub target: CompilationTarget,
     /// The mode of compilation
     pub mode: CompilationMode,
+}
+
+/// Options for exporting the template
+#[ffi_type]
+#[repr(C)]
+#[derive(Copy, Clone, Debug)]
+pub struct ExportOptions {
+    /// Formats that an Oicana template can be compiled into.
+    pub target: CompilationTarget,
     /// Pixels per pt
     /// Only used for PNG export
     pub px_per_pt: f32,
@@ -506,17 +599,21 @@ static CONFIGURATION: Lazy<Arc<Mutex<Config>>> = Lazy::new(|| {
 
 static WORLD_CACHE: Lazy<DashMap<String, OicanaWorld<PackedTemplate>>> = Lazy::new(DashMap::new);
 
+static DOCUMENT_CACHE: Lazy<DashMap<String, PagedDocument>> = Lazy::new(DashMap::new);
+
 /// List methods for auto generated bindings
 pub fn my_inventory() -> Inventory {
     InventoryBuilder::new()
         .register(function!(unsafe_compile_template))
-        .register(function!(unsafe_compile_template_once))
+        .register(function!(unsafe_export_template_once))
         .register(function!(unsafe_register_template))
+        .register(function!(unsafe_export_document))
         .register(function!(inputs))
         .register(function!(get_source))
         .register(function!(get_file))
         .register(function!(unsafe_free_buffer))
-        .register(function!(unregister_template))
+        .register(function!(remove_world))
+        .register(function!(remove_document))
         .register(function!(configure))
         .inventory()
 }

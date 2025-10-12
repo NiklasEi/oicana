@@ -1,14 +1,14 @@
 import test from 'ava'
 import fs from 'node:fs'
 
-import { registerTemplate, compileTemplate, CompilationMode } from '../index.js'
+import { registerTemplate, compileTemplate, CompilationMode, exportDocument } from '../index.js'
 
 const assetsDir = '../../../assets'
 
 test('Can register and render template', async (t) => {
   console.time('template registration')
   const file = fs.readFileSync(`${assetsDir}/templates/invoice-0.1.0.zip`)
-  const result = registerTemplate(
+  const documentId = registerTemplate(
     'invoice',
     file,
     {
@@ -60,15 +60,17 @@ test('Can register and render template', async (t) => {
 }`,
     },
     { banner: { bytes: fs.readFileSync(`${assetsDir}/logo/oicana_full_background_1024.png`), meta: '{}' } },
-    JSON.stringify({ format: 'pdf' }),
     CompilationMode.Development,
   )
   console.timeEnd('template registration')
+  console.time('document export')
+  const result = exportDocument(documentId, JSON.stringify({ format: 'pdf' }))
+  console.timeEnd('document export')
   fs.writeFileSync('test.pdf', result)
   t.truthy(fs.existsSync('test.pdf'))
 
   console.time('template render')
-  const secondResult = compileTemplate(
+  const secondDocumentId = compileTemplate(
     'invoice',
     {
       invoice: `
@@ -130,10 +132,12 @@ test('Can register and render template', async (t) => {
         meta: JSON.stringify({ image_format: 'png' }),
       },
     },
-    JSON.stringify({ format: 'pdf' }),
     CompilationMode.Development,
   )
   console.timeEnd('template render')
+  console.time('document export')
+  const secondResult = exportDocument(secondDocumentId, JSON.stringify({ format: 'pdf' }))
+  console.timeEnd('document export')
   fs.writeFileSync('test_2.pdf', secondResult)
   t.truthy(fs.existsSync('test_2.pdf'))
 })

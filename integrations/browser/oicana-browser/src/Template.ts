@@ -1,8 +1,10 @@
 import {
   compile_template,
+  export_document,
   get_file,
   get_source,
   register_template,
+  remove_document,
   inputs as wasmInputs,
 } from '@oicana/browser-wasm';
 import { CompilationMode } from './CompilationMode';
@@ -66,14 +68,14 @@ export class Template {
         blob[1].meta = {};
       }
     }
-    register_template(
+    const documentId = register_template(
       this.template,
       template,
       jsonInputs ?? new Map(),
       blobInputs ?? new Map(),
-      { format: 'pdf' },
       compilationMode ?? CompilationMode.Development,
     );
+    remove_document(documentId);
   }
 
   /**
@@ -124,13 +126,19 @@ export class Template {
         blob[1].meta = {};
       }
     }
-    return compile_template(
+    const documentId = compile_template(
       this.template,
       jsonInputs ?? new Map(),
       blobInputs ?? new Map(),
-      this.convertExportFormat(exportFormat),
       compilationMode ?? this.defaultCompilationMode,
     );
+    const result = export_document(
+      documentId,
+      this.convertExportFormat(exportFormat),
+    );
+    remove_document(documentId);
+
+    return result;
   }
 
   /**
