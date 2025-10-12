@@ -169,9 +169,6 @@ pub fn export_document(document_id: String, export_format: String) -> Result<Buf
         .map_err(|error| Error::from_reason(format!("Failed to encode PNG: {error:?}")))
         .map(|pix_map| pix_map.into())
     }
-    ExportFormat::Pdf => export_merged_pdf(document, world)
-      .map_err(|error| Error::from_reason(format!("Failed to encode PDF: {error:?}")))
-      .map(|pdf| pdf.into()),
     ExportFormat::Pdf => {
       let template_id = template_id_from_document_id(&document_id);
       let Some(world) = WORLD_CACHE.get(template_id) else {
