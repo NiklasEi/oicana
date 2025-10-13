@@ -1,6 +1,6 @@
 # Next release
 
-## CLI
+# CLI - v0.1.0-alpha.3
 
 - fix CLI sometimes packaging test files ((#20)[https://github.com/oicana/oicana/pull/20])
 - tests can be without a snapshot file ((#16)[https://github.com/oicana/oicana/pull/16])
