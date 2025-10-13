@@ -107,4 +107,4 @@ Change the endpoint to set the name input we just defined.
 )
 
 \
-Calling the endpoint now, will result in a PDF with the new name. Building on this minimal service, one could now start to accept inputs through the HTTP endpoint or add other inputs. Take a look at the open source #link("https://github.com/oicana/oicana-example-asp-net/")[ASP.NET example project on GitHub] for a more complete showcase of the Oicana C#sym.hash integration.
+Calling the endpoint now, will result in a PDF with "Baby Yoda". Building on this minimal service, one could set input values based on database entries or the request payload. Take a look at the open source #link("https://github.com/oicana/oicana-example-asp-net/")[ASP.NET example project on GitHub] for a more complete showcase of the Oicana C#sym.hash integration.
