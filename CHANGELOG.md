@@ -1,5 +1,10 @@
 # Next release
 
+
+# Crates and CLI - v0.1.0-alpha.4
+
+- mostly changes for CLI - v0.1.0-alpha.3
+
 # CLI - v0.1.0-alpha.3
 
 - fix CLI sometimes packaging test files ((#20)[https://github.com/oicana/oicana/pull/20])
