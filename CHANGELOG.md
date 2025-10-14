@@ -1,7 +1,10 @@
 # Next release
 
+# Crates v0.1.0-alpha.4 and CLI v0.1.0-alpha.5
 
-# Crates and CLI - v0.1.0-alpha.4
+- fix fuzzing tests from paths other than template root ((#28)[https://github.com/oicana/oicana/pull/20])
+
+# Crates v0.1.0-alpha.3 and CLI v0.1.0-alpha.4
 
 - mostly changes for CLI - v0.1.0-alpha.3
 
