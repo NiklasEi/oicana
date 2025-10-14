@@ -38,6 +38,7 @@ impl TestRunnerContext {
     ) -> Result<TestRunner, TemplateInitializationError> {
         Ok(TestRunner {
             instance: Template::<NativeTemplate>::from(path, &self.packages, manifest.clone())?,
+            template_path: path.to_path_buf(),
         })
     }
 }
@@ -45,6 +46,7 @@ impl TestRunnerContext {
 /// Execution context for tests of a single template
 pub struct TestRunner {
     instance: Template<NativeTemplate>,
+    template_path: PathBuf,
 }
 
 impl TestRunner {
@@ -78,7 +80,7 @@ impl TestRunner {
                 )));
             };
             let schema = {
-                let schema_file = match File::open(schema_path) {
+                let schema_file = match File::open(self.template_path.join(schema_path)) {
                     Ok(file) => file,
                     Err(error) => {
                         return Err(TestExecutionError::FuzzingSetup(format!(
