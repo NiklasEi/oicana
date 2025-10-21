@@ -62,4 +62,24 @@ public class TemplateJsonInput
     /// }
     /// </example>
     public required JsonNode Value { get; init; }
+
+    /// <inheritdoc />
+    public override bool Equals(object? obj)
+    {
+        if (obj is TemplateJsonInput input)
+        {
+            return Key == input.Key && JsonNode.DeepEquals(input.Value, Value);
+        }
+
+        return false;
+    }
+
+    /// <inheritdoc />
+    public override int GetHashCode()
+    {
+        int hash = (Key?.GetHashCode(StringComparison.Ordinal) ?? 1) * 17;
+        hash += (Value?.ToJsonString() ?? string.Empty).GetHashCode(StringComparison.Ordinal) * 23;
+
+        return hash;
+    }
 }
