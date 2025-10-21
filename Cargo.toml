@@ -39,23 +39,15 @@ oicana_template = { version = "0.1.0-alpha.1", path = "crates/oicana_template" }
 oicana_testing = { version = "0.1.0-alpha.1", path = "crates/oicana_testing" }
 oicana = { version = "0.1.0-alpha.1", path = "integrations/rust/oicana" }
 
-typst = { version = "0.14.0-rc.1" }
-typst-pdf = { version = "0.14.0-rc.1" }
-typst-render = { version = "0.14.0-rc.1" }
-typst-svg = { version = "0.14.0-rc.1" }
-typst-utils = { version = "0.14.0-rc.1" }
-typst-kit = { version = "0.14.0-rc.1" }
-typst-assets = { version = "0.14.0-rc.1" }
+typst = { version = "0.14.0-rc.2" }
+typst-pdf = { version = "0.14.0-rc.2" }
+typst-render = { version = "0.14.0-rc.2" }
+typst-svg = { version = "0.14.0-rc.2" }
+typst-utils = { version = "0.14.0-rc.2" }
+typst-kit = { version = "0.14.0-rc.2" }
+typst-assets = { version = "0.14.0-rc.2" }
 
-# typst = { git = "https://github.com/typst/typst", rev = "9665eecdb62ee94cd9fcf4dfc61e2c70ba9391fb"}
-# typst-pdf = { git = "https://github.com/typst/typst", rev = "9665eecdb62ee94cd9fcf4dfc61e2c70ba9391fb" }
-# typst-render = { git = "https://github.com/typst/typst", rev = "9665eecdb62ee94cd9fcf4dfc61e2c70ba9391fb" }
-# typst-svg = { git = "https://github.com/typst/typst", rev = "9665eecdb62ee94cd9fcf4dfc61e2c70ba9391fb" }
-# typst-utils = { git = "https://github.com/typst/typst", rev = "9665eecdb62ee94cd9fcf4dfc61e2c70ba9391fb" }
-# typst-kit = { git = "https://github.com/typst/typst", rev = "9665eecdb62ee94cd9fcf4dfc61e2c70ba9391fb" }
-# typst-assets = { git = "https://github.com/typst/typst-assets", rev = "8cccef9" }
-
-comemo = { version = "0.4.0" }
+comemo = { version = "0.5.0" }
 
 wasm-bindgen = { version = "0.2.101" }
 serde-wasm-bindgen = { version = "0.6.5" }
