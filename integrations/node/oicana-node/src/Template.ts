@@ -1,12 +1,15 @@
 import {
   type BlobWithMetadata as BlobWithMetadataNative,
   compileTemplate,
+  configureWorld,
   exportDocument,
   CompilationMode as NativeCompilationMode,
+  DiagnosticColor as NativeDiagnosticColor,
   registerTemplate,
   removeDocument,
 } from '@oicana/node-native';
 import { CompilationMode } from './CompilationMode.js';
+import { DiagnosticColor } from './DiagnosticColor.js';
 import type { ExportFormat } from './ExportFormat.js';
 import type { BlobWithMetadata } from './inputs/index.js';
 
@@ -117,7 +120,7 @@ export class Template {
       this.convertBlobWithMetadata(
         blobInputs ?? new Map<string, BlobWithMetadata>(),
       ),
-      this.mapCompilationMode(compilationMode ?? CompilationMode.Production),
+      this.mapCompilationMode(compilationMode ?? this.defaultMode()),
     );
     try {
       return exportDocument(document, JSON.stringify(format));
@@ -141,6 +144,14 @@ export class Template {
     this.defaultCompilationMode = compilationMode;
   }
 
+  /**
+   * Set the diagnostic color for compiler output coming from this template
+   * @param diagnosticColor to use for diagnostic output (warnings and errors)
+   */
+  public setDiagnosticColor(diagnosticColor: DiagnosticColor) {
+    configureWorld(this.template, this.mapDiagnosticColor(diagnosticColor));
+  }
+
   private convertBlobWithMetadata(
     blobInputs: Map<string, BlobWithMetadata>,
   ): Record<string, BlobWithMetadataNative> {
@@ -161,6 +172,17 @@ export class Template {
         return NativeCompilationMode.Development;
       case CompilationMode.Production:
         return NativeCompilationMode.Production;
+    }
+  }
+
+  private mapDiagnosticColor(
+    diagnosticColor: DiagnosticColor,
+  ): NativeDiagnosticColor {
+    switch (diagnosticColor) {
+      case DiagnosticColor.None:
+        return NativeDiagnosticColor.None;
+      case DiagnosticColor.Ansi:
+        return NativeDiagnosticColor.Ansi;
     }
   }
 }

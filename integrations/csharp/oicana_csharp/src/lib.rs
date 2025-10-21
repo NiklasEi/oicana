@@ -554,7 +554,7 @@ unsafe fn prepare_inputs(
     Ok(inputs)
 }
 
-/// Formats that the compiled documents can be rendered into.
+/// Coloring options for diagnostic output
 #[ffi_type]
 #[repr(C)]
 #[derive(Copy, Clone, Debug)]

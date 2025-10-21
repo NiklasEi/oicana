@@ -27,6 +27,22 @@ export declare function compileTemplate(
 ): string
 
 /**
+ * Load the source of the given file in the template.
+ *
+ * Calling this method requires a previous call to [`register_template`] with the same template
+ * identifier.
+ */
+export declare function configureWorld(template: string, diagnosticColor: DiagnosticColor): void
+
+/** Coloring options for diagnostic output */
+export declare const enum DiagnosticColor {
+  /** No colors in diagnostic output */
+  None = 0,
+  /** ANSI codes for colors in diagnostic output */
+  Ansi = 1,
+}
+
+/**
  * Export the given document
  *
  * Make sure to call `removeDocument` with the documentId afterwards, to free the memory.

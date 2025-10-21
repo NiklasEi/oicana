@@ -559,6 +559,8 @@ if (!nativeBinding) {
 module.exports = nativeBinding
 module.exports.CompilationMode = nativeBinding.CompilationMode
 module.exports.compileTemplate = nativeBinding.compileTemplate
+module.exports.configureWorld = nativeBinding.configureWorld
+module.exports.DiagnosticColor = nativeBinding.DiagnosticColor
 module.exports.exportDocument = nativeBinding.exportDocument
 module.exports.getFile = nativeBinding.getFile
 module.exports.getSource = nativeBinding.getSource

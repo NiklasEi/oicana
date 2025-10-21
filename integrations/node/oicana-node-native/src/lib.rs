@@ -110,7 +110,7 @@ fn template_id_from_document_id(document_id: &str) -> &str {
 /// identifier.
 #[napi]
 pub fn inputs(template: String) -> Result<String> {
-  let Some(world) = WORLD_CACHE.get_mut(&template) else {
+  let Some(world) = WORLD_CACHE.get(&template) else {
     return Err(Error::from_reason("Template was not registered"));
   };
   let oicana_config = &world.manifest().tool.oicana;
@@ -124,7 +124,7 @@ pub fn inputs(template: String) -> Result<String> {
 /// identifier.
 #[napi]
 pub fn get_source(template: String, file: String) -> Result<String> {
-  let Some(world) = WORLD_CACHE.get_mut(&template) else {
+  let Some(world) = WORLD_CACHE.get(&template) else {
     return Err(Error::from_reason("Template was not registered"));
   };
   world
@@ -140,7 +140,7 @@ pub fn get_source(template: String, file: String) -> Result<String> {
 /// identifier.
 #[napi]
 pub fn get_file(template: String, file: String) -> Result<Buffer> {
-  let Some(world) = WORLD_CACHE.get_mut(&template) else {
+  let Some(world) = WORLD_CACHE.get(&template) else {
     return Err(Error::from_reason("Template was not registered"));
   };
   let bytes = world
@@ -148,6 +148,19 @@ pub fn get_file(template: String, file: String) -> Result<Buffer> {
     .file(FileId::new(None, VirtualPath::new(file)))
     .map_err(|error| Error::from_reason(error.to_string()))?;
   Ok(bytes.to_vec().into()) // This is currently copying, although we own bytes here.
+}
+
+/// Load the source of the given file in the template.
+///
+/// Calling this method requires a previous call to [`register_template`] with the same template
+/// identifier.
+#[napi]
+pub fn configure_world(template: String, diagnostic_color: DiagnosticColor) -> Result<()> {
+  let Some(mut world) = WORLD_CACHE.get_mut(&template) else {
+    return Err(Error::from_reason("Template was not registered"));
+  };
+  world.color = diagnostic_color.into();
+  Ok(())
 }
 
 /// Export the given document
@@ -261,6 +274,25 @@ impl From<CompilationMode> for oicana_input::CompilationConfig {
     match value {
       CompilationMode::Development => CompilationConfig::development(),
       CompilationMode::Production => CompilationConfig::production(),
+    }
+  }
+}
+
+/// Coloring options for diagnostic output
+#[napi]
+#[derive(Copy, Clone, Debug)]
+pub enum DiagnosticColor {
+  /// No colors in diagnostic output
+  None,
+  /// ANSI codes for colors in diagnostic output
+  Ansi,
+}
+
+impl From<DiagnosticColor> for oicana_world::diagnostics::DiagnosticColor {
+  fn from(value: DiagnosticColor) -> Self {
+    match value {
+      DiagnosticColor::Ansi => oicana_world::diagnostics::DiagnosticColor::Ansi,
+      DiagnosticColor::None => oicana_world::diagnostics::DiagnosticColor::None,
     }
   }
 }
