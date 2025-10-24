@@ -39,13 +39,13 @@ oicana_template = { version = "0.1.0-alpha.1", path = "crates/oicana_template" }
 oicana_testing = { version = "0.1.0-alpha.1", path = "crates/oicana_testing" }
 oicana = { version = "0.1.0-alpha.1", path = "integrations/rust/oicana" }
 
-typst = { version = "0.14.0-rc.2" }
-typst-pdf = { version = "0.14.0-rc.2" }
-typst-render = { version = "0.14.0-rc.2" }
-typst-svg = { version = "0.14.0-rc.2" }
-typst-utils = { version = "0.14.0-rc.2" }
-typst-kit = { version = "0.14.0-rc.2" }
-typst-assets = { version = "0.14.0-rc.2" }
+typst = { version = "0.14.0" }
+typst-pdf = { version = "0.14.0" }
+typst-render = { version = "0.14.0" }
+typst-svg = { version = "0.14.0" }
+typst-utils = { version = "0.14.0" }
+typst-kit = { version = "0.14.0" }
+typst-assets = { version = "0.14.0" }
 
 comemo = { version = "0.5.0" }
 
