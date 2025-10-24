@@ -191,7 +191,9 @@ manifest_version = 1
 
         buffer.set_position(0);
         let mut archive = zip::ZipArchive::new(buffer).unwrap();
-        assert!(archive.by_name("assets/data.json").is_ok());
+        assert!(archive
+            .by_name(&Path::new("assets").join("data.json").to_string_lossy())
+            .is_ok());
     }
 
     #[test]
