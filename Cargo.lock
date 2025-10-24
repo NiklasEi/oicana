@@ -2344,6 +2344,8 @@ dependencies = [
 name = "oicana_export"
 version = "0.1.0-alpha.4"
 dependencies = [
+ "oicana_files",
+ "oicana_input",
  "oicana_world",
  "png 0.17.16",
  "typst",

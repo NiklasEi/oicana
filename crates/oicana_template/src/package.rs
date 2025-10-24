@@ -124,3 +124,119 @@ pub enum PackageError {
     #[error("failed to convert last modified dates: {0}")]
     DateTimeRange(#[from] DateTimeRangeError),
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::io::Cursor;
+    use tempfile::TempDir;
+
+    fn manifest() -> &'static str {
+        r#"
+[package]
+name = "test"
+version = "0.1.0"
+entrypoint = "main.typ"
+
+[tool.oicana]
+manifest_version = 1
+"#
+    }
+
+    fn create_simple_template() -> TempDir {
+        let dir = TempDir::new().unwrap();
+        std::fs::write(dir.path().join("typst.toml"), manifest()).unwrap();
+        std::fs::write(dir.path().join("main.typ"), "Hello").unwrap();
+        dir
+    }
+
+    #[test]
+    fn packages_simple_template_and_can_unpack() {
+        let dir = create_simple_template();
+        let manifest = TemplateManifest::from_toml(
+            &std::fs::read_to_string(dir.path().join("typst.toml")).unwrap(),
+        )
+        .unwrap();
+
+        let mut buffer = Cursor::new(Vec::new());
+        package(dir.path(), &mut buffer, &manifest).unwrap();
+
+        buffer.set_position(0);
+        let mut archive = zip::ZipArchive::new(buffer).unwrap();
+
+        assert!(archive.by_name("main.typ").is_ok());
+        assert!(archive.by_name("typst.toml").is_ok());
+
+        let mut main_file = archive.by_name("main.typ").unwrap();
+        let mut content = String::new();
+        main_file.read_to_string(&mut content).unwrap();
+        assert_eq!(content, "Hello");
+    }
+
+    #[test]
+    fn packages_template_with_subdirectories() {
+        let dir = TempDir::new().unwrap();
+        std::fs::write(dir.path().join("typst.toml"), manifest()).unwrap();
+        std::fs::write(dir.path().join("main.typ"), "Hello").unwrap();
+        std::fs::create_dir(dir.path().join("assets")).unwrap();
+        std::fs::write(dir.path().join("assets").join("data.json"), "{}").unwrap();
+
+        let manifest = TemplateManifest::from_toml(
+            &std::fs::read_to_string(dir.path().join("typst.toml")).unwrap(),
+        )
+        .unwrap();
+
+        let mut buffer = Cursor::new(Vec::new());
+        package(dir.path(), &mut buffer, &manifest).unwrap();
+
+        buffer.set_position(0);
+        let mut archive = zip::ZipArchive::new(buffer).unwrap();
+        assert!(archive.by_name("assets/data.json").is_ok());
+    }
+
+    #[test]
+    fn excludes_test_directory() {
+        let dir = TempDir::new().unwrap();
+        std::fs::write(dir.path().join("typst.toml"), manifest()).unwrap();
+        std::fs::write(dir.path().join("main.typ"), "Hello").unwrap();
+        std::fs::create_dir(dir.path().join("tests")).unwrap();
+        std::fs::write(dir.path().join("tests").join("test.toml"), "").unwrap();
+
+        let manifest = TemplateManifest::from_toml(
+            &std::fs::read_to_string(dir.path().join("typst.toml")).unwrap(),
+        )
+        .unwrap();
+
+        let mut buffer = Cursor::new(Vec::new());
+        package(dir.path(), &mut buffer, &manifest).unwrap();
+
+        buffer.set_position(0);
+        let archive = zip::ZipArchive::new(buffer).unwrap();
+        let file_names: Vec<String> = archive.file_names().map(|s| s.to_string()).collect();
+
+        assert!(!file_names.iter().any(|name| name.starts_with("tests")));
+        assert!(file_names.contains(&"main.typ".to_string()));
+    }
+
+    #[test]
+    fn fails_when_source_is_not_directory() {
+        let dir = TempDir::new().unwrap();
+        let file_path = dir.path().join("not_a_dir.txt");
+        std::fs::write(&file_path, "content").unwrap();
+
+        let manifest = TemplateManifest::from_toml(manifest()).unwrap();
+        let mut buffer = Cursor::new(Vec::new());
+        let result = package(&file_path, &mut buffer, &manifest);
+
+        assert!(matches!(result, Err(PackageError::SourceIsNotADirectory)));
+    }
+
+    #[test]
+    fn fails_when_source_does_not_exist() {
+        let manifest = TemplateManifest::from_toml(manifest()).unwrap();
+        let mut buffer = Cursor::new(Vec::new());
+        let result = package(Path::new("/nonexistent/path"), &mut buffer, &manifest);
+
+        assert!(result.is_err());
+    }
+}
