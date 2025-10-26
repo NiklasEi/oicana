@@ -460,6 +460,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: typst-community/setup-tytanic@v1
+        with:
+          tytanic-version: 0.3.0
       - uses: taiki-e/install-action@v2
         with:
           tool: typstyle
