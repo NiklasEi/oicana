@@ -60,8 +60,81 @@ impl TemplateFiles for PreloadedTemplate {
             .clone())
     }
 
-    /// preloaded currently doesn't support fonts from the template
+    /// Todo: preloaded currently doesn't support fonts from the template
     fn font_files(&self) -> &Vec<FileId> {
         &self.fonts
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn creates_template_from_files() {
+        let mut files = HashMap::new();
+        files.insert("test.typ".to_owned(), "content".to_owned());
+
+        let template = PreloadedTemplate::new(files);
+
+        assert_eq!(template.slots.len(), 1);
+    }
+
+    #[test]
+    fn source_returns_file_content() {
+        let mut files = HashMap::new();
+        files.insert("test.typ".to_owned(), "content".to_owned());
+        let template = PreloadedTemplate::new(files);
+
+        let id = FileId::new(None, VirtualPath::new("test.typ"));
+        let source = template.source(id).unwrap();
+
+        assert_eq!(source.text(), "content");
+    }
+
+    #[test]
+    fn file_returns_bytes() {
+        let mut files = HashMap::new();
+        files.insert("test.typ".to_owned(), "content".to_owned());
+        let template = PreloadedTemplate::new(files);
+
+        let id = FileId::new(None, VirtualPath::new("test.typ"));
+        let bytes = template.file(id).unwrap();
+
+        assert_eq!(bytes.as_slice(), b"content");
+    }
+
+    #[test]
+    fn source_fails_for_nonexistent_file() {
+        let template = PreloadedTemplate::new(HashMap::new());
+        let id = FileId::new(None, VirtualPath::new("missing.typ"));
+
+        let result = template.source(id);
+
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn file_fails_for_nonexistent_file() {
+        let template = PreloadedTemplate::new(HashMap::new());
+        let id = FileId::new(None, VirtualPath::new("missing.typ"));
+
+        let result = template.file(id);
+
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn handles_multiple_files() {
+        let mut files = HashMap::new();
+        files.insert("file1.typ".to_owned(), "content1".to_owned());
+        files.insert("file2.typ".to_owned(), "content2".to_owned());
+        let template = PreloadedTemplate::new(files);
+
+        let id1 = FileId::new(None, VirtualPath::new("file1.typ"));
+        let id2 = FileId::new(None, VirtualPath::new("file2.typ"));
+
+        assert_eq!(template.source(id1).unwrap().text(), "content1");
+        assert_eq!(template.source(id2).unwrap().text(), "content2");
     }
 }

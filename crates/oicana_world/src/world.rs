@@ -254,4 +254,110 @@ mod tests {
             FileError::NotFound(PathBuf::from("/not_main.typ"))
         )
     }
+
+    fn simple_manifest() -> &'static str {
+        r#"
+        [package]
+        name = "test"
+        version = "0.1.0"
+        entrypoint = "main.typ"
+        
+        [tool.oicana]
+        manifest_version = 1
+        "#
+    }
+
+    fn template_with(manifest: &str, main_typ: &str) -> PreloadedTemplate {
+        let mut files = HashMap::new();
+        files.insert("typst.toml".to_owned(), manifest.to_owned());
+        files.insert("main.typ".to_owned(), main_typ.to_owned());
+        PreloadedTemplate::new(files)
+    }
+
+    #[test]
+    fn compiles_simple_template() {
+        let files = template_with(
+            simple_manifest(),
+            "#set page(width: 200pt, height: 100pt)\nHello, World!",
+        );
+        let manifest = files.manifest().unwrap();
+        let mut world = OicanaWorld::new(files, TemplateInputs::new(), manifest).unwrap();
+
+        let result = world.compile();
+
+        assert!(result.is_ok());
+        let compiled = result.unwrap();
+        assert!(compiled.warnings.is_none());
+        assert_eq!(compiled.document.pages.len(), 1);
+    }
+
+    #[test]
+    fn compiles_multipage_template() {
+        let files = template_with(simple_manifest(), "#set page(width: 200pt, height: 100pt)\nPage 1\n#pagebreak()\nPage 2\n#pagebreak()\nPage 3");
+        let manifest = files.manifest().unwrap();
+        let mut world = OicanaWorld::new(files, TemplateInputs::new(), manifest).unwrap();
+
+        let compiled = world.compile().unwrap();
+
+        assert_eq!(compiled.document.pages.len(), 3);
+    }
+
+    #[test]
+    fn fails_to_compile_invalid_template() {
+        let files = template_with(simple_manifest(), "#invalid_typst_syntax #(");
+        let manifest = files.manifest().unwrap();
+        let mut world = OicanaWorld::new(files, TemplateInputs::new(), manifest).unwrap();
+
+        let result = world.compile();
+
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn compiles_empty_template() {
+        let files = template_with(simple_manifest(), "");
+        let manifest = files.manifest().unwrap();
+        let mut world = OicanaWorld::new(files, TemplateInputs::new(), manifest).unwrap();
+
+        let compiled = world.compile().unwrap();
+
+        assert_eq!(compiled.document.pages.len(), 1);
+    }
+
+    #[test]
+    fn compilation_with_warnings_includes_warning_message() {
+        let files = template_with(
+            simple_manifest(),
+            "#set text(font: \"NonexistentFont\")\nContent",
+        );
+        let manifest = files.manifest().unwrap();
+        let mut world = OicanaWorld::new(files, TemplateInputs::new(), manifest).unwrap();
+
+        let compiled = world.compile().unwrap();
+
+        assert!(compiled.warnings.is_some());
+    }
+
+    #[test]
+    fn manifest_returns_correct_template_manifest() {
+        let files = template_with(
+            r#"
+            [package]
+            name = "test-template"
+            version = "0.1.0"
+            entrypoint = "main.typ"
+            
+            [tool.oicana]
+            manifest_version = 1
+            "#,
+            "Test",
+        );
+        let manifest = files.manifest().unwrap();
+        let world = OicanaWorld::new(files, TemplateInputs::new(), manifest).unwrap();
+
+        let returned_manifest = world.manifest();
+
+        assert_eq!(returned_manifest.package.name, "test-template");
+        assert_eq!(returned_manifest.package.version.to_string(), "0.1.0");
+    }
 }
