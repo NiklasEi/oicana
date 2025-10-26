@@ -27,3 +27,7 @@ typst-svg = { workspace = true, optional = true }
 typst = { workspace = true }
 
 png = { workspace = true, optional = true }
+
+[dev-dependencies]
+oicana_files = { workspace = true }
+oicana_input = { workspace = true }
