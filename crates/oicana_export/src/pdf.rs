@@ -46,7 +46,7 @@ mod tests {
         files.insert("typst.toml".to_owned(), manifest().to_owned());
         files.insert(
             "main.typ".to_owned(),
-            "#set page(width: 200pt, height: 100pt)\nHello".to_owned(),
+            "#set page(width: 200pt, height: 100pt)\n#set document(date: datetime(year: 2020,month: 10,day: 4))\nHello".to_owned(),
         );
         PreloadedTemplate::new(files)
     }
@@ -56,7 +56,7 @@ mod tests {
         files.insert("typst.toml".to_owned(), manifest().to_owned());
         files.insert(
             "main.typ".to_owned(),
-            "#set page(width: 200pt, height: 100pt)\nPage 1\n#pagebreak()\nPage 2\n#pagebreak()\nPage 3".to_owned(),
+            "#set page(width: 200pt, height: 100pt)\n#set document(date: datetime(year: 2020,month: 10,day: 4))\nPage 1\n#pagebreak()\nPage 2\n#pagebreak()\nPage 3".to_owned(),
         );
         PreloadedTemplate::new(files)
     }
