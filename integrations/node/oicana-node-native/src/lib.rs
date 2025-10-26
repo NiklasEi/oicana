@@ -18,6 +18,7 @@ use oicana_files::TemplateFiles;
 use oicana_input::input::blob::{Blob, BlobInput};
 use oicana_input::input::json::JsonInput;
 use oicana_input::{CompilationConfig, TemplateInputs};
+use oicana_world::diagnostics::DiagnosticColor;
 use oicana_world::manifest::OicanaWorldFiles;
 use oicana_world::world::OicanaWorld;
 use once_cell::sync::Lazy;
@@ -55,6 +56,7 @@ pub fn register_template(
   inputs.with_config(compilation_mode.into());
   let mut zip_world = OicanaWorld::new(files, inputs, manifest)
     .map_err(|error| Error::from_reason(error.to_string()))?;
+  zip_world.color = DiagnosticColor::None;
 
   let document = zip_world
     .compile()

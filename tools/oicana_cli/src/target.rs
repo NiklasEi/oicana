@@ -132,7 +132,7 @@ impl TemplateDir {
 
 #[cfg(test)]
 mod tests {
-    use std::{collections::BTreeMap, fs::File, path::PathBuf};
+    use std::{fs::File, path::PathBuf};
 
     use oicana_template::{manifest::TemplateManifest, OicanaConfig};
     use oicana_testing::SnapshotMode;
@@ -141,24 +141,8 @@ mod tests {
 
     use super::TemplateDir;
 
-    // ToDo: use new methods from https://github.com/typst/typst/pull/6625 when released
     fn default_package_info() -> PackageInfo {
-        PackageInfo {
-            name: "test-package".into(),
-            version: "0.1.0".parse().unwrap(),
-            entrypoint: "main.typ".into(),
-            authors: vec![],
-            categories: vec![],
-            compiler: None,
-            description: None,
-            disciplines: vec![],
-            exclude: vec![],
-            homepage: None,
-            keywords: vec![],
-            license: None,
-            repository: None,
-            unknown_fields: BTreeMap::new(),
-        }
+        PackageInfo::new("test-package", "0.1.0".parse().unwrap(), "main.typ")
     }
 
     #[test]

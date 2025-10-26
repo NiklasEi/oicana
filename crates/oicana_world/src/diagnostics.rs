@@ -41,6 +41,7 @@ impl<'a, Files: TemplateFiles> CodespanFiles<'a> for OicanaWorld<Files> {
             .files
             .source(id)
             .map_err(|_| CodespanError::FileMissing)?;
+        let source = source.lines();
         source
             .byte_to_line(given)
             .ok_or_else(|| CodespanError::IndexTooLarge {
@@ -58,6 +59,7 @@ impl<'a, Files: TemplateFiles> CodespanFiles<'a> for OicanaWorld<Files> {
             .files
             .source(id)
             .map_err(|_| CodespanError::FileMissing)?;
+        let source = source.lines();
         source
             .line_to_range(given)
             .ok_or_else(|| CodespanError::LineTooLarge {
@@ -71,6 +73,7 @@ impl<'a, Files: TemplateFiles> CodespanFiles<'a> for OicanaWorld<Files> {
             .files
             .source(id)
             .map_err(|_| CodespanError::FileMissing)?;
+        let source = source.lines();
         source.byte_to_column(given).ok_or_else(|| {
             let max = source.len_bytes();
             if given <= max {
