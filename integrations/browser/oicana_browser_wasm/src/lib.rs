@@ -17,12 +17,11 @@ use oicana_world::diagnostics::DiagnosticColor;
 use oicana_world::get_current_time;
 use oicana_world::manifest::OicanaWorldFiles;
 use oicana_world::world::OicanaWorld;
-use once_cell::sync::{Lazy, OnceCell};
+use once_cell::sync::Lazy;
 use serde::Deserialize;
 use serde_wasm_bindgen::from_value;
 use std::collections::HashMap;
 use std::io::Cursor;
-use std::sync::Mutex;
 use typst::foundations::Bytes;
 use typst::layout::PagedDocument;
 use typst::syntax::{FileId, VirtualPath};
@@ -64,7 +63,7 @@ pub fn register_template(
         OicanaWorld::new(files, inputs, manifest).map_err(|error| format!("{error:?}"))?;
     world.color = DiagnosticColor::None;
 
-    let document = world.compile().map_err(|error| format!("{error:?}"))?;
+    let document = world.compile().map_err(|error| error.to_string())?;
     let document_time = get_current_time();
     info!("Done compiling document in {}ms", document_time - start);
 
@@ -100,7 +99,7 @@ pub fn compile_template(
     inputs.with_config(compilation_mode.into());
     world.update_inputs(inputs);
 
-    let document = world.compile().map_err(|error| format!("{error:?}"))?;
+    let document = world.compile().map_err(|error| error.to_string())?;
     let document_time = get_current_time();
     if let Some(warnings) = document.warnings {
         warn!("{warnings}");
@@ -119,18 +118,19 @@ pub fn compile_template(
 /// identifier.
 #[wasm_bindgen]
 pub fn inputs(template: String) -> Result<String, String> {
-    let mut cache_lock = world_cache().lock().unwrap();
-    let Some(world) = cache_lock.get_mut(&template) else {
+    console_error_panic_hook::set_once();
+    let _ = console_log::init_with_level(Level::Debug);
+
+    let Some(world) = WORLD_CACHE.get(&template) else {
         return Err(NOT_REGISTERED.to_owned());
     };
-    let template = world
-        .files
-        .manifest()
-        .map_err(|error| format!("{error:?}"))?
-        .tool
-        .oicana;
 
-    serde_json::ser::to_string(&template).map_err(|error| format!("{error:?}"))
+    let manifest_result = world.files.manifest();
+
+    let manifest = manifest_result.map_err(|error| format!("{error:?}"))?;
+    let template_def = manifest.tool.oicana;
+
+    serde_json::ser::to_string(&template_def).map_err(|error| format!("{error:?}"))
 }
 
 /// Load the source of the given file in the template.
@@ -139,8 +139,7 @@ pub fn inputs(template: String) -> Result<String, String> {
 /// identifier.
 #[wasm_bindgen]
 pub fn get_source(template: String, file: String) -> Result<String, String> {
-    let mut cache_lock = world_cache().lock().unwrap();
-    let Some(world) = cache_lock.get_mut(&template) else {
+    let Some(world) = WORLD_CACHE.get(&template) else {
         return Err(NOT_REGISTERED.to_owned());
     };
     world
@@ -156,8 +155,7 @@ pub fn get_source(template: String, file: String) -> Result<String, String> {
 /// identifier.
 #[wasm_bindgen]
 pub fn get_file(template: String, file: String) -> Result<Uint8Array, String> {
-    let mut cache_lock = world_cache().lock().unwrap();
-    let Some(world) = cache_lock.get_mut(&template) else {
+    let Some(world) = WORLD_CACHE.get(&template) else {
         return Err(NOT_REGISTERED.to_owned());
     };
     let bytes = world
@@ -203,8 +201,23 @@ fn new_document_id(template_id: &str) -> String {
     format!("{}:{}", Uuid::new_v4(), template_id)
 }
 
-fn template_id_from_document_id(document_id: &str) -> &str {
-    &document_id[37..]
+fn template_id_from_document_id(document_id: &str) -> Result<&str, String> {
+    if document_id.len() <= 37 {
+        return Err(format!(
+            "Invalid document ID format (length {}): {}",
+            document_id.len(),
+            document_id
+        ));
+    }
+    if let Some(colon_idx) = document_id.find(':') {
+        if colon_idx == 36 {
+            return Ok(&document_id[37..]);
+        }
+    }
+    Err(format!(
+        "Invalid document ID format (no colon at position 36): {}",
+        document_id
+    ))
 }
 
 /// Export the given document
@@ -227,7 +240,7 @@ pub fn export_document(document_id: String, export_format: JsValue) -> Result<Ui
                 .map(|pix_map| bytes_to_js_array(&pix_map))
         }
         ExportFormat::Pdf => {
-            let template_id = template_id_from_document_id(&document_id);
+            let template_id = template_id_from_document_id(&document_id)?;
             let Some(world) = WORLD_CACHE.get(template_id) else {
                 return Err(format!(
                     "World '{template_id}' for the given document '{document_id}' not found!"
@@ -314,9 +327,3 @@ fn add_json_inputs(inputs: &mut TemplateInputs, json_inputs: JsValue) -> Result<
 static WORLD_CACHE: Lazy<DashMap<String, OicanaWorld<PackedTemplate>>> = Lazy::new(DashMap::new);
 
 static DOCUMENT_CACHE: Lazy<DashMap<String, PagedDocument>> = Lazy::new(DashMap::new);
-
-fn world_cache() -> &'static Mutex<HashMap<String, OicanaWorld<PackedTemplate>>> {
-    static ZIPPED_WORLD: OnceCell<Mutex<HashMap<String, OicanaWorld<PackedTemplate>>>> =
-        OnceCell::new();
-    ZIPPED_WORLD.get_or_init(|| Mutex::new(HashMap::new()))
-}
