@@ -1,0 +1,17 @@
+{
+  "description": "Test table data",
+  "rows": [
+    {
+      "name": "Alice",
+      "one": "A",
+      "two": "B",
+      "three": "C"
+    },
+    {
+      "name": "Bob",
+      "one": "X",
+      "two": "Y",
+      "three": "Z"
+    }
+  ]
+}

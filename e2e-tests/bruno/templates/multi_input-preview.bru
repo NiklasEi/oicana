@@ -1,0 +1,52 @@
+meta {
+  name: Preview multi_input template (PNG)
+  type: http
+  seq: 81
+}
+
+post {
+  url: {{baseUrl}}/templates/multi_input/preview
+  body: json
+  auth: none
+}
+
+script:pre-request {
+  const fs = require('fs');
+  const path = require('path');
+
+  // Load multi input data from fixture files
+  const fixtureDir = path.join(process.cwd(), 'fixtures');
+  const inputOne = JSON.parse(fs.readFileSync(path.join(fixtureDir, 'multi-input-one.json'), 'utf8'));
+  const inputTwo = JSON.parse(fs.readFileSync(path.join(fixtureDir, 'multi-input-two.json'), 'utf8'));
+
+  // Set the request body
+  req.setBody({
+    jsonInputs: [
+      {
+        key: "json_one",
+        value: inputOne
+      },
+      {
+        key: "json_two",
+        value: inputTwo
+      }
+    ],
+    blobInputs: [
+      {
+        key: "logo",
+        blobId: "00000000-0000-0000-0000-000000000000"
+      }
+    ]
+  });
+}
+
+tests {
+  test("should return 200", function() {
+    expect(res.status).to.equal(200);
+  });
+
+  test("should return PNG", function() {
+    const contentType = res.headers['content-type'];
+    expect(contentType).to.contain('image/png');
+  });
+}
