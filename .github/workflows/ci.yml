@@ -313,10 +313,10 @@ jobs:
           tool: "test-compare"
       - name: test e2e template
         run: oicana test
-        working-directory: ./e2e_test_template
+        working-directory: ./e2e-tests/template
       - name: pack e2e template
         run: oicana pack -n {template}-x.y.z.zip
-        working-directory: ./e2e_test_template
+        working-directory: ./e2e-tests/template
       - name: install node-native
         uses: actions/download-artifact@v4
         with:
@@ -334,7 +334,7 @@ jobs:
         run: npm run test
         working-directory: ./integrations/node/oicana-node
       - name: compare test output
-        run: test-compare e2e_test_template integrations/node/oicana-node/testOutput/
+        run: test-compare e2e-tests/template integrations/node/oicana-node/testOutput/
 
   e2e-test-browser-integration:
     runs-on: ubuntu-latest
@@ -359,10 +359,10 @@ jobs:
           tool: "test-compare"
       - name: test e2e template
         run: oicana test
-        working-directory: ./e2e_test_template
+        working-directory: ./e2e-tests/template
       - name: pack e2e template
         run: oicana pack -n {template}-x.y.z.zip
-        working-directory: ./e2e_test_template
+        working-directory: ./e2e-tests/template
       - name: install browser-wasm
         uses: actions/download-artifact@v4
         with:
@@ -380,7 +380,7 @@ jobs:
         run: npm run test
         working-directory: ./integrations/browser/oicana-browser
       - name: compare test output
-        run: test-compare e2e_test_template integrations/browser/oicana-browser/testOutput/
+        run: test-compare e2e-tests/template integrations/browser/oicana-browser/testOutput/
 
   e2e-test-csharp-integration:
     runs-on: ubuntu-latest
@@ -408,10 +408,10 @@ jobs:
           tool: "test-compare"
       - name: test e2e template
         run: oicana test
-        working-directory: ./e2e_test_template
+        working-directory: ./e2e-tests/template
       - name: pack e2e template
         run: oicana pack -n {template}-x.y.z.zip
-        working-directory: ./e2e_test_template
+        working-directory: ./e2e-tests/template
       - name: install csharp lib
         uses: actions/download-artifact@v4
         with:
@@ -421,7 +421,7 @@ jobs:
         run: dotnet test
         working-directory: ./integrations/csharp
       - name: compare test output
-        run: test-compare e2e_test_template integrations/csharp/Oicana.Test/bin/Debug/net8.0/e2e/
+        run: test-compare e2e-tests/template integrations/csharp/Oicana.Test/bin/Debug/net8.0/e2e/
 
   e2e-test-cli:
     runs-on: ubuntu-latest
@@ -444,15 +444,15 @@ jobs:
         working-directory: ./integrations/typst
       - name: test e2e template
         run: oicana test
-        working-directory: ./e2e_test_template
+        working-directory: ./e2e-tests/template
       - name: compile e2e template with cli
         run: |
           oicana compile -o output -f png -n development.png --development
           oicana compile -o output -f png -n production.png -b development-blob=tests/input.txt -m development-blob=tests/cli/development-blob-meta.json -j development-json=tests/input.json
           oicana compile -o output -f png -n all-inputs.png -b development-blob=tests/input.txt -m development-blob=tests/cli/development-blob-meta.json -j development-json=tests/input.json -b default-blob=tests/input.txt -m default-blob=tests/cli/default-blob-meta.json -j default-json=tests/input.json -b both-blob=tests/input.txt -m both-blob=tests/cli/both-blob-meta.json -j both-json=tests/input.json
-        working-directory: e2e_test_template
+        working-directory: e2e-tests/template
       - name: compare test output
-        run: test-compare e2e_test_template e2e_test_template/output
+        run: test-compare e2e-tests/template e2e-tests/template/output
 
   typst-integration:
     runs-on: ubuntu-latest
