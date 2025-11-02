@@ -1,6 +1,6 @@
 //! Tool to compare output images from Oicana's e2e tests.
 //!
-//! The truth are always the checked in results of the template tests in `e2e_test_template`.
+//! The truth is always the checked in results of the template tests in `e2e-tests/template`.
 //! This tool will gather the result images and compare them to the images produced
 //! by tests in integrations. They should always match the reference images, or the integration is broken.
 
