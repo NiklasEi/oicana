@@ -1,0 +1,10 @@
+{
+  "version": "1",
+  "name": "Oicana Example Services E2E",
+  "type": "collection",
+  "scripts": {
+    "filesystemAccess": {
+      "allow": true
+    }
+  }
+}

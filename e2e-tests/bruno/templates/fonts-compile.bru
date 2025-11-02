@@ -1,0 +1,29 @@
+meta {
+  name: Compile fonts template (PDF)
+  type: http
+  seq: 40
+}
+
+post {
+  url: {{baseUrl}}/templates/fonts/compile
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "jsonInputs": [],
+    "blobInputs": []
+  }
+}
+
+tests {
+  test("should return 200", function() {
+    expect(res.status).to.equal(200);
+  });
+
+  test("should return PDF", function() {
+    const contentType = res.headers['content-type'];
+    expect(contentType).to.contain('application/pdf');
+  });
+}

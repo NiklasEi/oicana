@@ -1,0 +1,43 @@
+meta {
+  name: Preview invoice_zugferd template (PNG)
+  type: http
+  seq: 71
+}
+
+post {
+  url: {{baseUrl}}/templates/invoice_zugferd/preview
+  body: json
+  auth: none
+}
+
+script:pre-request {
+  const fs = require('fs');
+  const path = require('path');
+
+  // Load invoice data from fixture file (shared with invoice template)
+  // Bruno CLI runs from collection root, so use relative path from there
+  const fixturePath = path.join(process.cwd(), 'fixtures', 'invoice.json');
+  const invoiceData = JSON.parse(fs.readFileSync(fixturePath, 'utf8'));
+
+  // Set the request body
+  req.setBody({
+    jsonInputs: [
+      {
+        key: "invoice",
+        value: invoiceData
+      }
+    ],
+    blobInputs: []
+  });
+}
+
+tests {
+  test("should return 200", function() {
+    expect(res.status).to.equal(200);
+  });
+
+  test("should return PNG", function() {
+    const contentType = res.headers['content-type'];
+    expect(contentType).to.contain('image/png');
+  });
+}
