@@ -1,0 +1,146 @@
+name: E2E Tests - Example Services
+
+on:
+  push:
+    branches: [ main, e2e-test-integration-examples ]
+  workflow_dispatch:
+  schedule:
+    - cron: '0 3 * * *'
+
+jobs:
+  test-example-services:
+    name: Test ${{ matrix.service.name }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    strategy:
+      fail-fast: false
+      matrix:
+        service:
+          - name: axum
+            repo: oicana/oicana-example-axum
+            port: 3000
+            build_cmd: cargo build --release
+            run_cmd: cargo run --release
+            setup: rust
+          - name: nestjs
+            repo: oicana/oicana-example-nestjs
+            port: 3001
+            build_cmd: npm ci && npm run build
+            run_cmd: npm run start:prod
+            setup: node
+          - name: aspnet
+            repo: oicana/oicana-example-asp-net
+            port: 3002
+            build_cmd: dotnet build -c Release
+            run_cmd: dotnet run --no-build -c Release
+            setup: dotnet
+
+    steps:
+      - name: Checkout example service repository
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ matrix.service.repo }}
+          path: example-service
+
+      - name: Setup Rust toolchain
+        if: matrix.service.setup == 'rust'
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+
+      - name: Setup Rust cache
+        if: matrix.service.setup == 'rust'
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: example-service
+
+      - name: Setup Node.js
+        if: matrix.service.setup == 'node'
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: example-service/package-lock.json
+
+      - name: Setup .NET
+        if: matrix.service.setup == 'dotnet'
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Build service
+        working-directory: example-service
+        run: ${{ matrix.service.build_cmd }}
+
+      - name: Start service in background
+        working-directory: example-service
+        run: |
+          ${{ matrix.service.run_cmd }} &
+          echo $! > service.pid
+          echo "Service started with PID $(cat service.pid)"
+
+      - name: Checkout oicana repository (for Bruno tests)
+        uses: actions/checkout@v4
+        with:
+          path: oicana
+
+      - name: Setup Node.js for Bruno CLI
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Bruno CLI
+        run: npm install -g @usebruno/cli
+
+      - name: Wait for service to be ready
+        run: |
+          echo "Waiting for service on port ${{ matrix.service.port }}..."
+          timeout=60
+          elapsed=0
+          while ! curl -f http://localhost:${{ matrix.service.port }}/templates 2>/dev/null; do
+            if [ $elapsed -ge $timeout ]; then
+              echo "Service did not start within ${timeout} seconds"
+              # Print service logs if available
+              if [ -f example-service/service.pid ]; then
+                echo "Service PID: $(cat example-service/service.pid)"
+                ps aux | grep $(cat example-service/service.pid) || echo "Service process not found"
+              fi
+              exit 1
+            fi
+            echo "Waiting... (${elapsed}s/${timeout}s)"
+            sleep 2
+            elapsed=$((elapsed + 2))
+          done
+          echo "Service is ready!"
+
+      - name: Run Bruno E2E tests
+        working-directory: oicana/e2e-tests/bruno
+        run: |
+          echo "Running Bruno tests for ${{ matrix.service.name }}..."
+          bru run --env ${{ matrix.service.name }} --reporter-html results-${{ matrix.service.name }}.html
+        continue-on-error: true
+        id: bruno_tests
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-${{ matrix.service.name }}
+          path: |
+            oicana/e2e-tests/bruno/results-${{ matrix.service.name }}.html
+          retention-days: 30
+
+      - name: Stop service
+        if: always()
+        working-directory: example-service
+        run: |
+          if [ -f service.pid ]; then
+            PID=$(cat service.pid)
+            echo "Stopping service with PID $PID"
+            kill $PID || true
+            # Wait for graceful shutdown
+            sleep 5
+            # Force kill if still running
+            kill -9 $PID 2>/dev/null || true
+          fi
