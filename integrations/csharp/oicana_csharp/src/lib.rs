@@ -269,8 +269,10 @@ pub unsafe extern "C" fn unsafe_free_buffer(buffer: Buffer) {
         "Buffer::data is null while trying to free the memory"
     );
     unsafe {
-        let _boxed_data =
-            Box::from_raw(slice::from_raw_parts_mut(buffer.data, buffer.len as usize));
+        let _boxed_data = Box::from_raw(std::ptr::slice_from_raw_parts_mut(
+            buffer.data,
+            buffer.len as usize,
+        ));
     }
 }
 
