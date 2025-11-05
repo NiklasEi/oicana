@@ -1,0 +1,42 @@
+meta {
+  name: List Templates
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/templates
+  body: none
+  auth: none
+}
+
+tests {
+  test("should return 200", function() {
+    expect(res.status).to.equal(200);
+  });
+
+  test("should return JSON array", function() {
+    expect(res.body).to.be.an('array');
+  });
+
+  test("should include all expected templates", function() {
+    const expectedTemplates = [
+      "certificate",
+      "dependency",
+      "fonts",
+      "invoice",
+      "invoice_zugferd",
+      "minimal",
+      "multi_input",
+      "table"
+    ];
+
+    const templates = res.body;
+
+    for (const template of expectedTemplates) {
+      expect(templates).to.include(template);
+    }
+
+    console.log(`✓ ${bru.getEnvVar("serviceName")} supports all ${expectedTemplates.length} templates`);
+  });
+}

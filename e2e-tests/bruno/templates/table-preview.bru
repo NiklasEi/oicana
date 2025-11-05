@@ -1,0 +1,42 @@
+meta {
+  name: Preview table template (PNG)
+  type: http
+  seq: 21
+}
+
+post {
+  url: {{baseUrl}}/templates/table/preview
+  body: json
+  auth: none
+}
+
+script:pre-request {
+  const fs = require('fs');
+  const path = require('path');
+
+  // Load table data from fixture file
+  const fixturePath = path.join(process.cwd(), 'fixtures', 'table-data.json');
+  const tableData = JSON.parse(fs.readFileSync(fixturePath, 'utf8'));
+
+  // Set the request body
+  req.setBody({
+    jsonInputs: [
+      {
+        key: "data",
+        value: tableData
+      }
+    ],
+    blobInputs: []
+  });
+}
+
+tests {
+  test("should return 200", function() {
+    expect(res.status).to.equal(200);
+  });
+
+  test("should return PNG", function() {
+    const contentType = res.headers['content-type'];
+    expect(contentType).to.contain('image/png');
+  });
+}
