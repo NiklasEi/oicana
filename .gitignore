@@ -3,5 +3,5 @@ target/
 output/
 .env
 .dependencies/
-e2e_test_template/oicana-e2e-test-*.zip
+e2e-tests/template/oicana-e2e-test-*.zip
 ort/

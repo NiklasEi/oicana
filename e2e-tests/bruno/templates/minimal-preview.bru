@@ -1,0 +1,29 @@
+meta {
+  name: Preview minimal template (PNG)
+  type: http
+  seq: 11
+}
+
+post {
+  url: {{baseUrl}}/templates/minimal/preview
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "jsonInputs": [],
+    "blobInputs": []
+  }
+}
+
+tests {
+  test("should return 200", function() {
+    expect(res.status).to.equal(200);
+  });
+
+  test("should return PNG", function() {
+    const contentType = res.headers['content-type'];
+    expect(contentType).to.contain('image/png');
+  });
+}
