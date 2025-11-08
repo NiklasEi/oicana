@@ -259,6 +259,9 @@ jobs:
       - name: Format
         run: yarn format
         working-directory: integrations/node/oicana-node-native
+      - name: Normalize line endings
+        shell: bash
+        run: git add --renormalize ./integrations/node/oicana-node-native/
       - name: validate no changes
         shell: bash
         run: |
@@ -339,7 +342,7 @@ jobs:
         run: oicana test
         working-directory: ./e2e-tests/template
       - name: pack e2e template
-        run: oicana pack -n {template}-x.y.z.zip
+        run: oicana pack -n '{template}-x.y.z.zip'
         working-directory: ./e2e-tests/template
       - name: install node-native
         uses: actions/download-artifact@v4
@@ -388,7 +391,7 @@ jobs:
         run: oicana test
         working-directory: ./e2e-tests/template
       - name: pack e2e template
-        run: oicana pack -n {template}-x.y.z.zip
+        run: oicana pack -n '{template}-x.y.z.zip'
         working-directory: ./e2e-tests/template
       - name: install browser-wasm
         uses: actions/download-artifact@v4
@@ -440,7 +443,7 @@ jobs:
         run: oicana test
         working-directory: ./e2e-tests/template
       - name: pack e2e template
-        run: oicana pack -n {template}-x.y.z.zip
+        run: oicana pack -n '{template}-x.y.z.zip'
         working-directory: ./e2e-tests/template
       - name: install csharp lib
         uses: actions/download-artifact@v4
