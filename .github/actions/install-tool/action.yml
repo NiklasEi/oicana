@@ -15,7 +15,7 @@ runs:
   - name: install ${{ inputs.tool }}
     uses: actions/download-artifact@v4
     with:
-      name: ${{ inputs.tool }}
+      name: ${{ inputs.tool }}_${{ runner.os }}
       path: ${{ runner.temp }}/download
   - name: Make binary executable
     shell: bash
@@ -26,5 +26,11 @@ runs:
         BINARY_NAME="${{ inputs.tool }}"
       fi
 
-      cp "${{ runner.temp }}/download/$BINARY_NAME" "$HOME/.cargo/bin/$BINARY_NAME"
-      chmod +x "$HOME/.cargo/bin/$BINARY_NAME"
+      # Handle Windows .exe extension
+      if [ "${{ runner.os }}" = "Windows" ]; then
+        cp "${{ runner.temp }}/download/$BINARY_NAME.exe" "$HOME/.cargo/bin/$BINARY_NAME.exe"
+        chmod +x "$HOME/.cargo/bin/$BINARY_NAME.exe"
+      else
+        cp "${{ runner.temp }}/download/$BINARY_NAME" "$HOME/.cargo/bin/$BINARY_NAME"
+        chmod +x "$HOME/.cargo/bin/$BINARY_NAME"
+      fi
