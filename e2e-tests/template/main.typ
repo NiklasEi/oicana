@@ -1,4 +1,5 @@
 #import "@local/oicana:0.1.0": setup
+#import "sub/module.typ": sub-module
 
 #let read-project-file(path) = return read(path, encoding: none);
 #let (input, _, _) = setup(read-project-file);
@@ -17,3 +18,5 @@ Contains #input.len() inputs (should be 6)\
 `default-json` has value: #input.default-json\
 `development-json` has value: #input.development-json\
 `both-json` has value: #input.both-json\
+
+#sub-module
