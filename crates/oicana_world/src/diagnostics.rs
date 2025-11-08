@@ -23,10 +23,11 @@ impl<'a, Files: TemplateFiles> CodespanFiles<'a> for OicanaWorld<Files> {
 
     fn name(&'a self, id: FileId) -> Result<Self::Name, CodespanError> {
         let vpath = id.vpath();
+        let rooted = vpath.as_rooted_path().display().to_string().replace('\\', "/");
         Ok(if let Some(package) = id.package() {
-            format!("{package}{}", vpath.as_rooted_path().display())
+            format!("{package}{rooted}")
         } else {
-            vpath.as_rooted_path().to_string_lossy().into()
+            rooted
         })
     }
 
