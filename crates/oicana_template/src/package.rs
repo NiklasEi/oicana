@@ -241,4 +241,72 @@ manifest_version = 1
 
         assert!(result.is_err());
     }
+
+    #[test]
+    fn packed_template_uses_forward_slashes_in_paths() {
+        let dir = TempDir::new().unwrap();
+        std::fs::write(dir.path().join("typst.toml"), manifest()).unwrap();
+        std::fs::write(dir.path().join("main.typ"), "Main content").unwrap();
+        std::fs::create_dir(dir.path().join("lib")).unwrap();
+        std::fs::write(dir.path().join("lib").join("utils.typ"), "Utils content").unwrap();
+        std::fs::create_dir(dir.path().join("assets")).unwrap();
+        std::fs::write(dir.path().join("assets").join("data.json"), "{}").unwrap();
+        std::fs::create_dir(dir.path().join("assets").join("images")).unwrap();
+        std::fs::write(
+            dir.path().join("assets").join("images").join("logo.txt"),
+            "Logo placeholder",
+        )
+        .unwrap();
+
+        let manifest = TemplateManifest::from_toml(
+            &std::fs::read_to_string(dir.path().join("typst.toml")).unwrap(),
+        )
+        .unwrap();
+
+        let mut buffer = Cursor::new(Vec::new());
+        package(dir.path(), &mut buffer, &manifest).unwrap();
+
+        buffer.set_position(0);
+        let mut archive = zip::ZipArchive::new(buffer).unwrap();
+
+        let mut paths_with_backslashes = Vec::new();
+        let mut all_paths = Vec::new();
+
+        for i in 0..archive.len() {
+            let entry = archive.by_index(i).unwrap();
+            let name = entry.name().to_string();
+            all_paths.push(name.clone());
+
+            if name.contains('\\') {
+                paths_with_backslashes.push(name);
+            }
+        }
+
+        assert!(
+            paths_with_backslashes.is_empty(),
+            "ZIP paths must use forward slashes '/' not backslashes '\\'. Found paths with backslashes: {:?}",
+            paths_with_backslashes
+        );
+
+        assert!(
+            all_paths.iter().any(|p| p == "main.typ"),
+            "Expected 'main.typ' in zip"
+        );
+        assert!(
+            all_paths.iter().any(|p| p == "typst.toml"),
+            "Expected 'typst.toml' in zip"
+        );
+        assert!(
+            all_paths.iter().any(|p| p == "lib/utils.typ"),
+            "Expected 'lib/utils.typ' with forward slash in zip"
+        );
+        assert!(
+            all_paths.iter().any(|p| p == "assets/data.json"),
+            "Expected 'assets/data.json' with forward slash in zip"
+        );
+        assert!(
+            all_paths.iter().any(|p| p == "assets/images/logo.txt"),
+            "Expected 'assets/images/logo.txt' with forward slashes in zip"
+        );
+    }
 }
