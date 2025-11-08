@@ -25,15 +25,15 @@
     </ItemGroup>
 
     <ItemGroup Condition="'$(Configuration)' == 'Debug'">
-        <Content Condition="'$(OS)' == 'Unix' AND '$(OSX)' == ''" Include="$(MSBuildProjectDirectory)/../../../target/release/liboicana_csharp.so">
+        <Content Condition="$([MSBuild]::IsOSPlatform('Linux'))" Include="$(MSBuildProjectDirectory)/../../../target/release/liboicana_csharp.so">
             <Link>%(Filename)%(Extension)</Link>
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </Content>
-        <Content Condition="'$(OS)' == 'Windows_NT'" Include="$(MSBuildProjectDirectory)/../../../target/release/oicana_csharp.dll">
+        <Content Condition="$([MSBuild]::IsOSPlatform('Windows'))" Include="$(MSBuildProjectDirectory)/../../../target/release/oicana_csharp.dll">
             <Link>%(Filename)%(Extension)</Link>
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </Content>
-        <Content Condition="'$(OS)' == 'Unix' AND '$(OSX)' == 'true'" Include="$(MSBuildProjectDirectory)/../../../target/release/liboicana_csharp.dylib">
+        <Content Condition="$([MSBuild]::IsOSPlatform('OSX'))" Include="$(MSBuildProjectDirectory)/../../../target/release/liboicana_csharp.dylib">
             <Link>%(Filename)%(Extension)</Link>
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </Content>
