@@ -61,21 +61,12 @@ where
     for entry in it {
         let path = entry.path();
         let name = path.strip_prefix(prefix).unwrap();
-        let path_as_string = name
-            .to_str()
-            .map(str::to_owned)
-            .ok_or(PackageError::InvalidFilePath(name.to_path_buf()))?;
 
-        // ZIP spec requires forward slashes, not backslashes (Windows uses backslashes)
-        let path_as_string = path_as_string.replace('\\', "/");
-
-        // Write file or directory explicitly
-        // Some unzip tools unzip files with directory paths correctly, some do not!
         if path.is_file() {
-            trace!("adding file {path_as_string:?}");
+            trace!("adding file {:?}", name);
             let mut f = File::open(path)?;
-            zip.start_file(
-                path_as_string,
+            zip.start_file_from_path(
+                name,
                 options.last_modified_time(zip_date_from_system_time(f.metadata()?.modified()?)?),
             )?;
 
@@ -83,10 +74,8 @@ where
             zip.write_all(&buffer)?;
             buffer.clear();
         } else if !name.as_os_str().is_empty() {
-            // Only if not root! Avoids path spec / warning
-            // and "mapname conversion failed" error on unzip
-            trace!("adding dir {path_as_string:?}");
-            zip.add_directory(path_as_string, options)?;
+            trace!("adding dir {:?}", name);
+            zip.add_directory_from_path(name, options)?;
         }
     }
     zip.finish()?;
