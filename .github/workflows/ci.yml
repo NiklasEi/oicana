@@ -511,7 +511,7 @@ jobs:
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: typst-integration-artifacts
+          name: typst-package-test-results
           path: |
             integrations/typst/tests/**/diff/*.png
             integrations/typst/tests/**/out/*.png
