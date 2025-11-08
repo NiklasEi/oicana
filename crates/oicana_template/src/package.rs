@@ -66,6 +66,9 @@ where
             .map(str::to_owned)
             .ok_or(PackageError::InvalidFilePath(name.to_path_buf()))?;
 
+        // ZIP spec requires forward slashes, not backslashes (Windows uses backslashes)
+        let path_as_string = path_as_string.replace('\\', "/");
+
         // Write file or directory explicitly
         // Some unzip tools unzip files with directory paths correctly, some do not!
         if path.is_file() {
