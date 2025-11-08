@@ -194,9 +194,13 @@ manifest_version = 1
 
         buffer.set_position(0);
         let mut archive = zip::ZipArchive::new(buffer).unwrap();
-        assert!(archive
-            .by_name(&Path::new("assets").join("data.json").to_string_lossy())
-            .is_ok());
+
+        let mut file = archive
+            .by_name("assets/data.json")
+            .expect("File should be part of the archive");
+        let mut content = String::new();
+        file.read_to_string(&mut content).unwrap();
+        assert_eq!(content, "{}");
     }
 
     #[test]
