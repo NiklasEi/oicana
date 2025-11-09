@@ -1,5 +1,10 @@
 # Next release
 
+# C# integration v0.1.0-alpha.4
+
+- Fix template paths on Windows
+- Update to Typst 0.14
+
 # Crates v0.1.0-alpha.4 and CLI v0.1.0-alpha.5
 
 - fix fuzzing tests from paths other than template root ((#28)[https://github.com/oicana/oicana/pull/20])
