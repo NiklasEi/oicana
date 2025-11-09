@@ -7,7 +7,7 @@
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
         <RootNamespace>Oicana</RootNamespace>
         <PackageId>Oicana</PackageId>
-        <Version>0.1.0-alpha.3</Version>
+        <Version>0.1.0-alpha.4</Version>
         <PackageReadmeFile>Readme.md</PackageReadmeFile>
         <GenerateDocumentationFile>true</GenerateDocumentationFile>
         <PackageLicenseFile>LICENSE.md</PackageLicenseFile>
