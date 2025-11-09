@@ -1,9 +1,10 @@
 use crate::TemplateFiles;
 use std::collections::HashMap;
 use std::io::{Read, Seek};
-use std::str;
+use std::path::MAIN_SEPARATOR;
 use std::str::FromStr;
 use std::sync::Mutex;
+use std::{str, vec};
 use typst::diag::{FileError, FileResult};
 use typst::foundations::Bytes;
 use typst::syntax::package::{PackageSpec, PackageVersion};
@@ -42,17 +43,17 @@ impl PackedTemplate {
                 continue;
             }
 
-            if let Some((dir, path)) = path.split_once("/") {
+            if let Some((dir, path)) = path.split_once(MAIN_SEPARATOR) {
                 if dir == ".dependencies" {
-                    let Some((namespace, path)) = path.split_once("/") else {
+                    let Some((namespace, path)) = path.split_once(MAIN_SEPARATOR) else {
                         println!("No namespace for dependency path {path}");
                         continue;
                     };
-                    let Some((package, path)) = path.split_once("/") else {
+                    let Some((package, path)) = path.split_once(MAIN_SEPARATOR) else {
                         println!("No package for dependency path {path}");
                         continue;
                     };
-                    let Some((version, path)) = path.split_once("/") else {
+                    let Some((version, path)) = path.split_once(MAIN_SEPARATOR) else {
                         println!("No version for dependency path {path}");
                         continue;
                     };
