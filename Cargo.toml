@@ -18,7 +18,7 @@ resolver = "2"
 
 
 [workspace.package]
-version = "0.1.0-alpha.4"
+version = "0.1.0-alpha.5"
 # also change in ci.yml
 rust-version = "1.88"
 authors = ["Oicana <hello@oicana.com>"]
@@ -31,13 +31,13 @@ keywords = ["oicana", "typst", "typesetting", "pdf"]
 categories = ["template-engine"]
 
 [workspace.dependencies]
-oicana_world = { version = "0.1.0-alpha.4", path = "crates/oicana_world" }
-oicana_files = { version = "0.1.0-alpha.4", path = "crates/oicana_files" }
-oicana_input = { version = "0.1.0-alpha.4", path = "crates/oicana_input" }
-oicana_export = { version = "0.1.0-alpha.4", path = "crates/oicana_export" }
-oicana_template = { version = "0.1.0-alpha.4", path = "crates/oicana_template" }
-oicana_testing = { version = "0.1.0-alpha.4", path = "crates/oicana_testing" }
-oicana = { version = "0.1.0-alpha.4", path = "integrations/rust/oicana" }
+oicana_world = { version = "0.1.0-alpha.5", path = "crates/oicana_world" }
+oicana_files = { version = "0.1.0-alpha.5", path = "crates/oicana_files" }
+oicana_input = { version = "0.1.0-alpha.5", path = "crates/oicana_input" }
+oicana_export = { version = "0.1.0-alpha.5", path = "crates/oicana_export" }
+oicana_template = { version = "0.1.0-alpha.5", path = "crates/oicana_template" }
+oicana_testing = { version = "0.1.0-alpha.5", path = "crates/oicana_testing" }
+oicana = { version = "0.1.0-alpha.5", path = "integrations/rust/oicana" }
 
 typst = { version = "0.14.0" }
 typst-pdf = { version = "0.14.0" }
