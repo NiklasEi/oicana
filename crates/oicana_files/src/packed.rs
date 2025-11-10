@@ -1,9 +1,9 @@
 use crate::TemplateFiles;
 use std::collections::HashMap;
 use std::io::{Read, Seek};
-use std::str;
 use std::str::FromStr;
 use std::sync::Mutex;
+use std::{str, vec};
 use typst::diag::{FileError, FileResult};
 use typst::foundations::Bytes;
 use typst::syntax::package::{PackageSpec, PackageVersion};
@@ -181,6 +181,20 @@ mod tests {
             .tool
             .sections
             .contains_key(&EcoString::from("oicana")));
+    }
+
+    #[test]
+    fn can_find_dependency() {
+        let template =
+            read("../../assets/templates/test-0.1.0.zip").expect("Failed to read template zip");
+        let files = PackedTemplate::new(Cursor::new(template));
+
+        assert!(files
+            .file(FileId::new(
+                Some("@local/oicana:0.1.0".parse().unwrap()),
+                VirtualPath::new("/typst.toml")
+            ))
+            .is_ok());
     }
 
     #[test]

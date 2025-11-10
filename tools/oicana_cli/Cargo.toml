@@ -3,7 +3,7 @@ name = "oicana_cli"
 description = "CLI for working with Oicana templates."
 keywords = { workspace = true }
 categories = { workspace = true }
-version = "0.1.0-alpha.5"
+version = "0.1.0-alpha.6"
 rust-version = { workspace = true }
 authors = { workspace = true }
 edition = { workspace = true }
@@ -51,6 +51,9 @@ serde_json = { workspace = true }
 psm = "=0.1.23"
 rand = "0.9.2"
 
+
+# pin due to https://github.com/LaurenzV/hayro/pull/483
+read-fonts = "=0.35.0"
 
 # Explicitly depend on OpenSSL if applicable, so that we can add the
 # `openssl/vendored` feature to it if `vendor-openssl` is enabled.

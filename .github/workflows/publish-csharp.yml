@@ -113,6 +113,6 @@ jobs:
           name: oicana-csharp-nuget
           path: integrations/csharp/Oicana/bin/Release/Oicana.*.nupkg
       - name: push package to nuget.org
-        run: dotnet nuget push integrations/csharp/Oicana/Oicana.csproj -s nuget.org -k $NUGET_TOKEN
+        run: dotnet nuget push integrations/csharp/Oicana/bin/Release/Oicana.*.nupkg -s nuget.org -k $NUGET_TOKEN
         env:
           NUGET_TOKEN: ${{ secrets.NUGET_TOKEN }}

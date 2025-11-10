@@ -271,7 +271,7 @@ pub fn prepare_package(spec: &PackageSpec, files: &NativeTemplate) -> Result<Pat
             .prepare_package(spec, &mut PrintDownload(&spec))
             .map_err(FileError::Package)?;
         debug!("Copying {spec} from {cached_package:?}.");
-        copy_directory(cached_package, package_dir.clone())
+        copy_directory(&cached_package, &package_dir)
             .map_err(|io_error| PackageError::Other(Some(io_error.to_string().into())))?;
         return Ok(package_dir);
     }
@@ -281,7 +281,7 @@ pub fn prepare_package(spec: &PackageSpec, files: &NativeTemplate) -> Result<Pat
         .join(format!("{}/{}/{}", spec.namespace, spec.name, spec.version));
     if local_package.is_dir() {
         debug!("Copying {spec} from {local_package:?}.");
-        copy_directory(local_package, package_dir.clone())
+        copy_directory(&local_package, &package_dir)
             .map_err(|io_error| PackageError::Other(Some(io_error.to_string().into())))?;
         return Ok(package_dir);
     }
@@ -289,13 +289,13 @@ pub fn prepare_package(spec: &PackageSpec, files: &NativeTemplate) -> Result<Pat
     Err(FileError::Package(PackageError::NotFound(spec.clone())))
 }
 
-fn copy_directory(in_dir: PathBuf, out_dir: PathBuf) -> io::Result<()> {
-    create_dir_all(&out_dir)?;
+fn copy_directory(in_dir: &Path, out_dir: &Path) -> io::Result<()> {
+    create_dir_all(out_dir)?;
     for file in fs::read_dir(in_dir)? {
         let file = file?;
         let path = file.path();
         if path.is_dir() {
-            copy_directory(path.clone(), out_dir.join(path.file_name().unwrap()))?;
+            copy_directory(&path, &out_dir.join(path.file_name().unwrap()))?;
         } else if path.is_file() {
             fs::copy(path.clone(), out_dir.join(path.file_name().unwrap()))?;
         }
@@ -334,9 +334,9 @@ mod tests {
         }
 
         let out_dir = tempdir().unwrap();
-        let out_dir = out_dir.into_path();
+        let out_dir = out_dir.path();
 
-        copy_directory(in_dir.into_path(), out_dir.clone()).unwrap();
+        copy_directory(in_dir.path(), out_dir).unwrap();
 
         assert!(out_dir
             .join("test")
