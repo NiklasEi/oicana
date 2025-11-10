@@ -88,7 +88,7 @@ With the input defined, we can update the packed template in the C#sym.hash proj
 replace `example-0.1.0.zip` in the ASP.NET project with the new file.
 
 \
-Our `compile` endpoint is currently calling `var stream = template.Compile([], [], CompilationOptions.Pdf());`. This compiles the template without any inputs. The first empty array are the `json` inputs and the second one the `blob` inputs.
+Our `compile` endpoint is currently calling `var stream = template.Compile([], [], new CompilationOptions(CompilationMode.Production), ExportOptions.Pdf());`. This compiles the template without any inputs. The first empty array are the `json` inputs and the second one the `blob` inputs.
 
 \
 Change the endpoint to set the name input we just defined.
@@ -99,7 +99,7 @@ Change the endpoint to set the name input we just defined.
   app.MapGet("compile", () =>
   {
       var input = new TemplateJsonInput("info", JsonSerializer.Deserialize<JsonNode>("{ \"name\": \"Baby Yoda\" }")!);
-      var stream = template.Compile([input], [], CompilationOptions.Pdf());
+      var stream = template.Compile([input], [], new CompilationOptions(CompilationMode.Production), ExportOptions.Pdf());
       var now = DateTimeOffset.Now;
       // ... more code from before
   });
