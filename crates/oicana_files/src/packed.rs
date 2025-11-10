@@ -1,7 +1,6 @@
 use crate::TemplateFiles;
 use std::collections::HashMap;
 use std::io::{Read, Seek};
-use std::path::MAIN_SEPARATOR;
 use std::str::FromStr;
 use std::sync::Mutex;
 use std::{str, vec};
@@ -43,17 +42,17 @@ impl PackedTemplate {
                 continue;
             }
 
-            if let Some((dir, path)) = path.split_once(MAIN_SEPARATOR) {
+            if let Some((dir, path)) = path.split_once("/") {
                 if dir == ".dependencies" {
-                    let Some((namespace, path)) = path.split_once(MAIN_SEPARATOR) else {
+                    let Some((namespace, path)) = path.split_once("/") else {
                         println!("No namespace for dependency path {path}");
                         continue;
                     };
-                    let Some((package, path)) = path.split_once(MAIN_SEPARATOR) else {
+                    let Some((package, path)) = path.split_once("/") else {
                         println!("No package for dependency path {path}");
                         continue;
                     };
-                    let Some((version, path)) = path.split_once(MAIN_SEPARATOR) else {
+                    let Some((version, path)) = path.split_once("/") else {
                         println!("No version for dependency path {path}");
                         continue;
                     };
@@ -182,6 +181,20 @@ mod tests {
             .tool
             .sections
             .contains_key(&EcoString::from("oicana")));
+    }
+
+    #[test]
+    fn can_find_dependency() {
+        let template =
+            read("../../assets/templates/test-0.1.0.zip").expect("Failed to read template zip");
+        let files = PackedTemplate::new(Cursor::new(template));
+
+        assert!(files
+            .file(FileId::new(
+                Some("@local/oicana:0.1.0".parse().unwrap()),
+                VirtualPath::new("/typst.toml")
+            ))
+            .is_ok());
     }
 
     #[test]
