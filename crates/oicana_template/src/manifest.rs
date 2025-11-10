@@ -178,12 +178,21 @@ mod tests {
         assert!(!manifest.should_path_be_packed(Path::new("./tests/file.txt")));
         assert!(!manifest.should_path_be_packed(Path::new("./tests/sub_dir")));
         assert!(!manifest.should_path_be_packed(Path::new("./tests/sub_dir/file.txt")));
+        assert!(!manifest.should_path_be_packed(Path::new(".\\tests")));
+        assert!(!manifest.should_path_be_packed(Path::new(".\\tests\\file.txt")));
+        assert!(!manifest.should_path_be_packed(Path::new(".\\tests\\sub_dir")));
+        assert!(!manifest.should_path_be_packed(Path::new(".\\tests\\sub_dir\\file.txt")));
 
         assert!(manifest.should_path_be_packed(Path::new("./test")));
         assert!(manifest.should_path_be_packed(Path::new("./sub_dir/tests")));
         assert!(manifest.should_path_be_packed(Path::new("./sub_dir/tests/file.txt")));
         assert!(manifest.should_path_be_packed(Path::new("./sub_dir/tests/sub_dir")));
         assert!(manifest.should_path_be_packed(Path::new("./sub_dir/tests/sub_dir/file.txt")));
+        assert!(manifest.should_path_be_packed(Path::new(".\\test")));
+        assert!(manifest.should_path_be_packed(Path::new(".\\sub_dir\\tests")));
+        assert!(manifest.should_path_be_packed(Path::new(".\\sub_dir\\tests\\file.txt")));
+        assert!(manifest.should_path_be_packed(Path::new(".\\sub_dir\\tests\\sub_dir")));
+        assert!(manifest.should_path_be_packed(Path::new(".\\sub_dir\\tests\\sub_dir\\file.txt")));
     }
 
     #[test]
