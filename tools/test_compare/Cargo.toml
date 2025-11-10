@@ -29,5 +29,8 @@ anyhow = { workspace = true }
 
 clap = { workspace = true, features = ["derive", "string"] }
 
+# pin due to https://github.com/LaurenzV/hayro/pull/483
+read-fonts = "=0.35.0"
+
 [lints]
 workspace = true

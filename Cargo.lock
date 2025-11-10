@@ -3765,6 +3765,7 @@ dependencies = [
  "log",
  "oicana_template",
  "oicana_testing",
+ "read-fonts",
  "walkdir",
 ]
 
