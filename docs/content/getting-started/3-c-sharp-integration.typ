@@ -35,7 +35,7 @@ We will define a new endpoint to compile our Oicana template to a PDF and return
     ```cs
     app.MapPost("compile", () =>
     {
-        var stream = template.Compile([], [], CompilationOptions.Pdf());
+        var stream = template.Compile([], [], new CompilationOptions(CompilationMode.Production), ExportOptions.Pdf());
         var now = DateTimeOffset.Now;
         return Results.File(
             fileStream: stream,

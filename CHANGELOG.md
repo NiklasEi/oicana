@@ -1,5 +1,17 @@
 # Next release
 
+# Crates v0.1.0-alpha.5
+# CLI v0.1.0-alpha.6
+# C# integration v0.1.0-alpha.5
+# Browser integration v0.1.0-alpha.5
+# Rust integration v0.1.0-alpha.5
+
+- Fix template paths on Windows
+- Update to Typst 0.14
+
+# C# integration v0.1.0-alpha.4
+- DO NOT USE; broken on Windows
+
 # Crates v0.1.0-alpha.4 and CLI v0.1.0-alpha.5
 
 - fix fuzzing tests from paths other than template root ((#28)[https://github.com/oicana/oicana/pull/20])

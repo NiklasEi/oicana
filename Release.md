@@ -13,11 +13,11 @@ Run `dist init` to update the config and workflow.
 
 ## C#
 
-The github workflow `.github/workflows/publish_csharp.yml` can be manually triggered.
+The github workflow `.github/workflows/publish_csharp.yml` can be manually triggered or by pushign a tag in the form of `oicana_csharp-v[0-9]+.[0-9]+.[0-9]+*`.
 It will build the native libraries for Linux, MacOS and Windows. Then all native libraries are
 included in the C# package and bundled into a `.nupkg` which will be archived by the workflow.
 
-The package can then be manually uploaded to the index.
+The pipeline pushes the new version to nuget.
 
 ### WASM
 
