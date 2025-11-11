@@ -3,11 +3,15 @@
 # Crates v0.1.0-alpha.5
 # CLI v0.1.0-alpha.6
 # C# integration v0.1.0-alpha.5
-# Browser integration v0.1.0-alpha.5
+# Browser integration v0.1.0-alpha.2
 # Rust integration v0.1.0-alpha.5
 
 - Fix template paths on Windows
 - Update to Typst 0.14
+
+## Browser v0.1.0-alpha.2
+
+- improved Browser compatibility (e.g. works on newer Firefox Android now) 
 
 # C# integration v0.1.0-alpha.4
 - DO NOT USE; broken on Windows
