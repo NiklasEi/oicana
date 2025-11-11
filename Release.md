@@ -45,6 +45,9 @@ encoded basic auth credentials.
 
 The Node integration is published in two steps, first `@oicana/node-native` then `@oicana/node`.
 
+Bump the version of `@oicana/node-native` in `integrations/node/oicana-node-native/Cargo.toml` and `integrations/node/oicana-node-native/package.json`
+then rebuild the bindings with `yarn build` and format them via `yarn format`.
+
 The CD pipeline for `@oicana/node-native` runs on merges to main. It will publish the package if the current version doesn't exist on the index yet.
 
 The wrapper package `@oicana/node` is currently published manually.
