@@ -25,6 +25,22 @@ The nuget package `Oicana` has a native interface to work with Oicana templates 
 
 An example ASP.NET project using the package #link("https://github.com/oicana/oicana-example-asp-net/")[can be found on GitHub].
 
-== Work in progress integrations
+== Node.js
 
-Integrations for Node and Rust are currently in development. If you are interested in using Oicana from other programming languages or environments, please let us know.
+https://www.npmjs.com/package/@oicana/node
+
+The npm package `@oicana/node` provides a native Node.js interface to work with Oicana templates. It uses native bindings for optimal performance on the server.
+
+An example NestJS application using the package #link("https://github.com/oicana/oicana-example-nestjs/")[can be found on GitHub].
+
+== Rust
+
+https://crates.io/crates/oicana
+
+The `oicana` crate allows you to compile Oicana templates directly in Rust projects. This integration provides the most direct access to Oicana's core functionality.
+
+An example Axum application using this crate #link("https://github.com/oicana/oicana-example-axum/")[can be found on GitHub].
+
+== Future integrations
+
+If you are interested in using Oicana from other programming languages or environments, please let us know.
