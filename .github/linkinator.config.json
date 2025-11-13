@@ -1,0 +1,11 @@
+{
+  "skip": [
+    "https://www.npmjs.com/package/@oicana/browser",
+    "https://crates.io/crates/oicana"
+  ],
+  "format": "json",
+  "silent": false,
+  "verbosity": "warn",
+  "timeout": 0,
+  "markdown": true
+}
