@@ -27,17 +27,16 @@ The [getting started guide][getting-started] demonstrates how to
 Integrations allow you to use Oicana templates from different platforms and programming languages.
 
 Ready to use:
-* TypeScript/JavaScript in the browser
-* C#
-
-Work in progress:
-* Rust
-* TypeScript/JavaScript in Node.js
+* TypeScript/JavaScript
+    * in the browser -> [@oicana/browser](https://www.npmjs.com/package/@oicana/browser)
+    * Node.js -> [@oicana/node](https://www.npmjs.com/package/@oicana/node)
+* C# -> [Oicana](https://www.nuget.org/packages/Oicana)
+* Rust -> [oicana](https://crates.io/crates/oicana)
 
 You can find an open source example project in the [Oicana GitHub organization][oicana-github] for every available integration.
-The example project for the browser integration is deployed to https://example.oicana.com (not mobile friendly).
+The example project for the browser integration is deployed to https://example.oicana.com (not compatible with some mobile browsers).
 
-> More integrations are planned. If you are missing something, please open a GitHub issue or sent us an e-mail at `hello@oicana.com`. This helps with prioritizing.
+> More integrations are planned. If you are missing a specific one, please open a GitHub issue or sent us an e-mail at `hello@oicana.com`. This helps with prioritizing.
 
 ## Oicana template development
 

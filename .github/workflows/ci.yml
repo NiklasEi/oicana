@@ -542,7 +542,7 @@ jobs:
           sleep 15
         working-directory: docs
       - name: check for broken links
-        run: npx linkinator http://localhost:25520 --recurse --skip https://www.npmjs.com/package/@oicana/browser
+        run: npx linkinator http://localhost:25520 --recurse --config .github/linkinator.config.json
       - name: clean up
         if: always()
         run: |
