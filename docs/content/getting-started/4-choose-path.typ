@@ -27,14 +27,14 @@ If you're working on a multi-language project or want to compare approaches, fee
 
 === Node.js / NestJS
 
-_Coming soon_
+#link("5-3-nodejs-integration.html")[Go to Node.js Guide →]
 
 \
 #note[Prerequisites: Node.js 18 or later installed on your machine]
 
 === Rust / Axum
 
-_Coming soon_
+#link("5-2-rust-integration.html")[Go to Rust Guide →]
 
 \
 #note[Prerequisites: Rust toolchain (cargo) installed on your machine]

@@ -15,6 +15,8 @@ Add the following to the top of your `main.typ` file to initialize the package:
 
 #let read-project-file(path) = return read(path, encoding: none);
 #let (input, oicana-image, oicana-config) = setup(read-project-file);
+
+#set document(date: datetime.today())
 ```)
 \
 This snippet gives the Oicana package access to the Typst project's files. We can now use the return values from calling `setup` in the rest of the template.
