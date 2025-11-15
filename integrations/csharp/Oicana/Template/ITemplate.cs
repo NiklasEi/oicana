@@ -15,8 +15,8 @@ public interface ITemplate
     /// </summary>
     /// <param name="jsonInputs">Json inputs for the compilation.</param>
     /// <param name="blobInputs">Blob inputs for the compilation.</param>
-    /// <param name="compilationOptions">Options for the template compilation.</param>
     /// <param name="exportOptions">Options for the document export.</param>
+    /// <param name="compilationOptions">Options for the template compilation.</param>
     /// <exception cref="OicanaException">If the template compilation fails.</exception>
-    Stream Compile(IList<TemplateJsonInput> jsonInputs, IList<TemplateBlobInput> blobInputs, CompilationOptions compilationOptions, ExportOptions exportOptions);
+    Stream Compile(IList<TemplateJsonInput> jsonInputs, IList<TemplateBlobInput> blobInputs, ExportOptions exportOptions, CompilationOptions compilationOptions);
 }

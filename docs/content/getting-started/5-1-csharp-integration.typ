@@ -38,7 +38,7 @@ We will define a new endpoint to compile our Oicana template to a PDF and return
     ```cs
     app.MapPost("compile", () =>
     {
-        var stream = template.Compile([], [], new CompilationOptions(CompilationMode.Development), ExportOptions.Pdf());
+        var stream = template.Compile([], [], ExportOptions.Pdf(), new CompilationOptions(CompilationMode.Development));
         var now = DateTimeOffset.Now;
         return Results.File(
             fileStream: stream,
@@ -72,7 +72,7 @@ For a better measurement of the compilation speed on your machine, you can use a
 Now let's use the template with inputs that you defined in the previous chapter. First, make sure to update the packed template in your ASP.NET project. Run `oicana pack` in the template directory and replace `example-0.1.0.zip` in the ASP.NET project with the new file.
 
 \
-Our `compile` endpoint is currently calling `template.Compile([], [], new CompilationOptions(CompilationMode.Development), ...)`. This compiles the template without any explicit inputs. The first empty array are the `json` inputs and the second one the `blob` inputs. We will set the input value now, which allows us to compile in production mode.
+Our `compile` endpoint is currently calling `template.Compile([], [], ExportOptions.Pdf(), new CompilationOptions(CompilationMode.Development))`. This compiles the template without any explicit inputs. The first empty array are the `json` inputs and the second one the `blob` inputs. We will set the input value now, which allows us to compile in production mode.
 
 \
 Change the endpoint to set the name input you defined earlier.
@@ -83,7 +83,7 @@ Change the endpoint to set the name input you defined earlier.
   app.MapPost("compile", () =>
   {
       var input = new TemplateJsonInput("info", JsonSerializer.Deserialize<JsonNode>("{ \"name\": \"Baby Yoda\" }")!);
-      var stream = template.Compile([input], [], new CompilationOptions(CompilationMode.Production), ExportOptions.Pdf());
+      var stream = template.Compile([input], [], ExportOptions.Pdf(), new CompilationOptions(CompilationMode.Production));
       var now = DateTimeOffset.Now;
       // ... more code from before
   });
