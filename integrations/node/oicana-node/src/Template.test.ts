@@ -1,5 +1,5 @@
 import { readFile, writeFile } from 'node:fs/promises';
-import { describe, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { CompilationMode } from './CompilationMode';
 import { Png } from './ExportFormat';
 import type { BlobWithMetadata } from './inputs';
@@ -78,5 +78,40 @@ describe('e2e test template', () => {
     const image = template.compile(jsonInputs, blobInputs, Png(1));
 
     await writeFile('testOutput/all-inputs.png', image);
+  });
+
+  it('explicit development mode allows compile with empty inputs', async () => {
+    const templateFile = await readFile(
+      '../../../e2e-tests/template/oicana-e2e-test-x.y.z.zip',
+    );
+    const template = new Template('test', templateFile);
+
+    template.compile(new Map(), new Map(), Png(1), CompilationMode.Development);
+  });
+
+  it('compile defaults to production mode', async () => {
+    const templateFile = await readFile(
+      '../../../e2e-tests/template/oicana-e2e-test-x.y.z.zip',
+    );
+    const template = new Template('test', templateFile);
+
+    expect(() => {
+      template.compile(new Map(), new Map(), Png(1));
+    }).toThrow(/dictionary does not contain key/);
+  });
+
+  it('can control compilation mode when registering', async () => {
+    const templateFile = await readFile(
+      '../../../e2e-tests/template/oicana-e2e-test-x.y.z.zip',
+    );
+    expect(() => {
+      new Template(
+        'test',
+        templateFile,
+        new Map(),
+        new Map(),
+        CompilationMode.Production,
+      );
+    }).toThrow(/dictionary does not contain key/);
   });
 });
