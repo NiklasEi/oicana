@@ -92,7 +92,7 @@ public class Template : ITemplate, IDisposable
     }
 
     /// <inheritdoc />
-    public Stream Compile(IList<TemplateJsonInput> jsonInputs, IList<TemplateBlobInput> blobInputs, CompilationOptions compilationOptions, ExportOptions exportOptions)
+    public Stream Compile(IList<TemplateJsonInput> jsonInputs, IList<TemplateBlobInput> blobInputs, ExportOptions exportOptions, CompilationOptions compilationOptions)
     {
         var documentId = OicanaFfi.CompileTemplate(_templateId, jsonInputs, blobInputs, compilationOptions);
         var result = OicanaFfi.ExportDocument(documentId, exportOptions);
@@ -105,17 +105,17 @@ public class Template : ITemplate, IDisposable
     /// </summary>
     /// <remarks>
     /// If you want to compile the same document multiple times with different input values,
-    /// create an instance of <see cref="Template"/> and use <see cref="Compile(IList{TemplateJsonInput}, IList{TemplateBlobInput}, CompilationOptions, ExportOptions)"/> instead.
+    /// create an instance of <see cref="Template"/> and use <see cref="Compile(IList{TemplateJsonInput}, IList{TemplateBlobInput}, ExportOptions, CompilationOptions)"/> instead.
     ///
     /// <see cref="CompileOnce"/> will use caching and thus be slower than compiling a prepared template.
     /// </remarks>
     /// <param name="templateFile">The packed Oicana template to compile.</param>
     /// <param name="jsonInputs">Json inputs for the compilation.</param>
     /// <param name="blobInputs">Blob inputs for the compilation.</param>
-    /// <param name="compilationOptions">Options for the template compilation.</param>
     /// <param name="exportOptions">Options for the document export.</param>
+    /// <param name="compilationOptions">Options for the template compilation.</param>
     /// <exception cref="OicanaException">If the template compilation fails.</exception>
-    public static Stream CompileOnce(byte[] templateFile, IList<TemplateJsonInput> jsonInputs, IList<TemplateBlobInput> blobInputs, CompilationOptions compilationOptions, ExportOptions exportOptions)
+    public static Stream CompileOnce(byte[] templateFile, IList<TemplateJsonInput> jsonInputs, IList<TemplateBlobInput> blobInputs, ExportOptions exportOptions, CompilationOptions compilationOptions)
     {
         return OicanaFfi.ExportTemplateOnce(templateFile, jsonInputs, blobInputs, compilationOptions, exportOptions);
     }

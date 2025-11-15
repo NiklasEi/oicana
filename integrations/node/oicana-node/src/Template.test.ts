@@ -14,7 +14,7 @@ describe('e2e test template', () => {
     const templateFile = await readFile(
       '../../../e2e-tests/template/oicana-e2e-test-x.y.z.zip',
     );
-    const template = new Template('test', templateFile);
+    const template = new Template(templateFile);
 
     const image = template.compile(
       new Map(),
@@ -30,7 +30,7 @@ describe('e2e test template', () => {
     const templateFile = await readFile(
       '../../../e2e-tests/template/oicana-e2e-test-x.y.z.zip',
     );
-    const template = new Template('test', templateFile);
+    const template = new Template(templateFile);
 
     const blob = await asset('inputs/input.txt');
     const json = await asset('inputs/input.json');
@@ -52,7 +52,7 @@ describe('e2e test template', () => {
     const templateFile = await readFile(
       '../../../e2e-tests/template/oicana-e2e-test-x.y.z.zip',
     );
-    const template = new Template('test', templateFile);
+    const template = new Template(templateFile);
 
     const blob = await asset('inputs/input.txt');
     const json = await asset('inputs/input.json');
@@ -84,7 +84,7 @@ describe('e2e test template', () => {
     const templateFile = await readFile(
       '../../../e2e-tests/template/oicana-e2e-test-x.y.z.zip',
     );
-    const template = new Template('test', templateFile);
+    const template = new Template(templateFile);
 
     template.compile(new Map(), new Map(), Png(1), CompilationMode.Development);
   });
@@ -93,7 +93,7 @@ describe('e2e test template', () => {
     const templateFile = await readFile(
       '../../../e2e-tests/template/oicana-e2e-test-x.y.z.zip',
     );
-    const template = new Template('test', templateFile);
+    const template = new Template(templateFile);
 
     expect(() => {
       template.compile(new Map(), new Map(), Png(1));
@@ -106,7 +106,6 @@ describe('e2e test template', () => {
     );
     expect(() => {
       new Template(
-        'test',
         templateFile,
         new Map(),
         new Map(),
