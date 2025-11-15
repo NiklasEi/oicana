@@ -22,7 +22,6 @@ import type {
  */
 export class Template {
   private readonly template: string;
-  private defaultCompilationMode: CompilationMode;
 
   /**
    * Register a template with the given name and template file
@@ -35,8 +34,8 @@ export class Template {
    * Register a template with the given name, template file, and inputs
    * @param name of the template
    * @param template - the packed Oicana template file
-   * @param jsonInputs for the initial rendering to warm up the cache
-   * @param blobInputs for the initial rendering to warm up the cache
+   * @param jsonInputs for the initial compilation to warm up the cache
+   * @param blobInputs for the initial compilation to warm up the cache
    */
   public constructor(
     name: string,
@@ -49,9 +48,9 @@ export class Template {
    * Register a template with the given name, template file, and inputs
    * @param name of the template
    * @param template - the packed Oicana template file
-   * @param jsonInputs for the initial rendering to warm up the cache
-   * @param blobInputs for the initial rendering to warm up the cache
-   * @param compilation mode for the initial rendering to warm up the cache
+   * @param jsonInputs for the initial compilation to warm up the cache (defaults to empty map)
+   * @param blobInputs for the initial compilation to warm up the cache (defaults to empty map)
+   * @param compilationMode for the initial compilation to warm up the cache (defaults to Development)
    */
   public constructor(
     name: string,
@@ -61,7 +60,6 @@ export class Template {
     compilationMode?: CompilationMode,
   ) {
     this.template = name;
-    this.defaultCompilationMode = CompilationMode.Production;
     for (const blob of blobInputs?.entries() ?? []) {
       if (blob[1].meta === undefined) {
         // Otherwise the FFI layer will fail to pass the blobs over to WASM
@@ -107,10 +105,10 @@ export class Template {
 
   /**
    * Compile the template with the given inputs
-   * @param jsonInputs
-   * @param blobInputs
-   * @param exportFormat
-   * @param compilationMode
+   * @param jsonInputs - JSON inputs for the template (defaults to empty map)
+   * @param blobInputs - Blob inputs for the template (defaults to empty map)
+   * @param exportFormat - Export format specification (defaults to PDF)
+   * @param compilationMode - Compilation mode (defaults to Production)
    */
   public compile(
     jsonInputs?: Map<string, string>,
@@ -130,7 +128,7 @@ export class Template {
       this.template,
       jsonInputs ?? new Map(),
       blobInputs ?? new Map(),
-      compilationMode ?? this.defaultCompilationMode,
+      compilationMode ?? CompilationMode.Production,
     );
     const result = export_document(
       documentId,
@@ -160,21 +158,6 @@ export class Template {
    */
   public file(path: string): Uint8Array {
     return get_file(this.template, path);
-  }
-
-  /**
-   * Get the default compilation mode of this template
-   */
-  public defaultMode(): CompilationMode {
-    return this.defaultCompilationMode;
-  }
-
-  /**
-   * Set the default compilation mode of this template
-   * @param compilationMode to use as default when compiling this template
-   */
-  public setDefaultMode(compilationMode: CompilationMode) {
-    this.defaultCompilationMode = compilationMode;
   }
 
   private convertExportFormat(exportFormat?: ExportFormat): InnerExportFormat {

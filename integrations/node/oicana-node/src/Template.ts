@@ -17,7 +17,6 @@ import type { BlobWithMetadata } from './inputs/index.js';
  */
 export class Template {
   private readonly template: string;
-  private defaultCompilationMode: CompilationMode;
 
   /**
    * Register a template with the given name and template file
@@ -30,8 +29,8 @@ export class Template {
    * Register a template with the given name, template file, and inputs
    * @param name of the template
    * @param template - the packed Oicana template file
-   * @param jsonInputs for the initial rendering to warm up the cache
-   * @param blobInputs for the initial rendering to warm up the cache
+   * @param jsonInputs for the initial compilation to warm up the cache
+   * @param blobInputs for the initial compilation to warm up the cache
    */
   public constructor(
     name: string,
@@ -44,9 +43,9 @@ export class Template {
    * Register a template with the given name, template file, and inputs
    * @param name of the template
    * @param template - the packed Oicana template file
-   * @param jsonInputs for the initial rendering to warm up the cache
-   * @param blobInputs for the initial rendering to warm up the cache
-   * @param compilation mode for the initial rendering to warm up the cache
+   * @param jsonInputs for the initial compilation to warm up the cache (defaults to empty map)
+   * @param blobInputs for the initial compilation to warm up the cache (defaults to empty map)
+   * @param compilationMode for the initial compilation to warm up the cache (defaults to Development)
    */
   public constructor(
     name: string,
@@ -56,7 +55,6 @@ export class Template {
     compilationMode?: CompilationMode,
   ) {
     this.template = name;
-    this.defaultCompilationMode = CompilationMode.Production;
 
     registerTemplate(
       this.template,
@@ -98,10 +96,10 @@ export class Template {
 
   /**
    * Compile the template with the given inputs
-   * @param jsonInputs
-   * @param blobInputs
-   * @param exportFormat
-   * @param compilationMode
+   * @param jsonInputs - JSON inputs for the template (defaults to empty map)
+   * @param blobInputs - Blob inputs for the template (defaults to empty map)
+   * @param exportFormat - Export format specification (defaults to PDF)
+   * @param compilationMode - Compilation mode (defaults to Production)
    */
   public compile(
     jsonInputs?: Map<string, string>,
@@ -124,21 +122,6 @@ export class Template {
     } finally {
       removeDocument(document);
     }
-  }
-
-  /**
-   * Get the default compilation mode of this template
-   */
-  public defaultMode(): CompilationMode {
-    return this.defaultCompilationMode;
-  }
-
-  /**
-   * Set the default compilation mode of this template
-   * @param compilationMode to use as default when compiling this template
-   */
-  public setDefaultMode(compilationMode: CompilationMode) {
-    this.defaultCompilationMode = compilationMode;
   }
 
   private convertBlobWithMetadata(
