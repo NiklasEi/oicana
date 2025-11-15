@@ -18,7 +18,7 @@ Compiling this template will always result in the same document.
 We will add inputs later on in the #text(fill: blue, weight: "bold")[Getting Started Guide].
 ```)
 
-#note[If you are new to Typst, this might look a bit confusing to you. This code snippet is using #link("https://typst.app/docs/reference/syntax/#markup")[Typst's markdown mode]. The "=" is a heading and the normal text is just that, normal text. With "\#", you switch to code mode in which you can, for example, set the document date to today, or use the built-in `text` function to write "Getting Started Guide" in bold and blue.
+#note[If you are new to Typst, this might look a bit confusing to you. Most of this code snippet is using #link("https://typst.app/docs/reference/syntax/#markup")[Typst's markdown mode]. The "=" is a heading and the normal text is just that, normal text. "\#" switches to code mode in which you can, for example, set the document date to today, or use the built-in `text` function to write "Getting Started Guide" in bold and blue.
 
   \
   Please refer to #link("https://typst.app/docs/")[Typst's online documentation] for more information.]
