@@ -2,7 +2,9 @@
 #import "/src/responsive-image.typ": *
 #import "/src/code.typ": *
 
+In this chapter, you'll integrate Oicana into a Rust web service using #link("https://github.com/tokio-rs/axum")[axum]. axum is a web application framework built on top of #link("https://tokio.rs/")[Tokio] and #link("https://github.com/tower-rs/tower")[Tower], designed for building fast, reliable HTTP services. We'll create a simple async web service that compiles your Oicana template to PDF and serves it via an HTTP endpoint.
 
+\
 #note[This section assumes that you have a working Rust setup with cargo. If that is not the case, please follow #link("https://www.rust-lang.org/tools/install")[the official Rust installation guide] to install Rust on your machine.]
 
 \

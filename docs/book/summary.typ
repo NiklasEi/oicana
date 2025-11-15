@@ -22,15 +22,15 @@
     - #chapter(
         "getting-started/5-1-csharp-integration.typ",
         section: "2.4.1",
-      )[#text("C# / ASP.NET")]
+      )[C#sym.hash using ASP.NET]
     - #chapter(
         "getting-started/5-2-rust-integration.typ",
         section: "2.4.2",
-      )[Rust / Axum]
+      )[Rust using Axum]
     - #chapter(
         "getting-started/5-3-nodejs-integration.typ",
         section: "2.4.3",
-      )[Node.js / NestJS]
+      )[Node.js using NestJS]
 
   == Templating
   - #chapter("templates.typ", section: "3")[Oicana templates]
