@@ -2,7 +2,9 @@
 #import "/src/responsive-image.typ": *
 #import "/src/code.typ": *
 
+In this chapter, you'll integrate Oicana into a C#sym.hash web service using #link("https://dotnet.microsoft.com/en-us/apps/aspnet")[ASP.NET Core]. ASP.NET Core is Microsoft's modern, cross-platform framework for building web applications and APIs. We'll create a simple web service that compiles your Oicana template to PDF and serves it via an HTTP endpoint.
 
+\
 #note[This section assumes, that you have a working .NET 8 setup. If that is not the case, please follow #link("https://learn.microsoft.com/en-us/dotnet/core/install/")[the official Microsoft guide] to install .NET on your machine.]
 
 \

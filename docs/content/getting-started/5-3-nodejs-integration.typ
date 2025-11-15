@@ -2,7 +2,9 @@
 #import "/src/responsive-image.typ": *
 #import "/src/code.typ": *
 
+In this chapter, you'll integrate Oicana into a Node.js web service using #link("https://nestjs.com/")[NestJS]. NestJS is a progressive Node.js framework for building efficient, scalable server-side applications. It uses TypeScript by default and provides a modular architecture. We'll create a simple web service that compiles your Oicana template to PDF and serves it via an HTTP endpoint.
 
+\
 #note[This section assumes that you have a working Node.js 18+ setup with npm. If that is not the case, please follow #link("https://nodejs.org/en/download/")[the official Node.js installation guide] to install Node.js on your machine.]
 
 \
@@ -104,10 +106,10 @@ The generated `example.pdf` file should contain your template with the developme
 
 == About performance
 
-The PDF generation should not take longer than a couple of milliseconds. The first request to a NestJS service can be slightly slower than later ones due to initialization overhead.
+The PDF generation should not take longer than a couple of milliseconds.
 
 \
-For better performance in production environments with heavy load, consider moving compilation to worker threads using libraries like #link("https://github.com/piscinajs/piscina")[piscina]. This allows you to offload CPU-intensive compilation work from the main event loop.
+For better performance in production environments with heavy load, consider moving compilation to worker threads. This allows you to offload CPU-intensive compilation work from the main event loop. Libraries like #link("https://github.com/piscinajs/piscina")[piscina] can help with that.
 
 == Passing inputs from Node.js
 
