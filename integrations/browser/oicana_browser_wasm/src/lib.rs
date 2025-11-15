@@ -57,7 +57,6 @@ pub fn register_template(
     files.copy_to(&mut vec[..]);
     let files = PackedTemplate::new(Cursor::new(vec));
     let manifest = files.manifest().map_err(|error| format!("{error:?}"))?;
-    println!("inserting new world for template '{template}'");
 
     let mut world =
         OicanaWorld::new(files, inputs, manifest).map_err(|error| format!("{error:?}"))?;
@@ -183,7 +182,6 @@ fn prepare_inputs(json_inputs: JsValue, blobs: JsValue) -> Result<TemplateInputs
 /// Remove the document from the cache.
 #[wasm_bindgen]
 pub fn remove_document(document_id: String) -> Result<(), String> {
-    println!("Remove the document behind {}", document_id);
     DOCUMENT_CACHE.remove(&document_id);
     Ok(())
 }

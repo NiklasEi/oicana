@@ -1,6 +1,11 @@
 # Next release
 
 
+# Browser integration v0.1.0-alpha.4
+# Node.js integration 0.1.0-alpha.5
+
+- Remove log statements
+
 # C# integration v0.1.0-alpha.6
 # Browser integration v0.1.0-alpha.3
 # Node.js integration 0.1.0-alpha.4

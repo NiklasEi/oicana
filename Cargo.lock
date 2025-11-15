@@ -2461,7 +2461,7 @@ dependencies = [
 
 [[package]]
 name = "oicana-browser-wasm"
-version = "0.1.0-alpha.2"
+version = "0.1.0-alpha.4"
 dependencies = [
  "console_error_panic_hook",
  "console_log",
@@ -2577,7 +2577,7 @@ dependencies = [
 
 [[package]]
 name = "oicana_node_native"
-version = "0.1.0-alpha.3"
+version = "0.1.0-alpha.5"
 dependencies = [
  "dashmap",
  "napi",
