@@ -20,6 +20,7 @@ We will define a new endpoint to compile our Oicana template to a PDF and return
   \
   #code("Part of Program.cs", ```cs
   using Oicana.Config;
+  using Oicana.Inputs;
   using Oicana.Template;
 
   var templateFile =
