@@ -1,9 +1,23 @@
 # Next release
 
+
+# Browser integration v0.1.0-alpha.4
+# Node.js integration 0.1.0-alpha.5
+
+- Remove log statements
+
+# C# integration v0.1.0-alpha.6
+# Browser integration v0.1.0-alpha.3
+# Node.js integration 0.1.0-alpha.4
+
+- Unify function parameters
+- Fix default compilation mode
+
 # Crates v0.1.0-alpha.5
 # CLI v0.1.0-alpha.6
 # C# integration v0.1.0-alpha.5
 # Browser integration v0.1.0-alpha.2
+# Node.js integration 0.1.0-alpha.3
 # Rust integration v0.1.0-alpha.5
 
 - Fix template paths on Windows

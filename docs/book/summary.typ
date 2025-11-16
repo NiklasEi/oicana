@@ -12,10 +12,25 @@
       section: "2.2",
     )[Create an Oicana template]
   - #chapter(
-      "getting-started/3-c-sharp-integration.typ",
+      "getting-started/3-defining-inputs.typ",
       section: "2.3",
-    )[#text("Using the C# Integration")]
-  - #chapter("getting-started/4-inputs.typ", section: "2.4")[Template inputs]
+    )[Defining Template Inputs]
+  - #chapter(
+      "getting-started/4-choose-path.typ",
+      section: "2.4",
+    )[Choose Your Integration]
+    - #chapter(
+        "getting-started/5-1-csharp-integration.typ",
+        section: "2.4.1",
+      )[C#sym.hash using ASP.NET]
+    - #chapter(
+        "getting-started/5-2-rust-integration.typ",
+        section: "2.4.2",
+      )[Rust using Axum]
+    - #chapter(
+        "getting-started/5-3-nodejs-integration.typ",
+        section: "2.4.3",
+      )[Node.js using NestJS]
 
   == Templating
   - #chapter("templates.typ", section: "3")[Oicana templates]

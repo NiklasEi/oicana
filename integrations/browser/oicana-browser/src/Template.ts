@@ -22,46 +22,39 @@ import type {
  */
 export class Template {
   private readonly template: string;
-  private defaultCompilationMode: CompilationMode;
 
   /**
-   * Register a template with the given name and template file
-   * @param name of the template
+   * Register a template with the given template file
    * @param template - the packed Oicana template file
    */
-  public constructor(name: string, template: Uint8Array);
+  public constructor(template: Uint8Array);
 
   /**
-   * Register a template with the given name, template file, and inputs
-   * @param name of the template
+   * Register a template with the given template file and inputs
    * @param template - the packed Oicana template file
-   * @param jsonInputs for the initial rendering to warm up the cache
-   * @param blobInputs for the initial rendering to warm up the cache
+   * @param jsonInputs for the initial compilation to warm up the cache
+   * @param blobInputs for the initial compilation to warm up the cache
    */
   public constructor(
-    name: string,
     template: Uint8Array,
     jsonInputs: Map<string, string>,
     blobInputs: Map<string, BlobWithMetadata>,
   );
 
   /**
-   * Register a template with the given name, template file, and inputs
-   * @param name of the template
+   * Register a template with the given template file and inputs
    * @param template - the packed Oicana template file
-   * @param jsonInputs for the initial rendering to warm up the cache
-   * @param blobInputs for the initial rendering to warm up the cache
-   * @param compilation mode for the initial rendering to warm up the cache
+   * @param jsonInputs for the initial compilation to warm up the cache (defaults to empty map)
+   * @param blobInputs for the initial compilation to warm up the cache (defaults to empty map)
+   * @param compilationOptions for the initial compilation to warm up the cache (defaults to Development)
    */
   public constructor(
-    name: string,
     template: Uint8Array,
     jsonInputs?: Map<string, string>,
     blobInputs?: Map<string, BlobWithMetadata>,
-    compilationMode?: CompilationMode,
+    compilationOptions?: CompilationMode,
   ) {
-    this.template = name;
-    this.defaultCompilationMode = CompilationMode.Production;
+    this.template = crypto.randomUUID();
     for (const blob of blobInputs?.entries() ?? []) {
       if (blob[1].meta === undefined) {
         // Otherwise the FFI layer will fail to pass the blobs over to WASM
@@ -73,7 +66,7 @@ export class Template {
       template,
       jsonInputs ?? new Map(),
       blobInputs ?? new Map(),
-      compilationMode ?? CompilationMode.Development,
+      compilationOptions ?? CompilationMode.Development,
     );
     remove_document(documentId);
   }
@@ -97,26 +90,40 @@ export class Template {
    * Compile the template with the given inputs
    * @param jsonInputs
    * @param blobInputs
-   * @param exportFormat
+   * @param exportOptions
    */
   public compile(
     jsonInputs: Map<string, string>,
     blobInputs: Map<string, BlobWithMetadata>,
-    exportFormat: ExportFormat,
+    exportOptions: ExportFormat,
   ): Uint8Array;
 
   /**
    * Compile the template with the given inputs
    * @param jsonInputs
    * @param blobInputs
-   * @param exportFormat
-   * @param compilationMode
+   * @param exportOptions
+   * @param compilationOptions
+   */
+  public compile(
+    jsonInputs: Map<string, string>,
+    blobInputs: Map<string, BlobWithMetadata>,
+    exportOptions: ExportFormat,
+    compilationOptions: CompilationMode,
+  ): Uint8Array;
+
+  /**
+   * Compile the template with the given inputs
+   * @param jsonInputs - JSON inputs for the template (defaults to empty map)
+   * @param blobInputs - Blob inputs for the template (defaults to empty map)
+   * @param exportOptions - Export format specification (defaults to PDF)
+   * @param compilationOptions - Compilation mode (defaults to Production)
    */
   public compile(
     jsonInputs?: Map<string, string>,
     blobInputs?: Map<string, BlobWithMetadata>,
-    exportFormat?: ExportFormat,
-    compilationMode?: CompilationMode,
+    exportOptions?: ExportFormat,
+    compilationOptions?: CompilationMode,
   ): Uint8Array {
     for (const blob of blobInputs instanceof Map
       ? (blobInputs?.entries() ?? [])
@@ -130,11 +137,11 @@ export class Template {
       this.template,
       jsonInputs ?? new Map(),
       blobInputs ?? new Map(),
-      compilationMode ?? this.defaultCompilationMode,
+      compilationOptions ?? CompilationMode.Production,
     );
     const result = export_document(
       documentId,
-      this.convertExportFormat(exportFormat),
+      this.convertExportFormat(exportOptions),
     );
     remove_document(documentId);
 
@@ -160,21 +167,6 @@ export class Template {
    */
   public file(path: string): Uint8Array {
     return get_file(this.template, path);
-  }
-
-  /**
-   * Get the default compilation mode of this template
-   */
-  public defaultMode(): CompilationMode {
-    return this.defaultCompilationMode;
-  }
-
-  /**
-   * Set the default compilation mode of this template
-   * @param compilationMode to use as default when compiling this template
-   */
-  public setDefaultMode(compilationMode: CompilationMode) {
-    this.defaultCompilationMode = compilationMode;
   }
 
   private convertExportFormat(exportFormat?: ExportFormat): InnerExportFormat {

@@ -1,7 +1,8 @@
 {
   "skip": [
     "https://www.npmjs.com/package/@oicana/browser",
-    "https://crates.io/crates/oicana"
+    "https://crates.io/crates/oicana",
+    "https://example.oicana.com/"
   ],
   "silent": false,
   "verbosity": "warning",
