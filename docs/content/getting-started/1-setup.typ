@@ -28,7 +28,4 @@ You can edit Typst files in any text editor, but syntax highlighting and live pr
 \
 \
 == For this Guide
-In the following sections, you will create a basic Oicana template and set up an ASP.NET service. The service will use the Oicana C#sym.hash integration to compile the template to PDF when requested by a user.
-
-\
-Using the C#sym.hash integration requires a working .NET setup (preferably .NET 8). If you want to follow along, but don't have that installed, please refer to #link("https://learn.microsoft.com/en-us/dotnet/core/install/")[the official Microsoft guide for installation instructions].
+In the following sections, you will create a basic Oicana template that can be used with any integration. After creating the template, you'll be able to choose which integration to explore based on your preferred tech stack.

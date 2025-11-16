@@ -192,7 +192,6 @@ pub fn export_document(document_id: String, export_format: String) -> Result<Buf
 /// Remove the document from the cache.
 #[napi]
 pub fn remove_document(document_id: String) -> Result<()> {
-  println!("Remove the document behind {}", document_id);
   DOCUMENT_CACHE.remove(&document_id);
   Ok(())
 }

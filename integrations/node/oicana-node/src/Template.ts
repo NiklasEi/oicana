@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import {
   type BlobWithMetadata as BlobWithMetadataNative,
   compileTemplate,
@@ -17,46 +18,39 @@ import type { BlobWithMetadata } from './inputs/index.js';
  */
 export class Template {
   private readonly template: string;
-  private defaultCompilationMode: CompilationMode;
 
   /**
-   * Register a template with the given name and template file
-   * @param name of the template
+   * Register a template with the given template file
    * @param template - the packed Oicana template file
    */
-  public constructor(name: string, template: Uint8Array);
+  public constructor(template: Uint8Array);
 
   /**
-   * Register a template with the given name, template file, and inputs
-   * @param name of the template
+   * Register a template with the given template file and inputs
    * @param template - the packed Oicana template file
-   * @param jsonInputs for the initial rendering to warm up the cache
-   * @param blobInputs for the initial rendering to warm up the cache
+   * @param jsonInputs for the initial compilation to warm up the cache
+   * @param blobInputs for the initial compilation to warm up the cache
    */
   public constructor(
-    name: string,
     template: Uint8Array,
     jsonInputs: Map<string, string>,
     blobInputs: Map<string, BlobWithMetadata>,
   );
 
   /**
-   * Register a template with the given name, template file, and inputs
-   * @param name of the template
+   * Register a template with the given template file and inputs
    * @param template - the packed Oicana template file
-   * @param jsonInputs for the initial rendering to warm up the cache
-   * @param blobInputs for the initial rendering to warm up the cache
-   * @param compilation mode for the initial rendering to warm up the cache
+   * @param jsonInputs for the initial compilation to warm up the cache (defaults to empty map)
+   * @param blobInputs for the initial compilation to warm up the cache (defaults to empty map)
+   * @param compilationOptions for the initial compilation to warm up the cache (defaults to Development)
    */
   public constructor(
-    name: string,
     template: Uint8Array,
     jsonInputs?: Map<string, string>,
     blobInputs?: Map<string, BlobWithMetadata>,
-    compilationMode?: CompilationMode,
+    compilationOptions?: CompilationMode,
   ) {
-    this.template = name;
-    this.defaultCompilationMode = CompilationMode.Production;
+    this.template = randomUUID();
 
     registerTemplate(
       this.template,
@@ -65,7 +59,9 @@ export class Template {
       this.convertBlobWithMetadata(
         blobInputs ?? new Map<string, BlobWithMetadata>(),
       ),
-      this.mapCompilationMode(compilationMode ?? CompilationMode.Development),
+      this.mapCompilationMode(
+        compilationOptions ?? CompilationMode.Development,
+      ),
     );
   }
 
@@ -88,28 +84,42 @@ export class Template {
    * Compile the template with the given inputs
    * @param jsonInputs
    * @param blobInputs
-   * @param exportFormat
+   * @param exportOptions
    */
   public compile(
     jsonInputs: Map<string, string>,
     blobInputs: Map<string, BlobWithMetadata>,
-    exportFormat: ExportFormat,
+    exportOptions: ExportFormat,
   ): Uint8Array;
 
   /**
    * Compile the template with the given inputs
    * @param jsonInputs
    * @param blobInputs
-   * @param exportFormat
-   * @param compilationMode
+   * @param exportOptions
+   * @param compilationOptions
+   */
+  public compile(
+    jsonInputs: Map<string, string>,
+    blobInputs: Map<string, BlobWithMetadata>,
+    exportOptions: ExportFormat,
+    compilationOptions: CompilationMode,
+  ): Uint8Array;
+
+  /**
+   * Compile the template with the given inputs
+   * @param jsonInputs - JSON inputs for the template (defaults to empty map)
+   * @param blobInputs - Blob inputs for the template (defaults to empty map)
+   * @param exportOptions - Export format specification (defaults to PDF)
+   * @param compilationOptions - Compilation mode (defaults to Production)
    */
   public compile(
     jsonInputs?: Map<string, string>,
     blobInputs?: Map<string, BlobWithMetadata>,
-    exportFormat?: ExportFormat,
-    compilationMode?: CompilationMode,
+    exportOptions?: ExportFormat,
+    compilationOptions?: CompilationMode,
   ): Uint8Array {
-    const format: ExportFormat = exportFormat ?? { format: 'pdf' };
+    const format: ExportFormat = exportOptions ?? { format: 'pdf' };
 
     const document = compileTemplate(
       this.template,
@@ -117,28 +127,13 @@ export class Template {
       this.convertBlobWithMetadata(
         blobInputs ?? new Map<string, BlobWithMetadata>(),
       ),
-      this.mapCompilationMode(compilationMode ?? CompilationMode.Production),
+      this.mapCompilationMode(compilationOptions ?? CompilationMode.Production),
     );
     try {
       return exportDocument(document, JSON.stringify(format));
     } finally {
       removeDocument(document);
     }
-  }
-
-  /**
-   * Get the default compilation mode of this template
-   */
-  public defaultMode(): CompilationMode {
-    return this.defaultCompilationMode;
-  }
-
-  /**
-   * Set the default compilation mode of this template
-   * @param compilationMode to use as default when compiling this template
-   */
-  public setDefaultMode(compilationMode: CompilationMode) {
-    this.defaultCompilationMode = compilationMode;
   }
 
   private convertBlobWithMetadata(

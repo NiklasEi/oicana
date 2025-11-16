@@ -2,7 +2,9 @@
 #import "/src/responsive-image.typ": *
 #import "/src/code.typ": *
 
+In this chapter, you'll integrate Oicana into a C#sym.hash web service using #link("https://dotnet.microsoft.com/en-us/apps/aspnet")[ASP.NET Core]. ASP.NET Core is Microsoft's modern, cross-platform framework for building web applications and APIs. We'll create a simple web service that compiles your Oicana template to PDF and serves it via an HTTP endpoint.
 
+\
 #note[This section assumes, that you have a working .NET 8 setup. If that is not the case, please follow #link("https://learn.microsoft.com/en-us/dotnet/core/install/")[the official Microsoft guide] to install .NET on your machine.]
 
 \
@@ -20,6 +22,7 @@ We will define a new endpoint to compile our Oicana template to a PDF and return
   \
   #code("Part of Program.cs", ```cs
   using Oicana.Config;
+  using Oicana.Inputs;
   using Oicana.Template;
 
   var templateFile =
@@ -35,7 +38,7 @@ We will define a new endpoint to compile our Oicana template to a PDF and return
     ```cs
     app.MapPost("compile", () =>
     {
-        var stream = template.Compile([], [], new CompilationOptions(CompilationMode.Production), ExportOptions.Pdf());
+        var stream = template.Compile([], [], ExportOptions.Pdf(), new CompilationOptions(CompilationMode.Development));
         var now = DateTimeOffset.Now;
         return Results.File(
             fileStream: stream,
@@ -47,7 +50,7 @@ We will define a new endpoint to compile our Oicana template to a PDF and return
     ```,
   )
 
-  This code defines a new POST endpoint at `/compile`. For every request, it compiles the template to PDF with two empty input lists and returns the file.
+  This code defines a new POST endpoint at `/compile`. For every request, it compiles the template to PDF with two empty input lists and returns the file. We use `CompilationMode.Development` here so the template uses the development value you defined for the `info` input ("Chuck Norris").
 
 After restarting the service and refreshing the swagger UI, you should see the new endpoint. Open up the endpoint description and click "Try it out" and "Execute" to send a request to the server. You should see a successful response with a download button for the PDF file.
 
@@ -64,6 +67,31 @@ The PDF generation should not take longer than a couple of milliseconds. You can
 \
 For a better measurement of the compilation speed on your machine, you can use a #link("https://learn.microsoft.com/en-us/dotnet/api/system.diagnostics.stopwatch")[`Stopwatch`] in the endpoint code.
 
+== Passing inputs from C#sym.hash
+
+Now let's use the template with inputs that you defined in the previous chapter. First, make sure to update the packed template in your ASP.NET project. Run `oicana pack` in the template directory and replace `example-0.1.0.zip` in the ASP.NET project with the new file.
 
 \
-Next up: add dynamic inputs to the Oicana template.
+Our `compile` endpoint is currently calling `template.Compile([], [], ExportOptions.Pdf(), new CompilationOptions(CompilationMode.Development))`. This compiles the template without any explicit inputs. The first empty array are the `json` inputs and the second one the `blob` inputs. We will set the input value now, which allows us to compile in production mode.
+
+\
+Change the endpoint to set the name input you defined earlier.
+
+#code(
+  "Part of Program.cs",
+  ```cs
+  app.MapPost("compile", () =>
+  {
+      var input = new TemplateJsonInput("info", JsonSerializer.Deserialize<JsonNode>("{ \"name\": \"Baby Yoda\" }")!);
+      var stream = template.Compile([input], [], ExportOptions.Pdf(), new CompilationOptions(CompilationMode.Production));
+      var now = DateTimeOffset.Now;
+      // ... more code from before
+  });
+  ```,
+)
+
+\
+Notice that we switched to `CompilationMode.Production` now that we're providing explicit input values. In production mode, the template will never fall back to development defaults. If no input value is provided, your Typst code will have to handle `none` values or the compilation will fail.
+
+\
+Calling the endpoint now, will result in a PDF with "Baby Yoda" instead of "Chuck Norris". Building on this minimal service, one could set input values based on database entries or the request payload. Take a look at the open source #link("https://github.com/oicana/oicana-example-asp-net/")[ASP.NET example project on GitHub] for a more complete showcase of the Oicana C#sym.hash integration.

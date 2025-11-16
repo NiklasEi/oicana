@@ -25,7 +25,7 @@ public class E2ETests
     {
         var template = new Template(_templateFile);
 
-        var document = template.Compile(new List<TemplateJsonInput>(), new List<TemplateBlobInput>(), new CompilationOptions(CompilationMode.Development), ExportOptions.Png(1.0f));
+        var document = template.Compile(new List<TemplateJsonInput>(), new List<TemplateBlobInput>(), ExportOptions.Png(1.0f), new CompilationOptions(CompilationMode.Development));
         using var fileStream = File.Create("e2e/development.png");
         document.CopyTo(fileStream);
     }
@@ -50,7 +50,7 @@ public class E2ETests
             }),
         };
         var input = new TemplateJsonInput("development-json", JsonSerializer.Deserialize<JsonNode>("{ \"name\": \"Input\", \"foo\": [41, \"testing\"] }")!);
-        var document = template.Compile([input], blobInputs, new CompilationOptions(CompilationMode.Production), ExportOptions.Png(1.0f));
+        var document = template.Compile([input], blobInputs, ExportOptions.Png(1.0f), new CompilationOptions(CompilationMode.Production));
         using var fileStream = File.Create("e2e/production.png");
         document.CopyTo(fileStream);
     }
@@ -103,7 +103,7 @@ public class E2ETests
             new("both-json", JsonSerializer.Deserialize<JsonNode>("{ \"name\": \"Input\", \"foo\": [41, \"testing\"] }")!)
         };
 
-        var document = template.Compile(jsonInputs, blobInputs, new CompilationOptions(CompilationMode.Production), ExportOptions.Png(1.0f));
+        var document = template.Compile(jsonInputs, blobInputs, ExportOptions.Png(1.0f), new CompilationOptions(CompilationMode.Production));
         using var fileStream = File.Create("e2e/all-inputs.png");
         document.CopyTo(fileStream);
     }
@@ -112,7 +112,7 @@ public class E2ETests
     public void GetsReadableErrors()
     {
         var template = new Template(_templateFile);
-        Action act = () => template.Compile(new List<TemplateJsonInput>(), new List<TemplateBlobInput>(), new CompilationOptions(CompilationMode.Production), ExportOptions.Png(1.0f));
+        Action act = () => template.Compile(new List<TemplateJsonInput>(), new List<TemplateBlobInput>(), ExportOptions.Png(1.0f), new CompilationOptions(CompilationMode.Production));
 
         act.Should()
             .Throw<OicanaException>()

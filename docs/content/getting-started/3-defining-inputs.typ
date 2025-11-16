@@ -15,6 +15,8 @@ Add the following to the top of your `main.typ` file to initialize the package:
 
 #let read-project-file(path) = return read(path, encoding: none);
 #let (input, oicana-image, oicana-config) = setup(read-project-file);
+
+#set document(date: datetime.today())
 ```)
 \
 This snippet gives the Oicana package access to the Typst project's files. We can now use the return values from calling `setup` in the rest of the template.
@@ -79,32 +81,8 @@ In our template we can now use `input.info.name` and the preview will show "Chuc
 
 = Hello from Typst, #input.info.name
 
-Now we can pass names into the template from any Oicana integration. We will set the name out of C#sym.hash in the next step.
+Now we can pass names into the template from any Oicana integration.
 ```)
 
-== Inputs in the C#sym.hash integration
-
-With the input defined, we can update the packed template in the C#sym.hash project. Run `oicana pack` in the template directory and
-replace `example-0.1.0.zip` in the ASP.NET project with the new file.
-
 \
-Our `compile` endpoint is currently calling `var stream = template.Compile([], [], new CompilationOptions(CompilationMode.Production), ExportOptions.Pdf());`. This compiles the template without any inputs. The first empty array are the `json` inputs and the second one the `blob` inputs.
-
-\
-Change the endpoint to set the name input we just defined.
-
-#code(
-  "Part of Program.cs",
-  ```cs
-  app.MapGet("compile", () =>
-  {
-      var input = new TemplateJsonInput("info", JsonSerializer.Deserialize<JsonNode>("{ \"name\": \"Baby Yoda\" }")!);
-      var stream = template.Compile([input], [], new CompilationOptions(CompilationMode.Production), ExportOptions.Pdf());
-      var now = DateTimeOffset.Now;
-      // ... more code from before
-  });
-  ```,
-)
-
-\
-Calling the endpoint now, will result in a PDF with "Baby Yoda". Building on this minimal service, one could set input values based on database entries or the request payload. Take a look at the open source #link("https://github.com/oicana/oicana-example-asp-net/")[ASP.NET example project on GitHub] for a more complete showcase of the Oicana C#sym.hash integration.
+With the input defined in your template, you're ready to choose an integration and learn how to pass dynamic values from your application code.
