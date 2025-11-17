@@ -101,7 +101,7 @@ After restarting the service, you can test the endpoint with curl:
 curl -X POST http://localhost:3000/templates/compile --output example.pdf
 ```
 
-The generated `example.pdf` file should contain your template with the development default value.
+The generated `example.pdf` file should contain your template with the development value.
 
 == About performance
 
@@ -112,9 +112,6 @@ For better performance in production environments with heavy load, consider movi
 
 == Passing inputs from Node.js
 
-Now let's use the template with the inputs you defined in the previous chapter. First, make sure to update the packed template in your Node.js project. Run `oicana pack` in the template directory and replace `example-0.1.0.zip` in the Node.js project with the new file.
-
-\
 Our `compile` method is currently calling `template.compile()` with empty input maps and development mode. Now we'll provide explicit input values and switch to production mode:
 
 #code(
