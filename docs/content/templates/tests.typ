@@ -26,6 +26,10 @@ file = "data.json"
 All paths in a test collection are relative to its toml file. The collection above defines a single test with a `blob` input and a `json` input given as `logo.jpg` in the parent directory and `data.json` next to the test collection.
 Executing `oicana test` for this template, will compile it with those inputs and attempt to compare the output with a `with_logo.png` living next to the test collection.
 
+#note[On the first run, you'll need to use `oicana test --update` to create the initial snapshot files. Subsequent test runs will compare against these snapshots.
+
+  Use `--update` or `-u` whenever changes in the snapshot files are expected and should be accepted.]
+
 \
 The tests directory will be recursively searched for any test collection files in the form of `<optional-prefix.>tests.toml`.
 

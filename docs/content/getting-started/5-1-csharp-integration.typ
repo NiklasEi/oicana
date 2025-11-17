@@ -31,6 +31,9 @@ We will define a new endpoint to compile our Oicana template to a PDF and return
   ```)
 
   \
+  #note[Template registration (the `new Template()` call) compiles the template once in development mode to warm up the Typst cache. This happens at startup and uses the `development` value of the input you defined previously.]
+
+  \
 4. Replace the generated `/weatherforecast` endpoint with the following:
 
   #code(
@@ -50,7 +53,7 @@ We will define a new endpoint to compile our Oicana template to a PDF and return
     ```,
   )
 
-  This code defines a new POST endpoint at `/compile`. For every request, it compiles the template to PDF with two empty input lists and returns the file. We use `CompilationMode.Development` here so the template uses the development value you defined for the `info` input ("Chuck Norris").
+  This code defines a new POST endpoint at `/compile`. For every request, it compiles the template to PDF with two empty input lists and returns the file. We use `CompilationMode.Development` here to demonstrate how the template falls back to the development value you defined for the `info` input ("Chuck Norris"). In a later step we will explicitly set a value for the input.
 
 After restarting the service and refreshing the swagger UI, you should see the new endpoint. Open up the endpoint description and click "Try it out" and "Execute" to send a request to the server. You should see a successful response with a download button for the PDF file.
 
@@ -72,7 +75,7 @@ For a better measurement of the compilation speed on your machine, you can use a
 Now let's use the template with inputs that you defined in the previous chapter. First, make sure to update the packed template in your ASP.NET project. Run `oicana pack` in the template directory and replace `example-0.1.0.zip` in the ASP.NET project with the new file.
 
 \
-Our `compile` endpoint is currently calling `template.Compile([], [], ExportOptions.Pdf(), new CompilationOptions(CompilationMode.Development))`. This compiles the template without any explicit inputs. The first empty array are the `json` inputs and the second one the `blob` inputs. We will set the input value now, which allows us to compile in production mode.
+Our `compile` endpoint is currently calling `template.Compile([], [], ExportOptions.Pdf(), new CompilationOptions(CompilationMode.Development))`. This compiles the template without any explicit inputs. The first empty array are the `json` inputs and the second one the `blob` inputs. Now we'll provide an input value and switch to production mode.
 
 \
 Change the endpoint to set the name input you defined earlier.
@@ -91,7 +94,7 @@ Change the endpoint to set the name input you defined earlier.
 )
 
 \
-Notice that we switched to `CompilationMode.Production` now that we're providing explicit input values. In production mode, the template will never fall back to development defaults. If no input value is provided, your Typst code will have to handle `none` values or the compilation will fail.
+Notice that we switched to `CompilationMode.Production` now that we're providing explicit input values. Production mode is the recommended default for all document compilation in your application - it ensures you never accidentally generate a document with test data. In production mode, the template will never fall back to development values. If an input value is missing in production mode and the input does not have a default value, the compilation will fail unless your template handles `none` values for that input.
 
 \
 Calling the endpoint now, will result in a PDF with "Baby Yoda" instead of "Chuck Norris". Building on this minimal service, one could set input values based on database entries or the request payload. Take a look at the open source #link("https://github.com/oicana/oicana-example-asp-net/")[ASP.NET example project on GitHub] for a more complete showcase of the Oicana C#sym.hash integration.
