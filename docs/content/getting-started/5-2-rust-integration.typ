@@ -71,7 +71,7 @@ We will define a new endpoint to compile our Oicana template to a PDF and return
       axum::serve(listener, app).await.unwrap();
   }
 
-  async fn compile(State(template): State<Arc<Mutex<Template>>>) -> impl IntoResponse {
+  async fn compile(State(template): State<Arc<Mutex<Template<PackedTemplate>>>>) -> impl IntoResponse {
       let mut template = template.lock().unwrap();
 
       // Compile with development mode for demonstration
@@ -82,7 +82,7 @@ We will define a new endpoint to compile our Oicana template to a PDF and return
       let result = template.compile(inputs)
           .expect("Failed to compile template");
 
-      let pdf = export_merged_pdf(&result.document, &template)
+      let pdf = export_merged_pdf(&result.document, &*template)
           .expect("Failed to export PDF");
 
       Response::builder()
@@ -97,7 +97,7 @@ We will define a new endpoint to compile our Oicana template to a PDF and return
   }
   ```)
 
-  This code loads the template once at startup and wraps it in `Arc<Mutex<Template>>`. The `Arc` (Atomic Reference Counted pointer) allows sharing across threads, while `Mutex` provides the mutable access needed by `compile()`. When parallel requests come in, they share the same template - each request locks the mutex (one at a time), compiles, then releases the lock.
+  This code loads the template once at startup and wraps it in `Arc<Mutex<Template<PackedTemplate>>>`. The `Arc` (Atomic Reference Counted pointer) allows sharing across threads, while `Mutex` provides the mutable access needed by `compile()`. When parallel requests come in, they share the same template - each request locks the mutex (one at a time), compiles, then releases the lock.
 
   \
   The `/compile` endpoint compiles the template and returns a PDF. We explicitly use `CompilationConfig::development()` here to demonstrate how the template uses the development value you defined for the `info` input ("Chuck Norris"). We will set an input value in a later step.
@@ -128,7 +128,7 @@ Our `compile` function currently does not set a value for the template input. Si
 #code(
   "Part of src/main.rs",
   ```rust
-  async fn compile(State(template): State<Arc<Mutex<Template>>>) -> impl IntoResponse {
+  async fn compile(State(template): State<Arc<Mutex<Template<PackedTemplate>>>>) -> impl IntoResponse {
       let mut template = template.lock().unwrap();
 
       let mut inputs = TemplateInputs::new();
