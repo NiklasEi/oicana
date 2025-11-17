@@ -62,24 +62,22 @@ We will define a new endpoint to compile our Oicana template to a PDF and return
   }
 
   async fn compile() -> impl IntoResponse {
-      // Load template
       let template_file = File::open("templates/example-0.1.0.zip")
           .expect("Failed to open template file");
       let mut template = Template::init(template_file)
           .expect("Failed to initialize template");
 
-      // Compile with development mode (uses development fallback values for inputs)
+      // Compile with development mode for demonstration
+      // (uses development fallback values for inputs)
       let mut inputs = TemplateInputs::new();
       inputs.with_config(CompilationConfig::development());
 
       let result = template.compile(inputs)
           .expect("Failed to compile template");
 
-      // Export to PDF
       let pdf = export_merged_pdf(&result.document, &template)
           .expect("Failed to export PDF");
 
-      // Return PDF response
       Response::builder()
           .status(StatusCode::OK)
           .header(header::CONTENT_TYPE, "application/pdf")
@@ -92,7 +90,10 @@ We will define a new endpoint to compile our Oicana template to a PDF and return
   }
   ```)
 
-  This code defines a new POST endpoint at `/compile`. For every request, it loads the template, compiles it with an empty input list, and returns the PDF file. We use `CompilationConfig::development()` so the template uses the development value you defined for the `info` input ("Chuck Norris").
+  This code defines a new POST endpoint at `/compile`. For every request, it loads the template, compiles it with an empty input list, and returns the PDF file. We explicitly use `CompilationConfig::development()` here so the template uses the development value you defined for the `info` input ("Chuck Norris"). We will set an input value in a later step.
+
+  \
+  #note[The template is loaded from disk on every request here for simplicity. For production use, load the template once at startup and cache it. Template initialization automatically compiles once in development mode to warm up the Typst cache.]
 
 \
 Start the service with `cargo run` and test the endpoint. You can use curl to download the PDF:
@@ -115,10 +116,7 @@ For production use, consider loading and caching the template once at startup ra
 Now let's use the template with the inputs you defined in the previous chapter. First, make sure to update the packed template in your Rust project. Run `oicana pack` in the template directory and replace `example-0.1.0.zip` in the Rust project with the new file.
 
 \
-Our `compile` function currently calls `template.compile(inputs)` with only a compilation config. This compiles the template without any explicit inputs. Let's add the name input you defined earlier.
-
-\
-Change the endpoint to set the input value, which allows us to compile in production mode:
+Our `compile` function currently does not set a value for the template input. Since we use `CompilationConfig::development()`, the development value of `{ "name": "Chuck Norris" }` is used. Now we'll provide an explicit input value and switch to production mode:
 
 #code(
   "Part of src/main.rs",
@@ -126,11 +124,9 @@ Change the endpoint to set the input value, which allows us to compile in produc
   async fn compile() -> impl IntoResponse {
       // ... template loading code from before
 
-      // Prepare inputs
       let mut inputs = TemplateInputs::new();
       inputs.with_config(CompilationConfig::production());
 
-      // Add JSON input
       let json_value = serde_json::json!({ "name": "Baby Yoda" });
       inputs.with_input(
           oicana_input::input::json::JsonInput::new(
@@ -148,7 +144,7 @@ Change the endpoint to set the input value, which allows us to compile in produc
 )
 
 \
-Notice that we switched to `CompilationConfig::production()` now that we're providing explicit input values. In production mode, the template will never fall back to development defaults. If no input value is provided, your Typst code will have to handle `none` values or the compilation will fail.
+Notice that we switched to `CompilationConfig::production()` now that we're providing explicit input values. Production mode is the recommended default for all document compilation in your application - it ensures you never accidentally generate a document with test data. In production mode, the template will never fall back to development values for inputs. If an input value is missing in production mode and the input does not have a default value, the compilation will fail unless your template handles `none` values for that input.
 
 \
 Calling the endpoint now will result in a PDF with "Baby Yoda" instead of "Chuck Norris". Building on this minimal service, you could set input values based on database entries or the request payload. Take a look at the #link("https://github.com/oicana/oicana-example-axum/")[open source Axum example project on GitHub] for a more complete showcase of the Oicana Rust integration, including blob inputs, error handling, and OpenAPI documentation.
