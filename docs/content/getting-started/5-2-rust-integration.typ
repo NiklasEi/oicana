@@ -48,6 +48,7 @@ We will define a new endpoint to compile our Oicana template to a PDF and return
   };
   use oicana::Template;
   use oicana_export::pdf::export_merged_pdf;
+  use oicana_files::packed::PackedTemplate;
   use oicana_input::{CompilationConfig, TemplateInputs};
 
   #[tokio::main]
@@ -109,7 +110,7 @@ Start the service with `cargo run` and test the endpoint. You can use curl to do
 curl -X POST http://127.0.0.1:3000/compile --output example.pdf
 ```
 
-The generated `example.pdf` file should contain your template with the development default value.
+The generated `example.pdf` file should contain your template with the development value.
 
 == About performance
 
@@ -120,9 +121,6 @@ For managing multiple templates, the #link("https://github.com/oicana/oicana-exa
 
 == Passing inputs from Rust
 
-Now let's use the template with the inputs you defined in the previous chapter. First, make sure to update the packed template in your Rust project. Run `oicana pack` in the template directory and replace `example-0.1.0.zip` in the Rust project with the new file.
-
-\
 Our `compile` function currently does not set a value for the template input. Since we use `CompilationConfig::development()`, the development value of `{ "name": "Chuck Norris" }` is used. Now we'll provide an explicit input value and switch to production mode:
 
 #code(
