@@ -37,9 +37,11 @@ We will define a new endpoint to compile our Oicana template to a PDF and return
   \
   #code("src/main.rs", ```rust
   use std::fs::File;
+  use std::sync::{Arc, Mutex};
   use axum::{
       Router,
       body::Body,
+      extract::State,
       http::{StatusCode, header},
       response::{IntoResponse, Response},
       routing::post,
@@ -50,8 +52,16 @@ We will define a new endpoint to compile our Oicana template to a PDF and return
 
   #[tokio::main]
   async fn main() {
+      let template_file = File::open("templates/example-0.1.0.zip")
+          .expect("Failed to open template file");
+      let template = Template::init(template_file)
+          .expect("Failed to initialize template");
+
+      let template = Arc::new(Mutex::new(template));
+
       let app = Router::new()
-          .route("/compile", post(compile));
+          .route("/compile", post(compile))
+          .with_state(template);
 
       let listener = tokio::net::TcpListener::bind("127.0.0.1:3000")
           .await
@@ -61,11 +71,8 @@ We will define a new endpoint to compile our Oicana template to a PDF and return
       axum::serve(listener, app).await.unwrap();
   }
 
-  async fn compile() -> impl IntoResponse {
-      let template_file = File::open("templates/example-0.1.0.zip")
-          .expect("Failed to open template file");
-      let mut template = Template::init(template_file)
-          .expect("Failed to initialize template");
+  async fn compile(State(template): State<Arc<Mutex<Template>>>) -> impl IntoResponse {
+      let mut template = template.lock().unwrap();
 
       // Compile with development mode for demonstration
       // (uses development fallback values for inputs)
@@ -90,10 +97,10 @@ We will define a new endpoint to compile our Oicana template to a PDF and return
   }
   ```)
 
-  This code defines a new POST endpoint at `/compile`. For every request, it loads the template, compiles it with an empty input list, and returns the PDF file. We explicitly use `CompilationConfig::development()` here so the template uses the development value you defined for the `info` input ("Chuck Norris"). We will set an input value in a later step.
+  This code loads the template once at startup and wraps it in `Arc<Mutex<Template>>`. The `Arc` (Atomic Reference Counted pointer) allows sharing across threads, while `Mutex` provides the mutable access needed by `compile()`. When parallel requests come in, they share the same template - each request locks the mutex (one at a time), compiles, then releases the lock.
 
   \
-  #note[The template is loaded from disk on every request here for simplicity. For production use, load the template once at startup and cache it. Template initialization automatically compiles once in development mode to warm up the Typst cache.]
+  The `/compile` endpoint compiles the template and returns a PDF. We explicitly use `CompilationConfig::development()` here to demonstrate how the template uses the development value you defined for the `info` input ("Chuck Norris"). We will set an input value in a later step.
 
 \
 Start the service with `cargo run` and test the endpoint. You can use curl to download the PDF:
@@ -106,10 +113,10 @@ The generated `example.pdf` file should contain your template with the developme
 
 == About performance
 
-The first compilation might take slightly longer than subsequent ones due to initialization overhead. However, PDF generation should typically take only a few milliseconds per request.
+PDF generation should typically take only a few milliseconds per request. Since we're loading the template once at startup and sharing it via `Arc`, there's no file I/O overhead on subsequent requests.
 
 \
-For production use, consider loading and caching the template once at startup rather than reading it from disk on every request. The #link("https://github.com/oicana/oicana-example-axum/")[open source Axum example project on GitHub] demonstrates this approach using a `DashMap` for thread-safe template caching.
+For managing multiple templates, the #link("https://github.com/oicana/oicana-example-axum/")[open source Axum example project on GitHub] demonstrates using a `DashMap` for thread-safe template caching.
 
 == Passing inputs from Rust
 
@@ -121,8 +128,8 @@ Our `compile` function currently does not set a value for the template input. Si
 #code(
   "Part of src/main.rs",
   ```rust
-  async fn compile() -> impl IntoResponse {
-      // ... template loading code from before
+  async fn compile(State(template): State<Arc<Mutex<Template>>>) -> impl IntoResponse {
+      let mut template = template.lock().unwrap();
 
       let mut inputs = TemplateInputs::new();
       inputs.with_config(CompilationConfig::production());
