@@ -53,7 +53,18 @@ If you compile in production mode, the `development` value is ignored:
 2. `default` value
 
 \
-While developing an Oicana template in a Typst editor, it will be compiled in development mode. It makes sense to define `development` values for all required inputs of you template to have a functioning preview.
+#note[
+  *When to use each mode:*
+
+  *Development mode* is used in two scenarios:
+  - When developing templates in a Typst editor to see live previews with test data or using other tooling without Oicana integration (like the official Typst CLI)
+  - By default during template registration (typically at server startup) to warm up the Typst compilation cache
+
+  *Production mode* is the default for document compilation in integrations. It ensures your application fails explicitly rather than accidentally using test data in production documents. If an input value is missing in production mode and the input does not have a default value, the compilation will fail unless your template handles `none` values for that input.
+]
+
+\
+While developing an Oicana template in a Typst editor, it will be compiled in development mode. It makes sense to define `development` values for all required inputs of your template to have a functioning preview.
 
 \
 Let's extend our input with a `development` value. First create an `info.json` file in the template directory:

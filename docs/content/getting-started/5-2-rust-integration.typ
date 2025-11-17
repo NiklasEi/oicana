@@ -37,9 +37,11 @@ We will define a new endpoint to compile our Oicana template to a PDF and return
   \
   #code("src/main.rs", ```rust
   use std::fs::File;
+  use std::sync::{Arc, Mutex};
   use axum::{
       Router,
       body::Body,
+      extract::State,
       http::{StatusCode, header},
       response::{IntoResponse, Response},
       routing::post,
@@ -50,8 +52,16 @@ We will define a new endpoint to compile our Oicana template to a PDF and return
 
   #[tokio::main]
   async fn main() {
+      let template_file = File::open("templates/example-0.1.0.zip")
+          .expect("Failed to open template file");
+      let template = Template::init(template_file)
+          .expect("Failed to initialize template");
+
+      let template = Arc::new(Mutex::new(template));
+
       let app = Router::new()
-          .route("/compile", post(compile));
+          .route("/compile", post(compile))
+          .with_state(template);
 
       let listener = tokio::net::TcpListener::bind("127.0.0.1:3000")
           .await
@@ -61,25 +71,20 @@ We will define a new endpoint to compile our Oicana template to a PDF and return
       axum::serve(listener, app).await.unwrap();
   }
 
-  async fn compile() -> impl IntoResponse {
-      // Load template
-      let template_file = File::open("templates/example-0.1.0.zip")
-          .expect("Failed to open template file");
-      let mut template = Template::init(template_file)
-          .expect("Failed to initialize template");
+  async fn compile(State(template): State<Arc<Mutex<Template<PackedTemplate>>>>) -> impl IntoResponse {
+      let mut template = template.lock().unwrap();
 
-      // Compile with development mode (uses development fallback values for inputs)
+      // Compile with development mode for demonstration
+      // (uses development fallback values for inputs)
       let mut inputs = TemplateInputs::new();
       inputs.with_config(CompilationConfig::development());
 
       let result = template.compile(inputs)
           .expect("Failed to compile template");
 
-      // Export to PDF
-      let pdf = export_merged_pdf(&result.document, &template)
+      let pdf = export_merged_pdf(&result.document, &*template)
           .expect("Failed to export PDF");
 
-      // Return PDF response
       Response::builder()
           .status(StatusCode::OK)
           .header(header::CONTENT_TYPE, "application/pdf")
@@ -92,7 +97,10 @@ We will define a new endpoint to compile our Oicana template to a PDF and return
   }
   ```)
 
-  This code defines a new POST endpoint at `/compile`. For every request, it loads the template, compiles it with an empty input list, and returns the PDF file. We use `CompilationConfig::development()` so the template uses the development value you defined for the `info` input ("Chuck Norris").
+  This code loads the template once at startup and wraps it in `Arc<Mutex<Template<PackedTemplate>>>`. The `Arc` (Atomic Reference Counted pointer) allows sharing across threads, while `Mutex` provides the mutable access needed by `compile()`. When parallel requests come in, they share the same template - each request locks the mutex (one at a time), compiles, then releases the lock.
+
+  \
+  The `/compile` endpoint compiles the template and returns a PDF. We explicitly use `CompilationConfig::development()` here to demonstrate how the template uses the development value you defined for the `info` input ("Chuck Norris"). We will set an input value in a later step.
 
 \
 Start the service with `cargo run` and test the endpoint. You can use curl to download the PDF:
@@ -105,32 +113,27 @@ The generated `example.pdf` file should contain your template with the developme
 
 == About performance
 
-The first compilation might take slightly longer than subsequent ones due to initialization overhead. However, PDF generation should typically take only a few milliseconds per request.
+PDF generation should typically take only a few milliseconds per request. Since we're loading the template once at startup and sharing it via `Arc`, there's no file I/O overhead on subsequent requests.
 
 \
-For production use, consider loading and caching the template once at startup rather than reading it from disk on every request. The #link("https://github.com/oicana/oicana-example-axum/")[open source Axum example project on GitHub] demonstrates this approach using a `DashMap` for thread-safe template caching.
+For managing multiple templates, the #link("https://github.com/oicana/oicana-example-axum/")[open source Axum example project on GitHub] demonstrates using a `DashMap` for thread-safe template caching.
 
 == Passing inputs from Rust
 
 Now let's use the template with the inputs you defined in the previous chapter. First, make sure to update the packed template in your Rust project. Run `oicana pack` in the template directory and replace `example-0.1.0.zip` in the Rust project with the new file.
 
 \
-Our `compile` function currently calls `template.compile(inputs)` with only a compilation config. This compiles the template without any explicit inputs. Let's add the name input you defined earlier.
-
-\
-Change the endpoint to set the input value, which allows us to compile in production mode:
+Our `compile` function currently does not set a value for the template input. Since we use `CompilationConfig::development()`, the development value of `{ "name": "Chuck Norris" }` is used. Now we'll provide an explicit input value and switch to production mode:
 
 #code(
   "Part of src/main.rs",
   ```rust
-  async fn compile() -> impl IntoResponse {
-      // ... template loading code from before
+  async fn compile(State(template): State<Arc<Mutex<Template<PackedTemplate>>>>) -> impl IntoResponse {
+      let mut template = template.lock().unwrap();
 
-      // Prepare inputs
       let mut inputs = TemplateInputs::new();
       inputs.with_config(CompilationConfig::production());
 
-      // Add JSON input
       let json_value = serde_json::json!({ "name": "Baby Yoda" });
       inputs.with_input(
           oicana_input::input::json::JsonInput::new(
@@ -148,7 +151,7 @@ Change the endpoint to set the input value, which allows us to compile in produc
 )
 
 \
-Notice that we switched to `CompilationConfig::production()` now that we're providing explicit input values. In production mode, the template will never fall back to development defaults. If no input value is provided, your Typst code will have to handle `none` values or the compilation will fail.
+Notice that we switched to `CompilationConfig::production()` now that we're providing explicit input values. Production mode is the recommended default for all document compilation in your application - it ensures you never accidentally generate a document with test data. In production mode, the template will never fall back to development values for inputs. If an input value is missing in production mode and the input does not have a default value, the compilation will fail unless your template handles `none` values for that input.
 
 \
 Calling the endpoint now will result in a PDF with "Baby Yoda" instead of "Chuck Norris". Building on this minimal service, you could set input values based on database entries or the request payload. Take a look at the #link("https://github.com/oicana/oicana-example-axum/")[open source Axum example project on GitHub] for a more complete showcase of the Oicana Rust integration, including blob inputs, error handling, and OpenAPI documentation.

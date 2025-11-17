@@ -50,19 +50,19 @@ As a common use case for blob inputs, images have special support in the `oicana
 
 == Default and Development values
 
-Inputs can define two different fallback values, `default` and `development`. These fallback values differ in priority based on which mode the template is compiled in.
+Inputs can define two different fallback values, `default` and `development`.
 
 \
 When compiling a template in development mode, input values have the priority
 
-1. Explicit input value (for example through an integration)
+1. Explicit input value
 2. `development` value
 3. `default` value
 
 \
 If you compile in production mode, the `development` value is ignored:
 
-1. Explicit input value (for example through an integration)
+1. Explicit input value
 2. `default` value
 
 \
