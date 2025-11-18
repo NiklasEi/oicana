@@ -53,14 +53,12 @@ If you compile in production mode, the `development` value is ignored:
 2. `default` value
 
 \
-#note[
-  *When to use each mode:*
-
+#note(title: "When to use each mode")[
   *Development mode* is used in two scenarios:
-  - When developing templates in a Typst editor to see live previews with test data or using other tooling without Oicana integration (like the official Typst CLI)
-  - By default during template registration (typically at server startup) to warm up the Typst compilation cache
-
-  *Production mode* is the default for document compilation in integrations. It ensures your application fails explicitly rather than accidentally using test data in production documents. If an input value is missing in production mode and the input does not have a default value, the compilation will fail unless your template handles `none` values for that input.
+  - When developing templates in a Typst editor, live previews will use the development mode. The same goes for other tooling without Oicana integration (like the official Typst CLI).
+  - By default, template registration (typically at application startup) uses development mode when warming up the Typst cache for the template to speed up later compilations.
+  \
+  *Production mode* is the default for document compilation in integrations. It ensures your application fails explicitly rather than accidentally using test data in production documents. If an input value is missing in production mode and the input does not have a `default` value, the compilation will fail unless your template handles `none` values for that input.
 ]
 
 \
@@ -90,10 +88,12 @@ In our template we can now use `input.info.name` and the preview will show "Chuc
 #let read-project-file(path) = return read(path, encoding: none);
 #let (input, oicana-image, oicana-config) = setup(read-project-file);
 
+#set document(date: datetime.today())
+
 = Hello from Typst, #input.info.name
 
 Now we can pass names into the template from any Oicana integration.
 ```)
 
 \
-With the input defined in your template, you're ready to choose an integration and learn how to pass dynamic values from your application code.
+With the input defined in your template, you're ready to choose an integration and learn how to pass dynamic values from your application code. In preparation for that, you should pack the template again using `oicana pack` to have the latest state of the template at hand.

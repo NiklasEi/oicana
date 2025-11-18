@@ -5,7 +5,7 @@
 In this chapter, you'll integrate Oicana into a C#sym.hash web service using #link("https://dotnet.microsoft.com/en-us/apps/aspnet")[ASP.NET Core]. ASP.NET Core is Microsoft's modern, cross-platform framework for building web applications and APIs. We'll create a simple web service that compiles your Oicana template to PDF and serves it via an HTTP endpoint.
 
 \
-#note[This section assumes, that you have a working .NET 8 setup. If that is not the case, please follow #link("https://learn.microsoft.com/en-us/dotnet/core/install/")[the official Microsoft guide] to install .NET on your machine.]
+#note[This chapter assumes, that you have a working .NET 8 setup. If that is not the case, please follow #link("https://learn.microsoft.com/en-us/dotnet/core/install/")[the official Microsoft guide] to install .NET on your machine.]
 
 \
 Let's start with a fresh ASP.NET project by executing `dotnet new webapi` in a new directory. The starter project has a single endpoint defined in `Program.cs`. We can try that endpoint out in the swagger UI. Start up the service (`dotnet run`) and follow the link printed in the terminal. If the page is empty, navigate to `/swagger`. In the swagger UI, expand the `/weatherforecast` endpoint, press "Try it out", then "Execute". This will send an HTTP request to the running ASP.NET service and return made up weather data.

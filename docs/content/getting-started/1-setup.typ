@@ -10,7 +10,7 @@ To get started, you need the Oicana CLI and an editor for Typst. Both is only ne
 Install a #link(latest-cli)[prebuild binary from GitHub].
 
 \
-The CLI can test and package Oicana templates. See the #docs-link(<cli>, "../cli.html")[CLI section for more information].
+The CLI can test and package Oicana templates. See the #docs-link(<cli>, "../cli.html")[CLI chapter for more information].
 
 == Editor for Typst
 
@@ -28,4 +28,4 @@ You can edit Typst files in any text editor, but syntax highlighting and live pr
 \
 \
 == For this Guide
-In the following sections, you will create a basic Oicana template that can be used with any integration. After creating the template, you'll be able to choose which integration to explore based on your preferred tech stack.
+In the following chapters, you will create a basic Oicana template that can be used with any integration. After creating the template, you'll be able to choose which integration to explore based on your preferred tech stack.

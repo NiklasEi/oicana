@@ -5,7 +5,7 @@
 In this chapter, you'll integrate Oicana into a Node.js web service using #link("https://nestjs.com/")[NestJS]. NestJS is a progressive Node.js framework for building efficient, scalable server-side applications. It uses TypeScript by default and provides a modular architecture. We'll create a simple web service that compiles your Oicana template to PDF and serves it via an HTTP endpoint.
 
 \
-#note[This section assumes that you have a working Node.js 18+ setup with npm. If that is not the case, please follow #link("https://nodejs.org/en/download/")[the official Node.js installation guide] to install Node.js on your machine.]
+#note[This chapter assumes that you have a working Node.js 18+ setup with npm. If that is not the case, please follow #link("https://nodejs.org/en/download/")[the official Node.js installation guide] to install Node.js on your machine.]
 
 \
 Let's start with a fresh NestJS project by executing `npx @nestjs/cli new oicana-demo` in a new directory. This will create a new NestJS application with a basic structure. The starter project has a single endpoint defined in the controller. We can test it by starting the service with `npm run start:dev` and navigating to `http://localhost:3000` in a browser.
