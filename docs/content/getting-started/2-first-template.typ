@@ -47,6 +47,6 @@ The manifest file gives our template the name `example`, the semantic version `0
 
 == Packaging
 
-#note[If you are using the online Typst editor, you will have to download the project for the next step.]
+#note[If you are using the online Typst editor, you will have to download the project for this step.]
 
-To compile the template through Oicana integrations, like the C#sym.hash one we are about to use, it has to be packaged. Navigate into the template directory in a terminal and execute `oicana pack`. This will create a file called `example-0.1.0.zip`.
+To compile the template through Oicana integrations, like shown in later chapters of this guide, it has to be packaged. Navigate into the template directory in a terminal and execute `oicana pack`. This will create a file called `example-0.1.0.zip`.

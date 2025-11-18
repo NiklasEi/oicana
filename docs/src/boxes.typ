@@ -57,6 +57,6 @@
   docs-box(blue, "Example", body)
 }
 
-#let note(body) = {
-  docs-box(green, "Note", body)
+#let note(body, title: "Note") = {
+  docs-box(green, title, body)
 }
