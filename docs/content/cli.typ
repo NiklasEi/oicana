@@ -28,7 +28,7 @@ For a list of all command options, run `oicana pack -h`.
 
 With `oicana test` all tests of the currently targeted template will be executed.
 
-Learn more about testing Oicana templates in the #docs-link(<testing>, "./templates/tests.html")[testing section].
+Learn more about testing Oicana templates in the #docs-link(<testing>, "./templates/tests.html")[testing chapter].
 
 == Validation
 
