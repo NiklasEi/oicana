@@ -11,9 +11,12 @@ A key strength of Oicana is that the exact same template works across all integr
 \
 Develop templates once and use them everywhere.
 
-== Choose Your Integration
+\
+#alpha-note[More integrations are work in progress. If you are missing support for specific tech stacks, please reach out!]
 
-The following sections provide step-by-step guides for using your template with different programming languages and frameworks. You only need to follow one path to get started - pick the one that matches your tech stack.
+== Available Integrations
+
+The following chapters provide step-by-step guides for using your template with different programming languages and frameworks. You only need to follow one path to get started - pick the one that matches your tech stack.
 
 \
 If you're working on a multi-language project or want to compare approaches, feel free to explore multiple paths. Each guide is self-contained and uses the same template you created earlier.
