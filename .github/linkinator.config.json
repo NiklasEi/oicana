@@ -2,7 +2,8 @@
   "skip": [
     "https://www.npmjs.com/package/@oicana/browser",
     "https://crates.io/crates/oicana",
-    "https://example.oicana.com/"
+    "https://example.oicana.com/",
+    "https://dotnet.microsoft.com/en-us/apps/aspnet"
   ],
   "silent": false,
   "verbosity": "warning",
