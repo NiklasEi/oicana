@@ -19,8 +19,11 @@ Oicana offers seamless PDF templating across multiple platforms. Define your tem
 
 The [getting started guide][getting-started] demonstrates how to
 1. Create an Oicana Template
-2. Compile a PDF based on the template from an ASP.NET application
-3. Define and use inputs for the template
+2. Define and use inputs for the template
+3. Compile a PDF based on the template from either a
+  * C# application using [ASP.NET](https://dotnet.microsoft.com/en-us/apps/aspnet)
+  * Rust application with [axum](https://github.com/tokio-rs/axum)
+  * Node.js application using [NestJs](https://nestjs.com/)
 
 ## Available integrations
 
