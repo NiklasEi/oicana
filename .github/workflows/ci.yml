@@ -17,11 +17,15 @@ jobs:
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v5
+      # TODO: remove the condition after working again
+      #  temporarily work around https://github.com/actions/runner-images/issues/13341
+      #  by disabling caching for macOS
       - uses: actions/cache/restore@v4
+        if: ${{ runner.os != 'macOS' }}
         with:
-          key: ${{ runner.os }}-stable--${{ hashFiles('Cargo.lock') }}-
+          key: ${{ runner.os }}-stable--${{ hashFiles('**/Cargo.toml') }}-
           restore-keys: |
-            ${{ runner.os }}-stable--${{ hashFiles('Cargo.lock') }}-
+            ${{ runner.os }}-stable--${{ hashFiles('**/Cargo.toml') }}-
             ${{ runner.os }}-stable--
           path: |
             ~/.cargo/bin/
@@ -47,11 +51,15 @@ jobs:
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v5
+      # TODO: remove the condition after working again
+      #  temporarily work around https://github.com/actions/runner-images/issues/13341
+      #  by disabling caching for macOS
       - uses: actions/cache/restore@v4
+        if: ${{ runner.os != 'macOS' }}
         with:
-          key: ${{ runner.os }}-stable--${{ hashFiles('Cargo.lock') }}-
+          key: ${{ runner.os }}-stable--${{ hashFiles('**/Cargo.toml') }}-
           restore-keys: |
-            ${{ runner.os }}-stable--${{ hashFiles('Cargo.lock') }}-
+            ${{ runner.os }}-stable--${{ hashFiles('**/Cargo.toml') }}-
             ${{ runner.os }}-stable--
           path: |
             ~/.cargo/bin/
@@ -114,11 +122,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
+      # TODO: remove the condition after working again
+      #  temporarily work around https://github.com/actions/runner-images/issues/13341
+      #  by disabling caching for macOS
       - uses: actions/cache/restore@v4
+        if: ${{ runner.os != 'macOS' }}
         with:
-          key: ${{ runner.os }}-stable--${{ hashFiles('Cargo.lock') }}-
+          key: ${{ runner.os }}-stable--${{ hashFiles('**/Cargo.toml') }}-
           restore-keys: |
-            ${{ runner.os }}-stable--${{ hashFiles('Cargo.lock') }}-
+            ${{ runner.os }}-stable--${{ hashFiles('**/Cargo.toml') }}-
             ${{ runner.os }}-stable--
           path: |
             ~/.cargo/bin/
@@ -154,11 +166,15 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+      # TODO: remove the condition after working again
+      #  temporarily work around https://github.com/actions/runner-images/issues/13341
+      #  by disabling caching for macOS
       - uses: actions/cache/restore@v4
+        if: ${{ runner.os != 'macOS' }}
         with:
-          key: ${{ runner.os }}-stable--${{ hashFiles('Cargo.lock') }}-
+          key: ${{ runner.os }}-stable--${{ hashFiles('**/Cargo.toml') }}-
           restore-keys: |
-            ${{ runner.os }}-stable--${{ hashFiles('Cargo.lock') }}-
+            ${{ runner.os }}-stable--${{ hashFiles('**/Cargo.toml') }}-
             ${{ runner.os }}-stable--
           path: |
             ~/.cargo/bin/
@@ -195,11 +211,15 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v5
+      # TODO: remove the condition after working again
+      #  temporarily work around https://github.com/actions/runner-images/issues/13341
+      #  by disabling caching for macOS
       - uses: actions/cache/restore@v4
+        if: ${{ runner.os != 'macOS' }}
         with:
-          key: ${{ runner.os }}-stable--${{ hashFiles('Cargo.lock') }}-
+          key: ${{ runner.os }}-stable--${{ hashFiles('**/Cargo.toml') }}-
           restore-keys: |
-            ${{ runner.os }}-stable--${{ hashFiles('Cargo.lock') }}-
+            ${{ runner.os }}-stable--${{ hashFiles('**/Cargo.toml') }}-
             ${{ runner.os }}-stable--
           path: |
             ~/.cargo/bin/
@@ -221,11 +241,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
+      # TODO: remove the condition after working again
+      #  temporarily work around https://github.com/actions/runner-images/issues/13341
+      #  by disabling caching for macOS
       - uses: actions/cache/restore@v4
+        if: ${{ runner.os != 'macOS' }}
         with:
-          key: ${{ runner.os }}-stable--${{ hashFiles('Cargo.lock') }}-
+          key: ${{ runner.os }}-stable--${{ hashFiles('**/Cargo.toml') }}-
           restore-keys: |
-            ${{ runner.os }}-stable--${{ hashFiles('Cargo.lock') }}-
+            ${{ runner.os }}-stable--${{ hashFiles('**/Cargo.toml') }}-
             ${{ runner.os }}-stable--
           path: |
             ~/.cargo/bin/
@@ -265,11 +289,15 @@ jobs:
           node-version: 22
           cache: yarn
           cache-dependency-path: integrations/node/oicana-node-native/yarn.lock
+      # TODO: remove the condition after working again
+      #  temporarily work around https://github.com/actions/runner-images/issues/13341
+      #  by disabling caching for macOS
       - uses: actions/cache/restore@v4
+        if: ${{ runner.os != 'macOS' }}
         with:
-          key: ${{ runner.os }}-stable--${{ hashFiles('Cargo.lock') }}-
+          key: ${{ runner.os }}-stable--${{ hashFiles('**/Cargo.toml') }}-
           restore-keys: |
-            ${{ runner.os }}-stable--${{ hashFiles('Cargo.lock') }}-
+            ${{ runner.os }}-stable--${{ hashFiles('**/Cargo.toml') }}-
             ${{ runner.os }}-stable--
           path: |
             ~/.cargo/bin/
@@ -327,11 +355,15 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v5
+      # TODO: remove the condition after working again
+      #  temporarily work around https://github.com/actions/runner-images/issues/13341
+      #  by disabling caching for macOS
       - uses: actions/cache/restore@v4
+        if: ${{ runner.os != 'macOS' }}
         with:
-          key: ${{ runner.os }}-stable--${{ hashFiles('Cargo.lock') }}-
+          key: ${{ runner.os }}-stable--${{ hashFiles('**/Cargo.toml') }}-
           restore-keys: |
-            ${{ runner.os }}-stable--${{ hashFiles('Cargo.lock') }}-
+            ${{ runner.os }}-stable--${{ hashFiles('**/Cargo.toml') }}-
             ${{ runner.os }}-stable--
           path: |
             ~/.cargo/bin/
@@ -359,11 +391,15 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.8'  # abi3 wheel works for 3.8+
+      # TODO: remove the condition after working again
+      #  temporarily work around https://github.com/actions/runner-images/issues/13341
+      #  by disabling caching for macOS
       - uses: actions/cache/restore@v4
+        if: ${{ runner.os != 'macOS' }}
         with:
-          key: ${{ runner.os }}-stable--${{ hashFiles('Cargo.lock') }}-
+          key: ${{ runner.os }}-stable--${{ hashFiles('**/Cargo.toml') }}-
           restore-keys: |
-            ${{ runner.os }}-stable--${{ hashFiles('Cargo.lock') }}-
+            ${{ runner.os }}-stable--${{ hashFiles('**/Cargo.toml') }}-
             ${{ runner.os }}-stable--
           path: |
             ~/.cargo/bin/
