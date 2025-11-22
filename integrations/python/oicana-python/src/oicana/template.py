@@ -145,7 +145,7 @@ class Template:
         Returns:
             File content as string
         """
-        return get_source(self._template_id, path)
+        return get_source(self._template_id, path)  # type: ignore[no-any-return]
 
     def file(self, path: str) -> bytes:
         """Get binary file content.

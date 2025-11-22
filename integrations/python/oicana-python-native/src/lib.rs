@@ -4,8 +4,8 @@
 
 use dashmap::DashMap;
 use once_cell::sync::Lazy;
-use pyo3::prelude::*;
 use pyo3::exceptions::PyRuntimeError;
+use pyo3::prelude::*;
 use pyo3::types::{PyBytes, PyDict};
 use serde::Deserialize;
 use std::collections::HashMap;
@@ -27,10 +27,8 @@ use typst::foundations::Bytes;
 use typst::layout::PagedDocument;
 use typst::syntax::{FileId, VirtualPath};
 
-static WORLD_CACHE: Lazy<DashMap<String, OicanaWorld<PackedTemplate>>> =
-    Lazy::new(DashMap::new);
-static DOCUMENT_CACHE: Lazy<DashMap<String, PagedDocument>> =
-    Lazy::new(DashMap::new);
+static WORLD_CACHE: Lazy<DashMap<String, OicanaWorld<PackedTemplate>>> = Lazy::new(DashMap::new);
+static DOCUMENT_CACHE: Lazy<DashMap<String, PagedDocument>> = Lazy::new(DashMap::new);
 
 /// Compilation mode enum
 #[pyclass(eq, eq_int)]
@@ -55,7 +53,7 @@ pub struct BlobWithMetadata {
     #[pyo3(get)]
     pub bytes: Py<PyBytes>,
     #[pyo3(get)]
-    pub meta: String,  // JSON string
+    pub meta: String, // JSON string
 }
 
 #[pymethods]
@@ -153,8 +151,7 @@ fn inputs(template: String) -> PyResult<String> {
     };
     let oicana_config = &world.manifest().tool.oicana;
 
-    serde_json::ser::to_string(&oicana_config)
-        .map_err(|e| PyRuntimeError::new_err(e.to_string()))
+    serde_json::ser::to_string(&oicana_config).map_err(|e| PyRuntimeError::new_err(e.to_string()))
 }
 
 /// Load the source of the given file in the template.
@@ -203,14 +200,12 @@ fn export_document(
         return Err(PyRuntimeError::new_err("Document not found!"));
     };
 
-    let export_format: ExportFormat = serde_json::from_str(&export_format)
-        .map_err(|e| PyRuntimeError::new_err(e.to_string()))?;
+    let export_format: ExportFormat =
+        serde_json::from_str(&export_format).map_err(|e| PyRuntimeError::new_err(e.to_string()))?;
 
     let bytes = match export_format {
-        ExportFormat::Png { pixels_per_pt } => {
-            export_merged_png(&document, pixels_per_pt)
-                .map_err(|e| PyRuntimeError::new_err(format!("Failed to encode PNG: {e:?}")))?
-        }
+        ExportFormat::Png { pixels_per_pt } => export_merged_png(&document, pixels_per_pt)
+            .map_err(|e| PyRuntimeError::new_err(format!("Failed to encode PNG: {e:?}")))?,
         ExportFormat::Pdf => {
             let template_id = template_id_from_document_id(&document_id);
             let Some(world) = WORLD_CACHE.get(template_id) else {
@@ -222,9 +217,7 @@ fn export_document(
             export_merged_pdf(&document, &*world)
                 .map_err(|e| PyRuntimeError::new_err(format!("Failed to encode PDF: {e:?}")))?
         }
-        ExportFormat::Svg => {
-            export_merged_svg(&document)
-        }
+        ExportFormat::Svg => export_merged_svg(&document),
     };
 
     Ok(PyBytes::new(py, &bytes))
@@ -266,11 +259,13 @@ fn prepare_inputs(
         let bytes_vec = bytes_ref.as_bytes().to_vec();
         let mut blob = Blob::from(Bytes::new(bytes_vec));
 
-        blob.metadata = Deserialize::deserialize(
-            serde_json::Value::from_str(&blob_ref.meta)
-                .map_err(|e| PyRuntimeError::new_err(format!("Failed to parse metadata JSON: {e:?}")))?
-        )
-        .map_err(|e| PyRuntimeError::new_err(format!("Failed to deserialize metadata: {e:?}")))?;
+        blob.metadata =
+            Deserialize::deserialize(serde_json::Value::from_str(&blob_ref.meta).map_err(|e| {
+                PyRuntimeError::new_err(format!("Failed to parse metadata JSON: {e:?}"))
+            })?)
+            .map_err(|e| {
+                PyRuntimeError::new_err(format!("Failed to deserialize metadata: {e:?}"))
+            })?;
 
         inputs.with_input(BlobInput::new(key_str, blob));
     }
