@@ -1,0 +1,38 @@
+[build-system]
+requires = ["maturin>=1.7,<2.0"]
+build-backend = "maturin"
+
+[project]
+name = "oicana-native"
+version = "0.1.0-alpha.1"
+description = "Native Python bindings for Oicana (PDF templating with Typst)"
+readme = "README.md"
+requires-python = ">=3.8"
+license = { file = "LICENSE.md" }
+authors = [
+    { name = "Oicana", email = "hello@oicana.com" }
+]
+keywords = ["oicana", "typst", "typesetting", "pdf"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Rust",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+
+[project.urls]
+Homepage = "https://oicana.com"
+Repository = "https://github.com/oicana/oicana"
+Documentation = "https://docs.oicana.com"
+
+[tool.maturin]
+python-source = "python"
+module-name = "oicana_native"
+features = ["pyo3/extension-module"]

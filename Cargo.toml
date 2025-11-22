@@ -10,6 +10,7 @@ members = [
     "integrations/csharp/oicana_csharp",
     "integrations/rust/oicana",
     "integrations/node/oicana-node-native",
+    "integrations/python/oicana-python-native",
     "tools/test_compare",
     "tools/oicana_cli",
 ]

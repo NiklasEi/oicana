@@ -1,0 +1,5 @@
+[tool.uv.workspace]
+members = ["oicana-python-native", "oicana-python"]
+
+[tool.uv.sources]
+oicana-native = { workspace = true }
