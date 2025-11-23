@@ -1,0 +1,41 @@
+# Python Integration
+
+Two packages: `oicana-native` (PyO3 Rust extension) + `oicana` (Python wrapper).
+
+## Structure
+
+```
+python/
+├── pyproject.toml              # uv workspace config
+├── oicana-python-native/       # Native extension (Rust)
+│   ├── src/lib.rs              # PyO3 lib
+│   └── pyproject.toml          # maturin, abi3-py38
+└── oicana-python/              # Wrapper
+    └── src/oicana/
+        ├── template.py         # Template class
+        └── types.py            # Types
+```
+
+## Development
+
+Requires [uv](https://github.com/astral-sh/uv):
+
+```bash
+# Install uv once
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# From integrations/python/
+uv sync                                         # Install both packages + dev deps
+uv run pytest oicana-python/tests/ -v           # Run tests
+uv run mypy ./*/src/oicana                      # Type check
+uv run ruff check ./*/src/                      # Lint
+```
+
+Workspace auto-links local package. Published version uses PyPI dependencies.
+
+## Publishing
+
+```bash
+cd oicana-python-native && maturin publish      # 3 abi3 wheels (one per OS)
+cd ../oicana-python && uv build && uv publish   # Python package
+```

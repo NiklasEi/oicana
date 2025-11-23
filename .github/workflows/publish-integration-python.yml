@@ -1,0 +1,97 @@
+name: Publish Python Integration
+
+on:
+  workflow_dispatch:
+    inputs:
+      publish-native:
+        description: 'Publish oicana-native package'
+        type: boolean
+        default: true
+      publish-wrapper:
+        description: 'Publish oicana wrapper package'
+        type: boolean
+        default: true
+  push:
+    tags:
+      - 'oicana_python-v[0-9]+.[0-9]+.[0-9]+*'
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  build-and-publish-native:
+    if: ${{ inputs.publish-native }}
+    name: Build and publish oicana-native (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.8'
+      - name: Build wheels
+        uses: PyO3/maturin-action@v1
+        with:
+          command: build
+          args: --release --out dist
+          working-directory: integrations/python/oicana-python-native
+          manylinux: auto
+      - name: Upload wheels
+        uses: actions/upload-artifact@v4
+        with:
+          name: wheels-${{ matrix.os }}
+          path: integrations/python/oicana-python-native/dist/*.whl
+          if-no-files-found: error
+
+  publish-native-to-pypi:
+    if: ${{ inputs.publish-native }}
+    name: Publish oicana-native to PyPI
+    runs-on: ubuntu-latest
+    needs: build-and-publish-native
+    environment:
+      name: pypi
+      url: https://pypi.org/p/oicana-native
+    steps:
+      - uses: actions/checkout@v5
+      - name: Download all wheels
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+          pattern: wheels-*
+          merge-multiple: true
+      - name: List distributions
+        run: ls -lh dist/
+      - name: Publish to PyPI
+        uses: PyO3/maturin-action@v1
+        with:
+          command: upload
+          args: --skip-existing dist/*
+
+  publish-wrapper-to-pypi:
+    if: ${{ inputs.publish-wrapper && (success() || needs.publish-native-to-pypi.result == 'skipped') }}
+    name: Publish oicana wrapper to PyPI
+    runs-on: ubuntu-latest
+    needs: publish-native-to-pypi
+    environment:
+      name: pypi
+      url: https://pypi.org/p/oicana
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install uv
+        run: pip install uv
+      - name: Build wrapper package
+        run: uv build
+        working-directory: integrations/python/oicana-python
+      - name: List distributions
+        run: ls -lh dist/
+        working-directory: integrations/python
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: integrations/python/dist/
