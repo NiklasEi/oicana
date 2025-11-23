@@ -37,8 +37,6 @@ jobs:
             target: aarch64-apple-darwin
           - runner: windows-latest
             target: x86_64-pc-windows-msvc
-          - runner: windows-latest
-            target: aarch64-pc-windows-msvc
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-python@v5
