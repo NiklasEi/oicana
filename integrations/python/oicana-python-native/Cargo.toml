@@ -1,6 +1,6 @@
 [package]
 name = "oicana-python-native"
-version = "0.1.0a1"
+version = "0.1.0-alpha.1"
 edition.workspace = true
 authors.workspace = true
 homepage.workspace = true
