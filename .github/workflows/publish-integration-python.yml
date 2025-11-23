@@ -47,7 +47,7 @@ jobs:
         with:
           target: ${{ matrix.platform.target }}
           command: build
-          args: --release --out dist
+          args: --release --out dist --find-interpreter
           working-directory: integrations/python/oicana-python-native
           manylinux: auto
       - name: Upload wheels
