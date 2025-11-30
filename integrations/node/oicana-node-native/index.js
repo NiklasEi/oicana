@@ -559,6 +559,7 @@ if (!nativeBinding) {
 module.exports = nativeBinding
 module.exports.CompilationMode = nativeBinding.CompilationMode
 module.exports.compileTemplate = nativeBinding.compileTemplate
+module.exports.evictCache = nativeBinding.evictCache
 module.exports.exportDocument = nativeBinding.exportDocument
 module.exports.getFile = nativeBinding.getFile
 module.exports.getSource = nativeBinding.getSource
@@ -567,3 +568,4 @@ module.exports.NOT_REGISTERED = nativeBinding.NOT_REGISTERED
 module.exports.registerTemplate = nativeBinding.registerTemplate
 module.exports.removeDocument = nativeBinding.removeDocument
 module.exports.removeWorld = nativeBinding.removeWorld
+module.exports.setCacheEvictionAge = nativeBinding.setCacheEvictionAge

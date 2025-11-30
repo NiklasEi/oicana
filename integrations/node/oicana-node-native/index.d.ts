@@ -26,6 +26,9 @@ export declare function compileTemplate(
   compilationMode: CompilationMode,
 ): string
 
+/** Manually evict the comemo cache based on the configured cache age. */
+export declare function evictCache(): void
+
 /**
  * Export the given document
  *
@@ -85,3 +88,28 @@ export declare function removeDocument(documentId: string): void
  * The template will have to be registered again before it can be compiled again.
  */
 export declare function removeWorld(templateId: string): void
+
+/**
+ * Set the global cache age for comemo cache eviction.
+ *
+ * Pass `null` or `undefined` to disable cache eviction completely.
+ * Pass a number to set the maximum age threshold.
+ *
+ * # How Cache Aging Works
+ *
+ * - Each cache entry has an age counter
+ * - Age increases by 1 during each eviction call
+ * - Age resets to 0 when the entry is used (cache hit)
+ * - Entries with age >= `max_age` are removed
+ *
+ * # Parameters
+ *
+ * * `max_age` - Maximum age threshold, or null/undefined to disable:
+ *   - `null` or `undefined` - Disables cache eviction (cache never cleared)
+ *   - `0` - Clears all cache after every compilation
+ *   - `1` - Keeps only entries used since the last eviction
+ *   - `n` - Keeps entries used within the last n evictions
+ *
+ * Default: 10
+ */
+export declare function setCacheEvictionAge(maxAge?: number | undefined | null): void

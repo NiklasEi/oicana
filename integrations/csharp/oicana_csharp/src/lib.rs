@@ -49,8 +49,8 @@ static CACHE_EVICTION_AGE: AtomicUsize = AtomicUsize::new(10);
 /// * `max_age` - Maximum age threshold, or -1 to disable:
 ///   - `-1` - Disables cache eviction (cache never cleared)
 ///   - `0` - Clears all cache after every compilation
-///   - `1` - Keeps only entries used in the most recent compilation
-///   - `n` - Keeps entries used within the last n compilations
+///   - `1` - Keeps only entries used since the last eviction
+///   - `n` - Keeps entries used within the last n evictions
 ///
 /// Default: 10
 #[ffi_function]
