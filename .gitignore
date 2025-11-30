@@ -6,3 +6,4 @@ output/
 e2e-tests/template/oicana-e2e-test-*.zip
 ort/
 AGENTS.md
+__pycache__/

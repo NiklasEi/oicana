@@ -134,7 +134,7 @@ export class Template {
     try {
       const exportedDocument = exportDocument(document, JSON.stringify(format));
       evictCache();
-      return document;
+      return exportedDocument;
     } finally {
       removeDocument(document);
     }
