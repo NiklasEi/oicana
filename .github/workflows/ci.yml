@@ -82,9 +82,6 @@ jobs:
       - name: Wrapper - lint
         run: npm run lint
         working-directory: integrations/node/oicana-node
-      - name: Wrapper - build
-        run: npm run build
-        working-directory: integrations/node/oicana-node
       - name: Native - Format
         run: yarn format
         working-directory: integrations/node/oicana-node-native
