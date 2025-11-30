@@ -147,7 +147,8 @@ namespace Oicana.Interop
     {
         /// Render the template to a PDF file.
         ///
-        /// The exported standard is PDF/A-3b
+        /// The exported standard can be configured in the template manifest
+        /// via [tool.oicana.export.pdf] section. Defaults to PDF/A-3b.
         Pdf = 0,
         /// Render the template into a png image.
         ///

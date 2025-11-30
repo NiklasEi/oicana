@@ -121,8 +121,10 @@ mod tests {
         let (doc1, world1) = compile(simple_template());
         let (doc2, world2) = compile(simple_template());
 
-        let pdf1 = export_merged_pdf(&doc1, &world1, &[oicana_template::PdfStandard::A_3b]).unwrap();
-        let pdf2 = export_merged_pdf(&doc2, &world2, &[oicana_template::PdfStandard::A_3b]).unwrap();
+        let pdf1 =
+            export_merged_pdf(&doc1, &world1, &[oicana_template::PdfStandard::A_3b]).unwrap();
+        let pdf2 =
+            export_merged_pdf(&doc2, &world2, &[oicana_template::PdfStandard::A_3b]).unwrap();
 
         assert_eq!(pdf1, pdf2);
     }
