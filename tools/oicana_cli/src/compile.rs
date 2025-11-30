@@ -65,6 +65,13 @@ pub struct CompileArgs {
         default_value = "{template}_{millies}.{format}"
     )]
     name: String,
+    #[arg(
+        long,
+        help = "PDF standards to enforce (e.g., 'a-3b', 'a-4,ua-1'). Overrides manifest settings.",
+        value_name = "STANDARDS",
+        value_delimiter = ','
+    )]
+    pdf_standards: Option<Vec<String>>,
 }
 
 pub fn compile(args: CompileArgs) -> anyhow::Result<()> {
@@ -100,7 +107,7 @@ pub fn compile(args: CompileArgs) -> anyhow::Result<()> {
 
     let out = out_dir.join(file_name);
     match args.format {
-        ExportFormat::Pdf => export_pdf(&document, &out, &template)?,
+        ExportFormat::Pdf => export_pdf(&document, &out, &template, args.pdf_standards)?,
         ExportFormat::Png => export_image(&document, &out, ImageExportFormat::Png)?,
         ExportFormat::Svg => export_image(&document, &out, ImageExportFormat::Svg)?,
     }

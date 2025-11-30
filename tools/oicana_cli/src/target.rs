@@ -157,6 +157,7 @@ mod tests {
                     manifest_version: 1,
                     inputs: vec![],
                     tests: PathBuf::from("tests"),
+                    export: oicana_template::ExportConfig::default(),
                 },
             ),
         };

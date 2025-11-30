@@ -419,12 +419,18 @@ impl Buffer {
         world: &OicanaWorld<PackedTemplate>,
     ) -> Buffer {
         match export_options.target {
-            CompilationTarget::Pdf => match export_merged_pdf(document, world) {
-                Err(error) => Buffer::from_error(format!(
-                    "Error encoding compilation result as PDF: {error:?}"
-                )),
-                Ok(pdf) => Buffer::from_ok(pdf),
-            },
+            CompilationTarget::Pdf => {
+                match export_merged_pdf(
+                    document,
+                    world,
+                    &world.manifest().tool.oicana.export.pdf.standards,
+                ) {
+                    Err(error) => Buffer::from_error(format!(
+                        "Error encoding compilation result as PDF: {error:?}"
+                    )),
+                    Ok(pdf) => Buffer::from_ok(pdf),
+                }
+            }
             CompilationTarget::Png => match export_merged_png(document, 1.0) {
                 Err(error) => Buffer::from_error(format!(
                     "Error encoding compilation result as PNG: {error:?}"
@@ -482,7 +488,8 @@ pub struct FfiBlobInput<'a> {
 pub enum CompilationTarget {
     /// Render the template to a PDF file.
     ///
-    /// The exported standard is PDF/A-3b
+    /// The exported standard can be configured in the template manifest
+    /// via [tool.oicana.export.pdf] section. Defaults to PDF/A-3b.
     Pdf,
     /// Render the template into a png image.
     ///
