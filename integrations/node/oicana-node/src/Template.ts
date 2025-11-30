@@ -2,7 +2,6 @@ import { randomUUID } from 'node:crypto';
 import {
   type BlobWithMetadata as BlobWithMetadataNative,
   compileTemplate,
-  evictCache,
   exportDocument,
   CompilationMode as NativeCompilationMode,
   registerTemplate,
@@ -64,7 +63,6 @@ export class Template {
         compilationOptions ?? CompilationMode.Development,
       ),
     );
-    evictCache();
   }
 
   /**
@@ -133,7 +131,6 @@ export class Template {
     );
     try {
       const exportedDocument = exportDocument(document, JSON.stringify(format));
-      evictCache();
       return exportedDocument;
     } finally {
       removeDocument(document);

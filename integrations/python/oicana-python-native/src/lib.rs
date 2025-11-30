@@ -37,44 +37,28 @@ static DOCUMENT_CACHE: Lazy<DashMap<String, PagedDocument>> = Lazy::new(DashMap:
 /// usize::MAX is used internally to represent disabled eviction.
 static CACHE_EVICTION_AGE: AtomicUsize = AtomicUsize::new(10);
 
-/// Set the global cache age for comemo cache eviction.
+/// Configure automatic cache eviction after each compilation.
 ///
-/// Pass `None` to disable cache eviction completely.
-/// Pass a number to set the maximum age threshold.
+/// # Parameters
 ///
-/// How Cache Aging Works:
-///     - Each cache entry has an age counter
-///     - Age increases by 1 during each eviction call
-///     - Age resets to 0 when the entry is used (cache hit)
-///     - Entries with age >= max_age are removed
-///
-/// Args:
-///     max_age: Maximum age threshold, or None to disable.
-///         - None: Disables cache eviction (cache never cleared)
-///         - 0: Clears all cache after every compilation
-///         - n: Keeps entries used within the last n compilations
-///
-/// Default: 10
-///
-/// Example:
-///     >>> from oicana import set_cache_eviction_age
-///     >>> set_cache_eviction_age(50)    # Keep last 50 compilations
-///     >>> set_cache_eviction_age(0)     # Clear all cache
-///     >>> set_cache_eviction_age(None)  # Disable eviction
-///     >>> set_cache_eviction_age()      # Disable eviction
+/// `max_age` (start value: 10) - Maximum age threshold, or null to disable:
+///   - `null` - Disables cache eviction (cache never cleared)
+///   - `0` - Clears all cache entries with every eviction
+///   - `1` - Keeps only entries used since the last eviction
+///   - `n` - Keeps entries used within the last n evictions
 #[pyfunction]
 #[pyo3(signature = (max_age=None))]
-fn set_cache_eviction_age(max_age: Option<usize>) {
+fn configure_automatic_cache_eviction(max_age: Option<usize>) {
     CACHE_EVICTION_AGE.store(max_age.unwrap_or(usize::MAX), Ordering::Relaxed);
 }
 
-/// Manually evict the comemo cache based on the configured cache age.
+/// Manually evict the comemo cache with the given age threshold.
+///
+/// This directly calls the underlying eviction with the specified age,
+/// regardless of the configured default age.
 #[pyfunction]
-fn evict_cache() {
-    let cache_age = CACHE_EVICTION_AGE.load(Ordering::Relaxed);
-    if cache_age != usize::MAX {
-        oicana_world::evict_cache(cache_age);
-    }
+fn evict_cache(max_age: usize) {
+    oicana_world::evict_cache(max_age);
 }
 
 /// Compilation mode enum
@@ -146,6 +130,11 @@ fn register_template(
     WORLD_CACHE.insert(template, zip_world);
     DOCUMENT_CACHE.insert(result_id.clone(), document.document);
 
+    let cache_age = CACHE_EVICTION_AGE.load(Ordering::Relaxed);
+    if cache_age != usize::MAX {
+        oicana_world::evict_cache(cache_age);
+    }
+
     Ok(result_id)
 }
 
@@ -175,6 +164,11 @@ fn compile_template(
 
     let result_id = new_document_id(&template);
     DOCUMENT_CACHE.insert(result_id.clone(), document.document);
+
+    let cache_age = CACHE_EVICTION_AGE.load(Ordering::Relaxed);
+    if cache_age != usize::MAX {
+        oicana_world::evict_cache(cache_age);
+    }
 
     Ok(result_id)
 }
@@ -348,7 +342,7 @@ fn oicana_native(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(get_file, m)?)?;
     m.add_function(wrap_pyfunction!(remove_document, m)?)?;
     m.add_function(wrap_pyfunction!(remove_world, m)?)?;
-    m.add_function(wrap_pyfunction!(set_cache_eviction_age, m)?)?;
+    m.add_function(wrap_pyfunction!(configure_automatic_cache_eviction, m)?)?;
     m.add_function(wrap_pyfunction!(evict_cache, m)?)?;
     m.add_class::<CompilationMode>()?;
     m.add_class::<BlobWithMetadata>()?;

@@ -32,30 +32,18 @@ use uuid::Uuid;
 /// usize::MAX is used internally to represent disabled eviction.
 static CACHE_EVICTION_AGE: AtomicUsize = AtomicUsize::new(10);
 
-/// Set the global cache age for comemo cache eviction.
-///
-/// Pass `-1` to disable cache eviction completely.
-/// Pass a non-negative number to set the maximum age threshold.
-///
-/// # How Cache Aging Works
-///
-/// - Each cache entry has an age counter
-/// - Age increases by 1 during each eviction call
-/// - Age resets to 0 when the entry is used (cache hit)
-/// - Entries with age >= `max_age` are removed
+/// Configure automatic cache eviction after each compilation.
 ///
 /// # Parameters
 ///
-/// * `max_age` - Maximum age threshold, or -1 to disable:
-///   - `-1` - Disables cache eviction (cache never cleared)
-///   - `0` - Clears all cache after every compilation
+/// `max_age` (start value: 10) - Maximum age threshold, or null to disable:
+///   - `null` - Disables cache eviction (cache never cleared)
+///   - `0` - Clears all cache entries with every eviction
 ///   - `1` - Keeps only entries used since the last eviction
 ///   - `n` - Keeps entries used within the last n evictions
-///
-/// Default: 10
 #[ffi_function]
 #[no_mangle]
-pub extern "C" fn set_cache_eviction_age(max_age: i64) {
+pub extern "C" fn configure_automatic_cache_eviction(max_age: i64) {
     if max_age < 0 {
         CACHE_EVICTION_AGE.store(usize::MAX, Ordering::Relaxed);
     } else {
@@ -63,14 +51,23 @@ pub extern "C" fn set_cache_eviction_age(max_age: i64) {
     }
 }
 
-/// Manually evict the comemo cache based on the configured cache age.
+/// Manually evict the comemo cache with the given age threshold.
+///
+/// This directly calls the underlying eviction with the specified age,
+/// regardless of the configured default age.
+///
+/// # Parameters
+///
+/// * `max_age` - Maximum age threshold for eviction
+///
+/// Calls with `max_age < 0` are ignored.
 #[ffi_function]
 #[no_mangle]
-pub extern "C" fn evict_cache() {
-    let cache_age = CACHE_EVICTION_AGE.load(Ordering::Relaxed);
-    if cache_age != usize::MAX {
-        oicana_world::evict_cache(cache_age);
+pub extern "C" fn evict_cache(max_age: i64) {
+    if max_age < 0 {
+        return;
     }
+    oicana_world::evict_cache(max_age as usize);
 }
 
 /// Register a template for the given identifier
@@ -104,6 +101,11 @@ pub unsafe extern "C" fn unsafe_register_template(
             let mut world = world.unwrap();
             let document_result = world.value_mut().compile();
 
+            let cache_age = CACHE_EVICTION_AGE.load(Ordering::Relaxed);
+            if cache_age != usize::MAX {
+                oicana_world::evict_cache(cache_age);
+            }
+
             Buffer::from_document_result(document_result, template)
         }
         Err(error) => error,
@@ -136,6 +138,11 @@ pub unsafe extern "C" fn unsafe_export_template_once(
     match unsafe { prepare_world(files, json_inputs, blob_inputs, compile_options.mode) } {
         Ok(mut world) => {
             let document_result = world.compile();
+
+            let cache_age = CACHE_EVICTION_AGE.load(Ordering::Relaxed);
+            if cache_age != usize::MAX {
+                oicana_world::evict_cache(cache_age);
+            }
 
             match document_result {
                 Ok(document) => {
@@ -193,6 +200,11 @@ pub unsafe extern "C" fn unsafe_compile_template(
     let result_id = new_document_id(&template);
 
     DOCUMENT_CACHE.insert(result_id.clone(), document.document);
+
+    let cache_age = CACHE_EVICTION_AGE.load(Ordering::Relaxed);
+    if cache_age != usize::MAX {
+        oicana_world::evict_cache(cache_age);
+    }
 
     Buffer::from_ok_string(result_id)
 }
@@ -672,7 +684,7 @@ pub fn my_inventory() -> Inventory {
         .register(function!(remove_world))
         .register(function!(remove_document))
         .register(function!(configure))
-        .register(function!(set_cache_eviction_age))
+        .register(function!(configure_automatic_cache_eviction))
         .register(function!(evict_cache))
         .inventory()
 }

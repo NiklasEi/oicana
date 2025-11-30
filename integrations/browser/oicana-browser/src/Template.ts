@@ -1,6 +1,5 @@
 import {
   compile_template,
-  evict_cache,
   export_document,
   get_file,
   get_source,
@@ -140,7 +139,6 @@ export class Template {
       blobInputs ?? new Map(),
       compilationOptions ?? CompilationMode.Production,
     );
-    evict_cache();
     const result = export_document(
       documentId,
       this.convertExportFormat(exportOptions),

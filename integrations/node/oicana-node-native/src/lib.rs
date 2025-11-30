@@ -43,42 +43,30 @@ pub const NOT_REGISTERED: &str = "Template is not registered";
 /// usize::MAX is used internally to represent disabled eviction.
 static CACHE_EVICTION_AGE: AtomicUsize = AtomicUsize::new(10);
 
-/// Set the global cache age for comemo cache eviction.
-///
-/// Pass `null` or `undefined` to disable cache eviction completely.
-/// Pass a number to set the maximum age threshold.
-///
-/// # How Cache Aging Works
-///
-/// - Each cache entry has an age counter
-/// - Age increases by 1 during each eviction call
-/// - Age resets to 0 when the entry is used (cache hit)
-/// - Entries with age >= `max_age` are removed
+/// Configure automatic cache eviction after each compilation.
 ///
 /// # Parameters
 ///
-/// * `max_age` - Maximum age threshold, or null/undefined to disable:
-///   - `null` or `undefined` - Disables cache eviction (cache never cleared)
-///   - `0` - Clears all cache after every compilation
+/// `max_age` (start value: 10) - Maximum age threshold, or null to disable:
+///   - `null` - Disables cache eviction (cache never cleared)
+///   - `0` - Clears all cache entries with every eviction
 ///   - `1` - Keeps only entries used since the last eviction
 ///   - `n` - Keeps entries used within the last n evictions
-///
-/// Default: 10
 #[napi]
-pub fn set_cache_eviction_age(max_age: Option<u32>) {
+pub fn configure_automatic_cache_eviction(max_age: Option<u32>) {
   CACHE_EVICTION_AGE.store(
     max_age.map(|v| v as usize).unwrap_or(usize::MAX),
     Ordering::Relaxed,
   );
 }
 
-/// Manually evict the comemo cache based on the configured cache age.
+/// Manually evict the comemo cache with the given age threshold.
+///
+/// This directly calls the underlying eviction with the specified age,
+/// regardless of the configured default age.
 #[napi]
-pub fn evict_cache() {
-  let cache_age = CACHE_EVICTION_AGE.load(Ordering::Relaxed);
-  if cache_age != usize::MAX {
-    oicana_world::evict_cache(cache_age);
-  }
+pub fn evict_cache(max_age: u32) {
+  oicana_world::evict_cache(max_age as usize);
 }
 
 /// Register the given template. This will read the template files as a [`PackedTemplate`] and
@@ -112,6 +100,11 @@ pub fn register_template(
   WORLD_CACHE.insert(template, zip_world);
   DOCUMENT_CACHE.insert(result_id.clone(), document.document);
 
+  let cache_age = CACHE_EVICTION_AGE.load(Ordering::Relaxed);
+  if cache_age != usize::MAX {
+    oicana_world::evict_cache(cache_age);
+  }
+
   Ok(result_id)
 }
 
@@ -139,6 +132,11 @@ pub fn compile_template(
 
   let result_id = new_document_id(&template);
   DOCUMENT_CACHE.insert(result_id.clone(), document.document);
+
+  let cache_age = CACHE_EVICTION_AGE.load(Ordering::Relaxed);
+  if cache_age != usize::MAX {
+    oicana_world::evict_cache(cache_age);
+  }
 
   Ok(result_id)
 }

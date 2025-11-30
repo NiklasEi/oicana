@@ -19,15 +19,16 @@ By default, Oicana integrations automatically evict the cache after each compila
 
 == Configuring Cache Eviction
 
-You can adjust the cache eviction age to match your application's needs. All integrations have APIs to
-configure the maximum cache item age for eviction, completely turn of cache eviction, or trigger an eviction manually. 
+All integrations provide two APIs for cache management:
 
-=== When to Adjust automatic Cache Eviction
+- `configureAutomaticCacheEviction(age)` - Configure or disable automatic eviction after each compilation
+- `evictCache(age)` - Manually trigger cache eviction with a specific age threshold
+
+=== When to Adjust Automatic Cache Eviction
 
 Consider adjusting the default cache settings to a higher maximum item age if you have a large number of templates and enough
 available memory to support a larger cache.\
 \
-Sometimes, it can make sense to disable automatic cache eviction completely and run it manually. For example,
-if you do large batch compilations of templates, it might improve performance, if you disable cache eviction during
-batches of compilations and only clean up inbetween batches. This depends on your exact scenario. The default should be
-usable in all scenarios, but you can test out different cache eviction settings for fine tuning.
+Sometimes, it makes sense to disable automatic cache eviction and run it manually. For example,
+during large batch compilations, you can disable automatic eviction and only evict between batches for better performance.
+The default should work well in most scenarios, but you can experiment with different settings for fine-tuning.

@@ -30,45 +30,21 @@ use typst::{
 /// usize::MAX is used internally to represent disabled eviction.
 static CACHE_EVICTION_AGE: AtomicUsize = AtomicUsize::new(10);
 
-/// Set the global cache age for comemo cache eviction.
-///
-/// Pass `None` to disable cache eviction completely.
-/// Pass `Some(n)` to set the maximum age threshold.
-///
-/// # How Cache Aging Works
-///
-/// - Each cache entry has an age counter
-/// - Age increases by 1 during each eviction call
-/// - Age resets to 0 when the entry is used (cache hit)
-/// - Entries with age >= `max_age` are removed
+/// Configure automatic cache eviction after each compilation.
 ///
 /// # Parameters
 ///
-/// * `max_age` - Maximum age threshold, or None to disable:
-///   - `None` - Disables cache eviction (cache never cleared)
-///   - `Some(0)` - Clears all cache after every compilation
-///   - `Some(1)` - Keeps only entries used since the last eviction
-///   - `Some(n)` - Keeps entries used within the last n compilations
-///
-/// Default: 10
-///
-/// # Example
-///
-/// ```
-/// use oicana::set_cache_eviction_age;
-///
-/// // Clear cache after every compilation
-/// set_cache_eviction_age(Some(0));
-///
-/// // Keep cache entries from last 50 compilations
-/// set_cache_eviction_age(Some(50));
-///
-/// // Disable eviction completely
-/// set_cache_eviction_age(None);
-/// ```
-pub fn set_cache_eviction_age(max_age: Option<usize>) {
+/// `max_age` (start value: 10) - Maximum age threshold, or null to disable:
+///   - `null` - Disables cache eviction (cache never cleared)
+///   - `0` - Clears all cache entries with every eviction
+///   - `1` - Keeps only entries used since the last eviction
+///   - `n` - Keeps entries used within the last n evictions
+pub fn configure_automatic_cache_eviction(max_age: Option<usize>) {
     CACHE_EVICTION_AGE.store(max_age.unwrap_or(usize::MAX), Ordering::Relaxed);
 }
+
+// Re-export evict_cache from oicana_world for convenience
+pub use oicana_world::evict_cache;
 
 /// Support for native Oicana templates.
 /// Native templates are not packed. They are a Typst project in a native file system.

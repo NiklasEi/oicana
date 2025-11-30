@@ -3,6 +3,7 @@ from .oicana_native import (
     BlobWithMetadata,
     CompilationMode,
     compile_template,
+    configure_automatic_cache_eviction,
     evict_cache,
     export_document,
     get_file,
@@ -11,13 +12,13 @@ from .oicana_native import (
     register_template,
     remove_document,
     remove_world,
-    set_cache_eviction_age,
 )
 
 __all__ = [
     "BlobWithMetadata",
     "CompilationMode",
     "compile_template",
+    "configure_automatic_cache_eviction",
     "evict_cache",
     "export_document",
     "get_file",
@@ -26,5 +27,4 @@ __all__ = [
     "register_template",
     "remove_document",
     "remove_world",
-    "set_cache_eviction_age",
 ]
