@@ -44,7 +44,8 @@
           section: "3.2.1",
         )[Helpful Packages]
     - #chapter("templates/fonts.typ", section: "3.3")[Fonts]
-    - #chapter("templates/tests.typ", section: "3.4")[Testing]
+    - #chapter("templates/export.typ", section: "3.4")[Export]
+    - #chapter("templates/tests.typ", section: "3.5")[Testing]
 
   #v(2cm)
 
