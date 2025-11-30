@@ -2584,6 +2584,7 @@ version = "0.1.0-alpha.5"
 dependencies = [
  "oicana_files",
  "oicana_input",
+ "oicana_template",
  "oicana_world",
  "png 0.17.16",
  "typst",

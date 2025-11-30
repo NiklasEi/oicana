@@ -156,7 +156,7 @@ mod tests {
 
     use crate::{
         manifest::{format_relative_path, ManifestValidationError, TemplateManifest},
-        OicanaConfig,
+        ExportConfig, OicanaConfig,
     };
 
     fn default_package_info() -> PackageInfo {
@@ -171,6 +171,7 @@ mod tests {
                 manifest_version: 1,
                 inputs: vec![],
                 tests: PathBuf::from("tests"),
+                export: ExportConfig::default(),
             },
         );
 
@@ -203,6 +204,7 @@ mod tests {
                 manifest_version: 1,
                 inputs: vec![],
                 tests: PathBuf::from(".").canonicalize().unwrap(),
+                export: ExportConfig::default(),
             },
         );
 

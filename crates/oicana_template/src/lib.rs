@@ -65,6 +65,106 @@ pub struct OicanaConfig {
     /// path to the tests of the template
     #[serde(default = "default_test_dir")]
     pub tests: PathBuf,
+    /// Export configuration for the template.
+    #[serde(default)]
+    pub export: ExportConfig,
+}
+
+/// Configuration for exporting compiled documents.
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Default)]
+pub struct ExportConfig {
+    /// PDF export configuration.
+    #[serde(default)]
+    pub pdf: PdfExportConfig,
+}
+
+/// A PDF standard that Typst can enforce conformance with.
+///
+/// Note: Typst currently only supports one PDF substandard at a time.
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Copy)]
+#[allow(non_camel_case_types)]
+#[serde(rename_all = "kebab-case")]
+pub enum PdfStandard {
+    /// PDF 1.4.
+    #[serde(rename = "1.4")]
+    V_1_4,
+    /// PDF 1.5.
+    #[serde(rename = "1.5")]
+    V_1_5,
+    /// PDF 1.6.
+    #[serde(rename = "1.6")]
+    V_1_6,
+    /// PDF 1.7.
+    #[serde(rename = "1.7")]
+    V_1_7,
+    /// PDF 2.0.
+    #[serde(rename = "2.0")]
+    V_2_0,
+    /// PDF/A-1b.
+    #[serde(rename = "a-1b")]
+    A_1b,
+    /// PDF/A-1a.
+    #[serde(rename = "a-1a")]
+    A_1a,
+    /// PDF/A-2b.
+    #[serde(rename = "a-2b")]
+    A_2b,
+    /// PDF/A-2u.
+    #[serde(rename = "a-2u")]
+    A_2u,
+    /// PDF/A-2a.
+    #[serde(rename = "a-2a")]
+    A_2a,
+    /// PDF/A-3b.
+    #[serde(rename = "a-3b")]
+    A_3b,
+    /// PDF/A-3u.
+    #[serde(rename = "a-3u")]
+    A_3u,
+    /// PDF/A-3a.
+    #[serde(rename = "a-3a")]
+    A_3a,
+    /// PDF/A-4.
+    #[serde(rename = "a-4")]
+    A_4,
+    /// PDF/A-4f.
+    #[serde(rename = "a-4f")]
+    A_4f,
+    /// PDF/A-4e.
+    #[serde(rename = "a-4e")]
+    A_4e,
+    /// PDF/UA-1.
+    #[serde(rename = "ua-1")]
+    Ua_1,
+}
+
+/// Configuration for PDF export.
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+pub struct PdfExportConfig {
+    /// The PDF standards to enforce during export.
+    ///
+    /// Note: Typst currently only supports one PDF substandard at a time.
+    /// You can specify a base PDF version or a substandard.
+    ///
+    /// PDF/A standards are geared towards archival use and maximum compatibility
+    /// with current and future PDF tooling. PDF/UA standards ensure universal
+    /// accessibility.
+    ///
+    /// Defaults to `["a-3b"]` (PDF/A-3b) if not specified.
+    #[serde(default = "default_pdf_standards")]
+    pub standards: Vec<PdfStandard>,
+}
+
+impl Default for PdfExportConfig {
+    fn default() -> Self {
+        Self {
+            standards: default_pdf_standards(),
+        }
+    }
+}
+
+fn default_pdf_standards() -> Vec<PdfStandard> {
+    vec![PdfStandard::A_3b]
 }
 
 fn default_test_dir() -> PathBuf {
@@ -73,7 +173,7 @@ fn default_test_dir() -> PathBuf {
 
 #[cfg(test)]
 mod tests {
-    use crate::{validate_native_template, OicanaConfig, TemplateError};
+    use crate::{validate_native_template, ExportConfig, OicanaConfig, PdfStandard, TemplateError};
     use oicana_input::input_definition::blob::{BlobInputDefinition, FallbackBlobInput};
     use oicana_input::input_definition::json::JsonInputDefinition;
     use oicana_input::input_definition::InputDefinition;
@@ -111,8 +211,69 @@ mod tests {
             manifest_version: 1,
             inputs: vec![],
             tests: PathBuf::from("tests"),
+            export: ExportConfig::default(),
         };
         assert_eq!(result.unwrap().tool.oicana, expected);
+    }
+
+    #[test]
+    fn parses_custom_pdf_standards() {
+        let template = tempdir().unwrap();
+        {
+            let path = template.path().join("typst.toml");
+            let mut file = File::create(&path).unwrap();
+            write!(
+                &mut file,
+                r#"
+                [package]
+                name = "invoice"
+                version = "0.1.0"
+                entrypoint = "main.typ"
+
+                [tool.oicana]
+                manifest_version = 1
+
+                [tool.oicana.export.pdf]
+                standards = ["a-4", "ua-1"]
+                "#
+            )
+            .unwrap();
+        }
+
+        let result = validate_native_template(template.path());
+        let config = result.unwrap().tool.oicana;
+
+        assert_eq!(
+            config.export.pdf.standards,
+            vec![PdfStandard::A_4, PdfStandard::Ua_1]
+        );
+    }
+
+    #[test]
+    fn defaults_pdf_standards_to_a3b() {
+        let template = tempdir().unwrap();
+        {
+            let path = template.path().join("typst.toml");
+            let mut file = File::create(&path).unwrap();
+            write!(
+                &mut file,
+                r#"
+                [package]
+                name = "invoice"
+                version = "0.1.0"
+                entrypoint = "main.typ"
+
+                [tool.oicana]
+                manifest_version = 1
+                "#
+            )
+            .unwrap();
+        }
+
+        let result = validate_native_template(template.path());
+        let config = result.unwrap().tool.oicana;
+
+        assert_eq!(config.export.pdf.standards, vec![PdfStandard::A_3b]);
     }
 
     #[test]
@@ -187,6 +348,7 @@ mod tests {
                     schema: None,
                 }),
             ],
+            export: ExportConfig::default(),
         };
         assert_eq!(result.unwrap().tool.oicana, expected);
     }

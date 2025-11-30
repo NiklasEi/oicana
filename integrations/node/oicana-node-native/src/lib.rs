@@ -177,9 +177,13 @@ pub fn export_document(document_id: String, export_format: String) -> Result<Buf
         )));
       };
 
-      export_merged_pdf(&document, &*world)
-        .map_err(|error| Error::from_reason(format!("Failed to encode PNG: {error:?}")))
-        .map(|pdf| pdf.into())
+      export_merged_pdf(
+        &document,
+        &*world,
+        &world.manifest().tool.oicana.export.pdf.standards,
+      )
+      .map_err(|error| Error::from_reason(format!("Failed to encode PDF: {error:?}")))
+      .map(|pdf| pdf.into())
     }
     ExportFormat::Svg => {
       let svg = export_merged_svg(&document);

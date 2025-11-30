@@ -244,7 +244,13 @@ pub fn export_document(document_id: String, export_format: JsValue) -> Result<Ui
                     "World '{template_id}' for the given document '{document_id}' not found!"
                 ));
             };
-            export_merged_pdf(&document, &*world).map(|pdf| bytes_to_js_array(&pdf))
+
+            export_merged_pdf(
+                &document,
+                &*world,
+                &world.manifest().tool.oicana.export.pdf.standards,
+            )
+            .map(|pdf| bytes_to_js_array(&pdf))
         }
         ExportFormat::Svg => {
             let svg = export_merged_svg(&document);
