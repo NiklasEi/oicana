@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING
 from oicana_native import (
     BlobWithMetadata,
     compile_template,
+    evict_cache,
     export_document,
     get_file,
     get_source,
@@ -77,6 +78,7 @@ class Template:
             native_blobs,
             native_mode,
         )
+        evict_cache()
         remove_document(doc_id)
 
     def compile(
@@ -121,6 +123,7 @@ class Template:
         self._document_ids.append(doc_id)
 
         result = export_document(doc_id, json.dumps(export_format))
+        evict_cache()
 
         remove_document(doc_id)
         self._document_ids.remove(doc_id)

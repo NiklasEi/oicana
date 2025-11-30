@@ -19,11 +19,59 @@ use once_cell::sync::Lazy;
 use serde_json::Error;
 use std::io::Cursor;
 use std::slice;
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
 use typst::foundations::Bytes;
 use typst::layout::PagedDocument;
 use typst::syntax::{FileId, VirtualPath};
 use uuid::Uuid;
+
+/// Global cache age configuration.
+///
+/// Default is 10, meaning cache entries used during the last 10 eviction cycles are kept.
+/// usize::MAX is used internally to represent disabled eviction.
+static CACHE_EVICTION_AGE: AtomicUsize = AtomicUsize::new(10);
+
+/// Set the global cache age for comemo cache eviction.
+///
+/// Pass `-1` to disable cache eviction completely.
+/// Pass a non-negative number to set the maximum age threshold.
+///
+/// # How Cache Aging Works
+///
+/// - Each cache entry has an age counter
+/// - Age increases by 1 during each eviction call
+/// - Age resets to 0 when the entry is used (cache hit)
+/// - Entries with age >= `max_age` are removed
+///
+/// # Parameters
+///
+/// * `max_age` - Maximum age threshold, or -1 to disable:
+///   - `-1` - Disables cache eviction (cache never cleared)
+///   - `0` - Clears all cache after every compilation
+///   - `1` - Keeps only entries used in the most recent compilation
+///   - `n` - Keeps entries used within the last n compilations
+///
+/// Default: 10
+#[ffi_function]
+#[no_mangle]
+pub extern "C" fn set_cache_eviction_age(max_age: i64) {
+    if max_age < 0 {
+        CACHE_EVICTION_AGE.store(usize::MAX, Ordering::Relaxed);
+    } else {
+        CACHE_EVICTION_AGE.store(max_age as usize, Ordering::Relaxed);
+    }
+}
+
+/// Manually evict the comemo cache based on the configured cache age.
+#[ffi_function]
+#[no_mangle]
+pub extern "C" fn evict_cache() {
+    let cache_age = CACHE_EVICTION_AGE.load(Ordering::Relaxed);
+    if cache_age != usize::MAX {
+        oicana_world::evict_cache(cache_age);
+    }
+}
 
 /// Register a template for the given identifier
 ///
@@ -624,5 +672,7 @@ pub fn my_inventory() -> Inventory {
         .register(function!(remove_world))
         .register(function!(remove_document))
         .register(function!(configure))
+        .register(function!(set_cache_eviction_age))
+        .register(function!(evict_cache))
         .inventory()
 }

@@ -15,6 +15,7 @@ use oicana_world::{
     world::{OicanaWorld, WorldCreationError},
     CompiledDocument, TemplateCompilationFailure,
 };
+use std::sync::atomic::{AtomicUsize, Ordering};
 use thiserror::Error;
 use typst::{
     diag::{FileResult, SourceDiagnostic},
@@ -22,6 +23,52 @@ use typst::{
     foundations::Bytes,
     syntax::{FileId, Source},
 };
+
+/// Global cache age configuration.
+///
+/// Default is 10, meaning cache entries used during the last 10 eviction cycles are kept.
+/// usize::MAX is used internally to represent disabled eviction.
+static CACHE_EVICTION_AGE: AtomicUsize = AtomicUsize::new(10);
+
+/// Set the global cache age for comemo cache eviction.
+///
+/// Pass `None` to disable cache eviction completely.
+/// Pass `Some(n)` to set the maximum age threshold.
+///
+/// # How Cache Aging Works
+///
+/// - Each cache entry has an age counter
+/// - Age increases by 1 during each eviction call
+/// - Age resets to 0 when the entry is used (cache hit)
+/// - Entries with age >= `max_age` are removed
+///
+/// # Parameters
+///
+/// * `max_age` - Maximum age threshold, or None to disable:
+///   - `None` - Disables cache eviction (cache never cleared)
+///   - `Some(0)` - Clears all cache after every compilation
+///   - `Some(1)` - Keeps only entries used in the most recent compilation
+///   - `Some(n)` - Keeps entries used within the last n compilations
+///
+/// Default: 10
+///
+/// # Example
+///
+/// ```
+/// use oicana::set_cache_eviction_age;
+///
+/// // Clear cache after every compilation
+/// set_cache_eviction_age(Some(0));
+///
+/// // Keep cache entries from last 50 compilations
+/// set_cache_eviction_age(Some(50));
+///
+/// // Disable eviction completely
+/// set_cache_eviction_age(None);
+/// ```
+pub fn set_cache_eviction_age(max_age: Option<usize>) {
+    CACHE_EVICTION_AGE.store(max_age.unwrap_or(usize::MAX), Ordering::Relaxed);
+}
 
 /// Support for native Oicana templates.
 /// Native templates are not packed. They are a Typst project in a native file system.
@@ -52,7 +99,12 @@ impl<Files: TemplateFiles> Template<Files> {
         inputs: TemplateInputs,
     ) -> Result<CompiledDocument, TemplateCompilationFailure> {
         self.world.update_inputs(inputs);
-        self.world.compile()
+        let result = self.world.compile();
+        let cache_age = CACHE_EVICTION_AGE.load(Ordering::Relaxed);
+        if cache_age != usize::MAX {
+            oicana_world::evict_cache(cache_age);
+        }
+        result
     }
 
     /// Get the manifest of the template

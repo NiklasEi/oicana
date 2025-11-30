@@ -26,6 +26,7 @@ use serde::Deserialize;
 use std::collections::HashMap;
 use std::io::Cursor;
 use std::str::FromStr;
+use std::sync::atomic::{AtomicUsize, Ordering};
 use typst::foundations::Bytes;
 use typst::layout::PagedDocument;
 use typst::syntax::{FileId, VirtualPath};
@@ -35,6 +36,50 @@ use uuid::Uuid;
 /// trying to use the template through a different method.
 #[napi]
 pub const NOT_REGISTERED: &str = "Template is not registered";
+
+/// Global cache age configuration.
+///
+/// Default is 10, meaning cache entries used during the last 10 eviction cycles are kept.
+/// usize::MAX is used internally to represent disabled eviction.
+static CACHE_EVICTION_AGE: AtomicUsize = AtomicUsize::new(10);
+
+/// Set the global cache age for comemo cache eviction.
+///
+/// Pass `null` or `undefined` to disable cache eviction completely.
+/// Pass a number to set the maximum age threshold.
+///
+/// # How Cache Aging Works
+///
+/// - Each cache entry has an age counter
+/// - Age increases by 1 during each eviction call
+/// - Age resets to 0 when the entry is used (cache hit)
+/// - Entries with age >= `max_age` are removed
+///
+/// # Parameters
+///
+/// * `max_age` - Maximum age threshold, or null/undefined to disable:
+///   - `null` or `undefined` - Disables cache eviction (cache never cleared)
+///   - `0` - Clears all cache after every compilation
+///   - `1` - Keeps only entries used in the most recent compilation
+///   - `n` - Keeps entries used within the last n compilations
+///
+/// Default: 10
+#[napi]
+pub fn set_cache_eviction_age(max_age: Option<u32>) {
+  CACHE_EVICTION_AGE.store(
+    max_age.map(|v| v as usize).unwrap_or(usize::MAX),
+    Ordering::Relaxed,
+  );
+}
+
+/// Manually evict the comemo cache based on the configured cache age.
+#[napi]
+pub fn evict_cache() {
+  let cache_age = CACHE_EVICTION_AGE.load(Ordering::Relaxed);
+  if cache_age != usize::MAX {
+    oicana_world::evict_cache(cache_age);
+  }
+}
 
 /// Register the given template. This will read the template files as a [`PackedTemplate`] and
 /// compile it once with the given inputs. The Typst [`typst::World`] will be cached and reused for
