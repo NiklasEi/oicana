@@ -1,10 +1,13 @@
 import init from '@oicana/browser-wasm';
 
+export {
+  configure_automatic_cache_eviction as configureAutomaticCacheEviction,
+  evict_cache as evictCache,
+} from '@oicana/browser-wasm';
 export * from './CompilationMode';
 export * from './ExportFormat';
 export * from './inputs';
 export * from './Template';
-export { configure_automatic_cache_eviction as configureAutomaticCacheEviction, evict_cache as evictCache } from '@oicana/browser-wasm';
 
 const initialized: Set<string> = new Set();
 
