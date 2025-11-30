@@ -51,5 +51,6 @@
   - #chapter("cli.typ", section: "4")[CLI]
   - #chapter("integrations.typ", section: "5")[Integrations]
   - #chapter("guides.typ", section: "6")[Guides]
+    - #chapter("guides/cache-management.typ", section: "6.1")[Cache Management]
   - #suffix-chapter("credits.typ")[Credits]
 ]

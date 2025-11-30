@@ -1,6 +1,6 @@
 A collection of concrete problems and solutions for using Oicana.
 
-== Structured Inputs
+== Styled Inputs
 
 Document templates in applications often need to be customizable. For example, a user might want to customize the footer of a given document. A common requirement is that these customizations need to be styled. In the footer, the users might want multiple blocks of text in a grid and some bold or underlined sections. We can support this by passing Typst code into the template instead of plain text and using #link("https://typst.app/docs/reference/foundations/eval/")[`#eval`] in the template to render the given Typst code as the footer.
 
