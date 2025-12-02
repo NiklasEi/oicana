@@ -151,7 +151,7 @@ namespace Oicana.Interop
         ///
         /// * `max_age` - Maximum age threshold for eviction
         ///
-        /// Calls with `max_age < 0` are ignored.
+        /// Calls with negative `max_age` are ignored.
         [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl, EntryPoint = "evict_cache")]
         public static extern void evict_cache(long max_age);
 

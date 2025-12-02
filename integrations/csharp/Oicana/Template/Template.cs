@@ -89,7 +89,6 @@ public class Template : ITemplate, IDisposable
     {
         _templateId = templateId ?? Guid.NewGuid().ToString();
         OicanaFfi.RegisterTemplate(_templateId, templateFile, jsonInputs, blobInputs, new CompilationOptions(compilationMode));
-        OicanaFfi.EvictCache();
     }
 
     /// <inheritdoc />
@@ -97,7 +96,6 @@ public class Template : ITemplate, IDisposable
     {
         var documentId = OicanaFfi.CompileTemplate(_templateId, jsonInputs, blobInputs, compilationOptions);
         var result = OicanaFfi.ExportDocument(documentId, exportOptions);
-        OicanaFfi.EvictCache();
         OicanaFfi.RemoveDocument(documentId);
         return result;
     }

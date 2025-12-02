@@ -60,7 +60,7 @@ pub extern "C" fn configure_automatic_cache_eviction(max_age: i64) {
 ///
 /// * `max_age` - Maximum age threshold for eviction
 ///
-/// Calls with `max_age < 0` are ignored.
+/// Calls with negative `max_age` are ignored.
 #[ffi_function]
 #[no_mangle]
 pub extern "C" fn evict_cache(max_age: i64) {
