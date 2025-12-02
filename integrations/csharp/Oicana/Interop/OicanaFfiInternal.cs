@@ -132,10 +132,13 @@ namespace Oicana.Interop
 
         /// Configure automatic cache eviction after each compilation.
         ///
-        /// Pass `-1` to disable automatic eviction. Pass a non-negative number to set the age threshold.
-        /// Cache entries are evicted when their age reaches the threshold.
+        /// # Parameters
         ///
-        /// Default: 10
+        /// `max_age` (start value: 10) - Maximum age threshold, or null to disable:
+        ///   - `null` - Disables cache eviction (cache never cleared)
+        ///   - `0` - Clears all cache entries with every eviction
+        ///   - `1` - Keeps only entries used since the last eviction
+        ///   - `n` - Keeps entries used within the last n evictions
         [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl, EntryPoint = "configure_automatic_cache_eviction")]
         public static extern void configure_automatic_cache_eviction(long max_age);
 
@@ -147,7 +150,7 @@ namespace Oicana.Interop
         /// # Parameters
         ///
         /// * `max_age` - Maximum age threshold for eviction
-        /// 
+        ///
         /// Calls with `max_age < 0` are ignored.
         [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl, EntryPoint = "evict_cache")]
         public static extern void evict_cache(long max_age);
