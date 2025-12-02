@@ -70,11 +70,11 @@ impl<Files: TemplateFiles> OicanaWorld<Files> {
     }
 
     /// Compile the template world.
+    ///
+    /// Note: This does not automatically evict the comemo cache. Use [`evict_cache`] to
+    /// manually manage cache eviction if needed.
     pub fn compile(&mut self) -> Result<CompiledDocument, TemplateCompilationFailure> {
         let start = get_current_time();
-        // We take a small performance hit here
-        // to prevent https://github.com/typst/typst/issues/6832
-        comemo::evict(0);
         let Warned { output, warnings } = typst::compile(self);
         info!("Compiled Document in {}ms", get_current_time() - start);
         let warnings = if warnings.is_empty() {
@@ -148,6 +148,39 @@ impl<Files: TemplateFiles> World for OicanaWorld<Files> {
             naive.day().try_into().ok()?,
         )
     }
+}
+
+/// Evict cached compilation artifacts from the global comemo cache.
+///
+/// The comemo cache is global and shared across all `OicanaWorld` instances.
+/// This function removes memoized results whose age is larger than or equal to `max_age`.
+///
+/// # How Cache Aging Works
+///
+/// - Each cache entry has an age counter
+/// - Age increases by 1 during each eviction
+/// - Age resets to 0 when the entry produces a cache hit (is used)
+/// - Entries with age >= `max_age` are removed
+///
+/// # Parameters
+///
+/// * `max_age` - Maximum age threshold:
+///   - `0` - Removes all cache entries (full clear)
+///   - `n` - Keeps entries used within the last n eviction cycles
+///
+/// # Example
+///
+/// ```rust
+/// use oicana_world::evict_cache;
+///
+/// // Clear all cache entries
+/// evict_cache(0);
+///
+/// // Keep entries used in last 30 eviction cycles
+/// evict_cache(30);
+/// ```
+pub fn evict_cache(max_age: usize) {
+    comemo::evict(max_age);
 }
 
 #[cfg(test)]
@@ -346,7 +379,7 @@ mod tests {
             name = "test-template"
             version = "0.1.0"
             entrypoint = "main.typ"
-            
+
             [tool.oicana]
             manifest_version = 1
             "#,

@@ -44,12 +44,14 @@
           section: "3.2.1",
         )[Helpful Packages]
     - #chapter("templates/fonts.typ", section: "3.3")[Fonts]
-    - #chapter("templates/tests.typ", section: "3.4")[Testing]
+    - #chapter("templates/export.typ", section: "3.4")[Export]
+    - #chapter("templates/tests.typ", section: "3.5")[Testing]
 
   #v(2cm)
 
   - #chapter("cli.typ", section: "4")[CLI]
   - #chapter("integrations.typ", section: "5")[Integrations]
   - #chapter("guides.typ", section: "6")[Guides]
+    - #chapter("guides/cache-management.typ", section: "6.1")[Cache Management]
   - #suffix-chapter("credits.typ")[Credits]
 ]

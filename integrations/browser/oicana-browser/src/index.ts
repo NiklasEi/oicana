@@ -1,5 +1,9 @@
 import init from '@oicana/browser-wasm';
 
+export {
+  configure_automatic_cache_eviction as configureAutomaticCacheEviction,
+  evict_cache as evictCache,
+} from '@oicana/browser-wasm';
 export * from './CompilationMode';
 export * from './ExportFormat';
 export * from './inputs';

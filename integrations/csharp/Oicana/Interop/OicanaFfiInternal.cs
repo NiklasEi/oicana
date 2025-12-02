@@ -130,6 +130,31 @@ namespace Oicana.Interop
         [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl, EntryPoint = "configure")]
         public static extern Buffer configure(Config config);
 
+        /// Configure automatic cache eviction after each compilation.
+        ///
+        /// # Parameters
+        ///
+        /// `max_age` (start value: 10) - Maximum age threshold, or null to disable:
+        ///   - `null` - Disables cache eviction (cache never cleared)
+        ///   - `0` - Clears all cache entries with every eviction
+        ///   - `1` - Keeps only entries used since the last eviction
+        ///   - `n` - Keeps entries used within the last n evictions
+        [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl, EntryPoint = "configure_automatic_cache_eviction")]
+        public static extern void configure_automatic_cache_eviction(long max_age);
+
+        /// Manually evict the comemo cache with the given age threshold.
+        ///
+        /// This directly calls the underlying eviction with the specified age,
+        /// regardless of the configured default age.
+        ///
+        /// # Parameters
+        ///
+        /// * `max_age` - Maximum age threshold for eviction
+        ///
+        /// Calls with negative `max_age` are ignored.
+        [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl, EntryPoint = "evict_cache")]
+        public static extern void evict_cache(long max_age);
+
     }
 
     /// The mode of compilation

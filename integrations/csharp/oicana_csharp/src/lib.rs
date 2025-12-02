@@ -19,11 +19,56 @@ use once_cell::sync::Lazy;
 use serde_json::Error;
 use std::io::Cursor;
 use std::slice;
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
 use typst::foundations::Bytes;
 use typst::layout::PagedDocument;
 use typst::syntax::{FileId, VirtualPath};
 use uuid::Uuid;
+
+/// Global cache age configuration.
+///
+/// Default is 10, meaning cache entries used during the last 10 eviction cycles are kept.
+/// usize::MAX is used internally to represent disabled eviction.
+static CACHE_EVICTION_AGE: AtomicUsize = AtomicUsize::new(10);
+
+/// Configure automatic cache eviction after each compilation.
+///
+/// # Parameters
+///
+/// `max_age` (start value: 10) - Maximum age threshold, or null to disable:
+///   - `null` - Disables cache eviction (cache never cleared)
+///   - `0` - Clears all cache entries with every eviction
+///   - `1` - Keeps only entries used since the last eviction
+///   - `n` - Keeps entries used within the last n evictions
+#[ffi_function]
+#[no_mangle]
+pub extern "C" fn configure_automatic_cache_eviction(max_age: i64) {
+    if max_age < 0 {
+        CACHE_EVICTION_AGE.store(usize::MAX, Ordering::Relaxed);
+    } else {
+        CACHE_EVICTION_AGE.store(max_age as usize, Ordering::Relaxed);
+    }
+}
+
+/// Manually evict the comemo cache with the given age threshold.
+///
+/// This directly calls the underlying eviction with the specified age,
+/// regardless of the configured default age.
+///
+/// # Parameters
+///
+/// * `max_age` - Maximum age threshold for eviction
+///
+/// Calls with negative `max_age` are ignored.
+#[ffi_function]
+#[no_mangle]
+pub extern "C" fn evict_cache(max_age: i64) {
+    if max_age < 0 {
+        return;
+    }
+    oicana_world::evict_cache(max_age as usize);
+}
 
 /// Register a template for the given identifier
 ///
@@ -55,6 +100,11 @@ pub unsafe extern "C" fn unsafe_register_template(
             let world = WORLD_CACHE.get_mut(&template);
             let mut world = world.unwrap();
             let document_result = world.value_mut().compile();
+
+            let cache_age = CACHE_EVICTION_AGE.load(Ordering::Relaxed);
+            if cache_age != usize::MAX {
+                oicana_world::evict_cache(cache_age);
+            }
 
             Buffer::from_document_result(document_result, template)
         }
@@ -88,6 +138,11 @@ pub unsafe extern "C" fn unsafe_export_template_once(
     match unsafe { prepare_world(files, json_inputs, blob_inputs, compile_options.mode) } {
         Ok(mut world) => {
             let document_result = world.compile();
+
+            let cache_age = CACHE_EVICTION_AGE.load(Ordering::Relaxed);
+            if cache_age != usize::MAX {
+                oicana_world::evict_cache(cache_age);
+            }
 
             match document_result {
                 Ok(document) => {
@@ -145,6 +200,11 @@ pub unsafe extern "C" fn unsafe_compile_template(
     let result_id = new_document_id(&template);
 
     DOCUMENT_CACHE.insert(result_id.clone(), document.document);
+
+    let cache_age = CACHE_EVICTION_AGE.load(Ordering::Relaxed);
+    if cache_age != usize::MAX {
+        oicana_world::evict_cache(cache_age);
+    }
 
     Buffer::from_ok_string(result_id)
 }
@@ -624,5 +684,7 @@ pub fn my_inventory() -> Inventory {
         .register(function!(remove_world))
         .register(function!(remove_document))
         .register(function!(configure))
+        .register(function!(configure_automatic_cache_eviction))
+        .register(function!(evict_cache))
         .inventory()
 }

@@ -130,7 +130,8 @@ export class Template {
       this.mapCompilationMode(compilationOptions ?? CompilationMode.Production),
     );
     try {
-      return exportDocument(document, JSON.stringify(format));
+      const exportedDocument = exportDocument(document, JSON.stringify(format));
+      return exportedDocument;
     } finally {
       removeDocument(document);
     }

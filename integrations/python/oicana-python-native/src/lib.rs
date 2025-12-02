@@ -11,6 +11,7 @@ use serde::Deserialize;
 use std::collections::HashMap;
 use std::io::Cursor;
 use std::str::FromStr;
+use std::sync::atomic::{AtomicUsize, Ordering};
 
 use oicana_export::pdf::export_merged_pdf;
 use oicana_export::png::export_merged_png;
@@ -29,6 +30,36 @@ use typst::syntax::{FileId, VirtualPath};
 
 static WORLD_CACHE: Lazy<DashMap<String, OicanaWorld<PackedTemplate>>> = Lazy::new(DashMap::new);
 static DOCUMENT_CACHE: Lazy<DashMap<String, PagedDocument>> = Lazy::new(DashMap::new);
+
+/// Global cache age configuration.
+///
+/// Default is 10, meaning cache entries used during the last 10 eviction cycles are kept.
+/// usize::MAX is used internally to represent disabled eviction.
+static CACHE_EVICTION_AGE: AtomicUsize = AtomicUsize::new(10);
+
+/// Configure automatic cache eviction after each compilation.
+///
+/// # Parameters
+///
+/// `max_age` (start value: 10) - Maximum age threshold, or null to disable:
+///   - `null` - Disables cache eviction (cache never cleared)
+///   - `0` - Clears all cache entries with every eviction
+///   - `1` - Keeps only entries used since the last eviction
+///   - `n` - Keeps entries used within the last n evictions
+#[pyfunction]
+#[pyo3(signature = (max_age=None))]
+fn configure_automatic_cache_eviction(max_age: Option<usize>) {
+    CACHE_EVICTION_AGE.store(max_age.unwrap_or(usize::MAX), Ordering::Relaxed);
+}
+
+/// Manually evict the comemo cache with the given age threshold.
+///
+/// This directly calls the underlying eviction with the specified age,
+/// regardless of the configured default age.
+#[pyfunction]
+fn evict_cache(max_age: usize) {
+    oicana_world::evict_cache(max_age);
+}
 
 /// Compilation mode enum
 #[pyclass(eq, eq_int)]
@@ -99,6 +130,11 @@ fn register_template(
     WORLD_CACHE.insert(template, zip_world);
     DOCUMENT_CACHE.insert(result_id.clone(), document.document);
 
+    let cache_age = CACHE_EVICTION_AGE.load(Ordering::Relaxed);
+    if cache_age != usize::MAX {
+        oicana_world::evict_cache(cache_age);
+    }
+
     Ok(result_id)
 }
 
@@ -128,6 +164,11 @@ fn compile_template(
 
     let result_id = new_document_id(&template);
     DOCUMENT_CACHE.insert(result_id.clone(), document.document);
+
+    let cache_age = CACHE_EVICTION_AGE.load(Ordering::Relaxed);
+    if cache_age != usize::MAX {
+        oicana_world::evict_cache(cache_age);
+    }
 
     Ok(result_id)
 }
@@ -301,6 +342,8 @@ fn oicana_native(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(get_file, m)?)?;
     m.add_function(wrap_pyfunction!(remove_document, m)?)?;
     m.add_function(wrap_pyfunction!(remove_world, m)?)?;
+    m.add_function(wrap_pyfunction!(configure_automatic_cache_eviction, m)?)?;
+    m.add_function(wrap_pyfunction!(evict_cache, m)?)?;
     m.add_class::<CompilationMode>()?;
     m.add_class::<BlobWithMetadata>()?;
     Ok(())

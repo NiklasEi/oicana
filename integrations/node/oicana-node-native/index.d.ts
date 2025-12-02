@@ -27,6 +27,27 @@ export declare function compileTemplate(
 ): string
 
 /**
+ * Configure automatic cache eviction after each compilation.
+ *
+ * # Parameters
+ *
+ * `max_age` (start value: 10) - Maximum age threshold, or null to disable:
+ *   - `undefined`/`null` - Disables cache eviction (cache never cleared)
+ *   - `0` - Clears all cache entries with every eviction
+ *   - `1` - Keeps only entries used since the last eviction
+ *   - `n` - Keeps entries used within the last n evictions
+ */
+export declare function configureAutomaticCacheEviction(maxAge?: number | undefined | null): void
+
+/**
+ * Manually evict the comemo cache with the given age threshold.
+ *
+ * This directly calls the underlying eviction with the specified age,
+ * regardless of the configured default age.
+ */
+export declare function evictCache(maxAge: number): void
+
+/**
  * Export the given document
  *
  * Make sure to call `removeDocument` with the documentId afterwards, to free the memory.

@@ -22,6 +22,7 @@ use serde::Deserialize;
 use serde_wasm_bindgen::from_value;
 use std::collections::HashMap;
 use std::io::Cursor;
+use std::sync::atomic::{AtomicUsize, Ordering};
 use typst::foundations::Bytes;
 use typst::layout::PagedDocument;
 use typst::syntax::{FileId, VirtualPath};
@@ -32,6 +33,35 @@ use wasm_bindgen::JsValue;
 /// Error string when a requested template is not registered yet. Call `[register_template]` before
 /// trying to use the template through a different method.
 pub const NOT_REGISTERED: &str = "Template is not registered";
+
+/// Global cache age configuration.
+///
+/// Default is 10, meaning cache entries used during the last 10 eviction cycles are kept.
+/// usize::MAX is used internally to represent disabled eviction.
+static CACHE_EVICTION_AGE: AtomicUsize = AtomicUsize::new(10);
+
+/// Configure automatic cache eviction after each compilation.
+///
+/// # Parameters
+///
+/// `max_age` (start value: 10) - Maximum age threshold, or null to disable:
+///   - `null` - Disables cache eviction (cache never cleared)
+///   - `0` - Clears all cache entries with every eviction
+///   - `1` - Keeps only entries used since the last eviction
+///   - `n` - Keeps entries used within the last n evictions
+#[wasm_bindgen]
+pub fn configure_automatic_cache_eviction(max_age: Option<usize>) {
+    CACHE_EVICTION_AGE.store(max_age.unwrap_or(usize::MAX), Ordering::Relaxed);
+}
+
+/// Manually evict the comemo cache with the given age threshold.
+///
+/// This directly calls the underlying eviction with the specified age,
+/// regardless of the configured default age.
+#[wasm_bindgen]
+pub fn evict_cache(max_age: usize) {
+    oicana_world::evict_cache(max_age);
+}
 
 /// Register the given template. This will read the template as a [`PackedTemplate`] and compile it
 /// once with the given inputs. The Typst [`typst::World`] will be cached and reused for subsequent
@@ -71,6 +101,11 @@ pub fn register_template(
     WORLD_CACHE.insert(template, world);
     DOCUMENT_CACHE.insert(result_id.clone(), document.document);
 
+    let cache_age = CACHE_EVICTION_AGE.load(Ordering::Relaxed);
+    if cache_age != usize::MAX {
+        oicana_world::evict_cache(cache_age);
+    }
+
     Ok(result_id)
 }
 
@@ -107,6 +142,11 @@ pub fn compile_template(
 
     let result_id = new_document_id(&template);
     DOCUMENT_CACHE.insert(result_id.clone(), document.document);
+
+    let cache_age = CACHE_EVICTION_AGE.load(Ordering::Relaxed);
+    if cache_age != usize::MAX {
+        oicana_world::evict_cache(cache_age);
+    }
 
     Ok(result_id)
 }

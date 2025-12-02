@@ -15,6 +15,7 @@ use oicana_world::{
     world::{OicanaWorld, WorldCreationError},
     CompiledDocument, TemplateCompilationFailure,
 };
+use std::sync::atomic::{AtomicUsize, Ordering};
 use thiserror::Error;
 use typst::{
     diag::{FileResult, SourceDiagnostic},
@@ -22,6 +23,28 @@ use typst::{
     foundations::Bytes,
     syntax::{FileId, Source},
 };
+
+/// Global cache age configuration.
+///
+/// Default is 10, meaning cache entries used during the last 10 eviction cycles are kept.
+/// usize::MAX is used internally to represent disabled eviction.
+static CACHE_EVICTION_AGE: AtomicUsize = AtomicUsize::new(10);
+
+/// Configure automatic cache eviction after each compilation.
+///
+/// # Parameters
+///
+/// `max_age` (start value: 10) - Maximum age threshold, or null to disable:
+///   - `null` - Disables cache eviction (cache never cleared)
+///   - `0` - Clears all cache entries with every eviction
+///   - `1` - Keeps only entries used since the last eviction
+///   - `n` - Keeps entries used within the last n evictions
+pub fn configure_automatic_cache_eviction(max_age: Option<usize>) {
+    CACHE_EVICTION_AGE.store(max_age.unwrap_or(usize::MAX), Ordering::Relaxed);
+}
+
+// Re-export evict_cache from oicana_world for convenience
+pub use oicana_world::evict_cache;
 
 /// Support for native Oicana templates.
 /// Native templates are not packed. They are a Typst project in a native file system.
@@ -52,7 +75,12 @@ impl<Files: TemplateFiles> Template<Files> {
         inputs: TemplateInputs,
     ) -> Result<CompiledDocument, TemplateCompilationFailure> {
         self.world.update_inputs(inputs);
-        self.world.compile()
+        let result = self.world.compile();
+        let cache_age = CACHE_EVICTION_AGE.load(Ordering::Relaxed);
+        if cache_age != usize::MAX {
+            oicana_world::evict_cache(cache_age);
+        }
+        result
     }
 
     /// Get the manifest of the template

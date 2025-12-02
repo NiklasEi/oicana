@@ -559,6 +559,8 @@ if (!nativeBinding) {
 module.exports = nativeBinding
 module.exports.CompilationMode = nativeBinding.CompilationMode
 module.exports.compileTemplate = nativeBinding.compileTemplate
+module.exports.configureAutomaticCacheEviction = nativeBinding.configureAutomaticCacheEviction
+module.exports.evictCache = nativeBinding.evictCache
 module.exports.exportDocument = nativeBinding.exportDocument
 module.exports.getFile = nativeBinding.getFile
 module.exports.getSource = nativeBinding.getSource

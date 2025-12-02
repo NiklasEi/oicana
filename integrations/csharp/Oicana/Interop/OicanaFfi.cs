@@ -126,6 +126,43 @@ internal static class OicanaFfi
     }
 
     /// <summary>
+    /// Set the global cache age for comemo cache eviction.
+    ///
+    /// # How Cache Aging Works
+    ///
+    /// - Each cache entry has an age counter
+    /// - Age increases by 1 during each eviction call
+    /// - Age resets to 0 when the entry is used (cache hit)
+    /// - Entries with age >= `maxAge` are removed
+    ///
+    /// Default: 10
+    /// </summary>
+    /// <param name="maxAge">
+    /// Maximum age threshold, or -1 to disable:
+    ///   - `-1` - Disables cache eviction (cache never cleared)
+    ///   - `0` - Clears all cache after every compilation
+    ///   - `1` - Keeps only entries used since the last eviction
+    ///   - `n` - Keeps entries used within the last n evictions
+    /// </param>
+    public static void ConfigureAutomaticCacheEviction(long maxAge)
+    {
+        OicanaFfiInternal.configure_automatic_cache_eviction(maxAge);
+    }
+
+    /// <summary>
+    /// Manually evict the comemo cache based on the configured cache age.
+    /// </summary>
+    /// <param name="maxAge">
+    /// Maximum age threshold for cache eviction.
+    /// Entries with age >= this value will be removed.
+    /// Pass -1 to disable eviction.
+    /// </param>
+    public static void EvictCache(long maxAge)
+    {
+        OicanaFfiInternal.evict_cache(maxAge);
+    }
+
+    /// <summary>
     /// Configure Oicana.
     /// </summary>
     /// <param name="coloring">Coloring for Oicana diagnostics.</param>

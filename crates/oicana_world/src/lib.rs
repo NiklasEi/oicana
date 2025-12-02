@@ -13,6 +13,9 @@ pub mod manifest;
 /// Oicana implementation of a Typst World
 pub mod world;
 
+// Re-export cache management
+pub use world::evict_cache;
+
 /// A successfully compiled document with warning diagnostics.
 pub struct CompiledDocument {
     /// The compiled document.
