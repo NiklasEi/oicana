@@ -130,7 +130,8 @@ impl<Files: TemplateFiles> TemplateDiagnostics for OicanaWorld<Files> {
             )
             .with_labels(self.label(diagnostic.span).into_iter().collect());
 
-            term::emit(errors, &config, self, &diag).expect("Failed to format diagnostics");
+            term::emit_to_write_style(errors, &config, self, &diag)
+                .expect("Failed to format diagnostics");
 
             // Stacktrace-like helper diagnostics.
             for point in &diagnostic.trace {
@@ -139,7 +140,8 @@ impl<Files: TemplateFiles> TemplateDiagnostics for OicanaWorld<Files> {
                     .with_message(message)
                     .with_labels(self.label(point.span).into_iter().collect());
 
-                term::emit(errors, &config, self, &help).expect("Failed to format diagnostics");
+                term::emit_to_write_style(errors, &config, self, &help)
+                    .expect("Failed to format diagnostics");
             }
         }
 

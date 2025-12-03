@@ -1,5 +1,9 @@
 # Releasing Oicana
 
+1. Bump general crate version in `cargo.toml`
+
+
+
 ## CLI
 
 The CLI is distributed through cargo-dist. Push a tag in the form of `oicana_cli-v0.0.0-alpha.1` to trigger the workflow.
