@@ -1,5 +1,28 @@
 # Releasing Oicana
 
+1. Bump general crate version in `cargo.toml`
+2. Bump CLI version
+3. Integrations
+  * bump oicana_browser_wasm in integrations/browser/oicana_browser_wasm/Cargo.toml
+  * bump C# integration in integrations/csharp/Oicana/Oicana.csproj and integrations/csharp/oicana_csharp/Cargo.toml
+  * bump Node.Js in integrations/node/oicana-node-native/Cargo.toml and integrations/node/oicana-node-native/package.json
+    * run `yarn build` and `yarn format`
+  * Python:
+    * native: integrations/python/oicana-python-native/pyproject.toml and integrations/python/oicana-python-native/Cargo.toml
+    * wrapper: integrations/python/oicana-python/pyproject.toml
+4.
+  * tag CLI version => will trigger CD pipeline; publish to crates.io manually
+  * tag crates version => manual publish
+  * tag C# version => will trigger CD pipeline
+  * tag browser => trigger CD pipeline `publish npm @oicana/browser-wasm`
+  * tag python => will trigger CD pipeline
+5.
+  * bump Node.Js wrapper integrations/node/oicana-node/package.json
+    * `npm i` after bumping dependency
+  * bump browser wrapper integrations/browser/oicana-browser/package.json
+    * `npm i` after bumping dependency
+
+
 ## CLI
 
 The CLI is distributed through cargo-dist. Push a tag in the form of `oicana_cli-v0.0.0-alpha.1` to trigger the workflow.

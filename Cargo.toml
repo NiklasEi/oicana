@@ -19,7 +19,7 @@ resolver = "2"
 
 
 [workspace.package]
-version = "0.1.0-alpha.5"
+version = "0.1.0-alpha.6"
 # also change in ci.yml
 rust-version = "1.88"
 authors = ["Oicana <hello@oicana.com>"]
@@ -32,28 +32,28 @@ keywords = ["oicana", "typst", "typesetting", "pdf"]
 categories = ["template-engine"]
 
 [workspace.dependencies]
-oicana_world = { version = "0.1.0-alpha.5", path = "crates/oicana_world" }
-oicana_files = { version = "0.1.0-alpha.5", path = "crates/oicana_files" }
-oicana_input = { version = "0.1.0-alpha.5", path = "crates/oicana_input" }
-oicana_export = { version = "0.1.0-alpha.5", path = "crates/oicana_export" }
-oicana_template = { version = "0.1.0-alpha.5", path = "crates/oicana_template" }
-oicana_testing = { version = "0.1.0-alpha.5", path = "crates/oicana_testing" }
-oicana = { version = "0.1.0-alpha.5", path = "integrations/rust/oicana" }
+oicana_world = { version = "0.1.0-alpha.6", path = "crates/oicana_world" }
+oicana_files = { version = "0.1.0-alpha.6", path = "crates/oicana_files" }
+oicana_input = { version = "0.1.0-alpha.6", path = "crates/oicana_input" }
+oicana_export = { version = "0.1.0-alpha.6", path = "crates/oicana_export" }
+oicana_template = { version = "0.1.0-alpha.6", path = "crates/oicana_template" }
+oicana_testing = { version = "0.1.0-alpha.6", path = "crates/oicana_testing" }
+oicana = { version = "0.1.0-alpha.6", path = "integrations/rust/oicana" }
 
-typst = { version = "0.14.0" }
-typst-pdf = { version = "0.14.0" }
-typst-render = { version = "0.14.0" }
-typst-svg = { version = "0.14.0" }
-typst-utils = { version = "0.14.0" }
-typst-kit = { version = "0.14.0" }
-typst-assets = { version = "0.14.0" }
+typst = { version = "0.14.1" }
+typst-pdf = { version = "0.14.1" }
+typst-render = { version = "0.14.1" }
+typst-svg = { version = "0.14.1" }
+typst-utils = { version = "0.14.1" }
+typst-kit = { version = "0.14.1" }
+typst-assets = { version = "0.14.1" }
 
 comemo = { version = "0.5.0" }
 
 wasm-bindgen = { version = "0.2.101" }
 serde-wasm-bindgen = { version = "0.6.5" }
 console_error_panic_hook = "0.1.7"
-toml = "0.8.12"
+toml = "0.9.8"
 chrono = "0.4.37"
 serde = { version = "1.0.197" }
 ecow = { version = "0.2", features = ["serde"] }
@@ -67,10 +67,10 @@ once_cell = "1.19.0"
 zip = { version = "6.0.0", default-features = false, features = [
     "zstd",
 ] }
-dirs = { version = "5.0.1" }
+dirs = { version = "6.0.0" }
 flate2 = { version = "1" }
 native-tls = { version = "0.2" }
-codespan-reporting = { version = "0.11" }
+codespan-reporting = { version = "0.13" }
 termcolor = { version = "1" }
 tar = { version = "0.4" }
 interoptopus = "0.14.5"
@@ -78,7 +78,7 @@ interoptopus_backend_csharp = "0.14.5"
 serde_json = "1.0.115"
 rayon = "1.10.0"
 thiserror = "2.0"
-getrandom = { version = "0.2", default-features = false }
+getrandom = { version = "0.3", default-features = false }
 clap = { version = "4.5.16" }
 clap-verbosity = { version = "2.1.0" }
 unicode-ident = "1.0.12"
@@ -92,7 +92,7 @@ openssl = "0.10.72"
 image = "0.25.8"
 json_schema_fuzz = "0.2.2"
 json_schema_ast = "0.2.2"
-rand = "0.8.5"
+rand = "0.8"
 uuid = "1.18.1"
 
 [workspace.lints.rust]
