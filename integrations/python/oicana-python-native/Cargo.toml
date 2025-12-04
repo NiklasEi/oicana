@@ -9,6 +9,7 @@ license-file = "LICENSE.md"
 readme = "README.md"
 keywords.workspace = true
 categories.workspace = true
+publish = false
 
 [lib]
 name = "oicana_native"
