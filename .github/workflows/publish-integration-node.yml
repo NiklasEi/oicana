@@ -1,0 +1,54 @@
+name: publish npm @oicana/node
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  LIB_NAME: node
+  SCOPE: oicana
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+    env:
+      NPM_AUTH: ${{ secrets.NPM_AUTH }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+      - name: Install dependencies
+        run: npm i
+        working-directory: integrations/node/oicana-node
+      - name: Build
+        run: npm run build
+        working-directory: integrations/node/oicana-node
+      - name: Pack
+        run: npm pack
+        working-directory: integrations/node/oicana-node
+      - name: version
+        run: echo "version=$(jq -r '.version' package.json)" >> $GITHUB_OUTPUT
+        working-directory: integrations/node/oicana-node
+      - uses: actions/upload-artifact@v4
+        with:
+          name: "oicana-node-${{ steps.version.outputs.version }}.tgz"
+          path: integrations/node/oicana-node/${{ env.SCOPE }}-${{ env.LIB_NAME }}-*.tgz
+      - name: Publish
+        run: |
+          VERSION=$(jq -r '.version' package.json)
+          echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" >> ~/.npmrc
+          if echo $VERSION | grep "^[0-9]\+\.[0-9]\+\.[0-9]\+$";
+          then
+            npm publish --access public
+          elif echo $VERSION | grep "^[0-9]\+\.[0-9]\+\.[0-9]\+";
+          then
+            npm publish --tag next --access public
+          fi
+        working-directory: integrations/node/oicana-node
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
