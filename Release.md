@@ -12,7 +12,7 @@
     * wrapper: integrations/python/oicana-python/pyproject.toml
 4.
   * tag CLI version => will trigger CD pipeline; publish to crates.io manually
-  * tag crates version => manual publish
+  * crates version => manual publish
   * tag C# version => will trigger CD pipeline
   * tag browser => trigger CD pipeline `publish npm @oicana/browser-wasm`
   * tag python => will trigger CD pipeline
@@ -21,7 +21,7 @@
     * `npm i` after bumping dependency
   * bump browser wrapper integrations/browser/oicana-browser/package.json
     * `npm i` after bumping dependency
-
+6. Trigger CD pipelines for node and browser integrations
 
 ## CLI
 
