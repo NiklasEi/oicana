@@ -10,7 +10,7 @@ YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
 # Default values
-SERVICES="${1:-aspnet,axum,nestjs}"
+SERVICES="${1:-aspnet,axum,fastapi,nestjs}"
 BRUNO_DIR="$(dirname "$0")/bruno"
 
 echo "🚀 Running Bruno E2E tests for Oicana example services"
