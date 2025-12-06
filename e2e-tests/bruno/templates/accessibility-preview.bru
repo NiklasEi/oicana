@@ -1,0 +1,29 @@
+meta {
+  name: Preview accessibility template (PNG)
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/templates/accessibility/preview
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "jsonInputs": [],
+    "blobInputs": []
+  }
+}
+
+tests {
+  test("should return 200", function() {
+    expect(res.status).to.equal(200);
+  });
+
+  test("should return PNG", function() {
+    const contentType = res.headers['content-type'];
+    expect(contentType).to.contain('image/png');
+  });
+}
