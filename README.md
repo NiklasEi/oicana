@@ -21,9 +21,9 @@ The [getting started guide][getting-started] demonstrates how to
 1. Create an Oicana Template
 2. Define and use inputs for the template
 3. Compile a PDF based on the template from either a
-  * C# application using [ASP.NET](https://dotnet.microsoft.com/en-us/apps/aspnet)
-  * Rust application with [axum](https://github.com/tokio-rs/axum)
-  * Node.js application using [NestJs](https://nestjs.com/)
+   * C# application using [ASP.NET](https://dotnet.microsoft.com/en-us/apps/aspnet)
+   * Rust application with [axum](https://github.com/tokio-rs/axum)
+   * Node.js application using [NestJs](https://nestjs.com/)
 
 ## Available integrations
 
@@ -35,6 +35,7 @@ Ready to use:
     * Node.js -> [@oicana/node](https://www.npmjs.com/package/@oicana/node)
 * C# -> [Oicana](https://www.nuget.org/packages/Oicana)
 * Rust -> [oicana](https://crates.io/crates/oicana)
+* Python -> [oicana](https://pypi.org/project/oicana/)
 
 You can find an open source example project in the [Oicana GitHub organization][oicana-github] for every available integration.
 The example project for the browser integration is deployed to https://example.oicana.com (not compatible with some mobile browsers).
@@ -75,9 +76,7 @@ Snapshot tests can be defined for every template. The CLI described in the next 
 
 ### CLI
 
-> There are no binaries of the CLI published yet. Install the current CLI with `cargo install --path tools/oicana_cli` from a clone of this repository.
-
-You can find more information on the CLI in the documentation and with the `oicana help` command.
+Please refer to the documentation for installation instructions: https://docs.oicana.com/cli
 
 #### Packaging
 
