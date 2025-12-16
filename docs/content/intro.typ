@@ -4,7 +4,7 @@ Oicana offers seamless PDF templating across multiple platforms. Define template
 
 \
 
-#alpha-note[Oicana is in Alpha! It is rough around the edges and has a limited number of integrations.]
+#alpha-note[Oicana is rough around the edges and has a limited number of integrations.]
 
 == What Oicana offers
 
