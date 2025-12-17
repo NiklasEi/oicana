@@ -1,4 +1,4 @@
-#import "@preview/shiroa:0.2.3": *
+#import "@preview/shiroa:0.3.1": *
 
 #let summary = [
   - #prefix-chapter("intro.typ")[Intro]
@@ -28,7 +28,7 @@
         section: "2.4.2",
       )[Rust using Axum]
     - #chapter(
-        "getting-started/5-3-nodejs-integration.typ",
+        "getting-started/4-3-nodejs-integration.typ",
         section: "2.4.3",
       )[Node.js using NestJS]
     - #chapter(
