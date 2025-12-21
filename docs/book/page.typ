@@ -74,6 +74,18 @@
   font-weight: 600;
   font-style: italic;
 }
+.inline-equation {
+  display: inline-block;
+  width: fit-content;
+}
+.block-equation {
+  display: grid;
+  place-items: center;
+  overflow-x: auto;
+}
+.ec-line {
+    min-height: 1.2em;
+}
 ```
 
 /// The project show rule that is used by all pages.
@@ -159,7 +171,12 @@
   // math setting
   show: equation-rules.with(..common, theme-box: theme-box)
   // code block setting
-  show: code-block-rules.with(..common, themes: themes, code-font: code-font)
+  show: code-block-rules.with(
+    ..common,
+    themes: themes,
+    code-font: code-font,
+    zebraw: "@preview/zebraw:0.6.1",
+  )
 
   // Main body.
   set par(justify: true)
