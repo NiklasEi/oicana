@@ -655,7 +655,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: typst-community/setup-shiroa@v1
         with:
-          shiroa-version: 0.3.1-rc3
+          shiroa-version: 0.3.1-rc4
       - name: serve docs
         run: |
           nohup shiroa serve book --mode static-html --workspace . > /tmp/shiroa.log 2>&1 &
