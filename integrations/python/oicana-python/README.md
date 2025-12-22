@@ -29,7 +29,7 @@ with Template(template_bytes) as template:
                 "items": [{"name": "Service", "price": 100}]
             })
         },
-        export_format={"format": "pdf"},
+        export={"format": "pdf"},
         mode=CompilationMode.PRODUCTION,
     )
 
