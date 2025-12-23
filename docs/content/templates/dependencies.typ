@@ -24,7 +24,7 @@ Installing a Typst package means that Typst can find it at `{data-dir}/typst/pac
 For example, on Linux:
 
 1. Store a package in `~/.local/share/typst/packages/local/my-package/1.0.0`
-2. Import all items from the package with `#import "@local/my-package:1.0.0": *` in a Typst document
+2. Import all items from the package with ```typst #import "@local/my-package:1.0.0": *``` in a Typst document
 
 \
 For more information on packages, please refer to #link("https://github.com/typst/packages")[Typst's packages repository].

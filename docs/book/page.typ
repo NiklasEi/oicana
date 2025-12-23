@@ -86,6 +86,9 @@
 .ec-line {
     min-height: 1.2em;
 }
+.expressive-code .copy-button {
+    opacity: 1
+}
 ```
 
 /// The project show rule that is used by all pages.

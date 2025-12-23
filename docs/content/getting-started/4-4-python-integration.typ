@@ -8,7 +8,7 @@ In this chapter, you'll integrate Oicana into a Python web service using #link("
 #note[This chapter assumes that you have a working Python 3.9+ setup with pip or uv. If that is not the case, please follow #link("https://www.python.org/downloads/")[the official Python installation guide] to install Python on your machine.]
 
 \
-Let's start with a fresh FastAPI project. First, create a new directory for your project, then set up a virtual environment and install FastAPI with `pip install fastapi uvicorn` (or `uv add fastapi uvicorn` if using uv). Create a `main.py` file with the following basic FastAPI application:
+Let's start with a fresh FastAPI project. First, create a new directory for your project, then set up a virtual environment and install FastAPI with ```bash pip install fastapi uvicorn``` (or ```bash uv add fastapi uvicorn``` if using uv). Create a `main.py` file with the following basic FastAPI application:
 \
 #code("main.py", ```python
 from fastapi import FastAPI
@@ -22,7 +22,7 @@ async def root():
 ```)
 
 
-You can test it by running `uvicorn main:app --reload` (or `fastapi dev main.py` if using FastAPI CLI) and navigating to `http://localhost:8000` in your browser.
+You can test it by running ```bash uvicorn main:app --reload``` (or ```bash fastapi dev main.py``` if using FastAPI CLI) and navigating to #link("http://localhost:8000") in your browser.
 
 == New service endpoint
 
@@ -30,7 +30,7 @@ We will define a new endpoint to compile our Oicana template to a PDF and return
 
 \
 1. Create a new directory in the Python project called `templates` and copy `example-0.1.0.zip` into that directory.
-2. Add the #link("https://pypi.org/project/oicana/")[`oicana` PyPI package] as a dependency with `pip install oicana` (or `uv add oicana`).
+2. Add the #link("https://pypi.org/project/oicana/")[`oicana` PyPI package] as a dependency with ```bash pip install oicana``` (or ```bash uv add oicana```).
 3. Update `main.py` to load the template at startup and add a compile endpoint:
 
   \
@@ -74,7 +74,7 @@ We will define a new endpoint to compile our Oicana template to a PDF and return
   ```)
 
   \
-  This code loads the template once at application startup using FastAPI's lifespan context manager. The `/compile` endpoint compiles the template and returns the PDF file. We explicitly pass `mode=CompilationMode.DEVELOPMENT` so the template uses the development value you defined for the `info` input ("Chuck Norris"). In a follow up step, we will set an input value instead.
+  This code loads the template once at application startup using FastAPI's lifespan context manager. The `/compile` endpoint compiles the template and returns the PDF file. We explicitly pass the compilation mode with ```python template.compile(mode=CompilationMode.DEVELOPMENT)``` so the template uses the development value you defined for the `info` input (```json { "name": "Chuck Norris" }```). In a follow-up step, we will set an input value instead.
 
 After restarting the service, you can test the endpoint with curl:
 
@@ -85,7 +85,7 @@ curl -X POST http://localhost:8000/compile --output example.pdf
 The generated `example.pdf` file should contain your template with the development value.
 
 \
-You can also explore the automatically generated API documentation by navigating to `http://localhost:8000/docs` in your browser. FastAPI provides interactive API documentation out of the box.
+You can also explore the automatically generated API documentation by navigating to #link("http://localhost:8000/docs") in your browser. FastAPI provides interactive API documentation out of the box.
 
 == About performance
 
@@ -96,7 +96,7 @@ For better performance in production environments with heavy load, consider usin
 
 == Passing inputs from Python
 
-Our `compile_template` function is currently calling `template.compile()` with development mode. Now we'll provide explicit input values and switch to production mode:
+Our ```python compile_template``` function is currently calling ```python template.compile()``` with development mode. Now we'll provide explicit input values and switch to production mode:
 
 #code(
   "Part of main.py",
@@ -120,7 +120,7 @@ Our `compile_template` function is currently calling `template.compile()` with d
 )
 
 \
-Notice that we removed the explicit `mode=CompilationMode.DEVELOPMENT` parameter. The `compile()` method defaults to `CompilationMode.PRODUCTION` when no mode is specified. Production mode is the recommended default for all document compilation in your application - it ensures you never accidentally generate a document with test data. In production mode, the template will never fall back to development values. If an input value is missing in production mode and the input does not have a default value, the compilation will fail unless your template handles `none` values for that input.
+Notice that we removed the explicit ```python mode=CompilationMode.DEVELOPMENT``` parameter. The ```python compile()``` method defaults to ```python CompilationMode.PRODUCTION``` when no mode is specified. Production mode is the recommended default for all document compilation in your application - it ensures you never accidentally generate a document with test data. In production mode, the template will never fall back to development values. If an input value is missing in production mode and the input does not have a default value, the compilation will fail unless your template handles ```typst none``` values for that input.
 
 \
 Calling the endpoint now will result in a PDF with "Baby Yoda" instead of "Chuck Norris". Building on this minimal service, you could set input values based on database entries or the request payload. Take a look at the #link("https://github.com/oicana/oicana-example-fastapi/")[open source FastAPI example project on GitHub] for a more complete showcase of the Oicana Python integration, including blob inputs, error handling, and request models.
