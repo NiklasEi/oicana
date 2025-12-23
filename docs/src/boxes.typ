@@ -50,7 +50,7 @@
 }
 
 #let alpha-note(body) = {
-  docs-box(red, "Early Alpha", body)
+  docs-box(red, "Oicana is in Alpha", body)
 }
 
 #let example(body) = {

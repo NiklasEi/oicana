@@ -30,7 +30,7 @@ def test_development() -> None:
 
     try:
         image = template.compile(
-            export_format={"format": "png", "pixelsPerPt": 1.0},
+            export={"format": "png", "pixelsPerPt": 1.0},
             mode=CompilationMode.DEVELOPMENT,
         )
 
@@ -61,7 +61,7 @@ def test_production() -> None:
         image = template.compile(
             json_inputs=json_inputs,
             blob_inputs=blob_inputs,
-            export_format={"format": "png", "pixelsPerPt": 1.0},
+            export={"format": "png", "pixelsPerPt": 1.0},
         )
 
         output_dir = Path(__file__).parent / "testOutput"
@@ -103,7 +103,7 @@ def test_all_inputs() -> None:
         image = template.compile(
             json_inputs=json_inputs,
             blob_inputs=blob_inputs,
-            export_format={"format": "png", "pixelsPerPt": 1.0},
+            export={"format": "png", "pixelsPerPt": 1.0},
         )
 
         output_dir = Path(__file__).parent / "testOutput"
@@ -120,7 +120,7 @@ def test_explicit_development_mode_allows_compile_with_empty_inputs() -> None:
 
     try:
         template.compile(
-            export_format={"format": "png", "pixelsPerPt": 1.0},
+            export={"format": "png", "pixelsPerPt": 1.0},
             mode=CompilationMode.DEVELOPMENT,
         )
     finally:
@@ -134,7 +134,7 @@ def test_compile_defaults_to_production_mode() -> None:
 
     try:
         with pytest.raises(Exception, match="dictionary does not contain key"):
-            template.compile(export_format={"format": "png", "pixelsPerPt": 1.0})
+            template.compile(export={"format": "png", "pixelsPerPt": 1.0})
     finally:
         template.cleanup()
 
@@ -153,7 +153,7 @@ def test_context_manager() -> None:
 
     with Template(template_bytes) as template:
         image = template.compile(
-            export_format={"format": "png", "pixelsPerPt": 1.0},
+            export={"format": "png", "pixelsPerPt": 1.0},
             mode=CompilationMode.DEVELOPMENT,
         )
         assert len(image) > 0

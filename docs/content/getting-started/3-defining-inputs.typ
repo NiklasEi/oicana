@@ -81,7 +81,7 @@ key = "info"
 development = "info.json"
 ```)
 \
-In our template we can now use `input.info.name` and the preview will show "Chuck Norris".
+In our template we can now use `input.info.name` and the preview will show "Chuck Norris". Update your template to the following: \
 #code("main.typ", ```typst
 #import "@preview/oicana:0.1.0": setup
 
@@ -94,6 +94,10 @@ In our template we can now use `input.info.name` and the preview will show "Chuc
 
 Now we can pass names into the template from any Oicana integration.
 ```)
+
+== Compiling with the CLI
+
+Running `oicana compile --development` should create a PDF file in an `output` directory. To set the input value from the CLI, copy `info.json` to `test-input.json` and change the name inside. Then run `oicana compile -j info=test-input.json` and the new PDF file in `output` will contain whatever name you configured.
 
 \
 With the input defined in your template, you're ready to choose an integration and learn how to pass dynamic values from your application code. In preparation for that, you should pack the template again using `oicana pack` to have the latest state of the template at hand.

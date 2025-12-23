@@ -6,7 +6,7 @@ You've created a working Oicana template with a dynamic input! Now it's time to 
 
 == One Template, Multiple Platforms
 
-A key strength of Oicana is that the exact same template works across all integrations. The `example-0.1.0.zip` file you created can be used in C#sym.hash, Node.js, Rust, or browser environments without any modifications.
+A key strength of Oicana is that the exact same template works across all integrations. The `example-0.1.0.zip` file you created can be used in C#sym.hash, Node.js, Rust, Python, or browser environments without any modifications.
 
 \
 Develop templates once and use them everywhere.
@@ -23,24 +23,31 @@ If you're working on a multi-language project or want to compare approaches, fee
 
 === C#sym.hash / ASP.NET
 
-#link("5-1-csharp-integration.html")[Go to C#sym.hash Guide →]
+#link("4-1-csharp-integration.html")[Go to C#sym.hash Guide →]
 
 \
 #note[Prerequisites: .NET 8 or later installed on your machine]
 
 === Node.js / NestJS
 
-#link("5-3-nodejs-integration.html")[Go to Node.js Guide →]
+#link("4-3-nodejs-integration.html")[Go to Node.js Guide →]
 
 \
 #note[Prerequisites: Node.js 18 or later installed on your machine]
 
 === Rust / Axum
 
-#link("5-2-rust-integration.html")[Go to Rust Guide →]
+#link("4-2-rust-integration.html")[Go to Rust Guide →]
 
 \
 #note[Prerequisites: Rust toolchain (cargo) installed on your machine]
+
+=== Python / FastAPI
+
+#link("4-4-python-integration.html")[Go to Python Guide →]
+
+\
+#note[Prerequisites: Python 3.9+ and pip or uv]
 
 == Next Steps
 

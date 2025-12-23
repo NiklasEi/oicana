@@ -13,7 +13,7 @@ You can configure the default PDF standards to use when exporting a given templa
 standards = ["ua-1"]
 ```
 
-The manifest above would configure this template to #link("https://typst.app/docs/reference/pdf/#pdf-ua")[produce PDF files for Universal Access]. 
+The manifest above would configure this template to #link("https://typst.app/docs/reference/pdf/#pdf-ua")[produce PDF files for Universal Access].
 
 
 == PNG export

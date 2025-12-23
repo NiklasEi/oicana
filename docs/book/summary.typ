@@ -1,4 +1,4 @@
-#import "@preview/shiroa:0.2.3": *
+#import "@preview/shiroa:0.3.1": *
 
 #let summary = [
   - #prefix-chapter("intro.typ")[Intro]
@@ -16,21 +16,25 @@
       section: "2.3",
     )[Defining Template Inputs]
   - #chapter(
-      "getting-started/4-choose-path.typ",
+      "getting-started/4-0-integrations.typ",
       section: "2.4",
     )[Choose Your Integration]
     - #chapter(
-        "getting-started/5-1-csharp-integration.typ",
+        "getting-started/4-1-csharp-integration.typ",
         section: "2.4.1",
       )[C#sym.hash using ASP.NET]
     - #chapter(
-        "getting-started/5-2-rust-integration.typ",
+        "getting-started/4-2-rust-integration.typ",
         section: "2.4.2",
       )[Rust using Axum]
     - #chapter(
-        "getting-started/5-3-nodejs-integration.typ",
+        "getting-started/4-3-nodejs-integration.typ",
         section: "2.4.3",
       )[Node.js using NestJS]
+    - #chapter(
+        "getting-started/4-4-python-integration.typ",
+        section: "2.4.3",
+      )[Python using FastAPI]
 
   == Templating
   - #chapter("templates.typ", section: "3")[Oicana templates]

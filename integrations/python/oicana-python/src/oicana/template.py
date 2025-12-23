@@ -33,7 +33,7 @@ class Template:
         >>> with Template(template_bytes) as template:
         ...     pdf = template.compile(
         ...         json_inputs={"name": '{"value": "Alice"}'},
-        ...         export_format={"format": "pdf"}
+        ...         export={"format": "pdf"}
         ...     )
     """
 
@@ -84,7 +84,7 @@ class Template:
         *,
         json_inputs: dict[str, str] | None = None,
         blob_inputs: dict[str, BlobInput] | None = None,
-        export_format: ExportFormat = {"format": "pdf"},  # type: ignore[typeddict-item]
+        export: ExportFormat = {"format": "pdf"},  # type: ignore[typeddict-item]
         mode: CompilationMode = CompilationMode.PRODUCTION,
     ) -> bytes:
         """Compile template and export to the given format.
@@ -92,7 +92,7 @@ class Template:
         Args:
             json_inputs: JSON inputs
             blob_inputs: Blob inputs
-            export_format: Export format (pdf/png/svg)
+            export: Export format and configuration (pdf/png/svg)
             mode: Compilation mode
 
         Returns:
@@ -120,7 +120,7 @@ class Template:
         )
         self._document_ids.append(doc_id)
 
-        result = export_document(doc_id, json.dumps(export_format))
+        result = export_document(doc_id, json.dumps(export))
 
         remove_document(doc_id)
         self._document_ids.remove(doc_id)
