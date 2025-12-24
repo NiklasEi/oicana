@@ -22,4 +22,4 @@ In many scenarios, PNG export is an easy option for previews.
 
 Oicana integrations allow configuring the pixels per point in a PNG export. A smaller ratio leads to faster file generation and smaller files, but lower resolution. The default is $1"px"/"pt"$.
 
-#note[Please note that the PNG export is optimized for speed, not file size. Before you save the images or send them over the network, consider optimizing them.]
+#note[Please note, that Typst's PNG export is optimized for speed, not file size. Before you save the images or send them over the network, consider optimizing them.]

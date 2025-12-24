@@ -33,7 +33,7 @@ key = "info"
 The value of this input is now available in the template as `input.info`, where `info` is the key of the input as defined in `typst.toml`.
 
 \
-While we develop the template, the value of the input will be `none`, because there is no Oicana integration setting a value for it. We can change that by defining a `default` or `development` value for the input.
+While we develop the template, the value of the input will be ```typst none```, because there is no Oicana integration setting a value for it. We can change that by defining a `default` or `development` value for the input.
 
 === Default and Development values
 
@@ -97,7 +97,7 @@ Now we can pass names into the template from any Oicana integration.
 
 == Compiling with the CLI
 
-Running `oicana compile --development` should create a PDF file in an `output` directory. To set the input value from the CLI, copy `info.json` to `test-input.json` and change the name inside. Then run `oicana compile -j info=test-input.json` and the new PDF file in `output` will contain whatever name you configured.
+Running ```bash oicana compile --development``` should create a PDF file in an `output` directory. To set the input value from the CLI, copy `info.json` to `test-input.json` and change the name inside. Then run ```bash oicana compile -j info=test-input.json``` and the new PDF file in `output` will contain whatever name you configured.
 
 \
-With the input defined in your template, you're ready to choose an integration and learn how to pass dynamic values from your application code. In preparation for that, you should pack the template again using `oicana pack` to have the latest state of the template at hand.
+With the input defined in your template, you're ready to choose an integration and learn how to pass dynamic values from your application code. In preparation for that, you should pack the template again using ```bash oicana pack``` to have the latest state of the template at hand.

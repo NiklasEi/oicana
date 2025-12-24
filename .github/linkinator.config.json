@@ -3,7 +3,10 @@
     "https://www.npmjs.com/package/@oicana/browser",
     "https://crates.io/crates/oicana",
     "https://example.oicana.com/",
-    "https://dotnet.microsoft.com/en-us/apps/aspnet"
+    "https://dotnet.microsoft.com/en-us/apps/aspnet",
+    "http://localhost:8000/",
+    "http://localhost:8000/docs",
+    "http://localhost:3000/"
   ],
   "silent": false,
   "verbosity": "warning",

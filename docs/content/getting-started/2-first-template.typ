@@ -49,4 +49,4 @@ The manifest file gives our template the name `example`, the semantic version `0
 
 #note[If you are using the online Typst editor, you will have to download the project for this step.]
 
-To compile the template through Oicana integrations, like shown in later chapters of this guide, it has to be packaged. Navigate into the template directory in a terminal and execute `oicana pack`. This will create a file called `example-0.1.0.zip`.
+To compile the template through Oicana integrations, like shown in later chapters of this guide, it has to be packaged. Navigate into the template directory in a terminal and execute ```bash oicana pack```. This will create a file called `example-0.1.0.zip`.

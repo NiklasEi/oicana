@@ -24,11 +24,11 @@ file = "data.json"
 
 \
 All paths in a test collection are relative to its toml file. The collection above defines a single test with a `blob` input and a `json` input given as `logo.jpg` in the parent directory and `data.json` next to the test collection.
-Executing `oicana test` for this template, will compile it with those inputs and attempt to compare the output with a `with_logo.png` living next to the test collection.
+Executing ```bash oicana test``` for this template, will compile it with those inputs and attempt to compare the output with a `with_logo.png` living next to the test collection.
 
-#note[On the first run, you'll need to use `oicana test --update` to create the initial snapshot files. Subsequent test runs will compare against these snapshots.
+#note[On the first run, you'll need to use ```bash oicana test --update``` to create the initial snapshot files. Subsequent test runs will compare against these snapshots.
 
-  Use `--update` or `-u` whenever changes in the snapshot files are expected and should be accepted.]
+  Use ```bash --update``` or ```bash -u``` whenever changes in the snapshot files are expected and should be accepted.]
 
 \
 The tests directory will be recursively searched for any test collection files in the form of `<optional-prefix.>tests.toml`.
@@ -53,7 +53,7 @@ key = "data"
 samples = 50
 ```)
 
-Setting `snapshot = false` means no image files are created and compared. This is often the right choice for fuzzing tests, because the image output is likely expected to be different for different json input values. The configuration of `50` samples will cause Oicana to compile the template with `50` random values for the json input that all satisfy the schema. If the schema is very large, it might make sense to increase the number of samples.
+Setting ```toml snapshot = false``` means no image files are created and compared. This is often the right choice for fuzzing tests, because the image output is likely expected to be different for different json input values. The configuration of `50` samples will cause Oicana to compile the template with `50` random values for the json input that all satisfy the schema. If the schema is very large, it might make sense to increase the number of samples.
 
 == Full example configuration
 

@@ -8,7 +8,7 @@ In this chapter, you'll integrate Oicana into a Rust web service using #link("ht
 #note[This chapter assumes that you have a working Rust setup with cargo. If that is not the case, please follow #link("https://www.rust-lang.org/tools/install")[the official Rust installation guide] to install Rust on your machine.]
 
 \
-Let's start with a fresh Axum project. First, create a new binary project with `cargo init --bin` in a new directory. Then add the necessary dependencies to your `Cargo.toml`:
+Let's start with a fresh Axum project. First, create a new binary project with ```bash cargo init --bin``` in a new directory. Then add the necessary dependencies to your `Cargo.toml`:
 
 #code("Part of Cargo.toml", ```toml
 [dependencies]
@@ -24,7 +24,7 @@ serde_json = "1.0"
 ```)
 
 \
-Run `cargo build` to download and compile the dependencies. This might take a few minutes on first run.
+Run ```bash cargo build``` to download and compile the dependencies. This might take a few minutes on first run.
 
 == New service endpoint
 
@@ -98,13 +98,13 @@ We will define a new endpoint to compile our Oicana template to a PDF and return
   }
   ```)
 
-  This code loads the template once at startup and wraps it in `Arc<Mutex<Template<PackedTemplate>>>`. The `Arc` (Atomic Reference Counted pointer) allows sharing across threads, while `Mutex` provides the mutable access needed by `compile()`. When parallel requests come in, they share the same template - each request locks the mutex (one at a time), compiles, then releases the lock.
+  This code loads the template once at startup and wraps it in ```rust Arc<Mutex<Template<PackedTemplate>>>```. The ```rust Arc``` (Atomic Reference Counted pointer) allows sharing across threads, while ```rust Mutex``` provides the mutable access needed by ```rust compile()```. When parallel requests come in, they share the same template - each request locks the mutex (one at a time), compiles, then releases the lock.
 
   \
-  The `/compile` endpoint compiles the template and returns a PDF. We explicitly use `CompilationConfig::development()` here to demonstrate how the template uses the development value you defined for the `info` input ("Chuck Norris"). We will set an input value in a later step.
+  The `/compile` endpoint compiles the template and returns a PDF. We explicitly use ```rust CompilationConfig::development()``` here to demonstrate how the template uses the development value you defined for the `info` input ("Chuck Norris"). We will set an input value in a later step.
 
 \
-Start the service with `cargo run` and test the endpoint. You can use curl to download the PDF:
+Start the service with ```bash cargo run``` and test the endpoint. You can use curl to download the PDF:
 
 ```bash
 curl -X POST http://127.0.0.1:3000/compile --output example.pdf
@@ -114,14 +114,14 @@ The generated `example.pdf` file should contain your template with the developme
 
 == About performance
 
-PDF generation should typically take only a few milliseconds per request. Since we're loading the template once at startup and sharing it via `Arc`, there's no file I/O overhead on subsequent requests.
+PDF generation should typically take only a few milliseconds per request. Since we're loading the template once at startup and sharing it via ```rust Arc```, there's no file I/O overhead on subsequent requests.
 
 \
-For managing multiple templates, the #link("https://github.com/oicana/oicana-example-axum/")[open source Axum example project on GitHub] demonstrates using a `DashMap` for thread-safe template caching.
+For managing multiple templates, the #link("https://github.com/oicana/oicana-example-axum/")[open source Axum example project on GitHub] demonstrates using a ```rust DashMap``` for thread-safe template caching.
 
 == Passing inputs from Rust
 
-Our `compile` function currently does not set a value for the template input. Since we use `CompilationConfig::development()`, the development value of `{ "name": "Chuck Norris" }` is used. Now we'll provide an explicit input value and switch to production mode:
+Our `compile` function currently does not set a value for the template input. Since we use ```rust CompilationConfig::development()```, the development value of ```json { "name": "Chuck Norris" }``` is used. Now we'll provide an explicit input value and switch to production mode:
 
 #code(
   "Part of src/main.rs",
@@ -149,7 +149,7 @@ Our `compile` function currently does not set a value for the template input. Si
 )
 
 \
-Notice that we switched to `CompilationConfig::production()` now that we're providing explicit input values. Production mode is the recommended default for all document compilation in your application - it ensures you never accidentally generate a document with test data. In production mode, the template will never fall back to development values for inputs. If an input value is missing in production mode and the input does not have a default value, the compilation will fail unless your template handles `none` values for that input.
+Notice that we switched to ```rust CompilationConfig::production()``` now that we're providing explicit input values. Production mode is the recommended default for all document compilation in your application - it ensures you never accidentally generate a document with test data. In production mode, the template will never fall back to development values for inputs. If an input value is missing in production mode and the input does not have a default value, the compilation will fail unless your template handles ```typst none``` values for that input.
 
 \
 Calling the endpoint now will result in a PDF with "Baby Yoda" instead of "Chuck Norris". Building on this minimal service, you could set input values based on database entries or the request payload. Take a look at the #link("https://github.com/oicana/oicana-example-axum/")[open source Axum example project on GitHub] for a more complete showcase of the Oicana Rust integration, including blob inputs, error handling, and OpenAPI documentation.

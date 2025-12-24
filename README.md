@@ -100,8 +100,9 @@ Example commands to compile templates:
 #### Test
 
 Example commands to test templates:
-- `oicana test` - run all tests of all templates in the current directory (including child directories)
+- `oicana test` - run all tests of the template in the current directory
 - `oicana test templates/invoice` - run the tests of the template in the directory `templates/invoice`
+- `oicana test -a` - run all tests of all templates found in the current directory and all child directories
 
 
 ## Pronunciation

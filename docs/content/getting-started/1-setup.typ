@@ -10,7 +10,7 @@ To get started, you need the Oicana CLI and an editor for Typst. Both is only ne
 Install a #link(latest-cli)[prebuild binary from GitHub].
 
 \
-The CLI can manage Oicana templates. The most relevant commands for this guide are `oicana pack` to package a template and `oicana compile` if you want to test template compilation.
+The CLI can manage Oicana templates. The most relevant commands for this guide are ```bash oicana pack``` to package a template and ```bash oicana compile``` if you want to test template compilation.
 
 See the #docs-link(<cli>, "../cli.html")[CLI chapter for more information].
 

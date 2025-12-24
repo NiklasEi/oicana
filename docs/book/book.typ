@@ -13,4 +13,5 @@
   repository: "https://github.com/oicana/oicana",
   language: "en",
   summary: summary,
+  discord: none,
 )

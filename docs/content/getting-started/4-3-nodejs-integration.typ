@@ -8,7 +8,7 @@ In this chapter, you'll integrate Oicana into a Node.js web service using #link(
 #note[This chapter assumes that you have a working Node.js 18+ setup with npm. If that is not the case, please follow #link("https://nodejs.org/en/download/")[the official Node.js installation guide] to install Node.js on your machine.]
 
 \
-Let's start with a fresh NestJS project by executing `npx @nestjs/cli new oicana-demo` in a new directory. This will create a new NestJS application with a basic structure. The starter project has a single endpoint defined in the controller. We can test it by starting the service with `npm run start:dev` and navigating to `http://localhost:3000` in a browser.
+Let's start with a fresh NestJS project by executing ```bash npx @nestjs/cli new oicana-demo``` in a new directory. This will create a new NestJS application with a basic structure. The starter project has a single endpoint defined in the controller. We can test it by starting the service with ```bash npm run start:dev``` and navigating to #link("http://localhost:3000") in a browser.
 
 == New service endpoint
 
@@ -16,7 +16,7 @@ We will define a new endpoint to compile our Oicana template to a PDF and return
 
 \
 1. Create a new directory in the Node.js project called `templates` and copy `example-0.1.0.zip` into that directory.
-2. Add the #link("https://www.npmjs.com/package/@oicana/node")[`@oicana/node` npm package] as a dependency with `npm install @oicana/node`.
+2. Add the #link("https://www.npmjs.com/package/@oicana/node")[`@oicana/node` npm package] as a dependency with ```bash npm install @oicana/node```.
 3. Generate a new controller and service for templates:
   ```bash
   npx nest generate module templates
@@ -61,6 +61,7 @@ We will define a new endpoint to compile our Oicana template to a PDF and return
     }
   }
   ```)
+  In the `compile` function, we pass empty input maps and explicitly set ```ts CompilationMode.Development``` so the template uses the development value you defined for the `info` input (```json { "name": "Chuck Norris" }```). In a follow-up step, we will set an input value instead.
 
   \
 5. Update the templates controller to add a compile endpoint:
@@ -93,7 +94,7 @@ We will define a new endpoint to compile our Oicana template to a PDF and return
     ```,
   )
 
-  This code defines a new POST endpoint at `/templates/compile`. For every request, it compiles the template with empty input maps and returns the PDF file. We explicitly pass `CompilationMode.Development` here to so the template uses the development value you defined for the `info` input ("Chuck Norris"). In a follow up step, we will set an input value instead.
+  This code defines a new POST endpoint at `/templates/compile`. For every request, it compiles the template and returns the PDF file.
 
 After restarting the service, you can test the endpoint with curl:
 
@@ -112,7 +113,7 @@ For better performance in production environments with heavy load, consider movi
 
 == Passing inputs from Node.js
 
-Our `compile` method is currently calling `template.compile()` with empty input maps and development mode. Now we'll provide explicit input values and switch to production mode:
+Our `compile` method is currently calling ```ts template.compile()``` with empty input maps and development mode. Now we'll provide an explicit input value and switch to production mode:
 
 #code(
   "Part of src/templates/templates.service.ts",
@@ -129,7 +130,7 @@ Our `compile` method is currently calling `template.compile()` with empty input 
 )
 
 \
-Notice that we removed the explicit `CompilationMode.Development` parameter. The `compile()` method defaults to `CompilationMode.Production` when no mode is specified. Production mode is the recommended default for all document compilation in your application - it ensures you never accidentally generate a document with test data. In production mode, the template will never fall back to development values. If an input value is missing in production mode and the input does not have a default value, the compilation will fail unless your template handles `none` values for that input.
+Notice that we removed the explicit ```ts CompilationMode.Development``` parameter. The ```ts compile()``` method defaults to ```ts CompilationMode.Production``` when no mode is specified. Production mode is the recommended default for all document compilation in your application - it ensures you never accidentally generate a document with test data. In production mode, the template will never fall back to development values. If an input value is missing in production mode and the input does not have a default value, the compilation will fail unless your template handles ```typst none``` values for that input.
 
 \
 Calling the endpoint now will result in a PDF with "Baby Yoda" instead of "Chuck Norris". Building on this minimal service, you could set input values based on database entries or the request payload. Take a look at the #link("https://github.com/oicana/oicana-example-nestjs/")[open source NestJS example project on GitHub] for a more complete showcase of the Oicana Node.js integration, including blob inputs, error handling, and Swagger documentation.
