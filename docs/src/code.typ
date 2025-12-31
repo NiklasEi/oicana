@@ -1,4 +1,4 @@
-#import "@preview/zebraw:0.5.5": *
+#import "@preview/zebraw:0.6.1": *
 
 #let code(header, body) = {
   context {
