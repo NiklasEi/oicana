@@ -33,7 +33,7 @@
       )[Node.js using NestJS]
     - #chapter(
         "getting-started/4-4-python-integration.typ",
-        section: "2.4.3",
+        section: "2.4.4",
       )[Python using FastAPI]
 
   == Templating
