@@ -9,7 +9,7 @@
     "http://localhost:3000/"
   ],
   "silent": false,
-  "verbosity": "info",
+  "verbosity": "debug",
   "timeout": 0,
   "markdown": true
 }
