@@ -1,5 +1,6 @@
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 using Oicana.Config;
 using Oicana.Inputs;
@@ -13,20 +14,20 @@ internal static class OicanaFfi
 {
     /// <summary>
     /// Compile the given template once and do not cache anything
-    /// 
+    ///
     /// This method does a clean compile which can take significantly longer
     /// than compiling a template through the `Template` class.
     /// If you want to compile a template multiple times with different
     /// inputs use the Template class!
     /// </summary>
     /// <param name="templateFile">The packed Oicana template to compile.</param>
-    /// <param name="jsonInputs">Json inputs for the compilation.</param>
-    /// <param name="blobInputs">Blob inputs for the compilation.</param>
+    /// <param name="jsonInputs">Json inputs for the compilation (key -> JsonNode).</param>
+    /// <param name="blobInputs">Blob inputs for the compilation (key -> BlobInput).</param>
     /// <param name="compilationOptions">Options for the template compilation.</param>
     /// <param name="exportOptions">Options for the document export.</param>
     /// <exception cref="OicanaException">If the template compilation fails.</exception>
     /// <returns>Stream containing the compiled template exported as the given <see cref="ExportTarget"/>.</returns>
-    public static Stream ExportTemplateOnce(byte[] templateFile, IList<TemplateJsonInput> jsonInputs, IList<TemplateBlobInput> blobInputs, Oicana.Config.CompilationOptions compilationOptions, Oicana.Config.ExportOptions exportOptions)
+    public static Stream ExportTemplateOnce(byte[] templateFile, IDictionary<string, JsonNode> jsonInputs, IDictionary<string, BlobInput> blobInputs, Oicana.Config.CompilationOptions compilationOptions, Oicana.Config.ExportOptions exportOptions)
     {
         GCHandle fileHandle = GCHandle.Alloc(templateFile, GCHandleType.Pinned);
         IntPtr filePointer = fileHandle.AddrOfPinnedObject();
@@ -46,12 +47,12 @@ internal static class OicanaFfi
     /// Compile a template with the given id and inputs and export it to the specified <see cref="ExportTarget"/>.
     /// </summary>
     /// <param name="templateId">Identifier of the template for the internal cache.</param>
-    /// <param name="jsonInputs">Json inputs for the compilation.</param>
-    /// <param name="blobInputs">Blob inputs for the compilation.</param>
+    /// <param name="jsonInputs">Json inputs for the compilation (key -> JsonNode).</param>
+    /// <param name="blobInputs">Blob inputs for the compilation (key -> BlobInput).</param>
     /// <param name="compilationOptions">Options for the template compilation.</param>
     /// <exception cref="OicanaException">If the template compilation fails.</exception>
     /// <returns>Stream containing the compiled template exported as the given <see cref="ExportTarget"/>.</returns>
-    public static String CompileTemplate(string templateId, IList<TemplateJsonInput> jsonInputs, IList<TemplateBlobInput> blobInputs, Oicana.Config.CompilationOptions compilationOptions)
+    public static String CompileTemplate(string templateId, IDictionary<string, JsonNode> jsonInputs, IDictionary<string, BlobInput> blobInputs, Oicana.Config.CompilationOptions compilationOptions)
     {
         PreparedInputs preparedInputs = PrepareInputs(jsonInputs, blobInputs);
 
@@ -67,12 +68,12 @@ internal static class OicanaFfi
     /// </summary>
     /// <param name="templateId">Identifier of the template for the internal cache.</param>
     /// <param name="templateFile">The packed Oicana template to compile.</param>
-    /// <param name="jsonInputs">Json inputs for the compilation.</param>
-    /// <param name="blobInputs">Blob inputs for the compilation.</param>
+    /// <param name="jsonInputs">Json inputs for the compilation (key -> JsonNode).</param>
+    /// <param name="blobInputs">Blob inputs for the compilation (key -> BlobInput).</param>
     /// <param name="compilationOptions">Options for the template compilation.</param>
     /// <exception cref="OicanaException">If the template compilation fails.</exception>
     /// <returns>Stream containing the compiled template exported as the given <see cref="ExportTarget"/>.</returns>
-    public static Stream RegisterTemplate(string templateId, byte[] templateFile, IList<TemplateJsonInput> jsonInputs, IList<TemplateBlobInput> blobInputs, Oicana.Config.CompilationOptions compilationOptions)
+    public static Stream RegisterTemplate(string templateId, byte[] templateFile, IDictionary<string, JsonNode> jsonInputs, IDictionary<string, BlobInput> blobInputs, Oicana.Config.CompilationOptions compilationOptions)
     {
         GCHandle fileHandle = GCHandle.Alloc(templateFile, GCHandleType.Pinned);
         IntPtr filePointer = fileHandle.AddrOfPinnedObject();
@@ -254,43 +255,46 @@ internal static class OicanaFfi
         throw new ArgumentException($"The compile target {nameof(exportTarget)} is not supported.");
     }
 
-    private static PreparedInputs PrepareInputs(IList<TemplateJsonInput> jsonInputs,
-        IList<TemplateBlobInput> blobInputs)
+    private static PreparedInputs PrepareInputs(IDictionary<string, JsonNode> jsonInputs,
+        IDictionary<string, BlobInput> blobInputs)
     {
         IntPtr blobsInputsPtr = PrepareBlobInputs(blobInputs, out var blobHandles);
-        var blobs = new SliceFfiBlobInput(blobsInputsPtr, (ulong)blobInputs.Count());
+        var blobs = new SliceFfiBlobInput(blobsInputsPtr, (ulong)blobInputs.Count);
 
         IntPtr inputsPtr = PrepareJsonInputs(jsonInputs);
-        var inputs = new SliceFfiJsonInput(inputsPtr, (ulong)jsonInputs.Count());
+        var inputs = new SliceFfiJsonInput(inputsPtr, (ulong)jsonInputs.Count);
 
         return new PreparedInputs(inputsPtr, inputs, blobsInputsPtr, blobs, blobHandles);
     }
 
-    private static IntPtr PrepareBlobInputs(IList<TemplateBlobInput> blobs, out List<GCHandle> blobHandles)
+    private static IntPtr PrepareBlobInputs(IDictionary<string, BlobInput> blobs, out List<GCHandle> blobHandles)
     {
         blobHandles = new List<GCHandle>();
         var blobsInputsPtr = Marshal.AllocHGlobal(blobs.Count * Marshal.SizeOf(typeof(FfiBlobInput)));
-        for (int i = 0; i < blobs.Count; i++)
+        int i = 0;
+        foreach (var (key, blob) in blobs)
         {
-            var blob = blobs.ElementAt(i);
-            GCHandle blobHandle = GCHandle.Alloc(blob.Blob, GCHandleType.Pinned);
+            GCHandle blobHandle = GCHandle.Alloc(blob.Data, GCHandleType.Pinned);
             IntPtr dataPtr = blobHandle.AddrOfPinnedObject();
             blobHandles.Add(blobHandle);
 
-            var blobInput = new FfiBlobInput() { key = blob.Key, data = new Buffer() { data = dataPtr, error = false, len = (uint)blob.Blob.Length }, meta = blob.Meta?.ToString() ?? "{}" };
+            var blobInput = new FfiBlobInput() { key = key, data = new Buffer() { data = dataPtr, error = false, len = (uint)blob.Data.Length }, meta = blob.Meta?.ToString() ?? "{}" };
             Marshal.StructureToPtr(blobInput, blobsInputsPtr + i * Marshal.SizeOf(typeof(FfiBlobInput)), false);
+            i++;
         }
 
         return blobsInputsPtr;
     }
 
-    private static IntPtr PrepareJsonInputs(IList<TemplateJsonInput> inputs)
+    private static IntPtr PrepareJsonInputs(IDictionary<string, JsonNode> inputs)
     {
         var inputsPtr = Marshal.AllocHGlobal(inputs.Count * Marshal.SizeOf(typeof(FfiJsonInput)));
-        for (int i = 0; i < inputs.Count; i++)
+        int i = 0;
+        foreach (var (key, value) in inputs)
         {
-            FfiJsonInput jsonInput = new FfiJsonInput { data = inputs[i].Value.ToString(), key = inputs[i].Key };
+            FfiJsonInput jsonInput = new FfiJsonInput { data = value.ToString(), key = key };
             Marshal.StructureToPtr(jsonInput, inputsPtr + i * Marshal.SizeOf(typeof(FfiJsonInput)), false);
+            i++;
         }
 
         return inputsPtr;

@@ -21,6 +21,7 @@ We will define a new endpoint to compile our Oicana template to a PDF and return
 
   \
   #code("Part of Program.cs", ```cs
+  using System.Text.Json.Nodes;
   using Oicana.Config;
   using Oicana.Inputs;
   using Oicana.Template;
@@ -41,7 +42,11 @@ We will define a new endpoint to compile our Oicana template to a PDF and return
     ```cs
     app.MapPost("compile", () =>
     {
-        var stream = template.Compile([], [], ExportOptions.Pdf(), new CompilationOptions(CompilationMode.Development));
+        var stream = template.Compile(
+            new Dictionary<string, JsonNode>(),
+            new Dictionary<string, BlobInput>(),
+            ExportOptions.Pdf(),
+            new CompilationOptions(CompilationMode.Development));
         var now = DateTimeOffset.Now;
         return Results.File(
             fileStream: stream,
@@ -53,7 +58,7 @@ We will define a new endpoint to compile our Oicana template to a PDF and return
     ```,
   )
 
-  This code defines a new POST endpoint at `/compile`. For every request, it compiles the template to PDF with two empty input lists and returns the file. We use ```cs CompilationMode.Development``` here to demonstrate how the template falls back to the development value you defined for the `info` input (```json { "name": "Chuck Norris" }```). In a later step we will explicitly set a value for the input.
+  This code defines a new POST endpoint at `/compile`. For every request, it compiles the template to PDF with two empty input dictionaries and returns the file. We use ```cs CompilationMode.Development``` here to demonstrate how the template falls back to the development value you defined for the `info` input (```json { "name": "Chuck Norris" }```). In a later step we will explicitly set a value for the input.
 
 After restarting the service and refreshing the swagger UI, you should see the new endpoint. Open up the endpoint description and click "Try it out" and "Execute" to send a request to the server. You should see a successful response with a download button for the PDF file.
 
@@ -75,7 +80,7 @@ For a better measurement of the compilation speed on your machine, you can use a
 Now let's use the template with inputs that you defined in the previous chapter. First, make sure to update the packed template in your ASP.NET project. Run ```bash oicana pack``` in the template directory and replace `example-0.1.0.zip` in the ASP.NET project with the new file.
 
 \
-Our `compile` endpoint is currently calling ```cs template.Compile([], [], ExportOptions.Pdf(), new CompilationOptions(CompilationMode.Development))```. This compiles the template without any explicit inputs. The first empty array are the `json` inputs and the second one the `blob` inputs. Now we'll provide an input value and switch to production mode.
+Our `compile` endpoint is currently calling the template's `Compile` method with empty dictionaries. This compiles the template without any explicit inputs. The first dictionary contains `json` inputs (key to JsonNode) and the second contains `blob` inputs (key to BlobInput). Now we'll provide an input value and switch to production mode.
 
 \
 Change the endpoint to set the name input you defined earlier.
@@ -85,8 +90,15 @@ Change the endpoint to set the name input you defined earlier.
   ```cs
   app.MapPost("compile", () =>
   {
-      var input = new TemplateJsonInput("info", JsonSerializer.Deserialize<JsonNode>("{ \"name\": \"Baby Yoda\" }")!);
-      var stream = template.Compile([input], [], ExportOptions.Pdf(), new CompilationOptions(CompilationMode.Production));
+      var jsonInputs = new Dictionary<string, JsonNode>
+      {
+          ["info"] = JsonSerializer.Deserialize<JsonNode>("{ \"name\": \"Baby Yoda\" }")!
+      };
+      var stream = template.Compile(
+          jsonInputs,
+          new Dictionary<string, BlobInput>(),
+          ExportOptions.Pdf(),
+          new CompilationOptions(CompilationMode.Production));
       var now = DateTimeOffset.Now;
       // ... more code from before
   });
