@@ -20,4 +20,27 @@ public interface ITemplate
     /// <param name="compilationOptions">Options for the template compilation.</param>
     /// <exception cref="OicanaException">If the template compilation fails.</exception>
     Stream Compile(IDictionary<string, JsonNode> jsonInputs, IDictionary<string, BlobInput> blobInputs, ExportOptions exportOptions, CompilationOptions compilationOptions);
+
+    /// <summary>
+    /// Get input definitions from the template manifest.
+    /// </summary>
+    /// <exception cref="OicanaException">If inputs cannot be retrieved.</exception>
+    /// <returns>JSON string containing input definitions.</returns>
+    string Inputs();
+
+    /// <summary>
+    /// Get source file content from the template.
+    /// </summary>
+    /// <param name="path">File path in the template.</param>
+    /// <exception cref="OicanaException">If the file cannot be found.</exception>
+    /// <returns>Source file content as a string.</returns>
+    string Source(string path);
+
+    /// <summary>
+    /// Get binary file content from the template.
+    /// </summary>
+    /// <param name="path">File path in the template.</param>
+    /// <exception cref="OicanaException">If the file cannot be found.</exception>
+    /// <returns>Binary file content as a byte array.</returns>
+    byte[] File(string path);
 }

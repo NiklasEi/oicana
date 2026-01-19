@@ -164,6 +164,44 @@ internal static class OicanaFfi
     }
 
     /// <summary>
+    /// Get input definitions from the template manifest.
+    /// </summary>
+    /// <param name="templateId">Identifier of the template.</param>
+    /// <exception cref="OicanaException">If the template is not registered or inputs cannot be retrieved.</exception>
+    /// <returns>JSON string containing input definitions.</returns>
+    public static string GetInputs(string templateId)
+    {
+        var buffer = OicanaFfiInternal.inputs(templateId);
+        return HandleStringBuffer(buffer);
+    }
+
+    /// <summary>
+    /// Get source file content from the template.
+    /// </summary>
+    /// <param name="templateId">Identifier of the template.</param>
+    /// <param name="path">File path in the template.</param>
+    /// <exception cref="OicanaException">If the template is not registered or the file cannot be found.</exception>
+    /// <returns>Source file content as a string.</returns>
+    public static string GetSource(string templateId, string path)
+    {
+        var buffer = OicanaFfiInternal.get_source(templateId, path);
+        return HandleStringBuffer(buffer);
+    }
+
+    /// <summary>
+    /// Get binary file content from the template.
+    /// </summary>
+    /// <param name="templateId">Identifier of the template.</param>
+    /// <param name="path">File path in the template.</param>
+    /// <exception cref="OicanaException">If the template is not registered or the file cannot be found.</exception>
+    /// <returns>Binary file content as a byte array.</returns>
+    public static byte[] GetFile(string templateId, string path)
+    {
+        var buffer = OicanaFfiInternal.get_file(templateId, path);
+        return HandleByteBuffer(buffer);
+    }
+
+    /// <summary>
     /// Configure Oicana.
     /// </summary>
     /// <param name="coloring">Coloring for Oicana diagnostics.</param>
@@ -327,6 +365,23 @@ internal static class OicanaFfi
         }
 
         return new RustMemoryStream(buffer);
+    }
+
+    private static byte[] HandleByteBuffer(Buffer buffer)
+    {
+        if (buffer.error)
+        {
+            var message = GetStringFromBuffer(buffer);
+            throw new OicanaException(message);
+        }
+
+        unsafe
+        {
+            byte[] result = new byte[buffer.len];
+            Marshal.Copy(buffer.data, result, 0, (int)buffer.len);
+            OicanaFfiInternal.unsafe_free_buffer(buffer);
+            return result;
+        }
     }
 
     public static string GetStringFromBuffer(Buffer buffer)

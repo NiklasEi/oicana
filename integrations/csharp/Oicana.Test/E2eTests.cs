@@ -122,4 +122,63 @@ public class E2ETests
             .Throw<OicanaException>()
             .WithMessage("error: dictionary does not contain key \"development-blob\"\n   \u250c\u2500 /main.typ:12:41\n   \u2502\n12 \u2502 `development-blob` has value: #str(input.development-blob.bytes)\n   \u2502                                          ^^^^^^^^^^^^^^^^\n\n");
     }
+
+    [Fact]
+    public void GetInputs()
+    {
+        var template = new Template(_templateFile);
+
+        var inputs = template.Inputs();
+
+        inputs.Should().NotBeNullOrEmpty();
+        var parsed = JsonSerializer.Deserialize<JsonNode>(inputs);
+        parsed.Should().NotBeNull();
+
+        inputs.Should().Contain("default-json");
+        inputs.Should().Contain("development-json");
+        inputs.Should().Contain("both-json");
+        inputs.Should().Contain("default-blob");
+        inputs.Should().Contain("development-blob");
+        inputs.Should().Contain("both-blob");
+    }
+
+    [Fact]
+    public void GetSource()
+    {
+        var template = new Template(_templateFile);
+
+        var source = template.Source("/main.typ");
+
+        source.Should().NotBeNullOrEmpty();
+        source.Should().Contain("#import");
+    }
+
+    [Fact]
+    public void GetSourceThrowsForMissingFile()
+    {
+        var template = new Template(_templateFile);
+        Action act = () => template.Source("/nonexistent.typ");
+
+        act.Should().Throw<OicanaException>();
+    }
+
+    [Fact]
+    public void GetFile()
+    {
+        var template = new Template(_templateFile);
+
+        var file = template.File("/default.txt");
+
+        file.Should().NotBeNullOrEmpty();
+        System.Text.Encoding.UTF8.GetString(file).Should().Contain("Default");
+    }
+
+    [Fact]
+    public void GetFileThrowsForMissingFile()
+    {
+        var template = new Template(_templateFile);
+        Action act = () => template.File("/nonexistent.png");
+
+        act.Should().Throw<OicanaException>();
+    }
 }

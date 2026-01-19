@@ -121,6 +121,24 @@ public class Template : ITemplate, IDisposable
         return OicanaFfi.ExportTemplateOnce(templateFile, jsonInputs, blobInputs, compilationOptions, exportOptions);
     }
 
+    /// <inheritdoc />
+    public string Inputs()
+    {
+        return OicanaFfi.GetInputs(_templateId);
+    }
+
+    /// <inheritdoc />
+    public string Source(string path)
+    {
+        return OicanaFfi.GetSource(_templateId, path);
+    }
+
+    /// <inheritdoc />
+    public byte[] File(string path)
+    {
+        return OicanaFfi.GetFile(_templateId, path);
+    }
+
     /// <inheritdoc/>
     public void Dispose()
     {
