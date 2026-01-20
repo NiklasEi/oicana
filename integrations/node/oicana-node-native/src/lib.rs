@@ -85,8 +85,7 @@ pub fn register_template(
     .manifest()
     .map_err(|error| Error::from_reason(error.to_string()))?;
 
-  let mut inputs =
-    prepare_inputs(json_inputs, blob_inputs).map_err(|error| Error::from_reason(error))?;
+  let mut inputs = prepare_inputs(json_inputs, blob_inputs)?;
   inputs.with_config(compilation_mode.into());
   let mut zip_world = OicanaWorld::new(files, inputs, manifest)
     .map_err(|error| Error::from_reason(error.to_string()))?;
@@ -123,8 +122,7 @@ pub fn compile_template(
   let Some(mut world) = WORLD_CACHE.get_mut(&template) else {
     return Err(Error::from_reason("Template was not registered"));
   };
-  let mut inputs =
-    prepare_inputs(json_inputs, blob_inputs).map_err(|error| Error::from_reason(error))?;
+  let mut inputs = prepare_inputs(json_inputs, blob_inputs)?;
   inputs.with_config(compilation_mode.into());
   world.update_inputs(inputs);
 
@@ -257,7 +255,7 @@ pub fn remove_world(template_id: String) -> Result<()> {
 fn prepare_inputs(
   json_inputs: HashMap<String, String>,
   blob_inputs: HashMap<String, BlobWithMetadata>,
-) -> Result<TemplateInputs, String> {
+) -> Result<TemplateInputs> {
   let mut inputs = TemplateInputs::new();
   add_json_inputs(&mut inputs, json_inputs);
   add_blob_inputs(&mut inputs, blob_inputs)?;
@@ -276,13 +274,19 @@ fn add_json_inputs(inputs: &mut TemplateInputs, mut json_inputs: HashMap<String,
 fn add_blob_inputs(
   inputs: &mut TemplateInputs,
   mut blob_inputs: HashMap<String, BlobWithMetadata>,
-) -> Result<(), String> {
+) -> Result<()> {
   for (key, value) in blob_inputs.drain() {
     let mut blob = Blob::from(Bytes::new(value.bytes.to_vec()));
-    let json_value = serde_json::Value::from_str(&value.meta)
-      .map_err(|error| format!("Failed to parse metadata JSON for '{key}': {error:?}"))?;
-    blob.metadata = Deserialize::deserialize(json_value)
-      .map_err(|error| format!("Failed to deserialize metadata for '{key}': {error:?}"))?;
+    let json_value = serde_json::Value::from_str(&value.meta).map_err(|error| {
+      Error::from_reason(format!(
+        "Failed to parse metadata JSON for '{key}': {error:?}"
+      ))
+    })?;
+    blob.metadata = Deserialize::deserialize(json_value).map_err(|error| {
+      Error::from_reason(format!(
+        "Failed to deserialize metadata for '{key}': {error:?}"
+      ))
+    })?;
     inputs.with_input(BlobInput::new(key, blob));
   }
   Ok(())
