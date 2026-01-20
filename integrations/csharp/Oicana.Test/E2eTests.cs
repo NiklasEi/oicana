@@ -134,12 +134,24 @@ public class E2ETests
         var parsed = JsonSerializer.Deserialize<JsonNode>(inputs);
         parsed.Should().NotBeNull();
 
-        inputs.Should().Contain("default-json");
-        inputs.Should().Contain("development-json");
-        inputs.Should().Contain("both-json");
-        inputs.Should().Contain("default-blob");
-        inputs.Should().Contain("development-blob");
-        inputs.Should().Contain("both-blob");
+        parsed!["manifest_version"]!.GetValue<int>().Should().Be(1);
+        parsed["inputs"].Should().NotBeNull();
+
+        var inputsArray = parsed["inputs"]!.AsArray();
+        inputsArray.Should().HaveCount(6);
+
+        var inputKeys = inputsArray.Select(i => i!["key"]!.GetValue<string>()).ToList();
+        inputKeys.Should().Contain("default-json");
+        inputKeys.Should().Contain("development-json");
+        inputKeys.Should().Contain("both-json");
+        inputKeys.Should().Contain("default-blob");
+        inputKeys.Should().Contain("development-blob");
+        inputKeys.Should().Contain("both-blob");
+
+        var jsonInputs = inputsArray.Where(i => i!["type"]!.GetValue<string>() == "json").ToList();
+        var blobInputs = inputsArray.Where(i => i!["type"]!.GetValue<string>() == "blob").ToList();
+        jsonInputs.Should().HaveCount(3);
+        blobInputs.Should().HaveCount(3);
     }
 
     [Fact]

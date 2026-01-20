@@ -16,7 +16,6 @@ use oicana_world::manifest::OicanaWorldFiles;
 use oicana_world::world::OicanaWorld;
 use oicana_world::{CompiledDocument, TemplateCompilationFailure};
 use once_cell::sync::Lazy;
-use serde_json::Error;
 use std::io::Cursor;
 use std::slice;
 use std::sync::atomic::{AtomicUsize, Ordering};
@@ -92,13 +91,19 @@ pub unsafe extern "C" fn unsafe_register_template(
     blob_inputs: FFISlice<FfiBlobInput>,
     compilation_options: CompilationOptions,
 ) -> Buffer {
-    let template = template.as_str().unwrap().to_owned();
+    let template = match template.as_str() {
+        Ok(template) => template.to_owned(),
+        Err(error) => return Buffer::from_error(format!("Invalid template ID: {error:?}")),
+    };
 
     match unsafe { prepare_world(files, json_inputs, blob_inputs, compilation_options.mode) } {
         Ok(world) => {
             WORLD_CACHE.insert(template.clone(), world);
-            let world = WORLD_CACHE.get_mut(&template);
-            let mut world = world.unwrap();
+            let Some(mut world) = WORLD_CACHE.get_mut(&template) else {
+                return Buffer::from_error(format!(
+                    "Failed to retrieve template '{template}' from cache after insertion"
+                ));
+            };
             let document_result = world.value_mut().compile();
 
             let cache_age = CACHE_EVICTION_AGE.load(Ordering::Relaxed);
@@ -176,7 +181,10 @@ pub unsafe extern "C" fn unsafe_compile_template(
     blob_inputs: FFISlice<FfiBlobInput>,
     compilation_options: CompilationOptions,
 ) -> Buffer {
-    let template = template.as_str().unwrap().to_owned();
+    let template = match template.as_str() {
+        Ok(template) => template.to_owned(),
+        Err(error) => return Buffer::from_error(format!("Invalid template ID: {error:?}")),
+    };
     let world = WORLD_CACHE.get_mut(&template);
     let inputs = unsafe { prepare_inputs(json_inputs, blob_inputs, compilation_options.mode) };
     let inputs = match inputs {
@@ -221,7 +229,10 @@ pub unsafe extern "C" fn unsafe_export_document(
     document_id: AsciiPointer,
     export_options: ExportOptions,
 ) -> Buffer {
-    let document_id = document_id.as_str().unwrap();
+    let document_id = match document_id.as_str() {
+        Ok(document_id) => document_id,
+        Err(error) => return Buffer::from_error(format!("Invalid document ID: {error:?}")),
+    };
     let Some(document) = DOCUMENT_CACHE.get(document_id) else {
         return Buffer::from_error("Document not found!".to_string());
     };
@@ -268,13 +279,19 @@ pub extern "C" fn inputs(template: AsciiPointer) -> Buffer {
 #[ffi_function]
 #[no_mangle]
 pub extern "C" fn get_source(template: AsciiPointer, path: AsciiPointer) -> Buffer {
-    let template = template.as_str().unwrap();
+    let template = match template.as_str() {
+        Ok(template) => template,
+        Err(error) => return Buffer::from_error(format!("Invalid template ID: {error:?}")),
+    };
     let world = WORLD_CACHE.get_mut(template);
     let Some(world) = world else {
         return Buffer::from_error(format!("The template '{template}' is not registered"));
     };
 
-    let path = path.as_str().unwrap();
+    let path = match path.as_str() {
+        Ok(path) => path,
+        Err(error) => return Buffer::from_error(format!("Invalid path: {error:?}")),
+    };
     let source = match world
         .files
         .source(FileId::new(None, VirtualPath::new(path)))
@@ -293,13 +310,19 @@ pub extern "C" fn get_source(template: AsciiPointer, path: AsciiPointer) -> Buff
 #[ffi_function]
 #[no_mangle]
 pub extern "C" fn get_file(template: AsciiPointer, path: AsciiPointer) -> Buffer {
-    let template = template.as_str().unwrap();
+    let template = match template.as_str() {
+        Ok(template) => template,
+        Err(error) => return Buffer::from_error(format!("Invalid template ID: {error:?}")),
+    };
     let world = WORLD_CACHE.get_mut(template);
     let Some(world) = world else {
         return Buffer::from_error(format!("The template '{template}' is not registered"));
     };
 
-    let path = path.as_str().unwrap();
+    let path = match path.as_str() {
+        Ok(path) => path,
+        Err(error) => return Buffer::from_error(format!("Invalid path: {error:?}")),
+    };
     let file = match world.files.file(FileId::new(None, VirtualPath::new(path))) {
         Ok(file) => file,
         Err(error) => return Buffer::from_error(error.to_string()),
@@ -596,22 +619,26 @@ unsafe fn prepare_inputs(
     json_inputs: FFISlice<FfiJsonInput>,
     blob_inputs: FFISlice<FfiBlobInput>,
     compilation_mode: CompilationMode,
-) -> Result<TemplateInputs, Error> {
+) -> Result<TemplateInputs, Box<dyn std::error::Error + Send + Sync>> {
     let mut inputs = TemplateInputs::new();
     for blob_input in blob_inputs.iter() {
         let mut blob = Blob::from(Bytes::new(unsafe {
             slice::from_raw_parts::<u8>(blob_input.data.data, blob_input.data.len as usize)
         }));
-        blob.metadata = serde_json::from_str(blob_input.meta.as_str().unwrap())?;
+        let key = blob_input.key.as_str()?;
+        let meta = blob_input.meta.as_str()?;
+        blob.metadata = serde_json::from_str(meta)?;
         inputs.with_input(BlobInput {
-            key: blob_input.key.as_str().unwrap().into(),
+            key: key.into(),
             value: blob,
         });
     }
     for json_input in json_inputs.iter() {
+        let key = json_input.key.as_str()?;
+        let data = json_input.data.as_str()?;
         inputs.with_input(JsonInput {
-            key: json_input.key.as_str().unwrap().into(),
-            value: json_input.data.as_str().unwrap().to_owned(),
+            key: key.into(),
+            value: data.to_owned(),
         });
     }
 
