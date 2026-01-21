@@ -5,6 +5,7 @@ import {
   get_source,
   register_template,
   remove_document,
+  remove_world,
   inputs as wasmInputs,
 } from '@oicana/browser-wasm';
 import { CompilationMode } from './CompilationMode';
@@ -20,7 +21,7 @@ import type {
  *
  * The zip file is loaded during the instance creation and cached afterward.
  */
-export class Template {
+export class Template implements Disposable {
   private readonly template: string;
 
   /**
@@ -167,6 +168,21 @@ export class Template {
    */
   public file(path: string): Uint8Array {
     return get_file(this.template, path);
+  }
+
+  /**
+   * Release resources associated with this template.
+   * After calling dispose(), this template instance should not be used.
+   */
+  public dispose(): void {
+    remove_world(this.template);
+  }
+
+  /**
+   * Enables use with the `using` keyword for automatic resource cleanup.
+   */
+  [Symbol.dispose](): void {
+    this.dispose();
   }
 
   private convertExportFormat(exportFormat?: ExportFormat): InnerExportFormat {

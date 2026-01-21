@@ -6,6 +6,7 @@ import {
   CompilationMode as NativeCompilationMode,
   registerTemplate,
   removeDocument,
+  removeWorld,
 } from '@oicana/node-native';
 import { CompilationMode } from './CompilationMode.js';
 import type { ExportFormat } from './ExportFormat.js';
@@ -16,7 +17,7 @@ import type { BlobWithMetadata } from './inputs/index.js';
  *
  * The zip file is loaded during the instance creation and cached afterward.
  */
-export class Template {
+export class Template implements Disposable {
   private readonly template: string;
 
   /**
@@ -135,6 +136,21 @@ export class Template {
     } finally {
       removeDocument(document);
     }
+  }
+
+  /**
+   * Release resources associated with this template.
+   * After calling dispose(), this template instance should not be used.
+   */
+  public dispose(): void {
+    removeWorld(this.template);
+  }
+
+  /**
+   * Enables use with the `using` keyword for automatic resource cleanup.
+   */
+  [Symbol.dispose](): void {
+    this.dispose();
   }
 
   private convertBlobWithMetadata(

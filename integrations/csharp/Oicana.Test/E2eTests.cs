@@ -25,7 +25,7 @@ public class E2ETests
     {
         var template = new Template(_templateFile);
 
-        var document = template.Compile(new List<TemplateJsonInput>(), new List<TemplateBlobInput>(), ExportOptions.Png(1.0f), new CompilationOptions(CompilationMode.Development));
+        var document = template.Compile(new Dictionary<string, JsonNode>(), new Dictionary<string, BlobInput>(), ExportOptions.Png(1.0f), new CompilationOptions(CompilationMode.Development));
         using var fileStream = File.Create("e2e/development.png");
         document.CopyTo(fileStream);
     }
@@ -35,9 +35,9 @@ public class E2ETests
     {
         var template = new Template(_templateFile);
 
-        var blobInputs = new List<TemplateBlobInput>()
+        var blobInputs = new Dictionary<string, BlobInput>
         {
-            new ("development-blob", "Input"u8.ToArray(), new BlobMeta()
+            ["development-blob"] = new BlobInput("Input"u8.ToArray(), new BlobMeta()
             {
                 ImageFormat = "jpeg",
                 Custom = JsonNode.Parse(
@@ -49,8 +49,11 @@ public class E2ETests
                     """)!.AsObject()
             }),
         };
-        var input = new TemplateJsonInput("development-json", JsonSerializer.Deserialize<JsonNode>("{ \"name\": \"Input\", \"foo\": [41, \"testing\"] }")!);
-        var document = template.Compile([input], blobInputs, ExportOptions.Png(1.0f), new CompilationOptions(CompilationMode.Production));
+        var jsonInputs = new Dictionary<string, JsonNode>
+        {
+            ["development-json"] = JsonSerializer.Deserialize<JsonNode>("{ \"name\": \"Input\", \"foo\": [41, \"testing\"] }")!
+        };
+        var document = template.Compile(jsonInputs, blobInputs, ExportOptions.Png(1.0f), new CompilationOptions(CompilationMode.Production));
         using var fileStream = File.Create("e2e/production.png");
         document.CopyTo(fileStream);
     }
@@ -60,9 +63,9 @@ public class E2ETests
     {
         var template = new Template(_templateFile);
 
-        var blobInputs = new List<TemplateBlobInput>()
+        var blobInputs = new Dictionary<string, BlobInput>
         {
-            new ("default-blob", "Input"u8.ToArray(), new BlobMeta()
+            ["default-blob"] = new BlobInput("Input"u8.ToArray(), new BlobMeta()
             {
                 ImageFormat = "jpeg",
                 Custom = JsonNode.Parse(
@@ -73,7 +76,7 @@ public class E2ETests
                     }
                     """)!.AsObject()
             }),
-            new ("development-blob", "Input"u8.ToArray(), new BlobMeta()
+            ["development-blob"] = new BlobInput("Input"u8.ToArray(), new BlobMeta()
             {
                 ImageFormat = "jpeg",
                 Custom = JsonNode.Parse(
@@ -84,7 +87,7 @@ public class E2ETests
                     }
                     """)!.AsObject()
             }),
-            new ("both-blob", "Input"u8.ToArray(), new BlobMeta()
+            ["both-blob"] = new BlobInput("Input"u8.ToArray(), new BlobMeta()
             {
                 ImageFormat = "jpeg",
                 Custom = JsonNode.Parse(
@@ -96,11 +99,12 @@ public class E2ETests
                     """)!.AsObject()
             }),
         };
-        var jsonInputs = new List<TemplateJsonInput>()
+        var jsonData = JsonSerializer.Deserialize<JsonNode>("{ \"name\": \"Input\", \"foo\": [41, \"testing\"] }")!;
+        var jsonInputs = new Dictionary<string, JsonNode>
         {
-            new("default-json", JsonSerializer.Deserialize<JsonNode>("{ \"name\": \"Input\", \"foo\": [41, \"testing\"] }")!),
-            new("development-json", JsonSerializer.Deserialize<JsonNode>("{ \"name\": \"Input\", \"foo\": [41, \"testing\"] }")!),
-            new("both-json", JsonSerializer.Deserialize<JsonNode>("{ \"name\": \"Input\", \"foo\": [41, \"testing\"] }")!)
+            ["default-json"] = jsonData,
+            ["development-json"] = jsonData,
+            ["both-json"] = jsonData
         };
 
         var document = template.Compile(jsonInputs, blobInputs, ExportOptions.Png(1.0f), new CompilationOptions(CompilationMode.Production));
@@ -112,10 +116,81 @@ public class E2ETests
     public void GetsReadableErrors()
     {
         var template = new Template(_templateFile);
-        Action act = () => template.Compile(new List<TemplateJsonInput>(), new List<TemplateBlobInput>(), ExportOptions.Png(1.0f), new CompilationOptions(CompilationMode.Production));
+        Action act = () => template.Compile(new Dictionary<string, JsonNode>(), new Dictionary<string, BlobInput>(), ExportOptions.Png(1.0f), new CompilationOptions(CompilationMode.Production));
 
         act.Should()
             .Throw<OicanaException>()
             .WithMessage("error: dictionary does not contain key \"development-blob\"\n   \u250c\u2500 /main.typ:12:41\n   \u2502\n12 \u2502 `development-blob` has value: #str(input.development-blob.bytes)\n   \u2502                                          ^^^^^^^^^^^^^^^^\n\n");
+    }
+
+    [Fact]
+    public void GetInputs()
+    {
+        var template = new Template(_templateFile);
+
+        var inputs = template.Inputs();
+
+        inputs.Should().NotBeNullOrEmpty();
+        var parsed = JsonSerializer.Deserialize<JsonNode>(inputs);
+        parsed.Should().NotBeNull();
+
+        parsed!["manifest_version"]!.GetValue<int>().Should().Be(1);
+        parsed["inputs"].Should().NotBeNull();
+
+        var inputsArray = parsed["inputs"]!.AsArray();
+        inputsArray.Should().HaveCount(6);
+
+        var inputKeys = inputsArray.Select(i => i!["key"]!.GetValue<string>()).ToList();
+        inputKeys.Should().Contain("default-json");
+        inputKeys.Should().Contain("development-json");
+        inputKeys.Should().Contain("both-json");
+        inputKeys.Should().Contain("default-blob");
+        inputKeys.Should().Contain("development-blob");
+        inputKeys.Should().Contain("both-blob");
+
+        var jsonInputs = inputsArray.Where(i => i!["type"]!.GetValue<string>() == "json").ToList();
+        var blobInputs = inputsArray.Where(i => i!["type"]!.GetValue<string>() == "blob").ToList();
+        jsonInputs.Should().HaveCount(3);
+        blobInputs.Should().HaveCount(3);
+    }
+
+    [Fact]
+    public void GetSource()
+    {
+        var template = new Template(_templateFile);
+
+        var source = template.Source("/main.typ");
+
+        source.Should().NotBeNullOrEmpty();
+        source.Should().Contain("#import");
+    }
+
+    [Fact]
+    public void GetSourceThrowsForMissingFile()
+    {
+        var template = new Template(_templateFile);
+        Action act = () => template.Source("/nonexistent.typ");
+
+        act.Should().Throw<OicanaException>();
+    }
+
+    [Fact]
+    public void GetFile()
+    {
+        var template = new Template(_templateFile);
+
+        var file = template.File("/default.txt");
+
+        file.Should().NotBeNullOrEmpty();
+        System.Text.Encoding.UTF8.GetString(file).Should().Contain("Default");
+    }
+
+    [Fact]
+    public void GetFileThrowsForMissingFile()
+    {
+        var template = new Template(_templateFile);
+        Action act = () => template.File("/nonexistent.png");
+
+        act.Should().Throw<OicanaException>();
     }
 }

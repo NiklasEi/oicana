@@ -2589,7 +2589,7 @@ dependencies = [
 
 [[package]]
 name = "oicana_csharp"
-version = "0.1.0-alpha.7"
+version = "0.1.0-alpha.8"
 dependencies = [
  "dashmap",
  "interoptopus",
