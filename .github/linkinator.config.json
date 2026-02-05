@@ -10,6 +10,8 @@
   ],
   "silent": false,
   "verbosity": "warning",
-  "timeout": 0,
-  "markdown": true
+  "timeout": 5000,
+  "markdown": true,
+  "retryErrors": true,
+  "retryErrorsCount": 3
 }
