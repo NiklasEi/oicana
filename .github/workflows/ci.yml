@@ -35,9 +35,9 @@ jobs:
       - name: check format
         run: cargo fmt --all -- --check
       - name: run clippy
-        run: cargo clippy --workspace --all-targets --all-features -- -Dwarnings
+        run: cargo clippy --all-targets --all-features -- -Dwarnings
       - name: check
-        run: cargo check --workspace --all-features --all-targets
+        run: cargo check --all-features --all-targets
 
   test-crates:
     strategy:
@@ -61,7 +61,7 @@ jobs:
             target/
       - uses: dtolnay/rust-toolchain@stable
       - name: run tests
-        run: cargo test --workspace --all-targets --all-features
+        run: cargo test --all-targets --all-features
 
   check-node-integration:
     runs-on: ubuntu-latest
@@ -178,9 +178,52 @@ jobs:
       - name: Type check with mypy
         run: uv run mypy src/oicana
         working-directory: integrations/python/oicana-python
+
+  check-php-integration:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/cache/restore@v4
+        with:
+          key: ${{ runner.os }}-stable--${{ hashFiles('**/Cargo.toml') }}-
+          restore-keys: |
+            ${{ runner.os }}-stable--${{ hashFiles('**/Cargo.toml') }}-
+            ${{ runner.os }}-stable--
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          tools: composer
+      - name: Install dependencies
+        run: composer install --no-interaction
+        working-directory: integrations/php/oicana-php
+      - name: Static analysis with PHPStan
+        run: composer phpstan
+        working-directory: integrations/php/oicana-php
+      - name: Check code style
+        run: composer cs-check
+        working-directory: integrations/php/oicana-php
       - name: Check Rust formatting
         run: cargo fmt --check
-        working-directory: integrations/python/oicana-python-native
+        working-directory: integrations/php/oicana-php-native
+      - name: Run clippy
+        run: cargo clippy --all-targets --all-features -- -Dwarnings
+        working-directory: integrations/php/oicana-php-native
+      - name: Check
+        run: cargo check --all-features --all-targets
+        working-directory: integrations/php/oicana-php-native
+      - name: Test
+        run: cargo test
+        working-directory: integrations/php/oicana-php-native
 
   build-csharp:
     strategy:
@@ -384,6 +427,69 @@ jobs:
           path: integrations/python/oicana-python-native/dist/*.whl
           if-no-files-found: error
 
+  build-php-native:
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            rust: stable
+            lib: liboicana_native.so
+            flags: "-C link-arg=-Wl,-undefined,dynamic_lookup"
+          - os: macos-latest
+            target: aarch64-apple-darwin
+            rust: stable
+            lib: liboicana_native.dylib
+            flags: "-C link-arg=-Wl,-undefined,dynamic_lookup"
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            # ext-php-rs requires nightly Rust when on Windows.
+            rust: nightly
+            lib: oicana_native.dll
+            flags: ""
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/cache/restore@v4
+        with:
+          key: ${{ runner.os }}-stable--${{ hashFiles('**/Cargo.toml', 'integrations/php/**/*.rs') }}-
+          restore-keys: |
+            ${{ runner.os }}-stable--${{ hashFiles('**/Cargo.toml', 'integrations/php/**/*.rs') }}-
+            ${{ runner.os }}-stable--
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ matrix.rust }}
+          components: rustfmt
+      - run: rustup show
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: mbstring
+        env:
+          debug: true
+      - run: php -v
+      - name: Build PHP extension
+        run: cargo build --release --target ${{ matrix.target }} -p oicana_native
+        env:
+          RUSTFLAGS: ${{ matrix.flags }}
+      - run: |
+          php -d extension=./target/${{ matrix.target }}/release/${{ matrix.lib }} -r "print_r(array_filter(get_defined_functions()['internal'], fn(\$f) => str_contains(\$f, 'oicana') || str_contains(\$f, 'register') || str_contains(\$f, 'compile')));"
+        shell: bash
+      - name: Upload PHP extension
+        uses: actions/upload-artifact@v4
+        with:
+          name: php_native_${{ runner.os }}
+          path: ./target/${{ matrix.target }}/release/${{ matrix.lib }}
+          if-no-files-found: error
+
   e2e-test-node-integration:
     strategy:
       matrix:
@@ -576,6 +682,79 @@ jobs:
         working-directory: ./integrations/python/oicana-python
       - name: compare test output
         run: test-compare e2e-tests/template integrations/python/oicana-python/tests/testOutput/
+
+  e2e-test-php-integration:
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            lib: liboicana_native.so
+          - os: macos-latest
+            lib: liboicana_native.dylib
+          - os: windows-latest
+            lib: oicana_native.dll
+    runs-on: ${{ matrix.os }}
+    needs:
+      - build-tools
+      - build-php-native
+    steps:
+      - uses: actions/checkout@v5
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: typship
+      - name: Install local Typst Oicana package
+        run: typship install local
+        working-directory: ./integrations/typst
+      - uses: ./.github/actions/install-tool
+        with:
+          tool: "oicana-cli"
+          bin: "oicana"
+      - uses: ./.github/actions/install-tool
+        with:
+          tool: "test-compare"
+      - name: test e2e template
+        run: oicana test
+        working-directory: ./e2e-tests/template
+      - name: pack e2e template
+        run: oicana pack -n '{template}-x.y.z.zip'
+        working-directory: ./e2e-tests/template
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          tools: composer
+        env:
+          debug: true
+      - name: Download PHP extension
+        uses: actions/download-artifact@v4
+        with:
+          name: php_native_${{ runner.os }}
+          path: ./php-ext
+      - name: Install PHP wrapper dependencies
+        run: composer install --no-interaction
+        working-directory: ./integrations/php/oicana-php
+      - name: Verify PHP extension loads
+        shell: bash
+        run: |
+          echo "=== Extension file info ==="
+          ls -la php-ext/
+          file php-ext/${{ matrix.lib }}
+          echo "=== Shared library dependencies ==="
+          ldd php-ext/${{ matrix.lib }} || true
+          echo "=== PHP version ==="
+          php -v
+          echo "=== Try loading extension (with errors displayed) ==="
+          php -d display_startup_errors=1 -d error_reporting=E_ALL -d extension=php-ext/${{ matrix.lib }} -r "var_dump(extension_loaded('oicana_native'));" 2>&1
+          echo "=== List loaded modules ==="
+          php -d extension=php-ext/${{ matrix.lib }} -m 2>&1
+      - name: Run PHP E2E tests
+        if: success() || failure()
+        run: php -d extension=${{ github.workspace }}/php-ext/${{ matrix.lib }} vendor/bin/pest tests/E2eTest.php
+        working-directory: ./integrations/php/oicana-php
+      - name: compare test output
+        if: success() || failure()
+        run: test-compare e2e-tests/template integrations/php/oicana-php/tests/testOutput/
 
   e2e-test-cli:
     strategy:
