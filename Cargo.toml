@@ -11,10 +11,26 @@ members = [
     "integrations/rust/oicana",
     "integrations/node/oicana-node-native",
     "integrations/python/oicana-python-native",
+    "integrations/php/oicana-php-native",
     "tools/test_compare",
     "tools/oicana_cli",
 ]
-default-members = ["tools/oicana_cli"]
+
+default-members = [
+    "crates/oicana_world",
+    "crates/oicana_files",
+    "crates/oicana_input",
+    "crates/oicana_template",
+    "crates/oicana_testing",
+    "crates/oicana_export",
+    "integrations/browser/oicana_browser_wasm",
+    "integrations/csharp/oicana_csharp",
+    "integrations/rust/oicana",
+    "integrations/node/oicana-node-native",
+    "integrations/python/oicana-python-native",
+    "tools/test_compare",
+    "tools/oicana_cli",
+]
 resolver = "2"
 
 
