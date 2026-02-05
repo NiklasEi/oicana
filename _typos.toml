@@ -8,6 +8,7 @@ extend-ignore-identifiers-re = [
 temlpates = "templates"
 dependnecies = "dependencies"
 importign = "importing"
+PNGs = "PNGs"
 
 [files]
-extend-exclude = ["NOTICE"]
+extend-exclude = ["NOTICE", "/integrations/php/oicana-php/composer.json"]
