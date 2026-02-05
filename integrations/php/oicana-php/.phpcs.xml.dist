@@ -1,0 +1,37 @@
+<?xml version="1.0"?>
+<ruleset name="Oicana PHP Coding Standards">
+    <description>PHP_CodeSniffer configuration for Oicana PHP integration</description>
+
+    <!-- Where to check -->
+    <file>src</file>
+    <file>tests</file>
+
+    <!-- Show progress and sniff codes in all reports -->
+    <arg value="ps"/>
+    <arg name="colors"/>
+
+    <!-- Check PHP files only -->
+    <arg name="extensions" value="php"/>
+
+    <!-- Use PSR-12 as the base standard -->
+    <rule ref="PSR12"/>
+
+    <!-- Additional rules -->
+    <rule ref="Generic.Arrays.DisallowLongArraySyntax"/>
+    <rule ref="Generic.Files.LineLength">
+        <properties>
+            <property name="lineLimit" value="120"/>
+            <property name="absoluteLineLimit" value="150"/>
+        </properties>
+    </rule>
+
+    <!-- Exclude Pest.php from strict rules (it uses global functions) -->
+    <rule ref="PSR1.Files.SideEffects">
+        <exclude-pattern>Pest.php</exclude-pattern>
+    </rule>
+
+    <!-- Exclude test files from some rules -->
+    <rule ref="PSR1.Classes.ClassDeclaration.MissingNamespace">
+        <exclude-pattern>tests/*</exclude-pattern>
+    </rule>
+</ruleset>

@@ -120,7 +120,7 @@ public class E2ETests
 
         act.Should()
             .Throw<OicanaException>()
-            .WithMessage("error: dictionary does not contain key \"development-blob\"\n   \u250c\u2500 /main.typ:12:41\n   \u2502\n12 \u2502 `development-blob` has value: #str(input.development-blob.bytes)\n   \u2502                                          ^^^^^^^^^^^^^^^^\n\n");
+            .WithMessage("error: dictionary does not contain key \"development-blob\"\n   \u250c\u2500 /main.typ:14:41\n   \u2502\n14 \u2502 `development-blob` has value: #str(input.development-blob.bytes)\n   \u2502                                          ^^^^^^^^^^^^^^^^\n\n");
     }
 
     [Fact]

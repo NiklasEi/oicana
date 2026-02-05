@@ -1,0 +1,33 @@
+{
+    "name": "oicana/installer",
+    "description": "Installer for Oicana PHP native extension",
+    "type": "composer-plugin",
+    "license": "PolyForm-Noncommercial-1.0.0",
+    "version": "0.1.0-alpha.1",
+    "keywords": ["oicana", "pdf", "templating", "installer", "composer-plugin"],
+    "authors": [
+        {
+            "name": "Oicana",
+            "email": "hello@oicana.com"
+        }
+    ],
+    "require": {
+        "php": "^8.3",
+        "composer-plugin-api": "^2.0"
+    },
+    "require-dev": {
+        "composer/composer": "^2.0",
+        "phpunit/phpunit": "^10.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Oicana\\Installer\\": "src/"
+        }
+    },
+    "extra": {
+        "class": "Oicana\\Installer\\InstallerPlugin"
+    },
+    "config": {
+        "sort-packages": true
+    }
+}

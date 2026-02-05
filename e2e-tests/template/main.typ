@@ -4,6 +4,8 @@
 #let read-project-file(path) = return read(path, encoding: none);
 #let (input, _, _) = setup(read-project-file);
 
+#set document(date: datetime.today())
+
 Contains #input.len() inputs (should be 6)\
 
 `default-blob` has value: #str(input.default-blob.bytes)\

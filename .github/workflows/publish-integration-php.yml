@@ -1,0 +1,274 @@
+name: Publish PHP Integration
+
+on:
+  workflow_dispatch:
+    inputs:
+      publish-native:
+        description: 'Publish native binaries'
+        type: boolean
+        default: true
+      publish-wrapper:
+        description: 'Publish PHP wrapper package'
+        type: boolean
+        default: true
+  push:
+    tags:
+      - 'oicana_php-v[0-9]+.[0-9]+.[0-9]+*'
+
+permissions:
+  contents: write
+
+env:
+  LIB_NAME: oicana_native
+
+jobs:
+  build-matrix:
+    if: ${{ inputs.publish-native != false }}
+    name: Build ${{ matrix.platform.os }}-${{ matrix.platform.arch }}-php${{ matrix.php }}-${{ matrix.ts }}
+    runs-on: ${{ matrix.platform.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        platform:
+          - os: linux
+            arch: x64
+            runner: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            rust: stable
+            lib: liboicana_native.so
+            flags: "-C link-arg=-Wl,-undefined,dynamic_lookup"
+          - os: linux
+            arch: arm64
+            runner: ubuntu-24.04-arm
+            target: aarch64-unknown-linux-gnu
+            rust: stable
+            lib: liboicana_native.so
+            flags: "-C link-arg=-Wl,-undefined,dynamic_lookup"
+          - os: macos
+            arch: x64
+            runner: macos-15-intel
+            target: x86_64-apple-darwin
+            rust: stable
+            lib: liboicana_native.dylib
+            flags: "-C link-arg=-Wl,-undefined,dynamic_lookup"
+          - os: macos
+            arch: arm64
+            runner: macos-latest
+            target: aarch64-apple-darwin
+            rust: stable
+            lib: liboicana_native.dylib
+            flags: "-C link-arg=-Wl,-undefined,dynamic_lookup"
+          - os: windows
+            arch: x64
+            runner: windows-latest
+            target: x86_64-pc-windows-msvc
+            rust: nightly
+            lib: oicana_native.dll
+            flags: ""
+        php:
+          - '8.3'
+          - '8.4'
+          - '8.5'
+        ts:
+          - nts
+          - zts
+
+    steps:
+      - uses: actions/checkout@v5
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ matrix.platform.rust }}
+          targets: ${{ matrix.platform.target }}
+          components: rustfmt
+      - run: rustup show
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: mbstring
+        env:
+          debug: true
+          phpts: ${{ matrix.ts }}
+      - run: php -v
+      - name: Cache Cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry/index
+            ~/.cargo/registry/cache
+            ~/.cargo/git/db
+            target
+          key: ${{ runner.os }}-cargo-php-${{ matrix.php }}-${{ matrix.ts }}-${{ hashFiles('**/Cargo.lock', 'integrations/php/**/*.rs') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-php-${{ matrix.php }}-${{ matrix.ts }}-
+            ${{ runner.os }}-cargo-php-
+      - name: Build PHP extension
+        run: cargo build --release --target ${{ matrix.platform.target }} -p oicana_native
+        env:
+          RUSTFLAGS: ${{ matrix.platform.flags }}
+      - run: |
+          php -d extension=./target/${{ matrix.platform.target }}/release/${{ matrix.platform.lib }} -r "print_r(array_filter(get_defined_functions()['internal'], fn(\$f) => str_contains(\$f, 'oicana') || str_contains(\$f, 'register') || str_contains(\$f, 'compile')));"
+        shell: bash
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: binary-${{ matrix.platform.os }}-${{ matrix.platform.arch }}-php${{ matrix.php }}-${{ matrix.ts }}
+          path: ./target/${{ matrix.platform.target }}/release/${{ matrix.platform.lib }}
+          if-no-files-found: error
+
+  create-release:
+    if: ${{ inputs.publish-native != false }}
+    name: Create GitHub Release
+    needs: build-matrix
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: binaries
+          pattern: binary-*
+          merge-multiple: true
+
+      - name: List binaries
+        run: ls -lh binaries/
+
+      - name: Extract version from Cargo.toml
+        id: version
+        run: |
+          VERSION=$(grep '^version = ' integrations/php/oicana-php-native/Cargo.toml | head -n1 | sed 's/version = "\(.*\)"/\1/')
+          echo "VERSION=${VERSION}" >> $GITHUB_OUTPUT
+          echo "Extracted version: ${VERSION}"
+
+      - name: Check if release exists
+        id: check_release
+        run: |
+          if gh release view "oicana_php-v${{ steps.version.outputs.VERSION }}" >/dev/null 2>&1; then
+            echo "EXISTS=true" >> $GITHUB_OUTPUT
+            echo "Release oicana_php-v${{ steps.version.outputs.VERSION }} already exists"
+          else
+            echo "EXISTS=false" >> $GITHUB_OUTPUT
+            echo "Release oicana_php-v${{ steps.version.outputs.VERSION }} does not exist"
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create Release
+        if: steps.check_release.outputs.EXISTS == 'false'
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: oicana_php-v${{ steps.version.outputs.VERSION }}
+          name: PHP Integration v${{ steps.version.outputs.VERSION }}
+          body: |
+            ## Oicana PHP Integration v${{ steps.version.outputs.VERSION }}
+
+            This release includes native binaries for:
+            - **PHP versions**: 8.3, 8.4, 8.5
+            - **Thread safety**: NTS (non-thread-safe), ZTS (thread-safe)
+            - **Platforms**: Linux (x64, ARM64), macOS (x64, ARM64), Windows (x64)
+
+            ### Installation
+
+            ```bash
+            composer require oicana/oicana
+            ```
+
+            The installer will automatically download the appropriate binary for your platform.
+
+            ### Manual Installation
+
+            If automatic installation fails, download the binary for your platform from the assets below and add it to your `php.ini`:
+
+            ```ini
+            extension=/path/to/oicana_native-php8.3-linux-x64-nts.so
+            ```
+
+            ### Binary Naming Convention
+
+            Format: `oicana_native-php{VERSION}-{OS}-{ARCH}-{TS}.{EXT}`
+
+            Example: `oicana_native-php8.3-linux-x64-nts.so`
+
+            ### Documentation
+
+            - [GitHub Repository](https://github.com/oicana/oicana)
+            - [Documentation](https://docs.oicana.com)
+            - [Oicana Website](https://oicana.com)
+          files: binaries/*
+          draft: false
+          prerelease: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload binaries to existing release
+        if: steps.check_release.outputs.EXISTS == 'true'
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: oicana_php-v${{ steps.version.outputs.VERSION }}
+          files: binaries/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  publish-wrapper:
+    if: ${{ inputs.publish-wrapper && (success() || needs.create-release.result == 'skipped') }}
+    name: Publish PHP wrapper to Packagist
+    needs: create-release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Extract version from Cargo.toml
+        id: version
+        run: |
+          VERSION=$(grep '^version = ' integrations/php/oicana-php-native/Cargo.toml | head -n1 | sed 's/version = "\(.*\)"/\1/')
+          echo "VERSION=${VERSION}" >> $GITHUB_OUTPUT
+          echo "Extracted version: ${VERSION}"
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          tools: composer
+
+      - name: Validate composer.json files
+        run: |
+          cd integrations/php/oicana-php
+          composer validate --strict
+          cd ../oicana-php-installer
+          composer validate --strict
+
+      - name: Create PHP package archive
+        run: |
+          cd integrations/php
+          tar -czf ../../oicana-php.tar.gz \
+            --exclude='tests/fixtures' \
+            --exclude='vendor' \
+            --exclude='.git*' \
+            -C oicana-php .
+
+      - name: Create installer package archive
+        run: |
+          cd integrations/php
+          tar -czf ../../oicana-php-installer.tar.gz \
+            --exclude='vendor' \
+            --exclude='.git*' \
+            -C oicana-php-installer .
+
+      - name: Upload packages to release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: oicana_php-v${{ steps.version.outputs.VERSION }}
+          files: |
+            oicana-php.tar.gz
+            oicana-php-installer.tar.gz
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publish notice
+        run: |
+          echo "::notice::PHP packages have been added to the GitHub Release."
+          echo "::notice::To publish to Packagist, manually submit the release at:"
+          echo "::notice::  - https://packagist.org/packages/oicana/oicana"
+          echo "::notice::  - https://packagist.org/packages/oicana/installer"

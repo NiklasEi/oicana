@@ -1,0 +1,25 @@
+parameters:
+    level: 8
+    paths:
+        - src
+        - tests
+    excludePaths:
+        - tests/fixtures
+    bootstrapFiles:
+        - tests/Pest.php
+    reportUnmatchedIgnoredErrors: false
+    ignoreErrors:
+        # Allow calls to undefined functions from the native extension (OicanaInternal namespace)
+        - '#Function OicanaInternal\\[a-zA-Z_]+ not found#'
+        # Allow undefined class BlobWithMetadata from native extension
+        - '#(Class|Instantiated class) OicanaInternal\\[a-zA-Z]+ not found#'
+        - '#Method .* has invalid return type OicanaInternal\\[a-zA-Z]+#'
+        # Pest test helper methods
+        - '#Call to an undefined method Pest\\PendingCalls\\TestCall\|Pest\\Support\\HigherOrderTapProxy::markTestSkipped#'
+        # Pest expect()->extend() binds $this at runtime
+        -
+            message: '#Undefined variable: \$this#'
+            path: tests/Pest.php
+        # file_get_contents can return false
+        - '#Parameter .* expects string, string\|false given#'
+        - '#Parameter .* expects array<string, string>, array<string, string\|false> given#'
