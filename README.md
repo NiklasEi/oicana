@@ -24,6 +24,7 @@ The [getting started guide][getting-started] demonstrates how to
    * C# application using [ASP.NET](https://dotnet.microsoft.com/en-us/apps/aspnet)
    * Rust application with [axum](https://github.com/tokio-rs/axum)
    * Node.js application using [NestJs](https://nestjs.com/)
+   * Python application with [FastAPI](https://fastapi.tiangolo.com/)
 
 ## Available integrations
 
