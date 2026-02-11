@@ -4,7 +4,20 @@ PDF templating with Typst for PHP.
 
 ## Installation
 
-Install via Composer:
+First, add the Oicana Composer repository to your `composer.json`:
+
+```json
+{
+    "repositories": [
+        {
+            "type": "composer",
+            "url": "https://oicana.github.io/composer"
+        }
+    ]
+}
+```
+
+Then install via Composer:
 
 ```bash
 composer require oicana/oicana

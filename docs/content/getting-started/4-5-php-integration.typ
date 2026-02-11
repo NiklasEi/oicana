@@ -53,10 +53,10 @@ We will define a new endpoint to compile our Oicana template to a PDF and return
 
 \
 1. Create a new directory in the PHP project called `templates` and copy `example-0.1.0.zip` into that directory.
-2. Add the `oicana/oicana` Composer package as a dependency. Since the package is in early alpha, you need to configure Composer to use the GitHub repository:
+2. Add the `oicana/oicana` Composer package as a dependency. You need to configure Composer to use our package repository:
 
   ```bash
-  composer config repositories.oicana vcs https://github.com/oicana/oicana
+  composer config repositories.oicana composer https://oicana.github.io/composer
   composer config minimum-stability alpha
   composer config allow-plugins.oicana/installer true
   composer require oicana/oicana:^0.1.0-alpha
