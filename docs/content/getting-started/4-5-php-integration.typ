@@ -53,37 +53,39 @@ We will define a new endpoint to compile our Oicana template to a PDF and return
 
 \
 1. Create a new directory in the PHP project called `templates` and copy `example-0.1.0.zip` into that directory.
-2. Add the `oicana/oicana` Composer package as a dependency. You need to configure Composer to use our package repository:
+2. Add the `oicana/oicana` Composer package as a dependency. The package is hosted on a custom Composer repository, so add the following to your `composer.json`:
+
+  ```json
+  {
+      "repositories": [
+          {
+              "type": "composer",
+              "url": "https://niklasei.github.io/composer"
+          }
+      ],
+      "require": {
+          "oicana/oicana": "^0.1.0-alpha.1"
+      }
+  }
+  ```
+
+  Then configure the minimum stability, allow the Oicana installer plugin, and install:
 
   ```bash
-  composer config repositories.oicana composer https://oicana.github.io/composer
   composer config minimum-stability alpha
   composer config allow-plugins.oicana/installer true
-  composer require oicana/oicana:^0.1.0-alpha
+  composer install
   ```
 
   \
-  #warning[
-    The Oicana PHP package includes a native extension installer. After running `composer require`, the installer will attempt to download and enable the `oicana_native` extension automatically.
-
-    *The automatic installation will likely fail* with an error like "Cannot write to extension directory" because it requires root/sudo permissions to write to the system PHP extension directory.
-
-    When this happens, you have two options:
-
-    *Option 1: Use the `-d` flag (Recommended for development)*\
-    You can load the extension on-demand without modifying php.ini:
+  #note[
+    The installer downloads the native extension binary into `vendor/` and writes a PHP ini file at `vendor/oicana/installer/php/oicana.ini`. At the end of the install output you will see the command to activate the extension — it looks like this:
 
     ```bash
-    # Download the extension manually from GitHub releases if needed
-    # The file will be .so (Linux), .dylib (macOS), or .dll (Windows)
-    # Then run PHP with the -d flag:
-    php -d extension=/path/to/liboicana_native.so -S localhost:8000 index.php
+    export PHP_INI_SCAN_DIR=":/path/to/my-pdf-service/vendor/oicana/installer/php"
     ```
 
-    *Option 2: Manual installation*\
-    Download the extension for your platform from #link("https://github.com/oicana/oicana/releases")[GitHub releases] (`.so` for Linux, `.dylib` for macOS, `.dll` for Windows), copy it to a PHP extension directory, and add ```ini extension=oicana_native``` to your `php.ini` (without the file extension).
-
-    Verify the extension is loaded with: ```bash php -m | grep oicana_native```
+    Set this environment variable (with your actual project path) before starting PHP. Verify the extension is loaded with: ```bash php -m | grep oicana_native```
   ]
 
 3. Before proceeding, make sure your template is packaged. Navigate to your template directory and run:
@@ -135,14 +137,11 @@ We will define a new endpoint to compile our Oicana template to a PDF and return
   \
   This code loads the template once at application startup. The `/compile` endpoint compiles the template and returns the PDF file. We explicitly pass the compilation mode with ```php $template->compile(mode: CompilationMode::Development)``` so the template uses the development value you defined for the `info` input (```json { "name": "Chuck Norris" }```). In a follow-up step, we will set an input value instead.
 
-Start the PHP development server. If you needed to use the `-d` flag to load the extension, use it here too:
+Start the PHP development server with `PHP_INI_SCAN_DIR` set so the extension is loaded:
 
 ```bash
-# If extension is in php.ini:
+export PHP_INI_SCAN_DIR=":/path/to/my-pdf-service/vendor/oicana/installer/php"
 php -S localhost:8000 index.php
-
-# If you need to load the extension manually (adjust path and extension for your platform):
-php -d extension=/path/to/liboicana_native.so -S localhost:8000 index.php
 ```
 
 \

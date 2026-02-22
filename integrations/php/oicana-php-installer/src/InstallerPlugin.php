@@ -15,7 +15,8 @@ use Composer\Script\ScriptEvents;
  * Composer plugin that automatically downloads the Oicana native extension.
  *
  * This plugin hooks into Composer's post-install and post-update events
- * to download the appropriate native extension binary for the current platform.
+ * to download the appropriate native extension binary for the current platform
+ * and write a PHP ini file that activates it via PHP_INI_SCAN_DIR.
  */
 final class InstallerPlugin implements PluginInterface, EventSubscriberInterface
 {
@@ -78,12 +79,15 @@ final class InstallerPlugin implements PluginInterface, EventSubscriberInterface
 
             $io->write('<info>✓ Extension downloaded to: ' . $extensionPath . '</info>');
 
-            $this->showInstallationInstructions($io, $extensionPath, $platform);
+            $iniDir = $this->writeIniFile($extensionPath);
+
+            $io->write('<info>✓ PHP ini file written to: ' . $iniDir . DIRECTORY_SEPARATOR . 'oicana.ini</info>');
+
+            $this->showActivationInstructions($io, $iniDir);
 
         } catch (\Throwable $e) {
             $io->writeError('<error>Failed to install Oicana extension: ' . $e->getMessage() . '</error>');
             $io->writeError('');
-            $io->writeError('<comment>Manual Installation:</comment>');
             $io->writeError('<comment>You can download the extension manually from:</comment>');
             $io->writeError('<comment>https://github.com/oicana/oicana/releases</comment>');
             $io->writeError('');
@@ -91,61 +95,48 @@ final class InstallerPlugin implements PluginInterface, EventSubscriberInterface
     }
 
     /**
-     * Show instructions for enabling the extension in PHP.
+     * Write a PHP ini file that loads the extension from its vendor path.
+     *
+     * @return string The directory containing the written ini file
      */
-    private function showInstallationInstructions(IOInterface $io, string $extensionPath, Platform $platform): void
+    private function writeIniFile(string $extensionPath): string
     {
-        $io->write('');
-        $io->write('<comment>To use the extension, add it to your php.ini:</comment>');
+        $iniDir = implode(DIRECTORY_SEPARATOR, [
+            getcwd(),
+            'vendor',
+            'oicana',
+            'installer',
+            'php',
+        ]);
 
-        $relativePath = $this->getRelativePath(getcwd(), $extensionPath);
-        $io->write(sprintf('<comment>  extension=%s</comment>', $relativePath ?: $extensionPath));
+        if (!is_dir($iniDir)) {
+            mkdir($iniDir, 0755, true);
+        }
 
-        $io->write('');
-        $io->write('<comment>Or load it at runtime:</comment>');
-        $io->write(sprintf("<comment>  <?php dl('%s'); ?></comment>", $platform->getBinaryName()));
+        $iniPath = $iniDir . DIRECTORY_SEPARATOR . 'oicana.ini';
+        file_put_contents($iniPath, 'extension=' . $extensionPath . PHP_EOL);
 
-        $io->write('');
-        $io->write('<comment>Verify installation with:</comment>');
-        $io->write('<comment>  php -m | grep oicana_native</comment>');
-        $io->write('');
+        return $iniDir;
     }
 
     /**
-     * Get relative path from base to target.
-     *
-     * @return string|null Relative path or null if not possible
+     * Show instructions for activating the extension via PHP_INI_SCAN_DIR.
      */
-    private function getRelativePath(string $from, string $to): ?string
+    private function showActivationInstructions(IOInterface $io, string $iniDir): void
     {
-        $from = rtrim($from, DIRECTORY_SEPARATOR);
-        $to = rtrim($to, DIRECTORY_SEPARATOR);
+        $io->write('');
+        $io->write('<comment>To activate the extension, set this environment variable before starting PHP:</comment>');
+        $io->write('');
 
-        $fromParts = explode(DIRECTORY_SEPARATOR, $from);
-        $toParts = explode(DIRECTORY_SEPARATOR, $to);
-
-        $commonLength = 0;
-        $minLength = min(count($fromParts), count($toParts));
-        for ($i = 0; $i < $minLength; $i++) {
-            if ($fromParts[$i] === $toParts[$i]) {
-                $commonLength++;
-            } else {
-                break;
-            }
+        if (PHP_OS_FAMILY === 'Windows') {
+            $io->write(sprintf('<comment>  set PHP_INI_SCAN_DIR=";%s"</comment>', $iniDir));
+        } else {
+            $io->write(sprintf('<comment>  export PHP_INI_SCAN_DIR=":%s"</comment>', $iniDir));
         }
 
-        $relativeParts = [];
-        for ($i = $commonLength; $i < count($fromParts); $i++) {
-            $relativeParts[] = '..';
-        }
-        for ($i = $commonLength; $i < count($toParts); $i++) {
-            $relativeParts[] = $toParts[$i];
-        }
-
-        if (count($relativeParts) === 0) {
-            return null;
-        }
-
-        return implode(DIRECTORY_SEPARATOR, $relativeParts);
+        $io->write('');
+        $io->write('<comment>Verify the extension is loaded with:</comment>');
+        $io->write('<comment>  php -m | grep oicana_native</comment>');
+        $io->write('');
     }
 }
