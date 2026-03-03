@@ -80,7 +80,8 @@ pub fn register_template(
   blob_inputs: HashMap<String, BlobWithMetadata>,
   compilation_mode: CompilationMode,
 ) -> Result<String> {
-  let files = PackedTemplate::new(Cursor::new(files));
+  let files = PackedTemplate::new(Cursor::new(files))
+    .map_err(|error| Error::from_reason(error.to_string()))?;
   let manifest = files
     .manifest()
     .map_err(|error| Error::from_reason(error.to_string()))?;

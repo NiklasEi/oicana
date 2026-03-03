@@ -108,7 +108,8 @@ fn register_template(
     compilation_mode: CompilationMode,
 ) -> PyResult<String> {
     let files_data = files.as_bytes();
-    let packed = PackedTemplate::new(Cursor::new(files_data));
+    let packed = PackedTemplate::new(Cursor::new(files_data))
+        .map_err(|e| PyRuntimeError::new_err(e.to_string()))?;
 
     let manifest = packed
         .manifest()

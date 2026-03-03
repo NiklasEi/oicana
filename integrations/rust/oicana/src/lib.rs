@@ -6,7 +6,10 @@
 
 use std::io::{Read, Seek};
 
-use oicana_files::{packed::PackedTemplate, TemplateFiles};
+use oicana_files::{
+    packed::{PackedTemplate, PackedTemplateError},
+    TemplateFiles,
+};
 use oicana_input::TemplateInputs;
 use oicana_template::manifest::TemplateManifest;
 use oicana_world::{
@@ -59,7 +62,7 @@ pub struct Template<F: TemplateFiles> {
 impl Template<PackedTemplate> {
     /// Initialize the given template
     pub fn init<R: Read + Seek>(template: R) -> Result<Self, TemplateInitializationError> {
-        let files = PackedTemplate::new(template);
+        let files = PackedTemplate::new(template)?;
         let manifest = files.manifest()?;
 
         let world = OicanaWorld::new(files, TemplateInputs::new(), manifest)?;
@@ -120,6 +123,10 @@ pub enum TemplateInitializationError {
     /// Error while creating the template world
     #[error("Issue while creating template World: {0}")]
     WorldCreationError(#[from] WorldCreationError),
+
+    /// The packed template could not be read
+    #[error("{0}")]
+    PackedTemplateError(#[from] PackedTemplateError),
 
     /// The data directory for Typst packages could not be found
     #[error("Failed to find the data directory for Typst packages on the System")]

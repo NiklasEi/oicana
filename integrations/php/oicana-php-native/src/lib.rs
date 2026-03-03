@@ -126,7 +126,8 @@ pub fn register_template(
     blob_inputs: HashMap<String, &BlobWithMetadata>,
     compilation_mode: i64,
 ) -> PhpResult<String> {
-    let packed = PackedTemplate::new(Cursor::new(&files));
+    let packed = PackedTemplate::new(Cursor::new(&files))
+        .map_err(|e| PhpException::default(e.to_string()))?;
 
     let manifest = packed
         .manifest()

@@ -85,7 +85,8 @@ pub fn register_template(
 
     let mut vec = vec![0; files.length() as usize];
     files.copy_to(&mut vec[..]);
-    let files = PackedTemplate::new(Cursor::new(vec));
+    let files = PackedTemplate::new(Cursor::new(vec))
+        .map_err(|error| format!("Failed to read template: {error}"))?;
     let manifest = files.manifest().map_err(|error| format!("{error:?}"))?;
 
     let mut world =
