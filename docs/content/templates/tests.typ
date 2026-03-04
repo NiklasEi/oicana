@@ -38,6 +38,8 @@ The tests directory will be recursively searched for any test collection files i
 
 == Json input fuzzing
 
+#alpha-note[Json input fuzzing requires a json schema for the input. While schema _validation_ is not yet enforced during compilation, schemas are used by the fuzzer to generate random input values.]
+
 If you define and configure a schema for a json input, you can let Oicana fuzz that input as part of a snapshot test.
 
 #code("tests.toml", ```toml
