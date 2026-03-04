@@ -11,7 +11,7 @@ First, add the Oicana Composer repository to your `composer.json`:
     "repositories": [
         {
             "type": "composer",
-            "url": "https://oicana.github.io/composer"
+            "url": "https://composer.oicana.com"
         }
     ]
 }

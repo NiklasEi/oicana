@@ -60,7 +60,7 @@ We will define a new endpoint to compile our Oicana template to a PDF and return
       "repositories": [
           {
               "type": "composer",
-              "url": "https://niklasei.github.io/composer"
+              "url": "https://composer.oicana.com"
           }
       ],
       "require": {
