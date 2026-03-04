@@ -35,6 +35,10 @@
         "getting-started/4-4-python-integration.typ",
         section: "2.4.4",
       )[Python using FastAPI]
+    - #chapter(
+        "getting-started/4-5-php-integration.typ",
+        section: "2.4.5",
+      )[PHP using Slim]
 
   == Templating
   - #chapter("templates.typ", section: "3")[Oicana templates]

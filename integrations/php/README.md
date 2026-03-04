@@ -104,11 +104,14 @@ Binaries are published to GitHub Releases.
 
 ### PHP Packages
 
-The workflow creates archives of both packages and attaches them to the release.
+The packages are published via a custom Composer repository hosted at [oicana/composer](https://github.com/oicana/composer).
+
+**Release process:**
 
 1. Tag a release: `git tag oicana_php-v0.1.0-alpha.1`
 2. Push: `git push --tags`
-3. Workflow builds and creates GitHub Release
+3. Workflow builds binaries and creates GitHub Release
+4. Satis repository automatically updates within 24 hours (or can be triggered manually)
 
 ## Binary Naming Convention
 

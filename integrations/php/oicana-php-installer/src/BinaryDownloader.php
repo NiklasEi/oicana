@@ -10,7 +10,6 @@ namespace Oicana\Installer;
 final class BinaryDownloader
 {
     private const GITHUB_RELEASES_URL = 'https://github.com/oicana/oicana/releases/download';
-    private const EXTENSION_DIR_NAME = 'oicana-extensions';
 
     public function __construct(
         private readonly string $version = '0.1.0-alpha.1'
@@ -18,9 +17,9 @@ final class BinaryDownloader
     }
 
     /**
-     * Download the binary for the given platform.
+     * Download the binary for the given platform into the project's vendor directory.
      *
-     * @return string Path to the downloaded binary
+     * @return string Absolute path to the downloaded binary
      * @throws \RuntimeException If download fails
      */
     public function download(Platform $platform): string
@@ -33,11 +32,7 @@ final class BinaryDownloader
             $binaryName
         );
 
-        $targetDir = $this->getExtensionDir();
-        if (!is_dir($targetDir)) {
-            mkdir($targetDir, 0755, true);
-        }
-
+        $targetDir = $this->getBinDir();
         $targetPath = $targetDir . DIRECTORY_SEPARATOR . $binaryName;
 
         // Return early if already downloaded
@@ -66,23 +61,26 @@ final class BinaryDownloader
     }
 
     /**
-     * Get the directory where extensions should be installed.
+     * Get the directory where the downloaded extension binary is stored.
+     *
+     * The binary is placed inside the project's vendor directory so no elevated
+     * permissions are required.
      */
-    private function getExtensionDir(): string
+    private function getBinDir(): string
     {
-        // Try to use PHP's extension directory
-        $extensionDir = ini_get('extension_dir');
-        if ($extensionDir === false || $extensionDir === '') {
-            throw new \RuntimeException("Failed to get the php extension directory");
-        }
-        if (!is_writable($extensionDir)) {
-            throw new \RuntimeException(sprintf(
-                "Cannot write to extension directory %s",
-                $extensionDir
-            ));
+        $targetDir = implode(DIRECTORY_SEPARATOR, [
+            getcwd(),
+            'vendor',
+            'oicana',
+            'installer',
+            'bin',
+        ]);
+
+        if (!is_dir($targetDir)) {
+            mkdir($targetDir, 0755, true);
         }
 
-        return $extensionDir;
+        return $targetDir;
     }
 
     /**

@@ -391,10 +391,13 @@ unsafe fn prepare_world(
     compilation_mode: CompilationMode,
 ) -> Result<OicanaWorld<PackedTemplate>, Buffer> {
     let files = unsafe {
-        PackedTemplate::new(Cursor::new(slice::from_raw_parts::<u8>(
+        match PackedTemplate::new(Cursor::new(slice::from_raw_parts::<u8>(
             files.data,
             files.len as usize,
-        )))
+        ))) {
+            Ok(packed) => packed,
+            Err(error) => return Err(Buffer::from_error(format!("{error}"))),
+        }
     };
     let manifest = match files.manifest() {
         Ok(manifest) => manifest,

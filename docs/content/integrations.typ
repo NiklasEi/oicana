@@ -8,7 +8,7 @@ For all integrations, you can find open source example applications on GitHub.
 https://www.npmjs.com/package/@oicana/browser
 
 Oicana can run in browsers as WebAssembly. The `@oicana/browser` npm package contains a typed interface for interaction with the `.wasm` file.
-To not blobk the UI, it's advisable to compile templates in a web worker.
+To not block the UI, it's advisable to compile templates in a web worker.
 
 An example application using Oicana in a React app #link("https://github.com/oicana/oicana-example-react/")[can be found on GitHub].
 
@@ -41,6 +41,16 @@ The `oicana` crate allows you to compile Oicana templates directly in Rust proje
 
 An example Axum application using this crate #link("https://github.com/oicana/oicana-example-axum/")[can be found on GitHub].
 
-== Future integrations
+== Python
 
-If you are interested in using Oicana from other programming languages or environments, please let us know.
+https://pypi.org/project/oicana/
+
+The `oicana` Python package provides native bindings to work with Oicana templates from Python. It uses native extensions for optimal performance.
+
+An example FastAPI application using the package #link("https://github.com/oicana/oicana-example-fastapi/")[can be found on GitHub].
+
+== PHP
+
+The `oicana/oicana` Composer package provides a native PHP extension to work with Oicana templates. It uses native bindings for optimal performance.
+
+An example PHP Slim application using the package #link("https://github.com/oicana/oicana-example-php/")[can be found on GitHub].

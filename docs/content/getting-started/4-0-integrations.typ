@@ -6,7 +6,7 @@ You've created a working Oicana template with a dynamic input! Now it's time to 
 
 == One Template, Multiple Platforms
 
-A key strength of Oicana is that the exact same template works across all integrations. The `example-0.1.0.zip` file you created can be used in C#sym.hash, Node.js, Rust, Python, or browser environments without any modifications.
+A key strength of Oicana is that the exact same template works across all integrations. The `example-0.1.0.zip` file you created can be used in C#sym.hash, Node.js, Rust, Python, PHP, or browser environments.
 
 \
 Develop templates once and use them everywhere.
@@ -48,6 +48,13 @@ If you're working on a multi-language project or want to compare approaches, fee
 
 \
 #note[Prerequisites: Python 3.9+ and pip or uv]
+
+=== PHP / Slim
+
+#link("4-5-php-integration.html")[Go to PHP Guide →]
+
+\
+#note[Prerequisites: PHP 8.3+ and Composer installed on your machine]
 
 == Next Steps
 
