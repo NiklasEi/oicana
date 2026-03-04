@@ -25,6 +25,12 @@ The nuget package `Oicana` has a native interface to work with Oicana templates 
 
 An example ASP.NET project using the package #link("https://github.com/oicana/oicana-example-asp-net/")[can be found on GitHub].
 
+== Java
+
+The `com.oicana:oicana` Maven package provides a native JNI interface to work with Oicana templates from Java. It uses native bindings for optimal performance on the server.
+
+An example Spring Boot application using the package #link("https://github.com/oicana/oicana-example-spring-boot/")[can be found on GitHub].
+
 == Node.js
 
 https://www.npmjs.com/package/@oicana/node
