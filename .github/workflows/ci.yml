@@ -756,6 +756,98 @@ jobs:
         if: success() || failure()
         run: test-compare e2e-tests/template integrations/php/oicana-php/tests/testOutput/
 
+  build-java-native:
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            lib: liboicana_java_native.so
+          - os: macos-latest
+            target: aarch64-apple-darwin
+            lib: liboicana_java_native.dylib
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            lib: oicana_java_native.dll
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/cache/restore@v4
+        with:
+          key: ${{ runner.os }}-stable--${{ hashFiles('**/Cargo.toml', 'integrations/java/**/*.rs') }}-
+          restore-keys: |
+            ${{ runner.os }}-stable--${{ hashFiles('**/Cargo.toml', 'integrations/java/**/*.rs') }}-
+            ${{ runner.os }}-stable--
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Build Java JNI library
+        run: cargo build --release --target ${{ matrix.target }} -p oicana_java_native
+      - name: Upload Java native library
+        uses: actions/upload-artifact@v4
+        with:
+          name: java_native_${{ runner.os }}
+          path: ./target/${{ matrix.target }}/release/${{ matrix.lib }}
+          if-no-files-found: error
+
+  e2e-test-java-integration:
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            natives_dir: linux-x86_64
+          - os: macos-latest
+            natives_dir: macos-aarch64
+          - os: windows-latest
+            natives_dir: windows-x86_64
+    runs-on: ${{ matrix.os }}
+    needs:
+      - build-tools
+      - build-java-native
+    steps:
+      - uses: actions/checkout@v5
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: typship
+      - name: Install local Typst Oicana package
+        run: typship install local
+        working-directory: ./integrations/typst
+      - uses: ./.github/actions/install-tool
+        with:
+          tool: "oicana-cli"
+          bin: "oicana"
+      - uses: ./.github/actions/install-tool
+        with:
+          tool: "test-compare"
+      - name: test e2e template
+        run: oicana test
+        working-directory: ./e2e-tests/template
+      - name: pack e2e template
+        run: oicana pack -n '{template}-x.y.z.zip'
+        working-directory: ./e2e-tests/template
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+      - name: Download Java native library
+        uses: actions/download-artifact@v4
+        with:
+          name: java_native_${{ runner.os }}
+          path: integrations/java/oicana/src/main/resources/natives/${{ matrix.natives_dir }}
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+      - name: Run Java E2E tests
+        working-directory: integrations/java/oicana
+        run: ./gradlew test
+      - name: compare test output
+        run: test-compare e2e-tests/template integrations/java/oicana/testOutput/
+
   e2e-test-cli:
     strategy:
       matrix:

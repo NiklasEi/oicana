@@ -1,0 +1,6 @@
+.gradle/
+bin/
+build/
+testOutput/
+!gradle/wrapper/gradle-wrapper.jar
+.settings/
