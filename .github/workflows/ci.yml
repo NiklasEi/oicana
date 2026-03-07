@@ -393,7 +393,7 @@ jobs:
             target/
       - uses: dtolnay/rust-toolchain@stable
       - name: Build and install ${{ matrix.tool_config.tool }}
-        run: cargo install --path ${{ matrix.tool_config.path }}
+        run: cargo install --force --path ${{ matrix.tool_config.path }}
       - name: Upload CLI tool binary
         uses: actions/upload-artifact@v4
         with:
