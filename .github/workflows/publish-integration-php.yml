@@ -3,12 +3,12 @@ name: Publish PHP Integration
 on:
   workflow_dispatch:
     inputs:
+      version:
+        description: 'Version to publish (e.g. 0.1.0-alpha.1)'
+        type: string
+        required: true
       publish-native:
         description: 'Publish native binaries'
-        type: boolean
-        default: true
-      publish-wrapper:
-        description: 'Publish PHP wrapper package'
         type: boolean
         default: true
   push:
@@ -22,8 +22,68 @@ env:
   LIB_NAME: oicana_native
 
 jobs:
+  validate-version:
+    name: Validate version consistency
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.VERSION }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+
+      - name: Determine and validate version
+        id: version
+        run: |
+          # Get version from tag or input
+          if [[ "${{ github.ref_name }}" == oicana_php-v* ]]; then
+            VERSION="${{ github.ref_name }}"
+            VERSION="${VERSION#oicana_php-v}"
+          else
+            VERSION="${{ inputs.version }}"
+          fi
+          echo "VERSION=${VERSION}" >> $GITHUB_OUTPUT
+          echo "Publishing version: ${VERSION}"
+
+          # Validate against all version sources
+          ERRORS=()
+
+          CARGO_VERSION=$(grep '^version = ' integrations/php/oicana-php-native/Cargo.toml | head -n1 | sed 's/version = "\(.*\)"/\1/')
+          if [[ "$CARGO_VERSION" != "$VERSION" ]]; then
+            ERRORS+=("Cargo.toml (oicana-php-native) has version $CARGO_VERSION")
+          fi
+
+          WRAPPER_VERSION=$(php -r "echo json_decode(file_get_contents('integrations/php/oicana-php/composer.json'))->version;")
+          if [[ "$WRAPPER_VERSION" != "$VERSION" ]]; then
+            ERRORS+=("oicana-php/composer.json has version $WRAPPER_VERSION")
+          fi
+
+          INSTALLER_VERSION=$(php -r "echo json_decode(file_get_contents('integrations/php/oicana-php-installer/composer.json'))->version;")
+          if [[ "$INSTALLER_VERSION" != "$VERSION" ]]; then
+            ERRORS+=("oicana-php-installer/composer.json has version $INSTALLER_VERSION")
+          fi
+
+          DOWNLOADER_VERSION=$(grep -oP "\\\$version = '\K[^']+" integrations/php/oicana-php-installer/src/BinaryDownloader.php)
+          if [[ "$DOWNLOADER_VERSION" != "$VERSION" ]]; then
+            ERRORS+=("BinaryDownloader.php has hardcoded version $DOWNLOADER_VERSION")
+          fi
+
+          if [[ ${#ERRORS[@]} -gt 0 ]]; then
+            echo "::error::Version mismatch for ${VERSION}:"
+            for err in "${ERRORS[@]}"; do
+              echo "::error::  - $err"
+            done
+            exit 1
+          fi
+
+          echo "All version sources match: ${VERSION}"
+
   build-matrix:
-    if: ${{ inputs.publish-native != false }}
+    needs: validate-version
+    if: ${{ github.event_name == 'push' || inputs.publish-native }}
     name: Build ${{ matrix.platform.os }}-${{ matrix.platform.arch }}-php${{ matrix.php }}-${{ matrix.ts }}
     runs-on: ${{ matrix.platform.runner }}
     strategy:
@@ -110,18 +170,26 @@ jobs:
       - run: |
           php -d extension=./target/${{ matrix.platform.target }}/release/${{ matrix.platform.lib }} -r "print_r(array_filter(get_defined_functions()['internal'], fn(\$f) => str_contains(\$f, 'oicana') || str_contains(\$f, 'register') || str_contains(\$f, 'compile')));"
         shell: bash
+      - name: Rename binary to match installer convention
+        run: |
+          EXT=${{ matrix.platform.os == 'windows' && 'dll' || (matrix.platform.os == 'macos' && 'dylib' || 'so') }}
+          cp ./target/${{ matrix.platform.target }}/release/${{ matrix.platform.lib }} \
+             ./oicana_native-php${{ matrix.php }}-${{ matrix.platform.os }}-${{ matrix.platform.arch }}-${{ matrix.ts }}.${EXT}
+        shell: bash
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: binary-${{ matrix.platform.os }}-${{ matrix.platform.arch }}-php${{ matrix.php }}-${{ matrix.ts }}
-          path: ./target/${{ matrix.platform.target }}/release/${{ matrix.platform.lib }}
+          path: ./oicana_native-php${{ matrix.php }}-${{ matrix.platform.os }}-${{ matrix.platform.arch }}-${{ matrix.ts }}.*
           if-no-files-found: error
 
   create-release:
-    if: ${{ inputs.publish-native != false }}
+    if: ${{ github.event_name == 'push' || inputs.publish-native }}
     name: Create GitHub Release
-    needs: build-matrix
+    needs: [validate-version, build-matrix]
     runs-on: ubuntu-latest
+    env:
+      VERSION: ${{ needs.validate-version.outputs.version }}
     steps:
       - uses: actions/checkout@v5
 
@@ -135,22 +203,15 @@ jobs:
       - name: List binaries
         run: ls -lh binaries/
 
-      - name: Extract version from Cargo.toml
-        id: version
-        run: |
-          VERSION=$(grep '^version = ' integrations/php/oicana-php-native/Cargo.toml | head -n1 | sed 's/version = "\(.*\)"/\1/')
-          echo "VERSION=${VERSION}" >> $GITHUB_OUTPUT
-          echo "Extracted version: ${VERSION}"
-
       - name: Check if release exists
         id: check_release
         run: |
-          if gh release view "oicana_php-v${{ steps.version.outputs.VERSION }}" >/dev/null 2>&1; then
+          if gh release view "oicana_php-v${{ env.VERSION }}" >/dev/null 2>&1; then
             echo "EXISTS=true" >> $GITHUB_OUTPUT
-            echo "Release oicana_php-v${{ steps.version.outputs.VERSION }} already exists"
+            echo "Release oicana_php-v${{ env.VERSION }} already exists"
           else
             echo "EXISTS=false" >> $GITHUB_OUTPUT
-            echo "Release oicana_php-v${{ steps.version.outputs.VERSION }} does not exist"
+            echo "Release oicana_php-v${{ env.VERSION }} does not exist"
           fi
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -159,10 +220,10 @@ jobs:
         if: steps.check_release.outputs.EXISTS == 'false'
         uses: softprops/action-gh-release@v1
         with:
-          tag_name: oicana_php-v${{ steps.version.outputs.VERSION }}
-          name: PHP Integration v${{ steps.version.outputs.VERSION }}
+          tag_name: oicana_php-v${{ env.VERSION }}
+          name: PHP Integration v${{ env.VERSION }}
           body: |
-            ## Oicana PHP Integration v${{ steps.version.outputs.VERSION }}
+            ## Oicana PHP Integration v${{ env.VERSION }}
 
             This release includes native binaries for:
             - **PHP versions**: 8.3, 8.4, 8.5
@@ -206,69 +267,21 @@ jobs:
         if: steps.check_release.outputs.EXISTS == 'true'
         uses: softprops/action-gh-release@v1
         with:
-          tag_name: oicana_php-v${{ steps.version.outputs.VERSION }}
+          tag_name: oicana_php-v${{ env.VERSION }}
           files: binaries/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  publish-wrapper:
-    if: ${{ inputs.publish-wrapper && (success() || needs.create-release.result == 'skipped') }}
-    name: Publish PHP wrapper to Packagist
+  update-composer-registry:
+    name: Update Composer Registry
     needs: create-release
+    if: ${{ always() && needs.create-release.result == 'success' }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
-
-      - name: Extract version from Cargo.toml
-        id: version
+      - name: Trigger Satis repository rebuild
         run: |
-          VERSION=$(grep '^version = ' integrations/php/oicana-php-native/Cargo.toml | head -n1 | sed 's/version = "\(.*\)"/\1/')
-          echo "VERSION=${VERSION}" >> $GITHUB_OUTPUT
-          echo "Extracted version: ${VERSION}"
-
-      - name: Setup PHP
-        uses: shivammathur/setup-php@v2
-        with:
-          php-version: '8.3'
-          tools: composer
-
-      - name: Validate composer.json files
-        run: |
-          cd integrations/php/oicana-php
-          composer validate --strict
-          cd ../oicana-php-installer
-          composer validate --strict
-
-      - name: Create PHP package archive
-        run: |
-          cd integrations/php
-          tar -czf ../../oicana-php.tar.gz \
-            --exclude='tests/fixtures' \
-            --exclude='vendor' \
-            --exclude='.git*' \
-            -C oicana-php .
-
-      - name: Create installer package archive
-        run: |
-          cd integrations/php
-          tar -czf ../../oicana-php-installer.tar.gz \
-            --exclude='vendor' \
-            --exclude='.git*' \
-            -C oicana-php-installer .
-
-      - name: Upload packages to release
-        uses: softprops/action-gh-release@v1
-        with:
-          tag_name: oicana_php-v${{ steps.version.outputs.VERSION }}
-          files: |
-            oicana-php.tar.gz
-            oicana-php-installer.tar.gz
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Publish notice
-        run: |
-          echo "::notice::PHP packages have been added to the GitHub Release."
-          echo "::notice::To publish to Packagist, manually submit the release at:"
-          echo "::notice::  - https://packagist.org/packages/oicana/oicana"
-          echo "::notice::  - https://packagist.org/packages/oicana/installer"
+          curl -X POST \
+            -H "Accept: application/vnd.github.v3+json" \
+            -H "Authorization: token ${{ secrets.COMPOSER_REPO_TOKEN }}" \
+            https://api.github.com/repos/oicana/composer/dispatches \
+            -d '{"event_type":"php-release"}'
