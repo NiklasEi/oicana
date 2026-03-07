@@ -59,4 +59,4 @@ An example FastAPI application using the package #link("https://github.com/oican
 
 The `oicana/oicana` Composer package provides a native PHP extension to work with Oicana templates. It uses native bindings for optimal performance.
 
-An example PHP Slim application using the package #link("https://github.com/oicana/oicana-example-php/")[can be found on GitHub].
+An example PHP Slim application using the package #link("https://github.com/oicana/oicana-example-php-slim/")[can be found on GitHub].
