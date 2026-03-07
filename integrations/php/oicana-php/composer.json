@@ -50,8 +50,7 @@
         "sort-packages": true,
         "allow-plugins": {
             "pestphp/pest-plugin": true,
-            "oicana/installer": true,
-            "oicana/oicana-installer": true
+            "oicana/installer": true
         }
     }
 }
