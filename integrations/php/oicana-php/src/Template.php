@@ -36,7 +36,7 @@ class Template
      * Initialize template and register it with the native extension.
      *
      * @param string $template Template zip file bytes
-     * @param array<string, string|array> $jsonInputs JSON inputs (key => JSON string or array)
+     * @param array<string, string|array<mixed>> $jsonInputs JSON inputs (key => JSON string or array)
      * @param array<string, BlobInput> $blobInputs blob inputs
      * @param CompilationMode $mode Compilation mode
      * @throws \RuntimeException If the oicana extension is not loaded
@@ -77,7 +77,7 @@ class Template
     /**
      * Compile template and export to the given format.
      *
-     * @param array<string, string|array> $jsonInputs JSON inputs (key => JSON string or array)
+     * @param array<string, string|array<mixed>> $jsonInputs JSON inputs (key => JSON string or array)
      * @param array<string, BlobInput> $blobInputs Blob inputs
      * @param ExportFormat|null $exportFormat Export format configuration (defaults to PDF)
      * @param CompilationMode $mode Compilation mode
@@ -124,7 +124,7 @@ class Template
      * create an instance of Template and use compile() instead.
      *
      * @param string $templateBytes Template zip file bytes
-     * @param array<string, string|array> $jsonInputs JSON inputs (key => JSON string or array)
+     * @param array<string, string|array<mixed>> $jsonInputs JSON inputs (key => JSON string or array)
      * @param array<string, BlobInput> $blobInputs Blob inputs
      * @param ExportFormat|null $exportFormat Export format configuration (defaults to PDF)
      * @param CompilationMode $mode Compilation mode
@@ -217,17 +217,18 @@ class Template
     /**
      * Encode array values in jsonInputs to JSON strings.
      *
-     * @param array<string, string|array> $jsonInputs
+     * @param array<string, string|array<mixed>> $jsonInputs
      * @return array<string, string>
      */
     private static function encodeJsonInputs(array $jsonInputs): array
     {
+        $encoded = [];
         foreach ($jsonInputs as $key => $value) {
-            if (is_array($value)) {
-                $jsonInputs[$key] = json_encode($value, JSON_THROW_ON_ERROR);
-            }
+            $encoded[$key] = is_array($value)
+                ? json_encode($value, JSON_THROW_ON_ERROR)
+                : $value;
         }
-        return $jsonInputs;
+        return $encoded;
     }
 
     /**

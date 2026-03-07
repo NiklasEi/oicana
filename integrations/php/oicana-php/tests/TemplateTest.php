@@ -46,6 +46,7 @@ test('template compiles with JSON inputs', function () {
     $template = new Template($templateBytes);
 
     $jsonContent = file_get_contents(assets_path('inputs/input.json'));
+    assert(is_string($jsonContent));
 
     try {
         $pdf = $template->compile(

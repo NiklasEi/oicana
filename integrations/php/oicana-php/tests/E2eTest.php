@@ -53,6 +53,7 @@ test('e2e production', function () {
 
     $blob = file_get_contents(assets_path('inputs/input.txt'));
     $json = file_get_contents(assets_path('inputs/input.json'));
+    assert(is_string($blob) && is_string($json));
 
     $blobInputs = [
         'development-blob' => new BlobInput($blob, [
@@ -88,6 +89,7 @@ test('e2e all-inputs', function () {
 
     $blob = file_get_contents(assets_path('inputs/input.txt'));
     $json = file_get_contents(assets_path('inputs/input.json'));
+    assert(is_string($blob) && is_string($json));
 
     $blobInputs = [
         'default-blob' => new BlobInput($blob, [
