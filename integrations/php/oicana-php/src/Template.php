@@ -36,9 +36,10 @@ class Template
      * Initialize template and register it with the native extension.
      *
      * @param string $template Template zip file bytes
-     * @param array<string, string> $jsonInputs JSON inputs (key => JSON string)
+     * @param array<string, string|array<mixed>> $jsonInputs JSON inputs (key => JSON string or array)
      * @param array<string, BlobInput> $blobInputs blob inputs
      * @param CompilationMode $mode Compilation mode
+     * @throws \RuntimeException If the oicana extension is not loaded
      * @throws \Exception If template registration fails
      */
     public function __construct(
@@ -47,8 +48,18 @@ class Template
         array $blobInputs = [],
         CompilationMode $mode = CompilationMode::Development
     ) {
+        if (!extension_loaded('oicana')) {
+            throw new \RuntimeException(
+                'The oicana PHP extension is not loaded. '
+                . 'Run "vendor/bin/oicana-env" to get the activation command for your platform, '
+                . 'or add the extension to your php.ini. '
+                . 'See https://docs.oicana.com/ for installation instructions.'
+            );
+        }
+
         $this->templateId = uniqid('template_', true);
 
+        $jsonInputs = self::encodeJsonInputs($jsonInputs);
         $nativeBlobs = $this->prepareBlobInputs($blobInputs);
         $templateBytes = $this->stringToBytes($template);
 
@@ -66,7 +77,7 @@ class Template
     /**
      * Compile template and export to the given format.
      *
-     * @param array<string, string> $jsonInputs JSON inputs (key => JSON string)
+     * @param array<string, string|array<mixed>> $jsonInputs JSON inputs (key => JSON string or array)
      * @param array<string, BlobInput> $blobInputs Blob inputs
      * @param ExportFormat|null $exportFormat Export format configuration (defaults to PDF)
      * @param CompilationMode $mode Compilation mode
@@ -81,6 +92,7 @@ class Template
     ): string {
         $formatArray = ($exportFormat ?? ExportFormat::pdf())->toArray();
 
+        $jsonInputs = self::encodeJsonInputs($jsonInputs);
         $nativeBlobs = $this->prepareBlobInputs($blobInputs);
 
         $docId = \OicanaInternal\compile_template(
@@ -112,7 +124,7 @@ class Template
      * create an instance of Template and use compile() instead.
      *
      * @param string $templateBytes Template zip file bytes
-     * @param array<string, string> $jsonInputs JSON inputs (key => JSON string)
+     * @param array<string, string|array<mixed>> $jsonInputs JSON inputs (key => JSON string or array)
      * @param array<string, BlobInput> $blobInputs Blob inputs
      * @param ExportFormat|null $exportFormat Export format configuration (defaults to PDF)
      * @param CompilationMode $mode Compilation mode
@@ -200,6 +212,23 @@ class Template
         } catch (\Throwable $e) {
             // Best effort cleanup - don't throw in destructor
         }
+    }
+
+    /**
+     * Encode array values in jsonInputs to JSON strings.
+     *
+     * @param array<string, string|array<mixed>> $jsonInputs
+     * @return array<string, string>
+     */
+    private static function encodeJsonInputs(array $jsonInputs): array
+    {
+        $encoded = [];
+        foreach ($jsonInputs as $key => $value) {
+            $encoded[$key] = is_array($value)
+                ? json_encode($value, JSON_THROW_ON_ERROR)
+                : $value;
+        }
+        return $encoded;
     }
 
     /**

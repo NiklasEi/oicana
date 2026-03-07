@@ -40,7 +40,7 @@ cd oicana-php-native
 cargo build --release
 ```
 
-The extension will be built to `../../target/release/liboicana_native.{so,dylib,dll}`.
+The extension will be built to `../../target/release/liboicana_php_native.{so,dylib,dll}`.
 
 ### Installing Locally
 
@@ -51,10 +51,10 @@ After building, install the extension:
 php -i | grep extension_dir
 
 # Copy the extension
-cp ../../target/release/liboicana_native.so /path/to/extensions/
+cp ../../target/release/liboicana_php_native.so /path/to/extensions/
 
 # Add to php.ini
-echo "extension=oicana_native.{so,dylib,dll}" >> /path/to/php.ini
+echo "extension=oicana_php_native.{so,dylib,dll}" >> /path/to/php.ini
 ```
 
 ### Testing
@@ -72,7 +72,7 @@ Note: Requires the native extension to be loaded.
 
 To run the e2e tests with a local extension build:
 ```bash
-php -d extension=../../../target/release/liboicana_native.so vendor/bin/pest tests/E2eTest.php
+php -d extension=../../../target/release/liboicana_php_native.so vendor/bin/pest tests/E2eTest.php
 ```
 
 ### Code Quality
@@ -115,9 +115,9 @@ The packages are published via a custom Composer repository hosted at [oicana/co
 
 ## Binary Naming Convention
 
-Format: `oicana_native-php{VERSION}-{OS}-{ARCH}-{TS}.{EXT}`
+Format: `oicana-php{VERSION}-{OS}-{ARCH}-{TS}.{EXT}`
 
 Examples:
-- `oicana_native-php8.3-linux-x64-nts.so`
-- `oicana_native-php8.4-macos-arm64-zts.dylib`
-- `oicana_native-php8.3-windows-x64-nts.dll`
+- `oicana-php8.3-linux-x64-nts.so`
+- `oicana-php8.4-macos-arm64-zts.dylib`
+- `oicana-php8.3-windows-x64-nts.dll`

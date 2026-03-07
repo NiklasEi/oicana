@@ -20,8 +20,8 @@ final readonly class Platform
     /**
      * Get the binary filename for this platform.
      *
-     * Format: oicana_native-php{VERSION}-{OS}-{ARCH}-{TS}.{EXT}
-     * Example: oicana_native-php8.3-linux-x64-nts.so
+     * Format: oicana-php{VERSION}-{OS}-{ARCH}-{TS}.{EXT}
+     * Example: oicana-php8.3-linux-x64-nts.so
      */
     public function getBinaryName(): string
     {
@@ -32,7 +32,7 @@ final readonly class Platform
         };
 
         return sprintf(
-            'oicana_native-php%s-%s-%s-%s.%s',
+            'oicana-php%s-%s-%s-%s.%s',
             $this->phpVersion,
             $this->os,
             $this->architecture,

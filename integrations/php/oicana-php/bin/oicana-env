@@ -1,0 +1,28 @@
+#!/usr/bin/env php
+<?php
+
+$iniDir = realpath(implode(DIRECTORY_SEPARATOR, [
+    getcwd(),
+    'vendor',
+    'oicana',
+    'installer',
+    'php',
+]));
+
+if ($iniDir === false) {
+    echo 'Oicana installer directory not found. Run "composer install" first.' . PHP_EOL;
+    exit(1);
+}
+
+echo PHP_EOL;
+echo 'Run the following to enable the Oicana extension in this shell session:' . PHP_EOL;
+echo PHP_EOL;
+
+if (PHP_OS_FAMILY === 'Windows') {
+    echo '  set PHP_INI_SCAN_DIR=";' . $iniDir . '"' . PHP_EOL;
+} else {
+    echo '  export PHP_INI_SCAN_DIR=":' . $iniDir . '"' . PHP_EOL;
+}
+
+echo PHP_EOL;
+echo 'Or add it to your shell profile to enable it permanently.' . PHP_EOL;

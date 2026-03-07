@@ -363,6 +363,7 @@ enum ExportFormat {
 #[php(startup = startup_function)]
 pub fn get_module(module: ModuleBuilder) -> ModuleBuilder {
     module
+        .name("oicana")
         .function(wrap_function!(configure_automatic_cache_eviction))
         .function(wrap_function!(evict_cache))
         .function(wrap_function!(register_template))

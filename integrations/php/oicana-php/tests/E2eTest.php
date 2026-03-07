@@ -8,9 +8,9 @@ use Oicana\Inputs\BlobInput;
 use Oicana\Template;
 
 beforeEach(function () {
-    if (!extension_loaded('oicana_native')) {
+    if (!extension_loaded('oicana')) {
         throw new RuntimeException(
-            'oicana_native extension not loaded. Load it with: php -d extension=/path/to/liboicana_native.so'
+            'oicana extension not loaded. Load it with: php -d extension=/path/to/liboicana_php_native.so'
         );
     }
 
@@ -53,6 +53,7 @@ test('e2e production', function () {
 
     $blob = file_get_contents(assets_path('inputs/input.txt'));
     $json = file_get_contents(assets_path('inputs/input.json'));
+    assert(is_string($blob) && is_string($json));
 
     $blobInputs = [
         'development-blob' => new BlobInput($blob, [
@@ -88,6 +89,7 @@ test('e2e all-inputs', function () {
 
     $blob = file_get_contents(assets_path('inputs/input.txt'));
     $json = file_get_contents(assets_path('inputs/input.json'));
+    assert(is_string($blob) && is_string($json));
 
     $blobInputs = [
         'default-blob' => new BlobInput($blob, [

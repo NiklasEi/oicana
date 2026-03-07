@@ -85,7 +85,9 @@ We will define a new endpoint to compile our Oicana template to a PDF and return
     export PHP_INI_SCAN_DIR=":/path/to/my-pdf-service/vendor/oicana/installer/php"
     ```
 
-    Set this environment variable (with your actual project path) before starting PHP. Verify the extension is loaded with: ```bash php -m | grep oicana_native```
+    Set this environment variable (with your actual project path) before starting PHP. Verify the extension is loaded with: ```bash php -m | grep oicana```
+
+    You can re-display this command at any time with: ```bash vendor/bin/oicana-env```
   ]
 
 3. Before proceeding, make sure your template is packaged. Navigate to your template directory and run:
@@ -169,7 +171,7 @@ Our `compile` endpoint is currently calling ```php $template->compile()``` with 
   ```php
   $app->post('/compile', function (Request $request, Response $response) use ($template) {
       $pdf = $template->compile(
-          jsonInputs: ['info' => json_encode(['name' => 'Baby Yoda'])]
+          jsonInputs: ['info' => ['name' => 'Baby Yoda']]
       );
 
       $response->getBody()->write($pdf);
