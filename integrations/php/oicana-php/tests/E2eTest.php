@@ -8,9 +8,9 @@ use Oicana\Inputs\BlobInput;
 use Oicana\Template;
 
 beforeEach(function () {
-    if (!extension_loaded('oicana_native')) {
+    if (!extension_loaded('oicana')) {
         throw new RuntimeException(
-            'oicana_native extension not loaded. Load it with: php -d extension=/path/to/liboicana_native.so'
+            'oicana extension not loaded. Load it with: php -d extension=/path/to/liboicana_php_native.so'
         );
     }
 

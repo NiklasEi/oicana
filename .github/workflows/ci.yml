@@ -442,18 +442,18 @@ jobs:
           - os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
             rust: stable
-            lib: liboicana_native.so
+            lib: liboicana_php_native.so
             flags: "-C link-arg=-Wl,-undefined,dynamic_lookup"
           - os: macos-latest
             target: aarch64-apple-darwin
             rust: stable
-            lib: liboicana_native.dylib
+            lib: liboicana_php_native.dylib
             flags: "-C link-arg=-Wl,-undefined,dynamic_lookup"
           - os: windows-latest
             target: x86_64-pc-windows-msvc
             # ext-php-rs requires nightly Rust when on Windows.
             rust: nightly
-            lib: oicana_native.dll
+            lib: oicana_php_native.dll
             flags: ""
     runs-on: ${{ matrix.os }}
     steps:
@@ -484,7 +484,7 @@ jobs:
           debug: true
       - run: php -v
       - name: Build PHP extension
-        run: cargo build --release --target ${{ matrix.target }} -p oicana_native
+        run: cargo build --release --target ${{ matrix.target }} -p oicana_php_native
         env:
           RUSTFLAGS: ${{ matrix.flags }}
       - run: |
@@ -695,11 +695,11 @@ jobs:
       matrix:
         include:
           - os: ubuntu-latest
-            lib: liboicana_native.so
+            lib: liboicana_php_native.so
           - os: macos-latest
-            lib: liboicana_native.dylib
+            lib: liboicana_php_native.dylib
           - os: windows-latest
-            lib: oicana_native.dll
+            lib: oicana_php_native.dll
     runs-on: ${{ matrix.os }}
     needs:
       - build-tools
@@ -752,7 +752,7 @@ jobs:
           echo "=== PHP version ==="
           php -v
           echo "=== Try loading extension (with errors displayed) ==="
-          php -d display_startup_errors=1 -d error_reporting=E_ALL -d extension=php-ext/${{ matrix.lib }} -r "var_dump(extension_loaded('oicana_native'));" 2>&1
+          php -d display_startup_errors=1 -d error_reporting=E_ALL -d extension=php-ext/${{ matrix.lib }} -r "var_dump(extension_loaded('oicana'));" 2>&1
           echo "=== List loaded modules ==="
           php -d extension=php-ext/${{ matrix.lib }} -m 2>&1
       - name: Run PHP E2E tests

@@ -19,7 +19,7 @@ permissions:
   contents: write
 
 env:
-  LIB_NAME: oicana_native
+  LIB_NAME: oicana_php_native
 
 jobs:
   validate-version:
@@ -95,35 +95,35 @@ jobs:
             runner: ubuntu-latest
             target: x86_64-unknown-linux-gnu
             rust: stable
-            lib: liboicana_native.so
+            lib: liboicana_php_native.so
             flags: "-C link-arg=-Wl,-undefined,dynamic_lookup"
           - os: linux
             arch: arm64
             runner: ubuntu-24.04-arm
             target: aarch64-unknown-linux-gnu
             rust: stable
-            lib: liboicana_native.so
+            lib: liboicana_php_native.so
             flags: "-C link-arg=-Wl,-undefined,dynamic_lookup"
           - os: macos
             arch: x64
             runner: macos-15-intel
             target: x86_64-apple-darwin
             rust: stable
-            lib: liboicana_native.dylib
+            lib: liboicana_php_native.dylib
             flags: "-C link-arg=-Wl,-undefined,dynamic_lookup"
           - os: macos
             arch: arm64
             runner: macos-latest
             target: aarch64-apple-darwin
             rust: stable
-            lib: liboicana_native.dylib
+            lib: liboicana_php_native.dylib
             flags: "-C link-arg=-Wl,-undefined,dynamic_lookup"
           - os: windows
             arch: x64
             runner: windows-latest
             target: x86_64-pc-windows-msvc
             rust: nightly
-            lib: oicana_native.dll
+            lib: oicana_php_native.dll
             flags: ""
         php:
           - '8.3'
@@ -164,7 +164,7 @@ jobs:
             ${{ runner.os }}-cargo-php-${{ matrix.php }}-${{ matrix.ts }}-
             ${{ runner.os }}-cargo-php-
       - name: Build PHP extension
-        run: cargo build --release --target ${{ matrix.platform.target }} -p oicana_native
+        run: cargo build --release --target ${{ matrix.platform.target }} -p oicana_php_native
         env:
           RUSTFLAGS: ${{ matrix.platform.flags }}
       - run: |
@@ -174,13 +174,13 @@ jobs:
         run: |
           EXT=${{ matrix.platform.os == 'windows' && 'dll' || (matrix.platform.os == 'macos' && 'dylib' || 'so') }}
           cp ./target/${{ matrix.platform.target }}/release/${{ matrix.platform.lib }} \
-             ./oicana_native-php${{ matrix.php }}-${{ matrix.platform.os }}-${{ matrix.platform.arch }}-${{ matrix.ts }}.${EXT}
+             ./oicana-php${{ matrix.php }}-${{ matrix.platform.os }}-${{ matrix.platform.arch }}-${{ matrix.ts }}.${EXT}
         shell: bash
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: binary-${{ matrix.platform.os }}-${{ matrix.platform.arch }}-php${{ matrix.php }}-${{ matrix.ts }}
-          path: ./oicana_native-php${{ matrix.php }}-${{ matrix.platform.os }}-${{ matrix.platform.arch }}-${{ matrix.ts }}.*
+          path: ./oicana-php${{ matrix.php }}-${{ matrix.platform.os }}-${{ matrix.platform.arch }}-${{ matrix.ts }}.*
           if-no-files-found: error
 
   create-release:
@@ -243,14 +243,14 @@ jobs:
             If automatic installation fails, download the binary for your platform from the assets below and add it to your `php.ini`:
 
             ```ini
-            extension=/path/to/oicana_native-php8.3-linux-x64-nts.so
+            extension=/path/to/oicana-php8.3-linux-x64-nts.so
             ```
 
             ### Binary Naming Convention
 
-            Format: `oicana_native-php{VERSION}-{OS}-{ARCH}-{TS}.{EXT}`
+            Format: `oicana-php{VERSION}-{OS}-{ARCH}-{TS}.{EXT}`
 
-            Example: `oicana_native-php8.3-linux-x64-nts.so`
+            Example: `oicana-php8.3-linux-x64-nts.so`
 
             ### Documentation
 

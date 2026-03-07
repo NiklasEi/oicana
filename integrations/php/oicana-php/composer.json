@@ -23,7 +23,7 @@
         "oicana/installer": "^0.1.0-alpha.1"
     },
     "suggest": {
-        "ext-oicana_native": "Required for PDF generation. Automatically downloaded by oicana-installer, but must be enabled in php.ini"
+        "ext-oicana": "Required for PDF generation. Automatically downloaded by oicana-installer, but must be enabled through php.ini"
     },
     "require-dev": {
         "pestphp/pest": "^2.0",
@@ -40,6 +40,7 @@
             "Oicana\\Tests\\": "tests/"
         }
     },
+    "bin": ["bin/oicana-env"],
     "scripts": {
         "test": "pest",
         "phpstan": "phpstan analyse src tests --level=8",
