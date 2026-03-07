@@ -136,7 +136,10 @@ final class InstallerPlugin implements PluginInterface, EventSubscriberInterface
 
         $io->write('');
         $io->write('<comment>Verify the extension is loaded with:</comment>');
-        $io->write('<comment>  php -m | grep oicana_native</comment>');
+        $io->write('<comment>  php -m | grep oicana</comment>');
+        $io->write('');
+        $io->write('<comment>You can re-display this command at any time with:</comment>');
+        $io->write('<comment>  vendor/bin/oicana-env</comment>');
         $io->write('');
     }
 }

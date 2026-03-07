@@ -8,8 +8,8 @@ use Oicana\Inputs\BlobInput;
 use Oicana\Template;
 
 beforeEach(function () {
-    if (!extension_loaded('oicana_native')) {
-        test()->markTestSkipped('oicana_native extension not loaded');
+    if (!extension_loaded('oicana')) {
+        test()->markTestSkipped('oicana extension not loaded');
     }
 
     if (!file_exists(e2e_template_path())) {
@@ -46,6 +46,7 @@ test('template compiles with JSON inputs', function () {
     $template = new Template($templateBytes);
 
     $jsonContent = file_get_contents(assets_path('inputs/input.json'));
+    assert(is_string($jsonContent));
 
     try {
         $pdf = $template->compile(

@@ -19,7 +19,7 @@ This is the low-level native binding layer for the Oicana PHP integration. **Mos
 cargo build --release
 ```
 
-The extension will be compiled to `target/release/liboicana_native.so` (Linux), `liboicana_native.dylib` (macOS), or `oicana_native.dll` (Windows).
+The extension will be compiled to `target/release/liboicana_php_native.so` (Linux), `liboicana_php_native.dylib` (macOS), or `oicana_php_native.dll` (Windows).
 
 ### Installing Locally
 
@@ -30,7 +30,7 @@ After building, copy the extension to your PHP extensions directory:
 php -i | grep extension_dir
 
 # Copy the extension
-cp target/release/liboicana_native.so /path/to/extensions/
+cp target/release/liboicana_php_native.so /path/to/extensions/
 
 # Or use cargo-php if available
 cargo install cargo-php
@@ -40,5 +40,5 @@ cargo php install --release
 Then add to your `php.ini`:
 
 ```ini
-extension=oicana_native.so
+extension=oicana_php_native.so
 ```
