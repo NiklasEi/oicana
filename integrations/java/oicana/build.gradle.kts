@@ -1,5 +1,3 @@
-// Sources and javadoc JARs are configured for all subprojects in the root build file.
-
 dependencies {
     testImplementation("org.junit.jupiter:junit-jupiter:5.11.4")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")

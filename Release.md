@@ -10,12 +10,22 @@
   * Python:
     * native: integrations/python/oicana-python-native/pyproject.toml and integrations/python/oicana-python-native/Cargo.toml
     * wrapper: integrations/python/oicana-python/pyproject.toml
+  * PHP:
+    * integrations/php/oicana-php-native/Cargo.toml
+    * integrations/php/oicana-php/composer.json
+    * integrations/php/oicana-php-installer/composer.json
+    * integrations/php/oicana-php-installer/src/BinaryDownloader.php
+  * Java:
+    * integrations/java/oicana-java-native/Cargo.toml
+    * integrations/java/build.gradle.kts (version in `subprojects` block)
 4.
   * tag CLI version => will trigger CD pipeline; publish to crates.io manually
   * crates version => manual publish
   * tag C# version => will trigger CD pipeline
   * tag browser => trigger CD pipeline `publish npm @oicana/browser-wasm`
   * tag python => will trigger CD pipeline
+  * tag PHP `oicana_php-v*` => will trigger CD pipeline
+  * tag Java `oicana_java-v*` => will trigger CD pipeline
 5.
   * bump Node.Js wrapper integrations/node/oicana-node/package.json
     * `npm i` after bumping dependency
@@ -74,6 +84,20 @@ then rebuild the bindings with `yarn build` and format them via `yarn format`.
 The CD pipeline for `@oicana/node-native` runs on merges to main. It will publish the package if the current version doesn't exist on the index yet.
 
 The wrapper package `@oicana/node` is currently published manually.
+
+## PHP
+
+Push a tag `oicana_php-v0.0.0-alpha.1` or manually trigger .github/workflows/publish-integration-php.yml with a version input.
+
+The CD pipeline validates version consistency across all 4 version sources, builds native extensions for PHP 8.3/8.4/8.5 (NTS + ZTS) on Linux, macOS, and Windows, creates a GitHub release with binaries, and triggers a Composer registry rebuild.
+
+## Java
+
+Push a tag `oicana_java-v0.0.0-alpha.1` or manually trigger .github/workflows/publish-integration-java.yml with a version input.
+
+The CD pipeline validates version consistency, builds JNI native libraries for 5 platforms, and publishes 6 artifacts to Maven Central via the Sonatype Central Portal:
+- `com.oicana:oicana` (API JAR)
+- `com.oicana:oicana-{platform}` (native JARs per platform)
 
 ## Crates
 
