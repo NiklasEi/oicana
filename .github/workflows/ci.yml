@@ -941,7 +941,6 @@ jobs:
           sleep 15
         working-directory: docs
       - name: check for broken links
-        continue-on-error: true
         run: npx linkinator http://localhost:25520 --recurse --config .github/linkinator.config.json
       - name: clean up
         if: always()
@@ -950,5 +949,72 @@ jobs:
           echo "::: Shiroa Logs :::"
           cat /tmp/shiroa.log || true
       - name: check readme links
-        continue-on-error: true
+        if: always()
         run: npx linkinator README.md integrations/typst/README.md integrations/csharp/Oicana/Readme.md integrations/browser/oicana-browser/README.md --config .github/linkinator.config.json
+
+  # This job gates PR merges; add any new jobs to 'needs' below.
+  # Jobs in 'allowed_failures' may fail without blocking the workflow.
+  #
+  # This is a workaround for GitHub requiring listing all required jobs... (see https://github.com/orgs/community/discussions/12395)
+  ci-workflow-status:
+    name: Check Workflow Status
+    runs-on: ubuntu-latest
+    needs:
+      [
+        lint-crates,
+        check-crates,
+        test-crates,
+        check-node-integration,
+        check-browser-integration,
+        check-csharp-integration,
+        check-python-integration,
+        check-php-integration,
+        build-csharp,
+        build-browser-wasm,
+        build-node-native,
+        build-tools,
+        build-python-native,
+        build-php-native,
+        build-java-native,
+        e2e-test-node-integration,
+        e2e-test-browser-integration,
+        e2e-test-csharp-integration,
+        e2e-test-python-integration,
+        e2e-test-php-integration,
+        e2e-test-java-integration,
+        e2e-test-cli,
+        typst-integration,
+        spelling,
+        validate-links,
+      ]
+    if: always()
+    steps:
+      - name: Check Workflow Status
+        run: |
+          allowed_failures="validate-links"
+          failed=""
+          cancelled=""
+          names='${{ toJson(needs) }}'
+          while IFS= read -r job; do
+            result=$(echo "$names" | jq -r --arg job "$job" '.[$job].result')
+            if echo "$allowed_failures" | grep -qw "$job"; then
+              if [[ "$result" == "failure" || "$result" == "cancelled" ]]; then
+                echo "Allowed failure: $job ($result)"
+              fi
+              continue
+            fi
+            if [[ "$result" == "failure" ]]; then
+              failed="$failed\n  - $job"
+            elif [[ "$result" == "cancelled" ]]; then
+              cancelled="$cancelled\n  - $job"
+            fi
+          done < <(echo "$names" | jq -r 'keys[]')
+          if [[ -n "$failed" || -n "$cancelled" ]]; then
+            if [[ -n "$failed" ]]; then
+              echo -e "Failed jobs:$failed"
+            fi
+            if [[ -n "$cancelled" ]]; then
+              echo -e "Cancelled jobs:$cancelled"
+            fi
+            exit 1
+          fi
