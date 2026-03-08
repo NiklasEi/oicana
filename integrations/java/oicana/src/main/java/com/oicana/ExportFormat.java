@@ -5,24 +5,48 @@ package com.oicana;
  */
 public sealed interface ExportFormat {
 
+    /** PDF export format. */
     record Pdf() implements ExportFormat {}
 
+    /** PNG export format with configurable resolution. */
     record Png(float pixelsPerPt) implements ExportFormat {}
 
+    /** SVG export format. */
     record Svg() implements ExportFormat {}
 
+    /**
+     * Create a PDF export format.
+     *
+     * @return a PDF export format
+     */
     static ExportFormat pdf() {
         return new Pdf();
     }
 
+    /**
+     * Create a PNG export format with the given resolution.
+     *
+     * @param pixelsPerPt the number of pixels per point (e.g. 1.0 for 72 DPI, 2.0 for 144 DPI)
+     * @return a PNG export format
+     */
     static ExportFormat png(float pixelsPerPt) {
         return new Png(pixelsPerPt);
     }
 
+    /**
+     * Create an SVG export format.
+     *
+     * @return an SVG export format
+     */
     static ExportFormat svg() {
         return new Svg();
     }
 
+    /**
+     * Serialize this export format to a JSON string for the native layer.
+     *
+     * @return JSON representation of the export format
+     */
     default String toJsonString() {
         if (this instanceof Pdf) {
             return "{\"format\":\"pdf\"}";
