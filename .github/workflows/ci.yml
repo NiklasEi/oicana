@@ -846,12 +846,12 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: java_native_${{ runner.os }}
-          path: integrations/java/oicana/src/main/resources/natives/${{ matrix.natives_dir }}
+          path: integrations/java/natives/${{ matrix.natives_dir }}/src/main/resources/natives/${{ matrix.natives_dir }}
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
       - name: Run Java E2E tests
-        working-directory: integrations/java/oicana
-        run: ./gradlew test
+        working-directory: integrations/java
+        run: ./gradlew :oicana:test
       - name: compare test output
         run: test-compare e2e-tests/template integrations/java/oicana/testOutput/
 

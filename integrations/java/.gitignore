@@ -1,0 +1,3 @@
+natives/**/*.so
+natives/**/*.dylib
+natives/**/*.dll
