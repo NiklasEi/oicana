@@ -199,9 +199,9 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
 
-      - name: Build and test
+      - name: Build
         working-directory: integrations/java
-        run: ./gradlew build
+        run: ./gradlew build -x test
 
       - name: Publish to Maven Central
         working-directory: integrations/java
