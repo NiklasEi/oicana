@@ -20,24 +20,32 @@
       section: "2.4",
     )[Choose Your Integration]
     - #chapter(
-        "getting-started/4-1-csharp-integration.typ",
+        "getting-started/4-1-browser-integration.typ",
         section: "2.4.1",
+      )[Browser using React]
+    - #chapter(
+        "getting-started/4-2-csharp-integration.typ",
+        section: "2.4.2",
       )[C#sym.hash using ASP.NET]
     - #chapter(
-        "getting-started/4-2-rust-integration.typ",
-        section: "2.4.2",
-      )[Rust using Axum]
-    - #chapter(
-        "getting-started/4-3-nodejs-integration.typ",
+        "getting-started/4-3-java-integration.typ",
         section: "2.4.3",
+      )[Java using Spring Boot]
+    - #chapter(
+        "getting-started/4-4-nodejs-integration.typ",
+        section: "2.4.4",
       )[Node.js using NestJS]
     - #chapter(
-        "getting-started/4-4-python-integration.typ",
-        section: "2.4.4",
+        "getting-started/4-5-rust-integration.typ",
+        section: "2.4.5",
+      )[Rust using Axum]
+    - #chapter(
+        "getting-started/4-6-python-integration.typ",
+        section: "2.4.6",
       )[Python using FastAPI]
     - #chapter(
-        "getting-started/4-5-php-integration.typ",
-        section: "2.4.5",
+        "getting-started/4-7-php-integration.typ",
+        section: "2.4.7",
       )[PHP using Slim]
 
   == Templating

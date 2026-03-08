@@ -6,7 +6,7 @@ You've created a working Oicana template with a dynamic input! Now it's time to 
 
 == One Template, Multiple Platforms
 
-A key strength of Oicana is that the exact same template works across all integrations. The `example-0.1.0.zip` file you created can be used in C#sym.hash, Node.js, Rust, Python, PHP, or browser environments.
+A key strength of Oicana is that the exact same template works across all integrations. The `example-0.1.0.zip` file you created can be used in C#sym.hash, Java, Node.js, Rust, Python, PHP, or browser environments.
 
 \
 Develop templates once and use them everywhere.
@@ -21,37 +21,51 @@ The following chapters provide step-by-step guides for using your template with 
 \
 If you're working on a multi-language project or want to compare approaches, feel free to explore multiple paths. Each guide is self-contained and uses the same template you created earlier.
 
+=== Browser / React
+
+#link("4-1-browser-integration.html")[Go to Browser Guide →]
+
+\
+#note[Prerequisites: Node.js 18+ and a bundler like Vite]
+
 === C#sym.hash / ASP.NET
 
-#link("4-1-csharp-integration.html")[Go to C#sym.hash Guide →]
+#link("4-2-csharp-integration.html")[Go to C#sym.hash Guide →]
 
 \
 #note[Prerequisites: .NET 8 or later installed on your machine]
 
+=== Java / Spring Boot
+
+#link("4-3-java-integration.html")[Go to Java Guide →]
+
+\
+#note[Prerequisites: Java 17+ and Gradle installed on your machine]
+
 === Node.js / NestJS
 
-#link("4-3-nodejs-integration.html")[Go to Node.js Guide →]
+#link("4-4-nodejs-integration.html")[Go to Node.js Guide →]
 
 \
 #note[Prerequisites: Node.js 18 or later installed on your machine]
 
 === Rust / Axum
 
-#link("4-2-rust-integration.html")[Go to Rust Guide →]
+#link("4-5-rust-integration.html")[Go to Rust Guide →]
 
 \
 #note[Prerequisites: Rust toolchain (cargo) installed on your machine]
 
 === Python / FastAPI
 
-#link("4-4-python-integration.html")[Go to Python Guide →]
+#link("4-6-python-integration.html")[Go to Python Guide →]
 
 \
 #note[Prerequisites: Python 3.9+ and pip or uv]
 
 === PHP / Slim
 
-#link("4-5-php-integration.html")[Go to PHP Guide →]
+#link("4-7-php-integration.html")[Go to PHP Guide →]
 
 \
 #note[Prerequisites: PHP 8.3+ and Composer installed on your machine]

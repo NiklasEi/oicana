@@ -19,7 +19,7 @@ The #docs-link(<getting-started-setup>, "./getting-started/1-setup.html")[gettin
 == Packing
 
 During development, an Oicana template is a directory containing at least one Typst source file and a `typst.toml` manifest.
-Before it can be compiled from Oicana integrations like the NuGet or NPM packages, the template has to be packed.
+Before it can be compiled from Oicana integrations, the template has to be packed.
 
 \
 Packing is done via the Oicana CLI using the `pack` command. The output is a compressed file containing the template and all its dependencies.
