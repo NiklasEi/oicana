@@ -8,7 +8,11 @@ public sealed interface ExportFormat {
     /** PDF export format. */
     record Pdf() implements ExportFormat {}
 
-    /** PNG export format with configurable resolution. */
+    /**
+     * PNG export format with configurable resolution.
+     *
+     * @param pixelsPerPt the number of pixels per pt; higher values produce sharper but larger images
+     */
     record Png(float pixelsPerPt) implements ExportFormat {}
 
     /** SVG export format. */
