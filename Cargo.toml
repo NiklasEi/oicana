@@ -12,6 +12,7 @@ members = [
     "integrations/node/oicana-node-native",
     "integrations/python/oicana-python-native",
     "integrations/php/oicana-php-native",
+    "integrations/java/oicana-java-native",
     "tools/test_compare",
     "tools/oicana_cli",
 ]

@@ -1,0 +1,6 @@
+.gradle/
+build/
+natives/**/build/
+natives/**/*.so
+natives/**/*.dylib
+natives/**/*.dll

@@ -25,6 +25,35 @@ The nuget package `Oicana` has a native interface to work with Oicana templates 
 
 An example ASP.NET project using the package #link("https://github.com/oicana/oicana-example-asp-net/")[can be found on GitHub].
 
+== Java
+
+The `com.oicana:oicana` Maven package provides a native JNI interface to work with Oicana templates from Java. It uses native bindings for optimal performance on the server.
+
+In addition to the main package, you need to add the native dependency for your target platform(s):
+
+#table(
+  columns: (auto, auto),
+  [*Platform*], [*Artifact*],
+  [Linux x86_64], [`com.oicana:oicana-linux-x86_64`],
+  [Linux aarch64], [`com.oicana:oicana-linux-aarch64`],
+  [macOS x86_64], [`com.oicana:oicana-macos-x86_64`],
+  [macOS aarch64], [`com.oicana:oicana-macos-aarch64`],
+  [Windows x86_64], [`com.oicana:oicana-windows-x86_64`],
+)
+
+For example, in Gradle:
+
+```kotlin
+dependencies {
+    implementation("com.oicana:oicana:0.1.0-alpha.1")
+    runtimeOnly("com.oicana:oicana-linux-x86_64:0.1.0-alpha.1")
+}
+```
+
+You can add multiple native dependencies if your team uses different platforms. Only the matching native library will be loaded at runtime.
+
+An example Spring Boot application using the package #link("https://github.com/oicana/oicana-example-java-spring-boot/")[can be found on GitHub].
+
 == Node.js
 
 https://www.npmjs.com/package/@oicana/node

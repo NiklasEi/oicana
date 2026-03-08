@@ -147,7 +147,7 @@ php -S localhost:8000 index.php
 ```
 
 \
-#note[PHP's built-in development server (```bash php -S```) is single-threaded and handles only one request at a time. This is fine for testing, but for production deployments, use a proper web server like Nginx or Apache with PHP-FPM for concurrent request handling.]
+#note[PHP's built-in development server (```bash php -S```) starts a new process for each request, so state like loaded templates is not preserved between requests. This is fine for quick testing, but for production deployments, use a long-running PHP application server like #link("https://roadrunner.dev/")[RoadRunner]. RoadRunner keeps your PHP worker process alive, so templates are loaded once at startup and stay in memory across all requests. See the #link("https://github.com/oicana/oicana-example-php-slim/")[example project on GitHub] for a RoadRunner setup.]
 
 \
 Test the endpoint with curl:

@@ -1,0 +1,276 @@
+name: publish java
+
+# This workflow builds and publishes the Java integration
+#
+# It requires the secrets MAVEN_CENTRAL_USERNAME, MAVEN_CENTRAL_PASSWORD, GPG_KEY_ID, GPG_SIGNING_KEY, and GPG_PASSPHRASE
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to publish (e.g. 0.1.0-alpha.1)'
+        type: string
+        required: true
+  push:
+    tags:
+      - 'oicana_java-v[0-9]+.[0-9]+.[0-9]+*'
+
+permissions:
+  contents: write
+
+env:
+  LIB_NAME: oicana_java_native
+
+jobs:
+  validate-version:
+    name: Validate version consistency
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.VERSION }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Determine and validate version
+        id: version
+        run: |
+          if [[ "${{ github.ref_name }}" == oicana_java-v* ]]; then
+            VERSION="${{ github.ref_name }}"
+            VERSION="${VERSION#oicana_java-v}"
+          elif [[ -n "${{ inputs.version }}" ]]; then
+            VERSION="${{ inputs.version }}"
+          else
+            echo "::error::Version must be provided via tag or workflow input"
+            exit 1
+          fi
+          echo "VERSION=${VERSION}" >> $GITHUB_OUTPUT
+          echo "Publishing version: ${VERSION}"
+
+          ERRORS=()
+
+          CARGO_VERSION=$(grep '^version = ' integrations/java/oicana-java-native/Cargo.toml | head -n1 | sed 's/version = "\(.*\)"/\1/')
+          if [[ "$CARGO_VERSION" != "$VERSION" ]]; then
+            ERRORS+=("oicana-java-native/Cargo.toml has version $CARGO_VERSION")
+          fi
+
+          GRADLE_VERSION=$(grep '^    version = ' integrations/java/build.gradle.kts | head -n1 | sed 's/.*version = "\(.*\)"/\1/')
+          if [[ "$GRADLE_VERSION" != "$VERSION" ]]; then
+            ERRORS+=("build.gradle.kts has version $GRADLE_VERSION")
+          fi
+
+          if [[ ${#ERRORS[@]} -gt 0 ]]; then
+            echo "::error::Version mismatch for ${VERSION}:"
+            for err in "${ERRORS[@]}"; do
+              echo "::error::  - $err"
+            done
+            exit 1
+          fi
+
+          echo "All version sources match: ${VERSION}"
+
+  build-linux-x86_64:
+    needs: validate-version
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Install rust toolchain
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: stable
+      - name: Build release
+        run: cargo build --release -p ${{ env.LIB_NAME }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: oicana-java-linux-x86_64
+          path: target/release/lib${{ env.LIB_NAME }}.so
+
+  build-linux-aarch64:
+    needs: validate-version
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Install rust toolchain
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: stable
+          targets: aarch64-unknown-linux-gnu
+      - name: Install cross-compilation tools
+        run: sudo apt-get update && sudo apt-get install -y gcc-aarch64-linux-gnu
+      - name: Build release
+        run: cargo build --release -p ${{ env.LIB_NAME }} --target=aarch64-unknown-linux-gnu
+        env:
+          CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: aarch64-linux-gnu-gcc
+      - uses: actions/upload-artifact@v4
+        with:
+          name: oicana-java-linux-aarch64
+          path: target/aarch64-unknown-linux-gnu/release/lib${{ env.LIB_NAME }}.so
+
+  build-macos-x86_64:
+    needs: validate-version
+    runs-on: macos-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Install rust toolchain
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: stable
+          targets: x86_64-apple-darwin
+      - name: Build release
+        run: cargo build --release -p ${{ env.LIB_NAME }} --target=x86_64-apple-darwin
+      - uses: actions/upload-artifact@v4
+        with:
+          name: oicana-java-macos-x86_64
+          path: target/x86_64-apple-darwin/release/lib${{ env.LIB_NAME }}.dylib
+
+  build-macos-aarch64:
+    needs: validate-version
+    runs-on: macos-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Install rust toolchain
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: stable
+          targets: aarch64-apple-darwin
+      - name: Build release
+        run: cargo build --release -p ${{ env.LIB_NAME }} --target=aarch64-apple-darwin
+      - uses: actions/upload-artifact@v4
+        with:
+          name: oicana-java-macos-aarch64
+          path: target/aarch64-apple-darwin/release/lib${{ env.LIB_NAME }}.dylib
+
+  build-windows:
+    needs: validate-version
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Install rust toolchain
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: stable
+      - name: Build release
+        run: cargo build --release -p ${{ env.LIB_NAME }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: oicana-java-windows-x86_64
+          path: target/release/${{ env.LIB_NAME }}.dll
+
+  package-and-publish:
+    runs-on: ubuntu-latest
+    needs: [validate-version, build-linux-x86_64, build-linux-aarch64, build-macos-x86_64, build-macos-aarch64, build-windows]
+    env:
+      VERSION: ${{ needs.validate-version.outputs.version }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      # Download native libraries into the corresponding subproject resource directories
+      - uses: actions/download-artifact@v4
+        with:
+          name: oicana-java-linux-x86_64
+          path: integrations/java/natives/linux-x86_64/src/main/resources/natives/linux-x86_64
+      - uses: actions/download-artifact@v4
+        with:
+          name: oicana-java-linux-aarch64
+          path: integrations/java/natives/linux-aarch64/src/main/resources/natives/linux-aarch64
+      - uses: actions/download-artifact@v4
+        with:
+          name: oicana-java-macos-x86_64
+          path: integrations/java/natives/macos-x86_64/src/main/resources/natives/macos-x86_64
+      - uses: actions/download-artifact@v4
+        with:
+          name: oicana-java-macos-aarch64
+          path: integrations/java/natives/macos-aarch64/src/main/resources/natives/macos-aarch64
+      - uses: actions/download-artifact@v4
+        with:
+          name: oicana-java-windows-x86_64
+          path: integrations/java/natives/windows-x86_64/src/main/resources/natives/windows-x86_64
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Build and test
+        working-directory: integrations/java
+        run: ./gradlew build
+
+      - name: Publish to Maven Central
+        working-directory: integrations/java
+        run: ./gradlew publishAndReleaseToMavenCentral -PRELEASE_SIGNING_ENABLED=true
+        env:
+          ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
+          ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
+          ORG_GRADLE_PROJECT_signingInMemoryKeyId: ${{ secrets.GPG_KEY_ID }}
+          ORG_GRADLE_PROJECT_signingInMemoryKey: ${{ secrets.GPG_SIGNING_KEY }}
+          ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ${{ secrets.GPG_PASSPHRASE }}
+
+  create-release:
+    name: Create GitHub Release
+    needs: [validate-version, package-and-publish]
+    runs-on: ubuntu-latest
+    env:
+      VERSION: ${{ needs.validate-version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: oicana_java-v${{ env.VERSION }}
+          name: Java Integration v${{ env.VERSION }}
+          body: |
+            ## Oicana Java Integration v${{ env.VERSION }}
+
+            ### Installation (Gradle)
+
+            ```kotlin
+            dependencies {
+                implementation("com.oicana:oicana:${{ env.VERSION }}")
+                runtimeOnly("com.oicana:oicana-linux-x86_64:${{ env.VERSION }}")
+            }
+            ```
+
+            ### Installation (Maven)
+
+            ```xml
+            <dependency>
+                <groupId>com.oicana</groupId>
+                <artifactId>oicana</artifactId>
+                <version>${{ env.VERSION }}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.oicana</groupId>
+                <artifactId>oicana-linux-x86_64</artifactId>
+                <version>${{ env.VERSION }}</version>
+                <scope>runtime</scope>
+            </dependency>
+            ```
+
+            ### Available native artifacts
+
+            | Platform | Artifact |
+            |---|---|
+            | Linux x86_64 | `com.oicana:oicana-linux-x86_64` |
+            | Linux aarch64 | `com.oicana:oicana-linux-aarch64` |
+            | macOS x86_64 | `com.oicana:oicana-macos-x86_64` |
+            | macOS aarch64 | `com.oicana:oicana-macos-aarch64` |
+            | Windows x86_64 | `com.oicana:oicana-windows-x86_64` |
+
+            ### Documentation
+
+            - [GitHub Repository](https://github.com/oicana/oicana)
+            - [Documentation](https://docs.oicana.com)
+            - [Example Spring Boot Application](https://github.com/oicana/oicana-example-java-spring-boot)
+          draft: false
+          prerelease: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
