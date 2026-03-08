@@ -47,12 +47,12 @@ jobs:
 
           ERRORS=()
 
-          CARGO_VERSION=$(grep '^version = ' integrations/java/oicana-java-native/Cargo.toml | head -n1 | sed 's/version = "\(.*\)"/\1/')
+          CARGO_VERSION=$(grep '^version' integrations/java/oicana-java-native/Cargo.toml | head -n1 | sed 's/.*= "\(.*\)"/\1/')
           if [[ "$CARGO_VERSION" != "$VERSION" ]]; then
             ERRORS+=("oicana-java-native/Cargo.toml has version $CARGO_VERSION")
           fi
 
-          GRADLE_VERSION=$(grep '^    version = ' integrations/java/build.gradle.kts | head -n1 | sed 's/.*version = "\(.*\)"/\1/')
+          GRADLE_VERSION=$(grep 'version = ' integrations/java/build.gradle.kts | head -n1 | sed 's/.*version = "\(.*\)"/\1/')
           if [[ "$GRADLE_VERSION" != "$VERSION" ]]; then
             ERRORS+=("build.gradle.kts has version $GRADLE_VERSION")
           fi
