@@ -117,7 +117,7 @@ The generated `example.pdf` file should contain your template with the developme
 PDF generation should typically take only a few milliseconds per request. Since we're loading the template once at startup and sharing it via ```rust Arc```, there's no file I/O overhead on subsequent requests.
 
 \
-For managing multiple templates, the #link("https://github.com/oicana/oicana-example-axum/")[open source Axum example project on GitHub] demonstrates using a ```rust DashMap``` for thread-safe template caching.
+For managing multiple templates, the #link("https://github.com/oicana/oicana-example-rust-axum/")[open source Axum example project on GitHub] demonstrates using a ```rust DashMap``` for thread-safe template caching.
 
 == Passing inputs from Rust
 
@@ -152,4 +152,4 @@ Our `compile` function currently does not set a value for the template input. Si
 Notice that we switched to ```rust CompilationConfig::production()``` now that we're providing explicit input values. Production mode is the recommended default for all document compilation in your application - it ensures you never accidentally generate a document with test data. In production mode, the template will never fall back to development values for inputs. If an input value is missing in production mode and the input does not have a default value, the compilation will fail unless your template handles ```typst none``` values for that input.
 
 \
-Calling the endpoint now will result in a PDF with "Baby Yoda" instead of "Chuck Norris". Building on this minimal service, you could set input values based on database entries or the request payload. Take a look at the #link("https://github.com/oicana/oicana-example-axum/")[open source Axum example project on GitHub] for a more complete showcase of the Oicana Rust integration, including blob inputs, error handling, and OpenAPI documentation.
+Calling the endpoint now will result in a PDF with "Baby Yoda" instead of "Chuck Norris". Building on this minimal service, you could set input values based on database entries or the request payload. Take a look at the #link("https://github.com/oicana/oicana-example-rust-axum/")[open source Axum example project on GitHub] for a more complete showcase of the Oicana Rust integration, including blob inputs, error handling, and OpenAPI documentation.

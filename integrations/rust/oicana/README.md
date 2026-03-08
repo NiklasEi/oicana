@@ -9,4 +9,4 @@ This crate can compile Oicana templates in Rust projects.
 
 ## Open source example
 
-You can find an example Axum application using this crate on GitHub: https://github.com/oicana/oicana-example-axum
+You can find an example Axum application using this crate on GitHub: https://github.com/oicana/oicana-example-rust-axum
