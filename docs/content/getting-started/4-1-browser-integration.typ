@@ -34,8 +34,7 @@ npm install @oicana/browser @oicana/browser-wasm
   \
   #code("src/App.tsx", ```tsx
   import { useEffect, useState } from 'react';
-  import { initialize, Template, CompilationMode } from '@oicana/browser';
-  import { Pdf } from '@oicana/browser/ExportFormat';
+  import { initialize, Template, CompilationMode, Pdf } from '@oicana/browser';
   import wasmUrl from '@oicana/browser-wasm/oicana_browser_wasm_bg.wasm?url';
 
   function App() {
@@ -55,7 +54,7 @@ npm install @oicana/browser @oicana/browser-wasm
       const pdf = template!.compile(
         new Map(),
         new Map(),
-        Pdf(),
+        Pdf,
         CompilationMode.Development,
       );
 
