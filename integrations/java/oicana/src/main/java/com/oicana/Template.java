@@ -13,7 +13,7 @@ import java.util.UUID;
  * <p>Use try-with-resources for automatic cleanup:
  * <pre>{@code
  * try (var template = new Template(zipBytes)) {
- *     byte[] pdf = template.compile(Map.of("name", "{\"value\": \"World\"}"));
+ *     byte[] pdf = template.compile(Map.of("name", "{\"value\": \"World\"}"), Map.of());
  * }
  * }</pre>
  */
@@ -62,13 +62,25 @@ public class Template implements AutoCloseable {
     }
 
     /**
-     * Compile the template to PDF with the given JSON inputs in production mode.
+     * Compile the template without any inputs using the given export format and compilation mode.
      *
-     * @param jsonInputs the JSON inputs for the template
+     * @param exportFormat the output format
+     * @param mode         the compilation mode
      * @return the compiled document as a byte array
      */
-    public byte[] compile(Map<String, String> jsonInputs) {
-        return compile(jsonInputs, Map.of(), ExportFormat.pdf(), CompilationMode.PRODUCTION);
+    public byte[] compile(ExportFormat exportFormat, CompilationMode mode) {
+        return compile(Map.of(), Map.of(), exportFormat, mode);
+    }
+
+    /**
+     * Compile the template to PDF with the given inputs in production mode.
+     *
+     * @param jsonInputs the JSON inputs for the template
+     * @param blobInputs the blob inputs for the template
+     * @return the compiled document as a byte array
+     */
+    public byte[] compile(Map<String, String> jsonInputs, Map<String, BlobInput> blobInputs) {
+        return compile(jsonInputs, blobInputs, ExportFormat.pdf(), CompilationMode.PRODUCTION);
     }
 
     /**

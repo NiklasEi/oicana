@@ -13,7 +13,7 @@ Let's start with a fresh Slim project. Create a new directory for your PHP proje
 ```bash
 mkdir my-pdf-service
 cd my-pdf-service
-composer init --no-interaction
+composer init
 ```
 
 Install Slim with its PSR-7 implementation:

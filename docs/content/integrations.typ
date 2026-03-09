@@ -45,8 +45,8 @@ For example, in Gradle:
 
 ```kotlin
 dependencies {
-    implementation("com.oicana:oicana:0.1.0-alpha.1")
-    runtimeOnly("com.oicana:oicana-linux-x86_64:0.1.0-alpha.1")
+    implementation("com.oicana:oicana:0.1.0-alpha.2")
+    runtimeOnly("com.oicana:oicana-linux-x86_64:0.1.0-alpha.2")
 }
 ```
 
