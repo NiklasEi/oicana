@@ -9,6 +9,11 @@ import java.util.Map;
  * @param metadata optional metadata as key-value pairs (will be serialized to JSON)
  */
 public record BlobInput(byte[] data, Map<String, Object> metadata) {
+    /**
+     * Create a blob input with data and no metadata.
+     *
+     * @param data the binary content of the blob
+     */
     public BlobInput(byte[] data) {
         this(data, null);
     }

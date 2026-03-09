@@ -11,4 +11,4 @@ This package can live-preview Oicana templates and compile them with given input
 
 ## Open source example
 
-You can find an example React application using this package on GitHub: https://github.com/oicana/oicana-example-react
+You can find an example React application using this package on GitHub: https://github.com/oicana/oicana-example-typescript-react

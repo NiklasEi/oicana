@@ -21,10 +21,13 @@ The [getting started guide][getting-started] demonstrates how to
 1. Create an Oicana Template
 2. Define and use inputs for the template
 3. Compile a PDF based on the template from either a
+   * Browser application using [React](https://react.dev/)
    * C# application using [ASP.NET](https://dotnet.microsoft.com/en-us/apps/aspnet)
-   * Rust application with [axum](https://github.com/tokio-rs/axum)
-   * Node.js application using [NestJs](https://nestjs.com/)
+   * Java application using [Spring Boot](https://spring.io/projects/spring-boot)
+   * Node.js application using [NestJS](https://nestjs.com/)
+   * Rust application with [Axum](https://github.com/tokio-rs/axum)
    * Python application with [FastAPI](https://fastapi.tiangolo.com/)
+   * PHP application with [Slim](https://www.slimframework.com/)
 
 ## Available integrations
 
@@ -35,8 +38,10 @@ Ready to use:
     * in the browser -> [@oicana/browser](https://www.npmjs.com/package/@oicana/browser)
     * Node.js -> [@oicana/node](https://www.npmjs.com/package/@oicana/node)
 * C# -> [Oicana](https://www.nuget.org/packages/Oicana)
+* Java -> [com.oicana:oicana](https://central.sonatype.com/artifact/com.oicana/oicana)
 * Rust -> [oicana](https://crates.io/crates/oicana)
 * Python -> [oicana](https://pypi.org/project/oicana/)
+* PHP -> [oicana/oicana](https://composer.oicana.com)
 
 You can find an open source example project in the [Oicana GitHub organization][oicana-github] for every available integration.
 The example project for the browser integration is deployed to https://example.oicana.com (not compatible with some mobile browsers).

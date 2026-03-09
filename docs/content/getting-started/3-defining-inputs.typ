@@ -97,7 +97,7 @@ Now we can pass names into the template from any Oicana integration.
 
 == Compiling with the CLI
 
-Running ```bash oicana compile --development``` should create a PDF file in an `output` directory. To set the input value from the CLI, copy `info.json` to `test-input.json` and change the name inside. Then run ```bash oicana compile -j info=test-input.json``` and the new PDF file in `output` will contain whatever name you configured.
+Running ```bash oicana compile --development``` should create a PDF file in an `output` directory. To set the input value from the CLI, copy `info.json` to `test-input.json` and then change the name in the new file. Then run ```bash oicana compile -j info=test-input.json``` and the new PDF file in `output` will contain whatever name you configured.
 
 \
 With the input defined in your template, you're ready to choose an integration and learn how to pass dynamic values from your application code. In preparation for that, you should pack the template again using ```bash oicana pack``` to have the latest state of the template at hand.

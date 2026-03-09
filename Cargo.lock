@@ -3114,7 +3114,7 @@ dependencies = [
 
 [[package]]
 name = "oicana_java_native"
-version = "0.1.0-alpha.1"
+version = "0.1.0-alpha.2"
 dependencies = [
  "dashmap",
  "jni",

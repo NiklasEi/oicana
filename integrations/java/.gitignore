@@ -1,5 +1,8 @@
 .gradle/
 build/
+**/.project
+**/.classpath
+**/.settings/
 natives/**/build/
 natives/**/*.so
 natives/**/*.dylib

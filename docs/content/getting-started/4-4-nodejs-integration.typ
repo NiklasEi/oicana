@@ -29,7 +29,7 @@ We will define a new endpoint to compile our Oicana template to a PDF and return
   \
   #code("src/templates/templates.service.ts", ```typescript
   import { Injectable, OnModuleInit } from '@nestjs/common';
-  import { Template, CompilationMode } from '@oicana/node';
+  import { Template, CompilationMode, Pdf } from '@oicana/node';
   import { promises as fs } from 'fs';
   import { join } from 'path';
 
@@ -46,7 +46,7 @@ We will define a new endpoint to compile our Oicana template to a PDF and return
       const buffer = await fs.readFile(templatePath);
       // Template registration defaults to Development mode
       // so it will use the development value of our template input
-      this.template = new Template('example', buffer);
+      this.template = new Template(buffer);
     }
 
     compile(): Uint8Array {
@@ -55,7 +55,7 @@ We will define a new endpoint to compile our Oicana template to a PDF and return
       return this.template.compile(
         jsonInputs,
         blobInputs,
-        { format: 'pdf' },
+        Pdf,
         CompilationMode.Development
       );
     }
@@ -133,4 +133,4 @@ Our `compile` method is currently calling ```ts template.compile()``` with empty
 Notice that we removed the explicit ```ts CompilationMode.Development``` parameter. The ```ts compile()``` method defaults to ```ts CompilationMode.Production``` when no mode is specified. Production mode is the recommended default for all document compilation in your application - it ensures you never accidentally generate a document with test data. In production mode, the template will never fall back to development values. If an input value is missing in production mode and the input does not have a default value, the compilation will fail unless your template handles ```typst none``` values for that input.
 
 \
-Calling the endpoint now will result in a PDF with "Baby Yoda" instead of "Chuck Norris". Building on this minimal service, you could set input values based on database entries or the request payload. Take a look at the #link("https://github.com/oicana/oicana-example-nestjs/")[open source NestJS example project on GitHub] for a more complete showcase of the Oicana Node.js integration, including blob inputs, error handling, and Swagger documentation.
+Calling the endpoint now will result in a PDF with "Baby Yoda" instead of "Chuck Norris". Building on this minimal service, you could set input values based on database entries or the request payload. Take a look at the #link("https://github.com/oicana/oicana-example-typescript-nestjs/")[open source NestJS example project on GitHub] for a more complete showcase of the Oicana Node.js integration, including blob inputs, error handling, and Swagger documentation.

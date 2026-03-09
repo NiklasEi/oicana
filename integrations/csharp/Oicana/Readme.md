@@ -9,4 +9,4 @@ This NuGet package can compile Oicana templates from C# code.
 
 ## Open source example
 
-You can find an example ASP.NET service using this package on GitHub: https://github.com/oicana/oicana-example-asp-net
+You can find an example ASP.NET service using this package on GitHub: https://github.com/oicana/oicana-example-csharp-asp-net

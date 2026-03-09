@@ -5,10 +5,10 @@
 In this chapter, you'll integrate Oicana into a Python web service using #link("https://fastapi.tiangolo.com/")[FastAPI]. FastAPI is a modern, high-performance web framework for building APIs with Python based on standard Python type hints. We'll create a simple web service that compiles your Oicana template to PDF and serves it via an HTTP endpoint.
 
 \
-#note[This chapter assumes that you have a working Python 3.9+ setup with pip or uv. If that is not the case, please follow #link("https://www.python.org/downloads/")[the official Python installation guide] to install Python on your machine.]
+#note[This chapter assumes that you have a working Python 3.9+ setup with uv. If that is not the case, please follow #link("https://www.python.org/downloads/")[the official Python installation guide] and #link("https://docs.astral.sh/uv/#installation")[get uv.]]
 
 \
-Let's start with a fresh FastAPI project. First, create a new directory for your project, then set up a virtual environment and install FastAPI with ```bash pip install fastapi uvicorn``` (or ```bash uv add fastapi uvicorn``` if using uv). Create a `main.py` file with the following basic FastAPI application:
+Let's start with a fresh FastAPI project. First, create a new directory for your project, then initialize it and install FastAPI with ```bash uv init && uv add fastapi uvicorn```. Create a `main.py` file with the following basic FastAPI application:
 \
 #code("main.py", ```python
 from fastapi import FastAPI
@@ -22,7 +22,7 @@ async def root():
 ```)
 
 
-You can test it by running ```bash uvicorn main:app --reload``` (or ```bash fastapi dev main.py``` if using FastAPI CLI) and navigating to #link("http://localhost:8000") in your browser.
+You can test it by running ```bash uv run fastapi dev main.py``` and navigating to #link("http://localhost:8000") in your browser.
 
 == New service endpoint
 
@@ -30,7 +30,7 @@ We will define a new endpoint to compile our Oicana template to a PDF and return
 
 \
 1. Create a new directory in the Python project called `templates` and copy `example-0.1.0.zip` into that directory.
-2. Add the #link("https://pypi.org/project/oicana/")[`oicana` PyPI package] as a dependency with ```bash pip install oicana``` (or ```bash uv add oicana```).
+2. Add the #link("https://pypi.org/project/oicana/")[`oicana` PyPI package] as a dependency with ```bash uv add oicana```.
 3. Update `main.py` to load the template at startup and add a compile endpoint:
 
   \
@@ -123,4 +123,4 @@ Our ```python compile_template``` function is currently calling ```python templa
 Notice that we removed the explicit ```python mode=CompilationMode.DEVELOPMENT``` parameter. The ```python compile()``` method defaults to ```python CompilationMode.PRODUCTION``` when no mode is specified. Production mode is the recommended default for all document compilation in your application - it ensures you never accidentally generate a document with test data. In production mode, the template will never fall back to development values. If an input value is missing in production mode and the input does not have a default value, the compilation will fail unless your template handles ```typst none``` values for that input.
 
 \
-Calling the endpoint now will result in a PDF with "Baby Yoda" instead of "Chuck Norris". Building on this minimal service, you could set input values based on database entries or the request payload. Take a look at the #link("https://github.com/oicana/oicana-example-fastapi/")[open source FastAPI example project on GitHub] for a more complete showcase of the Oicana Python integration, including blob inputs, error handling, and request models.
+Calling the endpoint now will result in a PDF with "Baby Yoda" instead of "Chuck Norris". Building on this minimal service, you could set input values based on database entries or the request payload. Take a look at the #link("https://github.com/oicana/oicana-example-python-fastapi/")[open source FastAPI example project on GitHub] for a more complete showcase of the Oicana Python integration, including blob inputs, error handling, and request models.

@@ -6,7 +6,9 @@
     "https://dotnet.microsoft.com/en-us/apps/aspnet",
     "http://localhost:8000/",
     "http://localhost:8000/docs",
-    "http://localhost:3000/"
+    "http://localhost:3000/",
+    "http://localhost:5173/",
+    "http://localhost:8080/"
   ],
   "silent": false,
   "verbosity": "warning",
