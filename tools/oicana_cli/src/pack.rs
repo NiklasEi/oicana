@@ -1,6 +1,7 @@
 use crate::target::TargetArgs;
 use anyhow::Context;
 use clap::Args;
+use console::{style, Emoji};
 use log::info;
 use oicana_files::native::{package_data_dir, NativeTemplate};
 use oicana_files::TemplateFiles;
@@ -11,6 +12,8 @@ use std::fs::{create_dir_all, read_dir, remove_dir_all, File};
 use std::path::Path;
 use std::str::FromStr;
 use typst::syntax::ast::ModuleImport;
+
+static PACKAGE: Emoji<'_, '_> = Emoji("📦", "");
 use typst::syntax::package::PackageSpec;
 use typst::syntax::{ast, FileId, VirtualPath};
 
@@ -59,9 +62,15 @@ pub fn pack(args: PackArgs) -> anyhow::Result<()> {
         update_dependencies(&template.path, &mut files)?;
 
         create_dir_all(out)?;
-        let mut out_file = File::create(out_file_path).context("Failed to create the zip file")?;
+        let mut out_file = File::create(&out_file_path).context("Failed to create the zip file")?;
 
         package(&template.path, &mut out_file, &template.manifest)?;
+
+        println!(
+            "{PACKAGE}  {} packed to {}",
+            style(&template.manifest.package.name).bold(),
+            style(out_file_path.display()).cyan(),
+        );
     }
 
     Ok(())
