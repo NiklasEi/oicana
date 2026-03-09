@@ -12,10 +12,10 @@ Let's start with a fresh Axum project. First, create a new binary project with `
 
 #code("Part of Cargo.toml", ```toml
 [dependencies]
-oicana = "0.1.0-alpha.5"
-oicana_files = "0.1.0-alpha.5"
-oicana_input = "0.1.0-alpha.5"
-oicana_export = "0.1.0-alpha.5"
+oicana = "0.1.0-alpha.6"
+oicana_files = "0.1.0-alpha.6"
+oicana_input = "0.1.0-alpha.6"
+oicana_export = "0.1.0-alpha.6"
 
 axum = { version = "0.8", features = ["macros"] }
 tokio = { version = "1", features = ["full"] }
@@ -83,7 +83,11 @@ We will define a new endpoint to compile our Oicana template to a PDF and return
       let result = template.compile(inputs)
           .expect("Failed to compile template");
 
-      let pdf = export_merged_pdf(&result.document, &*template)
+      let pdf = export_merged_pdf(
+              &result.document,
+              &*template,
+              &template.manifest().tool.oicana.export.pdf.standards,
+          )
           .expect("Failed to export PDF");
 
       Response::builder()
