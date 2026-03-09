@@ -29,7 +29,7 @@ We will define a new endpoint to compile our Oicana template to a PDF and return
   \
   #code("src/templates/templates.service.ts", ```typescript
   import { Injectable, OnModuleInit } from '@nestjs/common';
-  import { Template, CompilationMode } from '@oicana/node';
+  import { Template, CompilationMode, Pdf } from '@oicana/node';
   import { promises as fs } from 'fs';
   import { join } from 'path';
 
@@ -46,7 +46,7 @@ We will define a new endpoint to compile our Oicana template to a PDF and return
       const buffer = await fs.readFile(templatePath);
       // Template registration defaults to Development mode
       // so it will use the development value of our template input
-      this.template = new Template('example', buffer);
+      this.template = new Template(buffer);
     }
 
     compile(): Uint8Array {
@@ -55,7 +55,7 @@ We will define a new endpoint to compile our Oicana template to a PDF and return
       return this.template.compile(
         jsonInputs,
         blobInputs,
-        { format: 'pdf' },
+        Pdf,
         CompilationMode.Development
       );
     }
