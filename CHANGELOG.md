@@ -2,11 +2,19 @@
 
 
 # Browser integration
+
+- return Uint8Array<ArrayBuffer> from compile methods
+- Implement Disposable for automatic cleanup with `using`
+
 # Node.js integration
 
 - Implement Disposable for automatic cleanup with `using`
 
-# C# integration
+
+# Java integration v0.1.0-alpha.2
+- improve overloads for Template#Compile
+
+# C# integration v0.1.0-alpha.8
 
 - Take inputs as dictionary
 - Remove possible panics in error handling
