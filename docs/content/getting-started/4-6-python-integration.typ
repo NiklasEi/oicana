@@ -8,7 +8,7 @@ In this chapter, you'll integrate Oicana into a Python web service using #link("
 #note[This chapter assumes that you have a working Python 3.9+ setup with uv. If that is not the case, please follow #link("https://www.python.org/downloads/")[the official Python installation guide] and #link("https://docs.astral.sh/uv/#installation")[get uv.]]
 
 \
-Let's start with a fresh FastAPI project. First, create a new directory for your project, then initialize it and install FastAPI with ```bash uv init && uv add fastapi uvicorn```. Create a `main.py` file with the following basic FastAPI application:
+Let's start with a fresh FastAPI project. First, create a new directory for your project, then initialize it and install FastAPI with ```bash uv init && uv add "fastapi[standard]"```. Create a `main.py` file with the following basic FastAPI application:
 \
 #code("main.py", ```python
 from fastapi import FastAPI
