@@ -63,11 +63,30 @@
     - #chapter("templates/export.typ", section: "3.4")[Export]
     - #chapter("templates/tests.typ", section: "3.5")[Testing]
 
-  #v(2cm)
+  // end of section
 
   - #chapter("cli.typ", section: "4")[CLI]
   - #chapter("integrations.typ", section: "5")[Integrations]
   - #chapter("guides.typ", section: "6")[Guides]
     - #chapter("guides/cache-management.typ", section: "6.1")[Cache Management]
+
+  == Comparisons
+  - #chapter(
+      "comparisons/vs-html-to-pdf.typ",
+      section: "7.1",
+    )[Oicana vs HTML-to-PDF]
+  - #chapter(
+      "comparisons/vs-pdf-libraries.typ",
+      section: "7.2",
+    )[Oicana vs PDF Libraries]
+  - #chapter(
+      "comparisons/vs-latex.typ",
+      section: "7.3",
+    )[Oicana vs LaTeX]
+  - #chapter(
+      "comparisons/vs-commercial-services.typ",
+      section: "7.4",
+    )[Oicana vs Commercial Services]
+  // end of section
   - #suffix-chapter("credits.typ")[Credits]
 ]

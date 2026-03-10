@@ -69,10 +69,14 @@
 
 // Put your custom CSS here.
 #let extra-css = ```css
-.site-title {
-  font-size: 1.2rem;
+a.site-title {
+  font-size: var(--sl-text-h4);
   font-weight: 600;
-  font-style: italic;
+  color: var(--sl-color-text-accent);
+  text-decoration: none;
+}
+a.site-title:hover {
+  opacity: 0.66;
 }
 .inline-equation {
   display: inline-block;
@@ -89,6 +93,20 @@
 .expressive-code .copy-button {
     opacity: 1
 }
+```
+
+// Wrap the site title span in a link to the main website
+#let site-title-link-js = ```js
+document.addEventListener("DOMContentLoaded", function() {
+  var title = document.querySelector(".site-title");
+  if (title && title.tagName !== "A") {
+    var link = document.createElement("a");
+    link.href = "https://oicana.com";
+    link.className = title.className;
+    link.textContent = title.textContent;
+    title.replaceWith(link);
+  }
+});
 ```
 
 /// The project show rule that is used by all pages.
@@ -151,7 +169,7 @@
     title: title,
     description: description,
     plain-body: plain-body,
-    extra-assets: (extra-css,),
+    extra-assets: (extra-css, site-title-link-js),
     ..common,
   )
 
