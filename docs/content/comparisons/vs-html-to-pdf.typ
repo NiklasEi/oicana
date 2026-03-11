@@ -2,7 +2,7 @@ HTML-to-PDF conversion is one of the most popular approaches for generating PDFs
 
 While this approach leverages existing web development skills, it comes with significant trade-offs.
 
-== How it works
+== How PDFs get generated from HTML
 
 The typical HTML-to-PDF workflow looks like this:
 

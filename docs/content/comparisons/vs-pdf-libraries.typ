@@ -2,7 +2,7 @@ PDF libraries let you construct PDF documents programmatically by calling API me
 
 This approach gives you full control over every pixel, but comes at a cost.
 
-== How it works
+== How PDF libraries work
 
 With a PDF library, you typically write code like this:
 
