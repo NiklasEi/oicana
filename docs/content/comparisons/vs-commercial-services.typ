@@ -52,9 +52,7 @@ Oicana has no external dependencies at runtime.
   align: (left, left, left),
   table.header([], [*Commercial Services*], [*Oicana*]),
   [Data privacy], [Data sent to third party], [Stays in your infrastructure],
-  [Cost model],
-  [Per document / per API call],
-  [Fixed cost],
+  [Cost model], [Per document / per API call], [Fixed cost],
 
   [Latency], [Network round-trip], [Local],
   [Availability], [Depends on service uptime], [No external dependency],

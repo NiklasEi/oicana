@@ -49,9 +49,7 @@ Oicana templates define explicit typed inputs. Data is passed through a structur
   [Compilation speed], [Seconds], [Milliseconds],
   [Syntax], [Backslash commands, complex], [Modern, readable markup],
   [Error messages], [Cryptic], [Clear and actionable],
-  [Data injection],
-  [String replacement (escaping required)],
-  [Typed inputs],
+  [Data injection], [String replacement (escaping required)], [Typed inputs],
 
   [Browser support], [No], [Yes],
   [Package ecosystem], [Vast (CTAN)], [Growing (Typst Universe)],

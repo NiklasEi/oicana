@@ -48,7 +48,10 @@ Oicana templates are compiled by Typst, which has a minimal attack surface and d
   columns: (auto, 1fr, 1fr),
   align: (left, left, left),
   table.header([], [*HTML-to-PDF*], [*Oicana*]),
-  [Runtime size], [100+ MB (browser engine)], [#sym.tilde 15 MB (native library)],
+  [Runtime size],
+  [100+ MB (browser engine)],
+  [#sym.tilde 15 MB (native library)],
+
   [Compilation speed], [100ms – seconds], [1 – 10ms],
   [Layout model], [CSS (screen-first)], [Typst (document-first)],
   [Page breaks], [Fragile], [Built-in, predictable],
