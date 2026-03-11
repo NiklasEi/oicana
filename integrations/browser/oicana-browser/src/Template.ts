@@ -75,7 +75,7 @@ export class Template implements Disposable {
   /**
    * Compile the template to a PDF file without any inputs in production mode
    */
-  public compile(): Uint8Array;
+  public compile(): Uint8Array<ArrayBuffer>;
 
   /**
    * Compile the template to a PDF file with given inputs in production mode
@@ -85,7 +85,7 @@ export class Template implements Disposable {
   public compile(
     jsonInputs: Map<string, string>,
     blobInputs: Map<string, BlobWithMetadata>,
-  ): Uint8Array;
+  ): Uint8Array<ArrayBuffer>;
 
   /**
    * Compile the template with the given inputs
@@ -97,7 +97,7 @@ export class Template implements Disposable {
     jsonInputs: Map<string, string>,
     blobInputs: Map<string, BlobWithMetadata>,
     exportOptions: ExportFormat,
-  ): Uint8Array;
+  ): Uint8Array<ArrayBuffer>;
 
   /**
    * Compile the template with the given inputs
@@ -111,7 +111,7 @@ export class Template implements Disposable {
     blobInputs: Map<string, BlobWithMetadata>,
     exportOptions: ExportFormat,
     compilationOptions: CompilationMode,
-  ): Uint8Array;
+  ): Uint8Array<ArrayBuffer>;
 
   /**
    * Compile the template with the given inputs
