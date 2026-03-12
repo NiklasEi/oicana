@@ -7,37 +7,37 @@ SITE_URL="${2:-https://docs.oicana.com}"
 echo "Running post-build SEO enhancements on $DIST_DIR..."
 
 # --- Generate robots.txt ---
-cat > "$DIST_DIR/robots.txt" <<EOF
-User-agent: *
-Allow: /
+# cat > "$DIST_DIR/robots.txt" <<EOF
+# User-agent: *
+# Allow: /
 
-Sitemap: ${SITE_URL}/sitemap.xml
-EOF
-echo "Created robots.txt"
+# Sitemap: ${SITE_URL}/sitemap.xml
+# EOF
+# echo "Created robots.txt"
 
 # --- Generate sitemap.xml ---
-{
-  echo '<?xml version="1.0" encoding="UTF-8"?>'
-  echo '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"'
-  echo '        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"'
-  echo '        xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9'
-  echo '        http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd">'
+# {
+#   echo '<?xml version="1.0" encoding="UTF-8"?>'
+#   echo '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"'
+#   echo '        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"'
+#   echo '        xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9'
+#   echo '        http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd">'
 
-  find "$DIST_DIR" -name '*.html' -type f | sort | while read -r file; do
-    rel_path="${file#"$DIST_DIR"/}"
-    if [ "$rel_path" = "index.html" ]; then
-      url_path="/"
-    else
-      url_path="/${rel_path}"
-    fi
-    echo "  <url>"
-    echo "    <loc>${SITE_URL}${url_path}</loc>"
-    echo "  </url>"
-  done
+#   find "$DIST_DIR" -name '*.html' -type f | sort | while read -r file; do
+#     rel_path="${file#"$DIST_DIR"/}"
+#     if [ "$rel_path" = "index.html" ]; then
+#       url_path="/"
+#     else
+#       url_path="/${rel_path}"
+#     fi
+#     echo "  <url>"
+#     echo "    <loc>${SITE_URL}${url_path}</loc>"
+#     echo "  </url>"
+#   done
 
-  echo '</urlset>'
-} > "$DIST_DIR/sitemap.xml"
-echo "Created sitemap.xml"
+#   echo '</urlset>'
+# } > "$DIST_DIR/sitemap.xml"
+# echo "Created sitemap.xml"
 
 # --- Inject SEO meta tags into HTML files ---
 inject_meta_tags() {

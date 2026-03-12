@@ -2,6 +2,59 @@
 command = "rustup default stable && curl -L --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/cargo-bins/cargo-binstall/main/install-from-binstall-release.sh | bash && cargo binstall --git https://github.com/Myriad-Dreamin/shiroa shiroa@0.3.1 && shiroa build book --mode static-html --root . && bash post-build-seo.sh"
 publish = "book/dist"
 
+# Pages where the path changed between old and new docs
 [[redirects]]
-from = "/getting-started"
-to = "/getting-started/1-setup"
+from = "/intro"
+to = "https://oicana.com/docs/"
+status = 302
+
+[[redirects]]
+from = "/getting-started/4-0-integrations"
+to = "https://oicana.com/docs/getting-started/4-integrations/"
+status = 302
+
+[[redirects]]
+from = "/getting-started/4-1-browser-integration"
+to = "https://oicana.com/docs/getting-started/4-1-browser/"
+status = 302
+
+[[redirects]]
+from = "/getting-started/4-2-csharp-integration"
+to = "https://oicana.com/docs/getting-started/4-2-csharp/"
+status = 302
+
+[[redirects]]
+from = "/getting-started/4-3-java-integration"
+to = "https://oicana.com/docs/getting-started/4-3-java/"
+status = 302
+
+[[redirects]]
+from = "/getting-started/4-4-nodejs-integration"
+to = "https://oicana.com/docs/getting-started/4-4-nodejs/"
+status = 302
+
+[[redirects]]
+from = "/getting-started/4-5-rust-integration"
+to = "https://oicana.com/docs/getting-started/4-5-rust/"
+status = 302
+
+[[redirects]]
+from = "/getting-started/4-6-python-integration"
+to = "https://oicana.com/docs/getting-started/4-6-python/"
+status = 302
+
+[[redirects]]
+from = "/getting-started/4-7-php-integration"
+to = "https://oicana.com/docs/getting-started/4-7-php/"
+status = 302
+
+[[redirects]]
+from = "/templates"
+to = "https://oicana.com/docs/templates/inputs/"
+status = 302
+
+# Catch-all: reuse the path for everything else
+[[redirects]]
+from = "/*"
+to = "https://oicana.com/docs/:splat"
+status = 302
