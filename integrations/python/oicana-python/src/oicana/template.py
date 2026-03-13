@@ -8,8 +8,6 @@ from typing import TYPE_CHECKING
 from oicana_native import (
     BlobWithMetadata,
     compile_template,
-    configure_automatic_cache_eviction as _configure_automatic_cache_eviction,
-    evict_cache as _evict_cache,
     export_document,
     get_file,
     get_source,
@@ -20,6 +18,12 @@ from oicana_native import (
 )
 from oicana_native import (
     CompilationMode as NativeCompilationMode,
+)
+from oicana_native import (
+    configure_automatic_cache_eviction as _configure_automatic_cache_eviction,
+)
+from oicana_native import (
+    evict_cache as _evict_cache,
 )
 
 from .types import BlobInput, CompilationMode, ExportFormat
