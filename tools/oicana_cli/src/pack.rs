@@ -168,6 +168,7 @@ mod tests {
         mocked_packages: HashMap<PackageSpec, String>,
         packages: RwLock<HashSet<PackageSpec>>,
         root: PathBuf,
+        fonts: Vec<typst::syntax::FileId>,
     }
 
     impl TemplateFiles for TestFiles {
@@ -202,7 +203,7 @@ mod tests {
         }
 
         fn font_files(&self) -> &Vec<typst::syntax::FileId> {
-            unimplemented!();
+            &self.fonts
         }
     }
 
@@ -224,6 +225,7 @@ mod tests {
             mocked_packages: HashMap::new(),
             packages: RwLock::new(HashSet::new()),
             root: temp_template.to_path_buf(),
+            fonts: vec![],
         };
 
         update_dependencies(&temp_template, &mut files).unwrap();
@@ -259,6 +261,7 @@ mod tests {
             mocked_packages,
             packages: RwLock::new(HashSet::new()),
             root: root.clone(),
+            fonts: vec![],
         };
         update_dependencies(&temp_template, &mut files).unwrap();
         assert_eq!(files.packages.read().unwrap().len(), 1);
@@ -299,6 +302,7 @@ mod tests {
             mocked_packages,
             packages: RwLock::new(HashSet::new()),
             root: root.clone(),
+            fonts: vec![],
         };
         update_dependencies(&temp_template, &mut files).unwrap();
         assert_eq!(files.packages.read().unwrap().len(), 2);
