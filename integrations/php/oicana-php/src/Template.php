@@ -203,6 +203,35 @@ class Template
     }
 
     /**
+     * Configure automatic cache eviction after each compilation.
+     *
+     * @param int|null $maxAge Maximum age threshold, or null to disable:
+     *   - null - Disables cache eviction (cache never cleared)
+     *   - 0 - Clears all cache entries with every eviction
+     *   - 1 - Keeps only entries used since the last eviction
+     *   - n - Keeps entries used within the last n evictions
+     *   Default is 10.
+     */
+    public static function configureAutomaticCacheEviction(?int $maxAge): void
+    {
+        \OicanaInternal\configure_automatic_cache_eviction($maxAge);
+    }
+
+    /**
+     * Manually evict the cache with the given age threshold.
+     *
+     * This directly calls the underlying eviction with the specified age,
+     * regardless of the configured default age.
+     *
+     * @param int $maxAge Maximum age threshold for eviction.
+     *   Entries with age >= this value will be removed.
+     */
+    public static function evictCache(int $maxAge): void
+    {
+        \OicanaInternal\evict_cache($maxAge);
+    }
+
+    /**
      * Destructor ensures cleanup even if not called explicitly.
      */
     public function __destruct()
