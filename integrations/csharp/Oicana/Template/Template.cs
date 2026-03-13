@@ -139,6 +139,19 @@ public class Template : ITemplate, IDisposable
         return OicanaFfi.GetFile(_templateId, path);
     }
 
+    /// <summary>
+    /// Manually evict the cache with the given age threshold.
+    /// </summary>
+    /// <param name="maxAge">
+    /// Maximum age threshold for eviction.
+    /// Entries with age >= this value will be removed.
+    /// Calls with negative maxAge are ignored.
+    /// </param>
+    public static void EvictCache(long maxAge)
+    {
+        OicanaFfi.EvictCache(maxAge);
+    }
+
     /// <inheritdoc/>
     public void Dispose()
     {
