@@ -10,6 +10,7 @@
   * Python:
     * native: integrations/python/oicana-python-native/pyproject.toml and integrations/python/oicana-python-native/Cargo.toml
     * wrapper: integrations/python/oicana-python/pyproject.toml
+    * run `uv sync` in integrations/python/oicana-python
   * PHP:
     * integrations/php/oicana-php-native/Cargo.toml
     * integrations/php/oicana-php/composer.json
@@ -18,20 +19,25 @@
   * Java:
     * integrations/java/oicana-java-native/Cargo.toml
     * integrations/java/build.gradle.kts (version in `subprojects` block)
-4.
-  * tag CLI version => will trigger CD pipeline; publish to crates.io manually
-  * tag crates version `oicana_rust-v*` => manual publish
-  * tag C# version => will trigger CD pipeline
-  * tag browser => trigger CD pipeline `publish npm @oicana/browser-wasm`
-  * tag python => will trigger CD pipeline
-  * tag PHP `oicana_php-v*` => will trigger CD pipeline
-  * tag Java `oicana_java-v*` => will trigger CD pipeline
-5.
+4. Node and browser build in two steps
+  * node-native is published once the new version is merged to `main`
+  * browser-wasm pipeline can be triggered manually
+5. 
   * bump Node.Js wrapper integrations/node/oicana-node/package.json
     * `npm i` after bumping dependency
   * bump browser wrapper integrations/browser/oicana-browser/package.json
     * `npm i` after bumping dependency
 6. Trigger CD pipelines for node and browser integrations
+7. Run `cargo publish --workspace` to publish the rust integration and CLI to crates.io
+8.
+  * tag CLI version `oicana_cli-v*` => will trigger CD pipeline
+  * tag crates version `oicana_rust-v*`
+  * tag C# version `oicana_csharp-v*` => will trigger CD pipeline
+  * tag browser `oicana_browser-v*`
+  * tag node `oicana_node-v*`
+  * tag python `oicana_python-v*` => will trigger CD pipeline
+  * tag PHP `oicana_php-v*` => will trigger CD pipeline
+  * tag Java `oicana_java-v*` => will trigger CD pipeline
 
 ## CLI
 
@@ -101,6 +107,6 @@ The CD pipeline validates version consistency, builds JNI native libraries for 5
 
 ## Crates
 
-All rust crates excluding the native wrappers are published to crates.io. This includes the CLI tools `oicana_cli` and `test_compare`.
+All rust crates excluding the native wrappers are published to crates.io. This includes the CLI project `oicana_cli`.
 
 Run `cargo publish --workspace --dry-run` to try publishing all crates.
