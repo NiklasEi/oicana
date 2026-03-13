@@ -255,7 +255,7 @@ jobs:
             ### Documentation
 
             - [GitHub Repository](https://github.com/oicana/oicana)
-            - [Documentation](https://docs.oicana.com)
+            - [Documentation](https://oicana.com/docs)
             - [Oicana Website](https://oicana.com)
           files: binaries/*
           draft: false

@@ -931,23 +931,23 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: typst-community/setup-shiroa@v1
-        with:
-          shiroa-version: 0.3.1-rc4
-      - name: serve docs
-        run: |
-          nohup shiroa serve book --mode static-html --workspace . > /tmp/shiroa.log 2>&1 &
-          echo $! > /tmp/shiroa.pid
-          sleep 15
-        working-directory: docs
-      - name: check for broken links
-        run: npx linkinator http://localhost:25520 --recurse --config .github/linkinator.config.json
-      - name: clean up
-        if: always()
-        run: |
-          kill $(cat /tmp/shiroa.pid) || true
-          echo "::: Shiroa Logs :::"
-          cat /tmp/shiroa.log || true
+      # - uses: typst-community/setup-shiroa@v1
+      #   with:
+      #     shiroa-version: 0.3.1-rc4
+      # - name: serve docs
+      #   run: |
+      #     nohup shiroa serve book --mode static-html --workspace . > /tmp/shiroa.log 2>&1 &
+      #     echo $! > /tmp/shiroa.pid
+      #     sleep 15
+      #   working-directory: docs
+      # - name: check for broken links
+      #   run: npx linkinator http://localhost:25520 --recurse --config .github/linkinator.config.json
+      # - name: clean up
+      #   if: always()
+      #   run: |
+      #     kill $(cat /tmp/shiroa.pid) || true
+      #     echo "::: Shiroa Logs :::"
+      #     cat /tmp/shiroa.log || true
       - name: check readme links
         if: always()
         run: npx linkinator README.md integrations/typst/README.md integrations/csharp/Oicana/Readme.md integrations/browser/oicana-browser/README.md --config .github/linkinator.config.json

@@ -179,4 +179,4 @@ $file = $template->file('assets/logo.png');  // Get binary file
 ```
 
 
-[oicana-docs]: https://docs.oicana.com/
+[oicana-docs]: https://oicana.com/docs

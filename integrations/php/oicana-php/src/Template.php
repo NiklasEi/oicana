@@ -53,7 +53,7 @@ class Template
                 'The oicana PHP extension is not loaded. '
                 . 'Run "vendor/bin/oicana-env" to get the activation command for your platform, '
                 . 'or add the extension to your php.ini. '
-                . 'See https://docs.oicana.com/ for installation instructions.'
+                . 'See https://oicana.com/docs for installation instructions.'
             );
         }
 
