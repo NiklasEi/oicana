@@ -3,7 +3,7 @@
     "description": "PDF templating with Typst",
     "type": "library",
     "license": "PolyForm-Noncommercial-1.0.0",
-    "version": "0.1.0-alpha.2",
+    "version": "0.1.0-alpha.3",
     "keywords": ["oicana", "typst", "pdf", "templating", "typesetting"],
     "homepage": "https://oicana.com",
     "authors": [

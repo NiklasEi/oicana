@@ -1,14 +1,36 @@
 # Next release
 
 
-# Browser integration
-
+# Browser integration v0.1.0-alpha.6
 - return Uint8Array<ArrayBuffer> from compile methods
 - Implement Disposable for automatic cleanup with `using`
 
-# Node.js integration
-
+# Node.js integration v0.1.0-alpha.7
 - Implement Disposable for automatic cleanup with `using`
+- more error handling
+- expose cache eviction methods
+
+# PHP integration v0.1.0-alpha.3
+- expose cache eviction methods
+
+# Python integration v0.1.0-alpha.4
+- expose cache eviction methods
+- rename `export_format` parameter to `export`
+
+# Rust integration v0.1.0-alpha.7
+- follow sym links when packing templates
+- remove some possible panics
+
+# CLI v0.1.0-alpha.8
+- print packaged templates
+- follow sym links when packing templates
+- remove some possible panics
+
+# C# integration v0.1.0-alpha.9
+- Expose cache eviction on `Configuration` and `Template`
+
+
+
 
 
 # Java integration v0.1.0-alpha.2

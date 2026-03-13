@@ -20,7 +20,7 @@
     * integrations/java/build.gradle.kts (version in `subprojects` block)
 4.
   * tag CLI version => will trigger CD pipeline; publish to crates.io manually
-  * crates version => manual publish
+  * tag crates version `oicana_rust-v*` => manual publish
   * tag C# version => will trigger CD pipeline
   * tag browser => trigger CD pipeline `publish npm @oicana/browser-wasm`
   * tag python => will trigger CD pipeline
