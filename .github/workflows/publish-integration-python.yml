@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       publish-native:
-        description: 'Publish oicana-native package'
+        description: 'Publish native package'
         type: boolean
         default: true
       publish-wrapper:
@@ -21,7 +21,7 @@ permissions:
 
 jobs:
   build-and-publish-native:
-    if: ${{ inputs.publish-native }}
+    if: ${{ github.event_name == 'push' || inputs.publish-native }}
     name: Build oicana-native (${{ matrix.platform.target }})
     runs-on: ${{ matrix.platform.runner }}
     strategy:
@@ -38,7 +38,7 @@ jobs:
           - runner: windows-latest
             target: x86_64-pc-windows-msvc
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - uses: actions/setup-python@v5
         with:
           python-version: '3.8'
@@ -51,14 +51,14 @@ jobs:
           working-directory: integrations/python/oicana-python-native
           manylinux: auto
       - name: Upload wheels
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: wheels-${{ matrix.platform.target }}
           path: integrations/python/oicana-python-native/dist/*.whl
           if-no-files-found: error
 
   publish-native-to-pypi:
-    if: ${{ inputs.publish-native }}
+    if: ${{ github.event_name == 'push' || inputs.publish-native }}
     name: Publish oicana-native to PyPI
     runs-on: ubuntu-latest
     needs: build-and-publish-native
@@ -66,9 +66,9 @@ jobs:
       name: pypi
       url: https://pypi.org/p/oicana-native
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - name: Download all wheels
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           path: dist
           pattern: wheels-*
@@ -82,7 +82,7 @@ jobs:
           args: --skip-existing dist/*
 
   publish-wrapper-to-pypi:
-    if: ${{ inputs.publish-wrapper && (success() || needs.publish-native-to-pypi.result == 'skipped') }}
+    if: ${{ (github.event_name == 'push' || inputs.publish-wrapper) && (success() || needs.publish-native-to-pypi.result == 'skipped') }}
     name: Publish oicana wrapper to PyPI
     runs-on: ubuntu-latest
     needs: publish-native-to-pypi
@@ -90,7 +90,7 @@ jobs:
       name: pypi
       url: https://pypi.org/p/oicana
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'

@@ -4,7 +4,7 @@ members = ["cargo:tools/oicana_cli"]
 # Config for 'dist'
 [dist]
 # The preferred dist version to use in CI (Cargo.toml SemVer syntax)
-cargo-dist-version = "0.30.0"
+cargo-dist-version = "0.31.0"
 # Whether to consider the binaries in a package for distribution (defaults true)
 dist = false
 # CI backends to support
@@ -16,7 +16,7 @@ windows-archive = ".zip"
 # The archive format to use for non-windows builds (defaults .tar.xz)
 unix-archive = ".tar.gz"
 # Target platforms to build apps for (Rust target-triple syntax)
-targets = ["aarch64-apple-darwin", "aarch64-unknown-linux-gnu",  "x86_64-apple-darwin", "x86_64-unknown-linux-gnu", "x86_64-pc-windows-msvc"]
+targets = ["aarch64-apple-darwin", "aarch64-unknown-linux-gnu", "x86_64-apple-darwin", "x86_64-unknown-linux-gnu", "x86_64-pc-windows-msvc"]
 # Whether dist should create a Github Release or use an existing draft
 create-release = true
 # Which actions to run on pull requests
@@ -27,10 +27,12 @@ github-release = "announce"
 install-updater = false
 # Path that installers should place binaries in
 install-path = "CARGO_HOME"
-# Otherwise we cannot use latest Rust because the runner will be behind by couple versions
-# deprecated, see https://axodotdev.github.io/cargo-dist/book/reference/config.html?highlight=rust-toolchain-version#rust-toolchain-version
+# The preferred Rust toolchain to use in CI (rustup toolchain syntax)
 rust-toolchain-version = "stable"
+# A prefix git tags must include for dist to care about them
 tag-namespace = "oicana_cli"
+# Build only the required packages, and individually
+precise-builds = true
 
 [dist.min-glibc-version]
 # Override glibc version for specific target triplets.

@@ -13,7 +13,7 @@ runs:
   using: 'composite'
   steps:
   - name: install ${{ inputs.tool }}
-    uses: actions/download-artifact@v4
+    uses: actions/download-artifact@v8
     with:
       name: ${{ inputs.tool }}_${{ runner.os }}
       path: ${{ runner.temp }}/download

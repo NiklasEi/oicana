@@ -28,7 +28,7 @@ jobs:
     outputs:
       version: ${{ steps.version.outputs.VERSION }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
@@ -134,7 +134,7 @@ jobs:
           - zts
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@master
         with:
@@ -177,7 +177,7 @@ jobs:
              ./oicana-php${{ matrix.php }}-${{ matrix.platform.os }}-${{ matrix.platform.arch }}-${{ matrix.ts }}.${EXT}
         shell: bash
       - name: Upload artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: binary-${{ matrix.platform.os }}-${{ matrix.platform.arch }}-php${{ matrix.php }}-${{ matrix.ts }}
           path: ./oicana-php${{ matrix.php }}-${{ matrix.platform.os }}-${{ matrix.platform.arch }}-${{ matrix.ts }}.*
@@ -191,10 +191,10 @@ jobs:
     env:
       VERSION: ${{ needs.validate-version.outputs.version }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - name: Download all artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           path: binaries
           pattern: binary-*
