@@ -3,10 +3,14 @@
 1. Bump general crate version in `cargo.toml`
 2. Bump CLI version
 3. Integrations
-  * bump oicana_browser_wasm in integrations/browser/oicana_browser_wasm/Cargo.toml
+  * bump browser
+    * wasm in integrations/browser/oicana_browser_wasm/Cargo.toml
+    * wrapper integrations/browser/oicana-browser/package.json
   * bump C# integration in integrations/csharp/Oicana/Oicana.csproj and integrations/csharp/oicana_csharp/Cargo.toml
-  * bump Node.Js in integrations/node/oicana-node-native/Cargo.toml and integrations/node/oicana-node-native/package.json
-    * run `yarn build` and `yarn format`
+  * bump Node.Js integration versions 
+    * in integrations/node/oicana-node-native/Cargo.toml and integrations/node/oicana-node-native/package.json
+      * run `yarn build` and `yarn format`
+    * wrapper integrations/node/oicana-node/package.json
   * Python:
     * native: integrations/python/oicana-python-native/pyproject.toml and integrations/python/oicana-python-native/Cargo.toml
     * wrapper: integrations/python/oicana-python/pyproject.toml
@@ -19,22 +23,13 @@
   * Java:
     * integrations/java/oicana-java-native/Cargo.toml
     * integrations/java/build.gradle.kts (version in `subprojects` block)
-4. Node and browser build in two steps
-  * node-native is published once the new version is merged to `main`
-  * browser-wasm pipeline can be triggered manually
-5. 
-  * bump Node.Js wrapper integrations/node/oicana-node/package.json
-    * `npm i` after bumping dependency
-  * bump browser wrapper integrations/browser/oicana-browser/package.json
-    * `npm i` after bumping dependency
-6. Trigger CD pipelines for node and browser integrations
-7. Run `cargo publish --workspace` to publish the rust integration and CLI to crates.io
-8.
+4. Run `cargo publish --workspace` to publish the rust integration and CLI to crates.io
+5.
   * tag CLI version `oicana_cli-v*` => will trigger CD pipeline
   * tag crates version `oicana_rust-v*`
   * tag C# version `oicana_csharp-v*` => will trigger CD pipeline
-  * tag browser `oicana_browser-v*`
-  * tag node `oicana_node-v*`
+  * tag browser `oicana_browser-v*` => will trigger CD pipeline
+  * tag node `oicana_node-v*` => will trigger CD pipeline
   * tag python `oicana_python-v*` => will trigger CD pipeline
   * tag PHP `oicana_php-v*` => will trigger CD pipeline
   * tag Java `oicana_java-v*` => will trigger CD pipeline

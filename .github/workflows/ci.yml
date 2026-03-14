@@ -92,8 +92,11 @@ jobs:
       - name: Native - Install dependencies
         run: yarn install
         working-directory: integrations/node/oicana-node-native
+      - name: Oxlint
+        run: yarn lint
+        working-directory: integrations/node/oicana-node-native
       - name: Wrapper - Install dependencies
-        run: npm ci
+        run: npm install
         working-directory: integrations/node/oicana-node
       - name: Wrapper - lint
         run: npm run lint
@@ -120,7 +123,7 @@ jobs:
           cache: npm
           cache-dependency-path: integrations/browser/oicana-browser/package-lock.json
       - name: Install dependencies
-        run: npm ci
+        run: npm install
         working-directory: integrations/browser/oicana-browser
       - name: lint
         run: npm run lint
