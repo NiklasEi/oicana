@@ -79,7 +79,7 @@ jobs:
       - name: run tests
         run: cargo test --all-targets --all-features
 
-  check-node-integration:
+  check-node-native-integration:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -89,22 +89,16 @@ jobs:
           node-version: 22
           cache: yarn
           cache-dependency-path: integrations/node/oicana-node-native/yarn.lock
-      - name: Native - Install dependencies
+      - name: Install dependencies
         run: yarn install
         working-directory: integrations/node/oicana-node-native
       - name: Oxlint
         run: yarn lint
         working-directory: integrations/node/oicana-node-native
-      - name: Wrapper - Install dependencies
-        run: npm install
-        working-directory: integrations/node/oicana-node
-      - name: Wrapper - lint
-        run: npm run lint
-        working-directory: integrations/node/oicana-node
-      - name: Native - Format
+      - name: Format
         run: yarn format
         working-directory: integrations/node/oicana-node-native
-      - name: Native - validate format was already correct
+      - name: Validate format was already correct
         run: |
           if [ -n "$(git status --porcelain './integrations/node/oicana-node-native/')" ]; then
             echo "::error::Run `yarn format` in integrations/node/oicana-node-native."
@@ -112,21 +106,66 @@ jobs:
             exit 1
           fi
 
-  check-browser-integration:
+  check-node-wrapper:
     runs-on: ubuntu-latest
+    needs:
+      - build-node-native
     steps:
       - uses: actions/checkout@v5
       - name: Setup node
         uses: actions/setup-node@v5
         with:
           node-version: 22
-          cache: npm
-          cache-dependency-path: integrations/browser/oicana-browser/package-lock.json
+      - name: Download node-native
+        uses: actions/download-artifact@v4
+        with:
+          name: node_native_Linux
+          path: ./integrations/node/oicana-node-native
+      - name: Link node-native
+        run: npm link
+        working-directory: ./integrations/node/oicana-node-native
       - name: Install dependencies
-        run: npm install
-        working-directory: integrations/browser/oicana-browser
-      - name: lint
+        run: |
+          npm pkg delete dependencies['@oicana/node-native']
+          npm install
+          npm link @oicana/node-native
+        working-directory: integrations/node/oicana-node
+      - name: Lint
         run: npm run lint
+        working-directory: integrations/node/oicana-node
+      - name: Build
+        run: npm run build
+        working-directory: integrations/node/oicana-node
+
+  check-browser-wrapper:
+    runs-on: ubuntu-latest
+    needs:
+      - build-browser-wasm
+    steps:
+      - uses: actions/checkout@v5
+      - name: Setup node
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+      - name: Download browser-wasm
+        uses: actions/download-artifact@v4
+        with:
+          name: browser-wasm
+          path: ./integrations/browser/oicana_browser_wasm/pkg
+      - name: Link browser-wasm
+        run: npm link
+        working-directory: ./integrations/browser/oicana_browser_wasm/pkg
+      - name: Install dependencies
+        run: |
+          npm pkg delete dependencies['@oicana/browser-wasm']
+          npm install
+          npm link @oicana/browser-wasm
+        working-directory: integrations/browser/oicana-browser
+      - name: Lint
+        run: npm run lint
+        working-directory: integrations/browser/oicana-browser
+      - name: Build
+        run: npm run build
         working-directory: integrations/browser/oicana-browser
 
   check-csharp-integration:
@@ -540,7 +579,8 @@ jobs:
         working-directory: ./integrations/node/oicana-node-native
       - name: install node integration
         run: |
-          npm i
+          npm pkg delete dependencies['@oicana/node-native']
+          npm install
           npm link @oicana/node-native
         working-directory: ./integrations/node/oicana-node
       - name: test node integration
@@ -589,7 +629,8 @@ jobs:
         working-directory: ./integrations/browser/oicana_browser_wasm/pkg
       - name: install browser integration
         run: |
-          npm i
+          npm pkg delete dependencies['@oicana/browser-wasm']
+          npm install
           npm link @oicana/browser-wasm
         working-directory: ./integrations/browser/oicana-browser
       - name: test browser integration
@@ -967,8 +1008,9 @@ jobs:
         lint-crates,
         check-crates,
         test-crates,
-        check-node-integration,
-        check-browser-integration,
+        check-node-native-integration,
+        check-node-wrapper,
+        check-browser-wrapper,
         check-csharp-integration,
         check-python-integration,
         check-php-integration,
