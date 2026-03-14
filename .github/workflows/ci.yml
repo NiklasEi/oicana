@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6@v6
       - uses: actions/cache@v4
         with:
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.toml') }}
@@ -40,7 +40,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     timeout-minutes: 60
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6@v6
       - uses: actions/cache@v4
         with:
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.toml') }}
@@ -63,7 +63,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     timeout-minutes: 60
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6@v6
       - uses: actions/cache@v4
         with:
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.toml') }}
@@ -82,7 +82,7 @@ jobs:
   check-node-native-integration:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6@v6
       - name: Setup node
         uses: actions/setup-node@v5
         with:
@@ -111,13 +111,13 @@ jobs:
     needs:
       - build-node-native
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6@v6
       - name: Setup node
         uses: actions/setup-node@v5
         with:
           node-version: 22
       - name: Download node-native
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: node_native_Linux
           path: ./integrations/node/oicana-node-native
@@ -142,13 +142,13 @@ jobs:
     needs:
       - build-browser-wasm
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6@v6
       - name: Setup node
         uses: actions/setup-node@v5
         with:
           node-version: 22
       - name: Download browser-wasm
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: browser-wasm
           path: ./integrations/browser/oicana_browser_wasm/pkg
@@ -171,7 +171,7 @@ jobs:
   check-csharp-integration:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6@v6
       - uses: actions/cache@v4
         with:
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.toml') }}
@@ -207,7 +207,7 @@ jobs:
   check-python-integration:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6@v6
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
@@ -238,7 +238,7 @@ jobs:
   check-php-integration:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6@v6
       - uses: actions/cache@v4
         with:
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.toml') }}
@@ -292,7 +292,7 @@ jobs:
             lib: oicana_csharp.dll
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6@v6
       - uses: actions/cache@v4
         with:
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.toml') }}
@@ -308,7 +308,7 @@ jobs:
       - name: build oicana_csharp
         run: cargo build --release -p oicana_csharp
       - name: Upload liboicana_csharp
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: liboicana_csharp_${{ runner.os }}
           path: ./target/release/${{ matrix.lib }}
@@ -317,7 +317,7 @@ jobs:
   build-browser-wasm:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6@v6
       - uses: actions/cache@v4
         with:
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.toml') }}
@@ -339,7 +339,7 @@ jobs:
         run: jq '.name = "@oicana/browser-wasm"' package.json > tmp.json && mv tmp.json package.json
         working-directory: ./integrations/browser/oicana_browser_wasm/pkg
       - name: Upload browser-wasm
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: browser-wasm
           path: |
@@ -354,7 +354,7 @@ jobs:
         os: [ubuntu-latest, macos-latest, windows-latest]
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6@v6
       - name: Setup node
         uses: actions/setup-node@v5
         with:
@@ -380,7 +380,7 @@ jobs:
         run: yarn build
         working-directory: integrations/node/oicana-node-native
       - name: Upload artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: node_native_${{ runner.os }}
           path: |
@@ -421,7 +421,7 @@ jobs:
             bin_ext: ""
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6@v6
       - uses: actions/cache@v4
         with:
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.toml') }}
@@ -437,7 +437,7 @@ jobs:
       - name: Build and install ${{ matrix.tool_config.tool }}
         run: cargo install --force --path ${{ matrix.tool_config.path }}
       - name: Upload CLI tool binary
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ matrix.tool_config.tool }}_${{ runner.os }}
           path: ~/.cargo/bin/${{ matrix.tool_config.bin }}${{ matrix.bin_ext }}
@@ -449,7 +449,7 @@ jobs:
         os: [ubuntu-latest, macos-latest, windows-latest]
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6@v6
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
@@ -471,7 +471,7 @@ jobs:
         run: maturin build --release --out dist
         working-directory: integrations/python/oicana-python-native
       - name: Upload wheel
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: python_native_${{ matrix.os }}
           path: integrations/python/oicana-python-native/dist/*.whl
@@ -499,7 +499,7 @@ jobs:
             flags: ""
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6@v6
       - uses: actions/cache@v4
         with:
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.toml') }}
@@ -533,7 +533,7 @@ jobs:
           php -d extension=./target/${{ matrix.target }}/release/${{ matrix.lib }} -r "print_r(array_filter(get_defined_functions()['internal'], fn(\$f) => str_contains(\$f, 'oicana') || str_contains(\$f, 'register') || str_contains(\$f, 'compile')));"
         shell: bash
       - name: Upload PHP extension
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: php_native_${{ runner.os }}
           path: ./target/${{ matrix.target }}/release/${{ matrix.lib }}
@@ -548,7 +548,7 @@ jobs:
       - build-tools
       - build-node-native
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6@v6
       - uses: dtolnay/rust-toolchain@stable
       - uses: taiki-e/install-action@v2
         with:
@@ -570,7 +570,7 @@ jobs:
         run: oicana pack -n '{template}-x.y.z.zip'
         working-directory: ./e2e-tests/template
       - name: install node-native
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: node_native_${{ runner.os }}
           path: ./integrations/node/oicana-node-native
@@ -598,7 +598,7 @@ jobs:
       - build-tools
       - build-browser-wasm
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6@v5
       - uses: dtolnay/rust-toolchain@stable
       - uses: taiki-e/install-action@v2
         with:
@@ -620,7 +620,7 @@ jobs:
         run: oicana pack -n '{template}-x.y.z.zip'
         working-directory: ./e2e-tests/template
       - name: install browser-wasm
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: browser-wasm
           path: ./integrations/browser/oicana_browser_wasm/pkg
@@ -648,7 +648,7 @@ jobs:
       - build-tools
       - build-csharp
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6@v5
       - name: Setup dotnet
         uses: actions/setup-dotnet@v5
         with:
@@ -673,7 +673,7 @@ jobs:
         run: oicana pack -n '{template}-x.y.z.zip'
         working-directory: ./e2e-tests/template
       - name: install csharp lib
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: liboicana_csharp_${{ runner.os }}
           path: ./target/release/
@@ -693,7 +693,7 @@ jobs:
       - build-tools
       - build-python-native
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6@v5
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
@@ -718,7 +718,7 @@ jobs:
         run: oicana pack -n '{template}-x.y.z.zip'
         working-directory: ./e2e-tests/template
       - name: Download wheel
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: python_native_${{ matrix.os }}
           path: ./dist
@@ -749,7 +749,7 @@ jobs:
       - build-tools
       - build-php-native
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6@v5
       - uses: dtolnay/rust-toolchain@stable
       - uses: taiki-e/install-action@v2
         with:
@@ -778,7 +778,7 @@ jobs:
         env:
           debug: true
       - name: Download PHP extension
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: php_native_${{ runner.os }}
           path: ./php-ext
@@ -822,7 +822,7 @@ jobs:
             lib: oicana_java_native.dll
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6@v5
       - uses: actions/cache/restore@v4
         with:
           key: ${{ runner.os }}-stable--${{ hashFiles('**/Cargo.toml', 'integrations/java/**/*.rs') }}-
@@ -839,7 +839,7 @@ jobs:
       - name: Build Java JNI library
         run: cargo build --release --target ${{ matrix.target }} -p oicana_java_native
       - name: Upload Java native library
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: java_native_${{ runner.os }}
           path: ./target/${{ matrix.target }}/release/${{ matrix.lib }}
@@ -860,7 +860,7 @@ jobs:
       - build-tools
       - build-java-native
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6@v5
       - uses: dtolnay/rust-toolchain@stable
       - uses: taiki-e/install-action@v2
         with:
@@ -887,7 +887,7 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
       - name: Download Java native library
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: java_native_${{ runner.os }}
           path: integrations/java/natives/${{ matrix.natives_dir }}/src/main/resources/natives/${{ matrix.natives_dir }}
@@ -907,7 +907,7 @@ jobs:
     needs:
       - build-tools
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6@v5
       - uses: ./.github/actions/install-tool
         with:
           tool: "oicana-cli"
@@ -937,7 +937,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6@v4
       - uses: typst-community/setup-tytanic@v1
         with:
           tytanic-version: 0.3.0
@@ -951,7 +951,7 @@ jobs:
         run: tt run
         working-directory: ./integrations/typst
       - name: Archive artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: typst-package-test-results
@@ -966,7 +966,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout Actions Repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6@v4
     - name: Spell Check Repo
       uses: crate-ci/typos@v1.35.5
 
@@ -974,7 +974,7 @@ jobs:
     name: Check for dead links in docs
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6@v4
       # - uses: typst-community/setup-shiroa@v1
       #   with:
       #     shiroa-version: 0.3.1-rc4
