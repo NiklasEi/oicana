@@ -229,4 +229,20 @@ mod tests {
             ]
         )
     }
+
+    #[test]
+    fn cannot_access_files_outside_zip() {
+        let template =
+            read("../../assets/templates/test-0.1.0.zip").expect("Failed to read template zip");
+        let files =
+            PackedTemplate::new(Cursor::new(template)).expect("Failed to parse template zip");
+
+        // Attempting to access a path that doesn't exist in the zip returns NotFound
+        assert!(files
+            .file(FileId::new(None, VirtualPath::new("/../../etc/passwd")))
+            .is_err());
+        assert!(files
+            .source(FileId::new(None, VirtualPath::new("/nonexistent.typ")))
+            .is_err());
+    }
 }

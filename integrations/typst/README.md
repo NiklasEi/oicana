@@ -54,7 +54,7 @@ The image passed into the template with the input key "logo": \
 
 If compiled through one of the Oicana integrations (for example out of C# code), the input values given by the integration would be used instead of the defined `development` values from the manifest file.
 
-A Typst project that configures Oicana in its manifest file and uses the package `@preview/oicana` is called an [Oicana template in the documentation][oicana-template].
+A Typst project that configures Oicana in its manifest file and uses the package `@preview/oicana` is called an Oicana template in the documentation.
 
 ## Getting started
 
@@ -74,5 +74,4 @@ Oicana itself is source available under PolyForm Noncommercial License 1.0.0. Fo
 
 [Oicana]: https://oicana.com
 [example-templates]: https://github.com/oicana/oicana-example-templates
-[getting-started]: https://docs.oicana.com/getting-started
-[oicana-template]: https://docs.oicana.com/templates
+[getting-started]: https://oicana.com/docs/getting-started/1-setup

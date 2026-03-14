@@ -48,7 +48,7 @@ with Template(template_bytes) as template:
 
 ## Documentation
 
-For more information, visit [https://docs.oicana.com](https://docs.oicana.com)
+For more information, visit [https://oicana.com/docs](https://oicana.com/docs)
 
 ## License
 

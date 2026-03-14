@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "oicana"
-version = "0.1.0a3"
+version = "0.1.0a4"
 description = "PDF templating with Typst"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -13,7 +13,7 @@ authors = [
     { name = "Oicana", email = "hello@oicana.com" }
 ]
 dependencies = [
-    "oicana-native>=0.1.0a3",
+    "oicana-native>=0.1.0a4",
 ]
 keywords = ["oicana", "typst", "typesetting", "pdf"]
 classifiers = [
@@ -30,7 +30,7 @@ classifiers = [
 [project.urls]
 Homepage = "https://oicana.com"
 Repository = "https://github.com/oicana/oicana"
-Documentation = "https://docs.oicana.com"
+Documentation = "https://oicana.com/docs"
 
 [project.optional-dependencies]
 dev = [

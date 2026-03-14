@@ -248,7 +248,8 @@ fn system_path(id: FileId, files: &NativeTemplate) -> Result<PathBuf, FileError>
     }
 
     // Join the path to the root. If it tries to escape, deny
-    // access. Note: It can still escape via symlinks.
+    // access. Note: It can still escape via symlinks, but native
+    // templates are only used during development, not at runtime.
     id.vpath().resolve(&root).ok_or(FileError::AccessDenied)
 }
 

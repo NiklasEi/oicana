@@ -3,13 +3,18 @@
 1. Bump general crate version in `cargo.toml`
 2. Bump CLI version
 3. Integrations
-  * bump oicana_browser_wasm in integrations/browser/oicana_browser_wasm/Cargo.toml
+  * bump browser
+    * wasm in integrations/browser/oicana_browser_wasm/Cargo.toml
+    * wrapper integrations/browser/oicana-browser/package.json
   * bump C# integration in integrations/csharp/Oicana/Oicana.csproj and integrations/csharp/oicana_csharp/Cargo.toml
-  * bump Node.Js in integrations/node/oicana-node-native/Cargo.toml and integrations/node/oicana-node-native/package.json
-    * run `yarn build` and `yarn format`
+  * bump Node.Js integration versions 
+    * in integrations/node/oicana-node-native/Cargo.toml and integrations/node/oicana-node-native/package.json
+      * run `yarn build` and `yarn format`
+    * wrapper integrations/node/oicana-node/package.json
   * Python:
     * native: integrations/python/oicana-python-native/pyproject.toml and integrations/python/oicana-python-native/Cargo.toml
     * wrapper: integrations/python/oicana-python/pyproject.toml
+    * run `uv sync` in integrations/python/oicana-python
   * PHP:
     * integrations/php/oicana-php-native/Cargo.toml
     * integrations/php/oicana-php/composer.json
@@ -18,20 +23,16 @@
   * Java:
     * integrations/java/oicana-java-native/Cargo.toml
     * integrations/java/build.gradle.kts (version in `subprojects` block)
-4.
-  * tag CLI version => will trigger CD pipeline; publish to crates.io manually
-  * crates version => manual publish
-  * tag C# version => will trigger CD pipeline
-  * tag browser => trigger CD pipeline `publish npm @oicana/browser-wasm`
-  * tag python => will trigger CD pipeline
+4. Run `cargo publish --workspace` to publish the rust integration and CLI to crates.io
+5.
+  * tag CLI version `oicana_cli-v*` => will trigger CD pipeline
+  * tag crates version `oicana_rust-v*`
+  * tag C# version `oicana_csharp-v*` => will trigger CD pipeline
+  * tag browser `oicana_browser-v*` => will trigger CD pipeline
+  * tag node `oicana_node-v*` => will trigger CD pipeline
+  * tag python `oicana_python-v*` => will trigger CD pipeline
   * tag PHP `oicana_php-v*` => will trigger CD pipeline
   * tag Java `oicana_java-v*` => will trigger CD pipeline
-5.
-  * bump Node.Js wrapper integrations/node/oicana-node/package.json
-    * `npm i` after bumping dependency
-  * bump browser wrapper integrations/browser/oicana-browser/package.json
-    * `npm i` after bumping dependency
-6. Trigger CD pipelines for node and browser integrations
 
 ## CLI
 
@@ -101,6 +102,6 @@ The CD pipeline validates version consistency, builds JNI native libraries for 5
 
 ## Crates
 
-All rust crates excluding the native wrappers are published to crates.io. This includes the CLI tools `oicana_cli` and `test_compare`.
+All rust crates excluding the native wrappers are published to crates.io. This includes the CLI project `oicana_cli`.
 
 Run `cargo publish --workspace --dry-run` to try publishing all crates.

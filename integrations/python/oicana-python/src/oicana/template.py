@@ -19,6 +19,12 @@ from oicana_native import (
 from oicana_native import (
     CompilationMode as NativeCompilationMode,
 )
+from oicana_native import (
+    configure_automatic_cache_eviction as _configure_automatic_cache_eviction,
+)
+from oicana_native import (
+    evict_cache as _evict_cache,
+)
 
 from .types import BlobInput, CompilationMode, ExportFormat
 
@@ -180,3 +186,30 @@ class Template:
             self.cleanup()
         except Exception:
             pass  # Best effort cleanup
+
+
+def configure_automatic_cache_eviction(max_age: int | None) -> None:
+    """Configure automatic cache eviction after each compilation.
+
+    Args:
+        max_age: Maximum age threshold, or None to disable:
+            - None - Disables cache eviction (cache never cleared)
+            - 0 - Clears all cache entries with every eviction
+            - 1 - Keeps only entries used since the last eviction
+            - n - Keeps entries used within the last n evictions
+            Default is 10.
+    """
+    _configure_automatic_cache_eviction(max_age)
+
+
+def evict_cache(max_age: int) -> None:
+    """Manually evict the cache with the given age threshold.
+
+    This directly calls the underlying eviction with the specified age,
+    regardless of the configured default age.
+
+    Args:
+        max_age: Maximum age threshold for eviction.
+            Entries with age >= this value will be removed.
+    """
+    _evict_cache(max_age)

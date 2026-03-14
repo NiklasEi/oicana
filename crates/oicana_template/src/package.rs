@@ -27,7 +27,7 @@ where
         return Err(PackageError::SourceIsNotADirectory);
     }
 
-    let walk_dir = WalkDir::new(src_dir);
+    let walk_dir = WalkDir::new(src_dir).follow_links(true);
     let it = walk_dir.into_iter().filter_entry(|entry| {
         manifest.should_path_be_packed(entry.path().strip_prefix(src_dir).unwrap())
     });
@@ -304,5 +304,84 @@ manifest_version = 1
             all_paths.iter().any(|p| p == "assets/images/logo.txt"),
             "Expected 'assets/images/logo.txt' with forward slashes in zip"
         );
+    }
+
+    fn symlink_dir(src: &Path, dst: &Path) {
+        #[cfg(unix)]
+        std::os::unix::fs::symlink(src, dst).unwrap();
+        #[cfg(windows)]
+        std::os::windows::fs::symlink_dir(src, dst).unwrap();
+    }
+
+    fn symlink_file(src: &Path, dst: &Path) {
+        #[cfg(unix)]
+        std::os::unix::fs::symlink(src, dst).unwrap();
+        #[cfg(windows)]
+        std::os::windows::fs::symlink_file(src, dst).unwrap();
+    }
+
+    #[test]
+    fn packages_symlinked_directory_contents() {
+        let dir = TempDir::new().unwrap();
+        std::fs::write(dir.path().join("typst.toml"), manifest()).unwrap();
+        std::fs::write(dir.path().join("main.typ"), "Hello").unwrap();
+
+        // Create an external directory with files and symlink it into the template
+        let external = TempDir::new().unwrap();
+        std::fs::create_dir(external.path().join("lib")).unwrap();
+        std::fs::write(external.path().join("lib").join("utils.typ"), "// utils").unwrap();
+        symlink_dir(&external.path().join("lib"), &dir.path().join("lib"));
+
+        let manifest = TemplateManifest::from_toml(
+            &std::fs::read_to_string(dir.path().join("typst.toml")).unwrap(),
+        )
+        .unwrap();
+
+        let mut buffer = Cursor::new(Vec::new());
+        package(dir.path(), &mut buffer, &manifest).unwrap();
+
+        buffer.set_position(0);
+        let mut archive = zip::ZipArchive::new(buffer).unwrap();
+
+        let mut utils = archive
+            .by_name("lib/utils.typ")
+            .expect("File inside symlinked directory should be packed");
+        let mut content = String::new();
+        utils.read_to_string(&mut content).unwrap();
+        assert_eq!(content, "// utils");
+    }
+
+    #[test]
+    fn packages_symlinked_files_with_their_content() {
+        let dir = TempDir::new().unwrap();
+        std::fs::write(dir.path().join("typst.toml"), manifest()).unwrap();
+        std::fs::write(dir.path().join("main.typ"), "Hello").unwrap();
+
+        // Create an external file and symlink to it from inside the template
+        let external = TempDir::new().unwrap();
+        std::fs::write(external.path().join("data.json"), r#"{"key": "value"}"#).unwrap();
+        symlink_file(
+            &external.path().join("data.json"),
+            &dir.path().join("linked.json"),
+        );
+
+        let manifest = TemplateManifest::from_toml(
+            &std::fs::read_to_string(dir.path().join("typst.toml")).unwrap(),
+        )
+        .unwrap();
+
+        let mut buffer = Cursor::new(Vec::new());
+        package(dir.path(), &mut buffer, &manifest).unwrap();
+
+        buffer.set_position(0);
+        let mut archive = zip::ZipArchive::new(buffer).unwrap();
+
+        // The symlinked file should be included with its actual content
+        let mut linked = archive
+            .by_name("linked.json")
+            .expect("Symlinked file should be packed into the zip");
+        let mut content = String::new();
+        linked.read_to_string(&mut content).unwrap();
+        assert_eq!(content, r#"{"key": "value"}"#);
     }
 }

@@ -82,7 +82,7 @@ Snapshot tests can be defined for every template. The CLI described in the next 
 
 ### CLI
 
-Please refer to the documentation for installation instructions: https://docs.oicana.com/cli
+Please refer to the documentation for installation instructions: https://oicana.com/docs/cli
 
 #### Packaging
 
@@ -135,5 +135,5 @@ See [NOTICE](NOTICE) for a report of licenses in this project.
 [oicana-example-templates]: https://github.com/oicana/oicana-example-templates
 [napi]: https://napi.rs/
 [oicana-typst]: https://typst.app/universe/package/oicana
-[docs]: https://docs.oicana.com
-[getting-started]: https://docs.oicana.com/getting-started
+[docs]: https://oicana.com/docs
+[getting-started]: https://oicana.com/docs/getting-started/1-setup/

@@ -4,7 +4,7 @@ build-backend = "maturin"
 
 [project]
 name = "oicana-native"
-version = "0.1.0a3"
+version = "0.1.0a4"
 description = "Native Python bindings for Oicana (PDF templating with Typst)"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -28,7 +28,7 @@ classifiers = [
 [project.urls]
 Homepage = "https://oicana.com"
 Repository = "https://github.com/oicana/oicana"
-Documentation = "https://docs.oicana.com"
+Documentation = "https://oicana.com/docs"
 
 [tool.maturin]
 python-source = "python"

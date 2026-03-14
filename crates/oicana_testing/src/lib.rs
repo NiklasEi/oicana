@@ -291,7 +291,7 @@ where
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
 #[serde(untagged, deny_unknown_fields)]
 pub enum SnapshotConfig {
-    /// This test should onlz be compiled
+    /// This test should only be compiled
     /// there will be no comparison of the output with a snapshot file
     Disabled,
     /// Relative path to the snapshot file for this test
