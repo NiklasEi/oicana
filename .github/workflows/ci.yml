@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
-      - uses: actions/checkout@v6@v6
+      - uses: actions/checkout@v6
       - uses: actions/cache@v4
         with:
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.toml') }}
@@ -40,7 +40,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     timeout-minutes: 60
     steps:
-      - uses: actions/checkout@v6@v6
+      - uses: actions/checkout@v6
       - uses: actions/cache@v4
         with:
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.toml') }}
@@ -63,7 +63,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     timeout-minutes: 60
     steps:
-      - uses: actions/checkout@v6@v6
+      - uses: actions/checkout@v6
       - uses: actions/cache@v4
         with:
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.toml') }}
@@ -82,7 +82,7 @@ jobs:
   check-node-native-integration:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6@v6
+      - uses: actions/checkout@v6
       - name: Setup node
         uses: actions/setup-node@v5
         with:
@@ -111,7 +111,7 @@ jobs:
     needs:
       - build-node-native
     steps:
-      - uses: actions/checkout@v6@v6
+      - uses: actions/checkout@v6
       - name: Setup node
         uses: actions/setup-node@v5
         with:
@@ -142,7 +142,7 @@ jobs:
     needs:
       - build-browser-wasm
     steps:
-      - uses: actions/checkout@v6@v6
+      - uses: actions/checkout@v6
       - name: Setup node
         uses: actions/setup-node@v5
         with:
@@ -171,7 +171,7 @@ jobs:
   check-csharp-integration:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6@v6
+      - uses: actions/checkout@v6
       - uses: actions/cache@v4
         with:
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.toml') }}
@@ -207,7 +207,7 @@ jobs:
   check-python-integration:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6@v6
+      - uses: actions/checkout@v6
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
@@ -238,7 +238,7 @@ jobs:
   check-php-integration:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6@v6
+      - uses: actions/checkout@v6
       - uses: actions/cache@v4
         with:
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.toml') }}
@@ -292,7 +292,7 @@ jobs:
             lib: oicana_csharp.dll
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v6@v6
+      - uses: actions/checkout@v6
       - uses: actions/cache@v4
         with:
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.toml') }}
@@ -317,7 +317,7 @@ jobs:
   build-browser-wasm:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6@v6
+      - uses: actions/checkout@v6
       - uses: actions/cache@v4
         with:
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.toml') }}
@@ -354,7 +354,7 @@ jobs:
         os: [ubuntu-latest, macos-latest, windows-latest]
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v6@v6
+      - uses: actions/checkout@v6
       - name: Setup node
         uses: actions/setup-node@v5
         with:
@@ -421,7 +421,7 @@ jobs:
             bin_ext: ""
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v6@v6
+      - uses: actions/checkout@v6
       - uses: actions/cache@v4
         with:
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.toml') }}
@@ -449,7 +449,7 @@ jobs:
         os: [ubuntu-latest, macos-latest, windows-latest]
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v6@v6
+      - uses: actions/checkout@v6
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
@@ -499,7 +499,7 @@ jobs:
             flags: ""
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v6@v6
+      - uses: actions/checkout@v6
       - uses: actions/cache@v4
         with:
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.toml') }}
@@ -548,7 +548,7 @@ jobs:
       - build-tools
       - build-node-native
     steps:
-      - uses: actions/checkout@v6@v6
+      - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@stable
       - uses: taiki-e/install-action@v2
         with:
@@ -598,7 +598,7 @@ jobs:
       - build-tools
       - build-browser-wasm
     steps:
-      - uses: actions/checkout@v6@v5
+      - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@stable
       - uses: taiki-e/install-action@v2
         with:
@@ -648,7 +648,7 @@ jobs:
       - build-tools
       - build-csharp
     steps:
-      - uses: actions/checkout@v6@v5
+      - uses: actions/checkout@v6
       - name: Setup dotnet
         uses: actions/setup-dotnet@v5
         with:
@@ -693,7 +693,7 @@ jobs:
       - build-tools
       - build-python-native
     steps:
-      - uses: actions/checkout@v6@v5
+      - uses: actions/checkout@v6
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
@@ -749,7 +749,7 @@ jobs:
       - build-tools
       - build-php-native
     steps:
-      - uses: actions/checkout@v6@v5
+      - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@stable
       - uses: taiki-e/install-action@v2
         with:
@@ -822,7 +822,7 @@ jobs:
             lib: oicana_java_native.dll
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v6@v5
+      - uses: actions/checkout@v6
       - uses: actions/cache/restore@v4
         with:
           key: ${{ runner.os }}-stable--${{ hashFiles('**/Cargo.toml', 'integrations/java/**/*.rs') }}-
@@ -860,7 +860,7 @@ jobs:
       - build-tools
       - build-java-native
     steps:
-      - uses: actions/checkout@v6@v5
+      - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@stable
       - uses: taiki-e/install-action@v2
         with:
@@ -907,7 +907,7 @@ jobs:
     needs:
       - build-tools
     steps:
-      - uses: actions/checkout@v6@v5
+      - uses: actions/checkout@v6
       - uses: ./.github/actions/install-tool
         with:
           tool: "oicana-cli"
@@ -937,7 +937,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v6@v4
+      - uses: actions/checkout@v6
       - uses: typst-community/setup-tytanic@v1
         with:
           tytanic-version: 0.3.0
@@ -966,7 +966,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout Actions Repository
-      uses: actions/checkout@v6@v4
+      uses: actions/checkout@v6
     - name: Spell Check Repo
       uses: crate-ci/typos@v1.35.5
 
@@ -974,7 +974,7 @@ jobs:
     name: Check for dead links in docs
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6@v4
+      - uses: actions/checkout@v6
       # - uses: typst-community/setup-shiroa@v1
       #   with:
       #     shiroa-version: 0.3.1-rc4

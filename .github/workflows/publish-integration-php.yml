@@ -28,7 +28,7 @@ jobs:
     outputs:
       version: ${{ steps.version.outputs.VERSION }}
     steps:
-      - uses: actions/checkout@v6@v5
+      - uses: actions/checkout@v6
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
@@ -134,7 +134,7 @@ jobs:
           - zts
 
     steps:
-      - uses: actions/checkout@v6@v5
+      - uses: actions/checkout@v6
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@master
         with:
@@ -191,7 +191,7 @@ jobs:
     env:
       VERSION: ${{ needs.validate-version.outputs.version }}
     steps:
-      - uses: actions/checkout@v6@v5
+      - uses: actions/checkout@v6
 
       - name: Download all artifacts
         uses: actions/download-artifact@v8

@@ -21,7 +21,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6@v4
+        uses: actions/checkout@v6
       - name: Install rust toolchain
         uses: dtolnay/rust-toolchain@master
         with:
@@ -36,7 +36,7 @@ jobs:
     runs-on: windows-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6@v4
+        uses: actions/checkout@v6
       - name: Install rust toolchain
         uses: dtolnay/rust-toolchain@master
         with:
@@ -51,7 +51,7 @@ jobs:
     runs-on: macos-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6@v4
+        uses: actions/checkout@v6
       - name: Install rust toolchain
         uses: dtolnay/rust-toolchain@master
         with:
@@ -67,7 +67,7 @@ jobs:
     runs-on: macos-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6@v4
+        uses: actions/checkout@v6
       - name: Install rust toolchain
         uses: dtolnay/rust-toolchain@master
         with:
@@ -84,7 +84,7 @@ jobs:
     needs: [build-linux, build-windows, build-mac-x86, build-mac-arm]
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6@v4
+        uses: actions/checkout@v6
       - uses: actions/download-artifact@v8
         with:
           name: oicana-csharp-linux
