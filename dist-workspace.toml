@@ -27,11 +27,12 @@ github-release = "announce"
 install-updater = false
 # Path that installers should place binaries in
 install-path = "CARGO_HOME"
-# Otherwise we cannot use latest Rust because the runner will be behind by couple versions
-# deprecated, see https://axodotdev.github.io/cargo-dist/book/reference/config.html?highlight=rust-toolchain-version#rust-toolchain-version
+# The preferred Rust toolchain to use in CI (rustup toolchain syntax)
 rust-toolchain-version = "stable"
 # A prefix git tags must include for dist to care about them
 tag-namespace = "oicana_cli"
+# Build only the required packages, and individually
+precise-builds = true
 
 [dist.min-glibc-version]
 # Override glibc version for specific target triplets.
