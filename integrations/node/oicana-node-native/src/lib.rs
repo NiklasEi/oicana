@@ -125,7 +125,9 @@ pub fn compile_template(
   };
   let mut inputs = prepare_inputs(json_inputs, blob_inputs)?;
   inputs.with_config(compilation_mode.into());
-  world.update_inputs(inputs);
+  world
+    .update_inputs(inputs)
+    .map_err(|error| Error::from_reason(error.to_string()))?;
 
   let document = world
     .compile()

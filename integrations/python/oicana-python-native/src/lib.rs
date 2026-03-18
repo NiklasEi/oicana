@@ -157,7 +157,9 @@ fn compile_template(
 
     let mut inputs = prepare_inputs(py, json_inputs, blob_inputs)?;
     inputs.with_config(compilation_mode.into());
-    world.update_inputs(inputs);
+    world
+        .update_inputs(inputs)
+        .map_err(|e| PyRuntimeError::new_err(e.to_string()))?;
 
     let document = world
         .compile()

@@ -19,11 +19,7 @@ key = "data"
 ```)
 
 \
-A json schema file can be used for input validation.
-
-#alpha-note(
-  "The json schema validation is not complete yet. You can set the property and maintain the schema, but at the moment it is ignored by Oicana.",
-)
+A json schema file can be used for input validation. When a schema is defined, Oicana validates JSON inputs against it before compilation. Invalid inputs are rejected with detailed error messages pointing to the specific fields that failed validation.
 
 #code(
   "Part of typst.toml",

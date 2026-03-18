@@ -132,7 +132,9 @@ pub fn compile_template(
         .map_err(|error| format!("Failed to convert to compilation mode: {error:?}"))?;
     let mut inputs = prepare_inputs(json_inputs, blob_inputs)?;
     inputs.with_config(compilation_mode.into());
-    world.update_inputs(inputs);
+    world
+        .update_inputs(inputs)
+        .map_err(|error| error.to_string())?;
 
     let document = world.compile().map_err(|error| error.to_string())?;
     let document_time = get_current_time();

@@ -199,7 +199,9 @@ pub unsafe extern "C" fn unsafe_compile_template(
     };
 
     let world = world.value_mut();
-    world.update_inputs(inputs);
+    if let Err(error) = world.update_inputs(inputs) {
+        return Buffer::from_error(format!("{error}"));
+    }
     let document_result = world.compile();
     let document = match document_result {
         Ok(document) => document,

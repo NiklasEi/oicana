@@ -177,7 +177,9 @@ pub fn compile_template(
 
     let mut inputs = prepare_inputs(json_inputs, blob_inputs)?;
     inputs.with_config(compilation_mode_from_i64(compilation_mode));
-    world.update_inputs(inputs);
+    world
+        .update_inputs(inputs)
+        .map_err(|e| PhpException::default(e.to_string()))?;
 
     let document = world
         .compile()

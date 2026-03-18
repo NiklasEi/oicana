@@ -246,7 +246,9 @@ pub extern "system" fn Java_com_oicana_OicanaNative_compileTemplate<'local>(
             let mut inputs =
                 prepare_inputs(json_map, blob_map).map_err(|e| throw_oicana(env, &e))?;
             inputs.with_config(compilation_config_from_mode(compilation_mode));
-            world.update_inputs(inputs);
+            world
+                .update_inputs(inputs)
+                .map_err(|e| throw_oicana(env, &e.to_string()))?;
 
             let document = world
                 .compile()
