@@ -569,3 +569,4 @@ module.exports.NOT_REGISTERED = nativeBinding.NOT_REGISTERED
 module.exports.registerTemplate = nativeBinding.registerTemplate
 module.exports.removeDocument = nativeBinding.removeDocument
 module.exports.removeWorld = nativeBinding.removeWorld
+module.exports.setValidateInputs = nativeBinding.setValidateInputs

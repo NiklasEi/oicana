@@ -130,6 +130,13 @@ namespace Oicana.Interop
         [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl, EntryPoint = "configure")]
         public static extern Buffer configure(Config config);
 
+        /// Enable or disable JSON schema validation for the given template.
+        ///
+        /// When enabled (the default), JSON inputs are validated against their schemas
+        /// before compilation.
+        [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl, EntryPoint = "set_validate_inputs")]
+        public static extern Buffer set_validate_inputs(string template, bool validate);
+
         /// Configure automatic cache eviction after each compilation.
         ///
         /// # Parameters
