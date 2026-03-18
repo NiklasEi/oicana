@@ -224,7 +224,7 @@ jobs:
             target/
       - uses: dtolnay/rust-toolchain@stable
       - name: Install uv
-        run: pip install uv
+        uses: astral-sh/setup-uv@v4
       - name: Sync workspace dependencies
         run: uv sync
         working-directory: integrations/python
@@ -465,8 +465,10 @@ jobs:
             ~/.cargo/git/db/
             target/
       - uses: dtolnay/rust-toolchain@stable
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
       - name: Install maturin
-        run: pip install maturin
+        run: uv tool install maturin
       - name: Build abi3 wheel
         run: maturin build --release --out dist
         working-directory: integrations/python/oicana-python-native
@@ -722,11 +724,13 @@ jobs:
         with:
           name: python_native_${{ matrix.os }}
           path: ./dist
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
       - name: Install native wheel
         shell: bash
-        run: pip install dist/*.whl
+        run: uv pip install --system dist/*.whl
       - name: Install wrapper package
-        run: pip install -e ".[test]"
+        run: uv pip install --system -e ".[test]"
         working-directory: ./integrations/python/oicana-python
       - name: Run Python E2E tests
         run: pytest tests/test_e2e.py -v

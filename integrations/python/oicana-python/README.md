@@ -7,7 +7,7 @@ Oicana offers seamless PDF templating. Define your templates in Typst, specify d
 ## Installation
 
 ```bash
-pip install oicana
+uv add oicana
 ```
 
 ## Quick Start
