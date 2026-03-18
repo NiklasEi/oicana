@@ -51,6 +51,7 @@ Example commands to compile templates:
 
 == Validation
 
-#note[The validation is work in progress. The command will currently only check if the manifest can be parsed.]
+E.g. ```bash oicana validate templates/table``` will validate the table template.
 
-Oicana templates are valid Typst projects. Inputs are configured in the `typst.toml` manifest.
+\
+If JSON inputs have schemas defined, the `validate` command will make sure that any default or development values are valid according to the schema.

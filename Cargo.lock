@@ -3336,6 +3336,7 @@ dependencies = [
  "console",
  "env_logger",
  "indicatif",
+ "jsonschema 0.45.0",
  "log",
  "oicana",
  "oicana_export",

@@ -46,6 +46,7 @@ color-print = { workspace = true }
 indicatif = { workspace = true }
 console = { workspace = true }
 serde_json = { workspace = true }
+jsonschema = { workspace = true }
 rand = { workspace = true }
 
 # Explicitly depend on OpenSSL if applicable, so that we can add the
