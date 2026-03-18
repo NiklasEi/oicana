@@ -3062,7 +3062,7 @@ dependencies = [
 
 [[package]]
 name = "oicana"
-version = "0.1.0-alpha.7"
+version = "0.1.0-alpha.8"
 dependencies = [
  "oicana_files",
  "oicana_input",
@@ -3076,7 +3076,7 @@ dependencies = [
 
 [[package]]
 name = "oicana-browser-wasm"
-version = "0.1.0-alpha.6"
+version = "0.1.0-alpha.7"
 dependencies = [
  "console_error_panic_hook",
  "console_log",
@@ -3098,7 +3098,7 @@ dependencies = [
 
 [[package]]
 name = "oicana-python-native"
-version = "0.1.0-alpha.4"
+version = "0.1.0-alpha.5"
 dependencies = [
  "dashmap",
  "oicana_export",
@@ -3117,7 +3117,7 @@ dependencies = [
 
 [[package]]
 name = "oicana_cli"
-version = "0.1.0-alpha.8"
+version = "0.1.0-alpha.9"
 dependencies = [
  "anyhow",
  "chrono",
@@ -3149,7 +3149,7 @@ dependencies = [
 
 [[package]]
 name = "oicana_csharp"
-version = "0.1.0-alpha.9"
+version = "0.1.0-alpha.10"
 dependencies = [
  "dashmap",
  "interoptopus",
@@ -3166,7 +3166,7 @@ dependencies = [
 
 [[package]]
 name = "oicana_export"
-version = "0.1.0-alpha.7"
+version = "0.1.0-alpha.8"
 dependencies = [
  "oicana_files",
  "oicana_input",
@@ -3181,7 +3181,7 @@ dependencies = [
 
 [[package]]
 name = "oicana_files"
-version = "0.1.0-alpha.7"
+version = "0.1.0-alpha.8"
 dependencies = [
  "codespan-reporting",
  "dirs",
@@ -3202,7 +3202,7 @@ dependencies = [
 
 [[package]]
 name = "oicana_input"
-version = "0.1.0-alpha.7"
+version = "0.1.0-alpha.8"
 dependencies = [
  "log",
  "serde",
@@ -3212,7 +3212,7 @@ dependencies = [
 
 [[package]]
 name = "oicana_java_native"
-version = "0.1.0-alpha.2"
+version = "0.1.0-alpha.3"
 dependencies = [
  "dashmap",
  "jni",
@@ -3231,7 +3231,7 @@ dependencies = [
 
 [[package]]
 name = "oicana_node_native"
-version = "0.1.0-alpha.7"
+version = "0.1.0-alpha.8"
 dependencies = [
  "dashmap",
  "napi",
@@ -3252,7 +3252,7 @@ dependencies = [
 
 [[package]]
 name = "oicana_php_native"
-version = "0.1.0-alpha.3"
+version = "0.1.0-alpha.4"
 dependencies = [
  "dashmap",
  "ext-php-rs",
@@ -3270,7 +3270,7 @@ dependencies = [
 
 [[package]]
 name = "oicana_template"
-version = "0.1.0-alpha.7"
+version = "0.1.0-alpha.8"
 dependencies = [
  "chrono",
  "log",
@@ -3287,7 +3287,7 @@ dependencies = [
 
 [[package]]
 name = "oicana_testing"
-version = "0.1.0-alpha.7"
+version = "0.1.0-alpha.8"
 dependencies = [
  "image",
  "json_schema_ast",
@@ -3311,7 +3311,7 @@ dependencies = [
 
 [[package]]
 name = "oicana_world"
-version = "0.1.0-alpha.7"
+version = "0.1.0-alpha.8"
 dependencies = [
  "anyhow",
  "chrono",
@@ -4679,7 +4679,7 @@ dependencies = [
 
 [[package]]
 name = "test_compare"
-version = "0.1.0-alpha.7"
+version = "0.1.0-alpha.8"
 dependencies = [
  "anyhow",
  "clap",
