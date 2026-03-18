@@ -58,8 +58,6 @@ impl TemplateInputs {
     }
 
     /// Get the string value of an input by key, if it exists.
-    ///
-    /// This is useful for accessing raw JSON input strings before they are consumed by [`Self::to_dict`].
     pub fn get_str_value(&self, key: &str) -> Option<String> {
         match self.inputs.at(Str::from(key), None) {
             Ok(Value::Str(s)) => Some(s.to_string()),

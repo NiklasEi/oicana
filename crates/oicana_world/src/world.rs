@@ -31,8 +31,6 @@ pub struct OicanaWorld<Files: TemplateFiles> {
     manifest: TemplateManifest,
     validators: HashMap<String, Validator>,
     /// Whether to validate JSON inputs against their schemas before compilation.
-    ///
-    /// Enabled by default. Set to `false` to skip validation.
     pub validate_inputs: bool,
     /// Color mode for diagnostic logs
     pub color: DiagnosticColor,
@@ -56,6 +54,9 @@ impl<Files: TemplateFiles> fmt::Debug for OicanaWorld<Files> {
 }
 
 /// Build JSON schema validators from the template manifest and files.
+///
+/// Only builds validators for JSON inputs that have a schema and whose `validate`
+/// flag is `true`.
 fn build_validators<F: TemplateFiles>(
     manifest: &TemplateManifest,
     files: &F,
@@ -69,6 +70,9 @@ fn build_validators<F: TemplateFiles>(
         let Some(schema_path) = &json_def.schema else {
             continue;
         };
+        if !json_def.validate {
+            continue;
+        }
 
         let file_id = FileId::new(None, VirtualPath::new(schema_path));
         let schema_bytes = files
@@ -121,6 +125,7 @@ impl<Files: TemplateFiles> OicanaWorld<Files> {
         let mut searcher = FontCollection::new();
         searcher.collect(&files);
 
+        let validate_inputs = manifest.tool.oicana.validate_json_inputs_by_default;
         let validators = build_validators(&manifest, &files)?;
 
         Ok(Self {
@@ -131,7 +136,7 @@ impl<Files: TemplateFiles> OicanaWorld<Files> {
             now: OnceLock::new(),
             manifest,
             validators,
-            validate_inputs: true,
+            validate_inputs,
             color: DiagnosticColor::Ansi,
             files,
         })
@@ -735,6 +740,185 @@ mod tests {
 
         let result = world.update_inputs(inputs);
         assert!(result.is_ok());
+    }
+
+    #[test]
+    fn per_input_validate_false_skips_validator_creation() {
+        let manifest = r#"
+        [package]
+        name = "test"
+        version = "0.1.0"
+        entrypoint = "main.typ"
+
+        [tool.oicana]
+        manifest_version = 1
+
+        [[tool.oicana.inputs]]
+        type = "json"
+        key = "data"
+        schema = "data.schema.json"
+        validate = false
+        "#;
+        let files = template_with_schema(manifest, "Test", simple_schema());
+        let manifest = files.manifest().unwrap();
+        let world = OicanaWorld::new(files, TemplateInputs::new(), manifest).unwrap();
+
+        assert!(world.validators.is_empty());
+    }
+
+    #[test]
+    fn per_input_validate_false_accepts_invalid_json() {
+        use oicana_input::input::json::JsonInput;
+
+        let manifest = r#"
+        [package]
+        name = "test"
+        version = "0.1.0"
+        entrypoint = "main.typ"
+
+        [tool.oicana]
+        manifest_version = 1
+
+        [[tool.oicana.inputs]]
+        type = "json"
+        key = "data"
+        schema = "data.schema.json"
+        validate = false
+        "#;
+        let files = template_with_schema(manifest, "Test", simple_schema());
+        let manifest = files.manifest().unwrap();
+        let mut world = OicanaWorld::new(files, TemplateInputs::new(), manifest).unwrap();
+
+        let mut inputs = TemplateInputs::new();
+        inputs.with_input(JsonInput::new("data", r#"{"age": 30}"#));
+        assert!(world.update_inputs(inputs).is_ok());
+    }
+
+    #[test]
+    fn per_input_validate_true_is_default_and_validates() {
+        use oicana_input::input::json::JsonInput;
+
+        let files = template_with_schema(schema_manifest(), "Test", simple_schema());
+        let manifest = files.manifest().unwrap();
+        let mut world = OicanaWorld::new(files, TemplateInputs::new(), manifest).unwrap();
+
+        assert_eq!(world.validators.len(), 1);
+
+        let mut inputs = TemplateInputs::new();
+        inputs.with_input(JsonInput::new("data", r#"{"age": 30}"#));
+        assert!(world.update_inputs(inputs).is_err());
+    }
+
+    #[test]
+    fn mixed_validate_flags_only_validates_enabled_inputs() {
+        use oicana_input::input::json::JsonInput;
+
+        let manifest = r#"
+        [package]
+        name = "test"
+        version = "0.1.0"
+        entrypoint = "main.typ"
+
+        [tool.oicana]
+        manifest_version = 1
+
+        [[tool.oicana.inputs]]
+        type = "json"
+        key = "validated"
+        schema = "data.schema.json"
+        validate = true
+
+        [[tool.oicana.inputs]]
+        type = "json"
+        key = "unvalidated"
+        schema = "data.schema.json"
+        validate = false
+        "#;
+        let files = template_with_schema(manifest, "Test", simple_schema());
+        let manifest = files.manifest().unwrap();
+        let mut world = OicanaWorld::new(files, TemplateInputs::new(), manifest).unwrap();
+
+        assert_eq!(world.validators.len(), 1);
+        assert!(world.validators.contains_key("validated"));
+        assert!(!world.validators.contains_key("unvalidated"));
+
+        let mut inputs = TemplateInputs::new();
+        inputs.with_input(JsonInput::new("unvalidated", r#"{"age": 30}"#));
+        assert!(world.update_inputs(inputs).is_ok());
+
+        let mut inputs = TemplateInputs::new();
+        inputs.with_input(JsonInput::new("validated", r#"{"age": 30}"#));
+        assert!(world.update_inputs(inputs).is_err());
+    }
+
+    #[test]
+    fn manifest_validate_json_inputs_by_default_false_disables_validation_by_default() {
+        use oicana_input::input::json::JsonInput;
+
+        let manifest = r#"
+        [package]
+        name = "test"
+        version = "0.1.0"
+        entrypoint = "main.typ"
+
+        [tool.oicana]
+        manifest_version = 1
+        validate_json_inputs_by_default = false
+
+        [[tool.oicana.inputs]]
+        type = "json"
+        key = "data"
+        schema = "data.schema.json"
+        "#;
+        let files = template_with_schema(manifest, "Test", simple_schema());
+        let manifest = files.manifest().unwrap();
+        let mut world = OicanaWorld::new(files, TemplateInputs::new(), manifest).unwrap();
+
+        assert_eq!(world.validators.len(), 1);
+        assert!(!world.validate_inputs);
+
+        let mut inputs = TemplateInputs::new();
+        inputs.with_input(JsonInput::new("data", r#"{"age": 30}"#));
+        assert!(world.update_inputs(inputs).is_ok());
+    }
+
+    #[test]
+    fn manifest_validate_json_inputs_by_default_true_is_default() {
+        let files = template_with_schema(schema_manifest(), "Test", simple_schema());
+        let manifest = files.manifest().unwrap();
+        let world = OicanaWorld::new(files, TemplateInputs::new(), manifest).unwrap();
+
+        assert!(world.validate_inputs);
+    }
+
+    #[test]
+    fn manifest_validate_json_inputs_by_default_false_can_be_overridden_at_runtime() {
+        use oicana_input::input::json::JsonInput;
+
+        let manifest = r#"
+        [package]
+        name = "test"
+        version = "0.1.0"
+        entrypoint = "main.typ"
+
+        [tool.oicana]
+        manifest_version = 1
+        validate_json_inputs_by_default = false
+
+        [[tool.oicana.inputs]]
+        type = "json"
+        key = "data"
+        schema = "data.schema.json"
+        "#;
+        let files = template_with_schema(manifest, "Test", simple_schema());
+        let manifest = files.manifest().unwrap();
+        let mut world = OicanaWorld::new(files, TemplateInputs::new(), manifest).unwrap();
+
+        world.validate_inputs = true;
+
+        let mut inputs = TemplateInputs::new();
+        inputs.with_input(JsonInput::new("data", r#"{"age": 30}"#));
+        assert!(world.update_inputs(inputs).is_err());
     }
 
     #[test]

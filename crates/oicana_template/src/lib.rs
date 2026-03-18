@@ -62,12 +62,28 @@ pub struct OicanaConfig {
     /// The input definitions of the Oicana template.
     #[serde(default = "Vec::new")]
     pub inputs: Vec<InputDefinition>,
+    /// Whether to validate JSON inputs against their schemas by default.
+    ///
+    /// When `true` (the default), JSON inputs that have a schema defined will be
+    /// validated before compilation. Set to `false` to disable validation for all
+    /// inputs by default. This can be overridden at runtime per template instance.
+    /// Individual inputs can also opt out via their own `validate` property.
+    #[serde(default = "default_true")]
+    pub validate_json_inputs_by_default: bool,
     /// path to the tests of the template
     #[serde(default = "default_test_dir")]
     pub tests: PathBuf,
     /// Export configuration for the template.
     #[serde(default)]
     pub export: ExportConfig,
+}
+
+fn default_true() -> bool {
+    true
+}
+
+fn default_test_dir() -> PathBuf {
+    PathBuf::from("tests")
 }
 
 /// Configuration for exporting compiled documents.
@@ -167,10 +183,6 @@ fn default_pdf_standards() -> Vec<PdfStandard> {
     vec![PdfStandard::A_3b]
 }
 
-fn default_test_dir() -> PathBuf {
-    PathBuf::from("tests")
-}
-
 #[cfg(test)]
 mod tests {
     use crate::{validate_native_template, ExportConfig, OicanaConfig, PdfStandard, TemplateError};
@@ -210,6 +222,7 @@ mod tests {
         let expected = OicanaConfig {
             manifest_version: 1,
             inputs: vec![],
+            validate_json_inputs_by_default: true,
             tests: PathBuf::from("tests"),
             export: ExportConfig::default(),
         };
@@ -326,6 +339,7 @@ mod tests {
                     default: Some("invoice.json".to_string()),
                     development: None,
                     schema: Some("invoice.schema.json".to_string()),
+                    validate: true,
                 }),
                 InputDefinition::Blob(BlobInputDefinition {
                     key: "logo".to_string(),
@@ -346,8 +360,10 @@ mod tests {
                     default: None,
                     development: None,
                     schema: None,
+                    validate: true,
                 }),
             ],
+            validate_json_inputs_by_default: true,
             export: ExportConfig::default(),
         };
         assert_eq!(result.unwrap().tool.oicana, expected);
@@ -404,5 +420,160 @@ mod tests {
         let result = validate_native_template(path);
 
         assert!(matches!(result, Err(TemplateError::NotADirectory)));
+    }
+
+    #[test]
+    fn validate_json_inputs_by_default_defaults_to_true() {
+        let template = tempdir().unwrap();
+        {
+            let path = template.path().join("typst.toml");
+            let mut file = File::create(&path).unwrap();
+            write!(
+                &mut file,
+                r#"
+                [package]
+                name = "test"
+                version = "0.1.0"
+                entrypoint = "main.typ"
+
+                [tool.oicana]
+                manifest_version = 1
+                "#
+            )
+            .unwrap();
+        }
+
+        let result = validate_native_template(template.path());
+        assert!(result.unwrap().tool.oicana.validate_json_inputs_by_default);
+    }
+
+    #[test]
+    fn validate_json_inputs_by_default_can_be_set_to_false() {
+        let template = tempdir().unwrap();
+        {
+            let path = template.path().join("typst.toml");
+            let mut file = File::create(&path).unwrap();
+            write!(
+                &mut file,
+                r#"
+                [package]
+                name = "test"
+                version = "0.1.0"
+                entrypoint = "main.typ"
+
+                [tool.oicana]
+                manifest_version = 1
+                validate_json_inputs_by_default = false
+                "#
+            )
+            .unwrap();
+        }
+
+        let result = validate_native_template(template.path());
+        assert!(!result.unwrap().tool.oicana.validate_json_inputs_by_default);
+    }
+
+    #[test]
+    fn json_input_validate_defaults_to_true() {
+        let template = tempdir().unwrap();
+        {
+            let path = template.path().join("typst.toml");
+            let mut file = File::create(&path).unwrap();
+            write!(
+                &mut file,
+                r#"
+                [package]
+                name = "test"
+                version = "0.1.0"
+                entrypoint = "main.typ"
+
+                [tool.oicana]
+                manifest_version = 1
+
+                [[tool.oicana.inputs]]
+                type = "json"
+                key = "data"
+                schema = "data.schema.json"
+                "#
+            )
+            .unwrap();
+        }
+
+        let result = validate_native_template(template.path());
+        let config = result.unwrap().tool.oicana;
+        let InputDefinition::Json(json_def) = &config.inputs[0] else {
+            panic!("Expected JSON input");
+        };
+        assert!(json_def.validate);
+    }
+
+    #[test]
+    fn json_input_validate_can_be_set_to_false() {
+        let template = tempdir().unwrap();
+        {
+            let path = template.path().join("typst.toml");
+            let mut file = File::create(&path).unwrap();
+            write!(
+                &mut file,
+                r#"
+                [package]
+                name = "test"
+                version = "0.1.0"
+                entrypoint = "main.typ"
+
+                [tool.oicana]
+                manifest_version = 1
+
+                [[tool.oicana.inputs]]
+                type = "json"
+                key = "data"
+                schema = "data.schema.json"
+                validate = false
+                "#
+            )
+            .unwrap();
+        }
+
+        let result = validate_native_template(template.path());
+        let config = result.unwrap().tool.oicana;
+        let InputDefinition::Json(json_def) = &config.inputs[0] else {
+            panic!("Expected JSON input");
+        };
+        assert!(!json_def.validate);
+    }
+
+    #[test]
+    fn json_input_validate_true_without_schema_is_valid() {
+        let template = tempdir().unwrap();
+        {
+            let path = template.path().join("typst.toml");
+            let mut file = File::create(&path).unwrap();
+            write!(
+                &mut file,
+                r#"
+                [package]
+                name = "test"
+                version = "0.1.0"
+                entrypoint = "main.typ"
+
+                [tool.oicana]
+                manifest_version = 1
+
+                [[tool.oicana.inputs]]
+                type = "json"
+                key = "data"
+                validate = true
+                "#
+            )
+            .unwrap();
+        }
+
+        let result = validate_native_template(template.path());
+        let config = result.unwrap().tool.oicana;
+        let InputDefinition::Json(json_def) = &config.inputs[0] else {
+            panic!("Expected JSON input");
+        };
+        assert!(json_def.validate);
+        assert!(json_def.schema.is_none());
     }
 }
