@@ -102,6 +102,14 @@ impl<Files: TemplateFiles> Template<Files> {
     pub fn set_diagnostic_color(&mut self, color: DiagnosticColor) {
         self.world.color = color;
     }
+
+    /// Enable or disable JSON schema validation for this template.
+    ///
+    /// When enabled (the default), JSON inputs are validated against their schemas
+    /// before compilation.
+    pub fn set_validate_inputs(&mut self, validate: bool) {
+        self.world.validate_inputs = validate;
+    }
 }
 
 impl<Files: TemplateFiles> TemplateDiagnostics for Template<Files> {

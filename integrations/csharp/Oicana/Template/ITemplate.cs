@@ -22,6 +22,15 @@ public interface ITemplate
     Stream Compile(IDictionary<string, JsonNode> jsonInputs, IDictionary<string, BlobInput> blobInputs, ExportOptions exportOptions, CompilationOptions compilationOptions);
 
     /// <summary>
+    /// Enable or disable JSON schema validation for this template.
+    ///
+    /// When enabled (the default), JSON inputs are validated against their schemas
+    /// before compilation.
+    /// </summary>
+    /// <param name="validate">Whether to validate inputs against their JSON schemas.</param>
+    void SetValidateInputs(bool validate);
+
+    /// <summary>
     /// Get input definitions from the template manifest.
     /// </summary>
     /// <exception cref="OicanaException">If inputs cannot be retrieved.</exception>

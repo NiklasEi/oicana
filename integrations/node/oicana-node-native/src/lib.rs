@@ -246,6 +246,22 @@ pub fn remove_document(document_id: String) -> Result<()> {
   Ok(())
 }
 
+/// Enable or disable JSON schema validation for the given template.
+///
+/// When enabled (the default), JSON inputs are validated against their schemas
+/// before compilation.
+///
+/// Calling this method requires a previous call to [`register_template`] with the same template
+/// identifier.
+#[napi]
+pub fn set_validate_inputs(template: String, validate: bool) -> Result<()> {
+  let Some(mut world) = WORLD_CACHE.get_mut(&template) else {
+    return Err(Error::from_reason(NOT_REGISTERED));
+  };
+  world.validate_inputs = validate;
+  Ok(())
+}
+
 /// Remove the world from the cache.
 ///
 /// The template will have to be registered again before it can be compiled again.

@@ -30,6 +30,10 @@ pub struct OicanaWorld<Files: TemplateFiles> {
     now: OnceLock<DateTime<Local>>,
     manifest: TemplateManifest,
     validators: HashMap<String, Validator>,
+    /// Whether to validate JSON inputs against their schemas before compilation.
+    ///
+    /// Enabled by default. Set to `false` to skip validation.
+    pub validate_inputs: bool,
     /// Color mode for diagnostic logs
     pub color: DiagnosticColor,
     /// Files access to the template.
@@ -45,6 +49,7 @@ impl<Files: TemplateFiles> fmt::Debug for OicanaWorld<Files> {
                 "validators",
                 &format!("{} schema(s)", self.validators.len()),
             )
+            .field("validate_inputs", &self.validate_inputs)
             .field("color", &self.color)
             .finish_non_exhaustive()
     }
@@ -126,6 +131,7 @@ impl<Files: TemplateFiles> OicanaWorld<Files> {
             now: OnceLock::new(),
             manifest,
             validators,
+            validate_inputs: true,
             color: DiagnosticColor::Ansi,
             files,
         })
@@ -135,13 +141,18 @@ impl<Files: TemplateFiles> OicanaWorld<Files> {
     ///
     /// If validation fails, the inputs are **not** applied.
     pub fn update_inputs(&mut self, inputs: TemplateInputs) -> Result<(), InputValidationError> {
-        self.validate_inputs(&inputs)?;
+        if self.validate_inputs {
+            self.check_inputs_against_schemas(&inputs)?;
+        }
         self.library = LazyHash::new(Library::builder().with_inputs(inputs.to_dict()).build());
         Ok(())
     }
 
     /// Validate JSON inputs against their compiled schemas.
-    fn validate_inputs(&self, inputs: &TemplateInputs) -> Result<(), InputValidationError> {
+    fn check_inputs_against_schemas(
+        &self,
+        inputs: &TemplateInputs,
+    ) -> Result<(), InputValidationError> {
         for (key, validator) in &self.validators {
             let Some(json_str) = inputs.get_str_value(key) else {
                 continue;
@@ -708,6 +719,22 @@ mod tests {
             matches!(err, WorldCreationError::SchemaError { .. }),
             "Expected SchemaError, got: {err:?}"
         );
+    }
+
+    #[test]
+    fn accepts_invalid_json_when_validation_disabled() {
+        use oicana_input::input::json::JsonInput;
+
+        let files = template_with_schema(schema_manifest(), "Test", simple_schema());
+        let manifest = files.manifest().unwrap();
+        let mut world = OicanaWorld::new(files, TemplateInputs::new(), manifest).unwrap();
+        world.validate_inputs = false;
+
+        let mut inputs = TemplateInputs::new();
+        inputs.with_input(JsonInput::new("data", r#"{"age": 30}"#)); // missing required "name"
+
+        let result = world.update_inputs(inputs);
+        assert!(result.is_ok());
     }
 
     #[test]

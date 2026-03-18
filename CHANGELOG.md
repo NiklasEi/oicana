@@ -1,6 +1,8 @@
 # Next release
 
 
+- Add json input validation for inputs with schemas
+
 # Browser integration v0.1.0-alpha.6
 - return Uint8Array<ArrayBuffer> from compile methods
 - Implement Disposable for automatic cleanup with `using`

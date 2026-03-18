@@ -160,6 +160,19 @@ public class Template implements AutoCloseable {
     }
 
     /**
+     * Enable or disable JSON schema validation for this template.
+     *
+     * <p>When enabled (the default), JSON inputs are validated against their schemas
+     * before compilation.
+     *
+     * @param validate whether to validate inputs against their JSON schemas
+     */
+    public void setValidateInputs(boolean validate) {
+        ensureNotClosed();
+        OicanaNative.setValidateInputs(this.templateId, validate);
+    }
+
+    /**
      * Configure automatic cache eviction after each compilation.
      *
      * @param maxAge maximum age threshold. Use -1 to disable eviction, 0 to clear all,

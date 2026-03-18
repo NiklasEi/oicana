@@ -229,6 +229,22 @@ pub fn remove_document(document_id: String) -> Result<(), String> {
     Ok(())
 }
 
+/// Enable or disable JSON schema validation for the given template.
+///
+/// When enabled (the default), JSON inputs are validated against their schemas
+/// before compilation.
+///
+/// Calling this method requires a previous call to [`register_template`] with the same template
+/// identifier.
+#[wasm_bindgen]
+pub fn set_validate_inputs(template: String, validate: bool) -> Result<(), String> {
+    let Some(mut world) = WORLD_CACHE.get_mut(&template) else {
+        return Err(NOT_REGISTERED.to_owned());
+    };
+    world.validate_inputs = validate;
+    Ok(())
+}
+
 /// Remove the world from the cache.
 ///
 /// The template will have to be registered again before it can be compiled again.

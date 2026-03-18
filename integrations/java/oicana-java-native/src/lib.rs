@@ -413,6 +413,25 @@ pub extern "system" fn Java_com_oicana_OicanaNative_getFile<'local>(
 }
 
 #[unsafe(no_mangle)]
+pub extern "system" fn Java_com_oicana_OicanaNative_setValidateInputs<'local>(
+    mut unowned_env: EnvUnowned<'local>,
+    _class: JClass<'local>,
+    template_id: JString<'local>,
+    validate: u8,
+) {
+    unowned_env
+        .with_env(|env| -> jni::errors::Result<()> {
+            let template_id = template_id.try_to_string(env)?;
+            let Some(mut world) = WORLD_CACHE.get_mut(&template_id) else {
+                return Err(throw_oicana(env, "Template was not registered"));
+            };
+            world.validate_inputs = validate != 0;
+            Ok(())
+        })
+        .resolve::<jni::errors::ThrowRuntimeExAndDefault>()
+}
+
+#[unsafe(no_mangle)]
 pub extern "system" fn Java_com_oicana_OicanaNative_configureAutomaticCacheEviction<'local>(
     _unowned_env: EnvUnowned<'local>,
     _class: JClass<'local>,

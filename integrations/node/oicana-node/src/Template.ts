@@ -7,6 +7,7 @@ import {
   registerTemplate,
   removeDocument,
   removeWorld,
+  setValidateInputs,
 } from '@oicana/node-native';
 import { CompilationMode } from './CompilationMode.js';
 import type { ExportFormat } from './ExportFormat.js';
@@ -136,6 +137,17 @@ export class Template implements Disposable {
     } finally {
       removeDocument(document);
     }
+  }
+
+  /**
+   * Enable or disable JSON schema validation for this template.
+   *
+   * When enabled (the default), JSON inputs are validated against their schemas
+   * before compilation.
+   * @param validate - whether to validate inputs against their JSON schemas
+   */
+  public setValidateInputs(validate: boolean): void {
+    setValidateInputs(this.template, validate);
   }
 
   /**
