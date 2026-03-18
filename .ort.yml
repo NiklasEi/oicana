@@ -7,7 +7,10 @@ excludes:
       comment: "Generated packages for different platforms"
     - pattern: "integrations/browser/oicana_browser_wasm/pkg/package.json"
       reason: DATA_FILE_OF
-      comment: "Generated package wrappign WASM"
+      comment: "Generated package wrapping WASM"
     - pattern: "integrations/node/oicana-node/package.json"
       reason: DATA_FILE_OF
       comment: "Todo: ORT analysis is failing"
+    - pattern: "target/**"
+      reason: DATA_FILE_OF
+      comment: "Build output, all dependencies are already in the workspace lock file"
