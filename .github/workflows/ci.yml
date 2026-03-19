@@ -576,6 +576,9 @@ jobs:
         with:
           name: node_native_${{ runner.os }}
           path: ./integrations/node/oicana-node-native
+      - name: test node-native bindings
+        run: yarn install && yarn test
+        working-directory: ./integrations/node/oicana-node-native
       - name: Enable npm link in node-native
         run: npm link
         working-directory: ./integrations/node/oicana-node-native
