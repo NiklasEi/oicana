@@ -15,4 +15,15 @@ pub struct JsonInputDefinition {
     pub development: Option<String>,
     /// Path to a JSON schema to validate input against.
     pub schema: Option<String>,
+    /// Whether to validate this input against its schema.
+    ///
+    /// Defaults to `true`. Set to `false` to skip validation for this input
+    /// even if a schema is defined. When `false`, no validator is compiled
+    /// for this input during template initialization.
+    #[serde(default = "default_validate")]
+    pub validate: bool,
+}
+
+fn default_validate() -> bool {
+    true
 }

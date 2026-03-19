@@ -16,7 +16,7 @@ use oicana_world::{
     diagnostics::{DiagnosticColor, TemplateDiagnostics},
     manifest::{OicanaWorldFiles, OicanaWorldManifestError},
     world::{OicanaWorld, WorldCreationError},
-    CompiledDocument, TemplateCompilationFailure,
+    CompiledDocument, InputValidationError, TemplateCompilationFailure,
 };
 use std::sync::atomic::{AtomicUsize, Ordering};
 use thiserror::Error;
@@ -73,17 +73,14 @@ impl Template<PackedTemplate> {
 
 impl<Files: TemplateFiles> Template<Files> {
     /// Compile the template with given inputs
-    pub fn compile(
-        &mut self,
-        inputs: TemplateInputs,
-    ) -> Result<CompiledDocument, TemplateCompilationFailure> {
-        self.world.update_inputs(inputs);
-        let result = self.world.compile();
+    pub fn compile(&mut self, inputs: TemplateInputs) -> Result<CompiledDocument, CompileError> {
+        self.world.update_inputs(inputs)?;
+        let result = self.world.compile()?;
         let cache_age = CACHE_EVICTION_AGE.load(Ordering::Relaxed);
         if cache_age != usize::MAX {
             oicana_world::evict_cache(cache_age);
         }
-        result
+        Ok(result)
     }
 
     /// Get the manifest of the template
@@ -104,6 +101,14 @@ impl<Files: TemplateFiles> Template<Files> {
     /// Configure the coloring of diagnostic output from this template
     pub fn set_diagnostic_color(&mut self, color: DiagnosticColor) {
         self.world.color = color;
+    }
+
+    /// Enable or disable JSON schema validation for this template.
+    ///
+    /// When enabled (the default), JSON inputs are validated against their schemas
+    /// before compilation.
+    pub fn set_validate_inputs(&mut self, validate: bool) {
+        self.world.validate_inputs = validate;
     }
 }
 
@@ -131,4 +136,16 @@ pub enum TemplateInitializationError {
     /// The data directory for Typst packages could not be found
     #[error("Failed to find the data directory for Typst packages on the System")]
     PackageDirectoryNotFound,
+}
+
+/// An error that occurred during template compilation
+#[derive(Error, Debug)]
+pub enum CompileError {
+    /// A JSON input failed schema validation
+    #[error("{0}")]
+    ValidationFailed(#[from] InputValidationError),
+
+    /// The Typst compilation failed
+    #[error("{0}")]
+    CompilationFailed(#[from] TemplateCompilationFailure),
 }

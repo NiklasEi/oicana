@@ -125,7 +125,9 @@ pub fn compile_template(
   };
   let mut inputs = prepare_inputs(json_inputs, blob_inputs)?;
   inputs.with_config(compilation_mode.into());
-  world.update_inputs(inputs);
+  world
+    .update_inputs(inputs)
+    .map_err(|error| Error::from_reason(error.to_string()))?;
 
   let document = world
     .compile()
@@ -241,6 +243,22 @@ pub fn export_document(document_id: String, export_format: String) -> Result<Buf
 #[napi]
 pub fn remove_document(document_id: String) -> Result<()> {
   DOCUMENT_CACHE.remove(&document_id);
+  Ok(())
+}
+
+/// Enable or disable JSON schema validation for the given template.
+///
+/// When enabled (the default), JSON inputs are validated against their schemas
+/// before compilation.
+///
+/// Calling this method requires a previous call to [`register_template`] with the same template
+/// identifier.
+#[napi]
+pub fn set_validate_inputs(template: String, validate: bool) -> Result<()> {
+  let Some(mut world) = WORLD_CACHE.get_mut(&template) else {
+    return Err(Error::from_reason(NOT_REGISTERED));
+  };
+  world.validate_inputs = validate;
   Ok(())
 }
 

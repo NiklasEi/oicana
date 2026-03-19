@@ -1,6 +1,6 @@
 [package]
 name = "oicana-browser-wasm"
-version = "0.1.0-alpha.6"
+version = "0.1.0-alpha.7"
 description = "Oicana integration for WASM in the browser."
 publish = false
 keywords = { workspace = true }
@@ -43,4 +43,4 @@ workspace = true
 wasm-opt = false
 
 [package.metadata.wasm-pack.profile.release]
-wasm-opt = ["-O", "--enable-bulk-memory", "--enable-reference-types", "--enable-sign-ext", "--enable-nontrapping-float-to-int"]
+wasm-opt = ["-O", "--enable-bulk-memory", "--enable-reference-types", "--enable-sign-ext", "--enable-nontrapping-float-to-int", "--enable-simd"]

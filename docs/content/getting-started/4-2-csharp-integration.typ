@@ -80,7 +80,7 @@ For a better measurement of the compilation speed on your machine, you can use a
 Now let's use the template with inputs that you defined in the previous chapter. First, make sure to update the packed template in your ASP.NET project. Run ```bash oicana pack``` in the template directory and replace `example-0.1.0.zip` in the ASP.NET project with the new file.
 
 \
-Our `compile` endpoint is currently calling the template's `Compile` method with empty dictionaries. This compiles the template without any explicit inputs. The first dictionary contains `json` inputs (key to JsonNode) and the second contains `blob` inputs (key to BlobInput). Now we'll provide an input value and switch to production mode.
+Our `compile` endpoint is currently calling the template's `Compile` method with empty dictionaries. This compiles the template without any explicit inputs. The first dictionary contains JSON inputs (key to JsonNode) and the second contains blob inputs (key to BlobInput). Now we'll provide an input value and switch to production mode.
 
 \
 Change the endpoint to set the name input you defined earlier.

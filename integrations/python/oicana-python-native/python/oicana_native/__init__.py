@@ -12,6 +12,7 @@ from .oicana_native import (
     register_template,
     remove_document,
     remove_world,
+    set_validate_inputs,
 )
 
 __all__ = [
@@ -27,4 +28,5 @@ __all__ = [
     "register_template",
     "remove_document",
     "remove_world",
+    "set_validate_inputs",
 ]

@@ -132,7 +132,9 @@ pub fn compile_template(
         .map_err(|error| format!("Failed to convert to compilation mode: {error:?}"))?;
     let mut inputs = prepare_inputs(json_inputs, blob_inputs)?;
     inputs.with_config(compilation_mode.into());
-    world.update_inputs(inputs);
+    world
+        .update_inputs(inputs)
+        .map_err(|error| error.to_string())?;
 
     let document = world.compile().map_err(|error| error.to_string())?;
     let document_time = get_current_time();
@@ -224,6 +226,22 @@ fn prepare_inputs(json_inputs: JsValue, blobs: JsValue) -> Result<TemplateInputs
 #[wasm_bindgen]
 pub fn remove_document(document_id: String) -> Result<(), String> {
     DOCUMENT_CACHE.remove(&document_id);
+    Ok(())
+}
+
+/// Enable or disable JSON schema validation for the given template.
+///
+/// When enabled (the default), JSON inputs are validated against their schemas
+/// before compilation.
+///
+/// Calling this method requires a previous call to [`register_template`] with the same template
+/// identifier.
+#[wasm_bindgen]
+pub fn set_validate_inputs(template: String, validate: bool) -> Result<(), String> {
+    let Some(mut world) = WORLD_CACHE.get_mut(&template) else {
+        return Err(NOT_REGISTERED.to_owned());
+    };
+    world.validate_inputs = validate;
     Ok(())
 }
 

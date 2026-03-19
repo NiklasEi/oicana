@@ -23,6 +23,7 @@ typst-assets = { workspace = true, features = ["fonts"] }
 comemo = { workspace = true }
 
 serde_json = { workspace = true }
+jsonschema = { workspace = true }
 chrono = { workspace = true }
 serde = { workspace = true }
 ecow = { workspace = true }

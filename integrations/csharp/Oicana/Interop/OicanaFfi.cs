@@ -202,6 +202,22 @@ internal static class OicanaFfi
     }
 
     /// <summary>
+    /// Enable or disable JSON schema validation for the given template.
+    /// </summary>
+    /// <param name="templateId">Identifier of the template.</param>
+    /// <param name="validate">Whether to validate inputs against their JSON schemas.</param>
+    /// <exception cref="OicanaException">If the template is not registered.</exception>
+    public static void SetValidateInputs(string templateId, bool validate)
+    {
+        var buffer = OicanaFfiInternal.set_validate_inputs(templateId, validate);
+        if (buffer.error)
+        {
+            var message = GetStringFromBuffer(buffer);
+            throw new OicanaException(message);
+        }
+    }
+
+    /// <summary>
     /// Configure Oicana.
     /// </summary>
     /// <param name="coloring">Coloring for Oicana diagnostics.</param>

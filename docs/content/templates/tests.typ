@@ -36,11 +36,11 @@ The tests directory will be recursively searched for any test collection files i
 \
 #example[The example templates #link("https://github.com/oicana/oicana-example-templates/tree/main/templates/table/tests")[`table`] and #link("https://github.com/oicana/oicana-example-templates/tree/main/templates/invoice/tests")[`invoice`] both define some simple snapshot tests.]
 
-== Json input fuzzing
+== JSON input fuzzing
 
-#alpha-note[Json input fuzzing requires a json schema for the input. While schema _validation_ is not yet enforced during compilation, schemas are used by the fuzzer to generate random input values.]
+#alpha-note[JSON input fuzzing requires a JSON schema for the input. While schema _validation_ is not yet enforced during compilation, schemas are used by the fuzzer to generate random input values.]
 
-If you define and configure a schema for a json input, you can let Oicana fuzz that input as part of a snapshot test.
+If you define and configure a schema for a JSON input, you can let Oicana fuzz that input as part of a snapshot test.
 
 #code("tests.toml", ```toml
 tests_version = 1
@@ -55,7 +55,7 @@ key = "data"
 samples = 50
 ```)
 
-Setting ```toml snapshot = false``` means no image files are created and compared. This is often the right choice for fuzzing tests, because the image output is likely expected to be different for different json input values. The configuration of `50` samples will cause Oicana to compile the template with `50` random values for the json input that all satisfy the schema. If the schema is very large, it might make sense to increase the number of samples.
+Setting ```toml snapshot = false``` means no image files are created and compared. This is often the right choice for fuzzing tests, because the image output is likely expected to be different for different JSON input values. The configuration of `50` samples will cause Oicana to compile the template with `50` random values for the JSON input that all satisfy the schema. If the schema is very large, it might make sense to increase the number of samples.
 
 == Full example configuration
 

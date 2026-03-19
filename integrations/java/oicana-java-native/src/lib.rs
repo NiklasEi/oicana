@@ -246,7 +246,9 @@ pub extern "system" fn Java_com_oicana_OicanaNative_compileTemplate<'local>(
             let mut inputs =
                 prepare_inputs(json_map, blob_map).map_err(|e| throw_oicana(env, &e))?;
             inputs.with_config(compilation_config_from_mode(compilation_mode));
-            world.update_inputs(inputs);
+            world
+                .update_inputs(inputs)
+                .map_err(|e| throw_oicana(env, &e.to_string()))?;
 
             let document = world
                 .compile()
@@ -406,6 +408,25 @@ pub extern "system" fn Java_com_oicana_OicanaNative_getFile<'local>(
                 .map_err(|e| throw_oicana(env, &e.to_string()))?;
 
             Ok(env.byte_array_from_slice(&bytes)?)
+        })
+        .resolve::<jni::errors::ThrowRuntimeExAndDefault>()
+}
+
+#[unsafe(no_mangle)]
+pub extern "system" fn Java_com_oicana_OicanaNative_setValidateInputs<'local>(
+    mut unowned_env: EnvUnowned<'local>,
+    _class: JClass<'local>,
+    template_id: JString<'local>,
+    validate: u8,
+) {
+    unowned_env
+        .with_env(|env| -> jni::errors::Result<()> {
+            let template_id = template_id.try_to_string(env)?;
+            let Some(mut world) = WORLD_CACHE.get_mut(&template_id) else {
+                return Err(throw_oicana(env, "Template was not registered"));
+            };
+            world.validate_inputs = validate != 0;
+            Ok(())
         })
         .resolve::<jni::errors::ThrowRuntimeExAndDefault>()
 }

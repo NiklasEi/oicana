@@ -157,7 +157,9 @@ fn compile_template(
 
     let mut inputs = prepare_inputs(py, json_inputs, blob_inputs)?;
     inputs.with_config(compilation_mode.into());
-    world.update_inputs(inputs);
+    world
+        .update_inputs(inputs)
+        .map_err(|e| PyRuntimeError::new_err(e.to_string()))?;
 
     let document = world
         .compile()
@@ -276,6 +278,22 @@ fn remove_document(document_id: String) -> PyResult<()> {
     Ok(())
 }
 
+/// Enable or disable JSON schema validation for the given template.
+///
+/// When enabled (the default), JSON inputs are validated against their schemas
+/// before compilation.
+///
+/// Calling this method requires a previous call to `register_template` with the same template
+/// identifier.
+#[pyfunction]
+fn set_validate_inputs(template: String, validate: bool) -> PyResult<()> {
+    let Some(mut world) = WORLD_CACHE.get_mut(&template) else {
+        return Err(PyRuntimeError::new_err("Template was not registered"));
+    };
+    world.validate_inputs = validate;
+    Ok(())
+}
+
 /// Remove the world from the cache.
 ///
 /// The template will have to be registered again before it can be compiled again.
@@ -343,6 +361,7 @@ fn oicana_native(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(get_file, m)?)?;
     m.add_function(wrap_pyfunction!(remove_document, m)?)?;
     m.add_function(wrap_pyfunction!(remove_world, m)?)?;
+    m.add_function(wrap_pyfunction!(set_validate_inputs, m)?)?;
     m.add_function(wrap_pyfunction!(configure_automatic_cache_eviction, m)?)?;
     m.add_function(wrap_pyfunction!(evict_cache, m)?)?;
     m.add_class::<CompilationMode>()?;

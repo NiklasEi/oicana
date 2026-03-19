@@ -6,12 +6,12 @@ use std::{
 
 use image::{GenericImageView, ImageError};
 use log::{debug, error};
-use oicana::{Template, TemplateInitializationError};
+use oicana::{CompileError, Template, TemplateInitializationError};
 use oicana_export::png::{export_merged_png, EncodingError};
 use oicana_files::native::{package_data_dir, NativeTemplate};
 use oicana_input::{input::json::JsonInput, input_definition::InputDefinition, TemplateInputs};
 use oicana_template::manifest::TemplateManifest;
-use oicana_world::{CompiledDocument, TemplateCompilationFailure};
+use oicana_world::CompiledDocument;
 use rand::thread_rng;
 use thiserror::Error;
 
@@ -224,9 +224,9 @@ pub enum CreateTestRunnerError {
 /// Errors that can be produced when executing tests
 #[derive(Debug, Error)]
 pub enum TestExecutionError {
-    /// A test failed to compile
+    /// A test failed to compile or validate
     #[error("{0}")]
-    CompilationError(#[from] TemplateCompilationFailure),
+    CompileError(#[from] CompileError),
     /// Failed to export png image
     #[error("{0}")]
     ExportError(#[from] EncodingError),

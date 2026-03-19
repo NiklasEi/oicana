@@ -106,3 +106,14 @@ export declare function removeDocument(documentId: string): void
  * The template will have to be registered again before it can be compiled again.
  */
 export declare function removeWorld(templateId: string): void
+
+/**
+ * Enable or disable JSON schema validation for the given template.
+ *
+ * When enabled (the default), JSON inputs are validated against their schemas
+ * before compilation.
+ *
+ * Calling this method requires a previous call to [`register_template`] with the same template
+ * identifier.
+ */
+export declare function setValidateInputs(template: string, validate: boolean): void

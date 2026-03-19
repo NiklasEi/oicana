@@ -105,3 +105,9 @@ The CD pipeline validates version consistency, builds JNI native libraries for 5
 All rust crates excluding the native wrappers are published to crates.io. This includes the CLI project `oicana_cli`.
 
 Run `cargo publish --workspace --dry-run` to try publishing all crates.
+
+## Updating the third party license file
+
+This project uses ORT
+* `~/ort-path/bin/ort --info analyze -f JSON -i . -o ./ort`
+* `~/ort-path/bin/ort --info report -f PlainTextTemplate,StaticHtml,WebApp -i ./ort/analyzer-result.json -o ./ort`

@@ -38,6 +38,8 @@ class OicanaNative {
 
     static native byte[] getFile(String templateId, String file);
 
+    static native void setValidateInputs(String templateId, boolean validate);
+
     static native void configureAutomaticCacheEviction(int maxAge);
 
     static native void evictCache(int maxAge);

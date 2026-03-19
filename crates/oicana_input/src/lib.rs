@@ -57,6 +57,14 @@ impl TemplateInputs {
         self
     }
 
+    /// Get the string value of an input by key, if it exists.
+    pub fn get_str_value(&self, key: &str) -> Option<String> {
+        match self.inputs.at(Str::from(key), None) {
+            Ok(Value::Str(s)) => Some(s.to_string()),
+            _ => None,
+        }
+    }
+
     /// Build the Typst [`Dict`] that contains all previously added inputs and configuration.
     pub fn to_dict(self) -> Dict {
         let mut combined_inputs = Dict::new();

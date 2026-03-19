@@ -7,13 +7,13 @@ This is a low-level package that provides PyO3 bindings to Oicana. Most users sh
 ## Installation
 
 ```bash
-pip install oicana-native
+uv add oicana-native
 ```
 
 ## Development
 
 ```bash
-pip install maturin
+uv tool install maturin
 maturin develop --release
 maturin build --release
 ```

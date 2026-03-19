@@ -1,6 +1,7 @@
 export {
   configureAutomaticCacheEviction,
   evictCache,
+  setValidateInputs,
 } from '@oicana/node-native';
 export * from './CompilationMode.js';
 export * from './ExportFormat.js';

@@ -140,6 +140,18 @@ public class Template : ITemplate, IDisposable
     }
 
     /// <summary>
+    /// Enable or disable JSON schema validation for this template.
+    ///
+    /// When enabled (the default), JSON inputs are validated against their schemas
+    /// before compilation.
+    /// </summary>
+    /// <param name="validate">Whether to validate inputs against their JSON schemas.</param>
+    public void SetValidateInputs(bool validate)
+    {
+        OicanaFfi.SetValidateInputs(_templateId, validate);
+    }
+
+    /// <summary>
     /// Manually evict the cache with the given age threshold.
     /// </summary>
     /// <param name="maxAge">

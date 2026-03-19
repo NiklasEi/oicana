@@ -170,6 +170,7 @@ mod tests {
             OicanaConfig {
                 manifest_version: 1,
                 inputs: vec![],
+                validate_json_inputs_by_default: true,
                 tests: PathBuf::from("tests"),
                 export: ExportConfig::default(),
             },
@@ -203,6 +204,7 @@ mod tests {
             OicanaConfig {
                 manifest_version: 1,
                 inputs: vec![],
+                validate_json_inputs_by_default: true,
                 tests: PathBuf::from(".").canonicalize().unwrap(),
                 export: ExportConfig::default(),
             },

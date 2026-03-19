@@ -199,7 +199,9 @@ pub unsafe extern "C" fn unsafe_compile_template(
     };
 
     let world = world.value_mut();
-    world.update_inputs(inputs);
+    if let Err(error) = world.update_inputs(inputs) {
+        return Buffer::from_error(format!("{error}"));
+    }
     let document_result = world.compile();
     let document = match document_result {
         Ok(document) => document,
@@ -357,6 +359,24 @@ pub unsafe extern "C" fn unsafe_free_buffer(buffer: Buffer) {
             buffer.len as usize,
         ));
     }
+}
+
+/// Enable or disable JSON schema validation for the given template.
+///
+/// When enabled (the default), JSON inputs are validated against their schemas
+/// before compilation.
+#[ffi_function]
+#[no_mangle]
+pub extern "C" fn set_validate_inputs(template: AsciiPointer, validate: bool) -> Buffer {
+    let template = match template.as_str() {
+        Ok(template) => template,
+        Err(error) => return Buffer::from_error(format!("{error:?}")),
+    };
+    let Some(mut world) = WORLD_CACHE.get_mut(template) else {
+        return Buffer::from_error(format!("The template '{template}' is not registered"));
+    };
+    world.validate_inputs = validate;
+    Buffer::from_ok(Vec::new())
 }
 
 /// Configure Oicana.
@@ -714,6 +734,7 @@ pub fn my_inventory() -> Inventory {
         .register(function!(remove_world))
         .register(function!(remove_document))
         .register(function!(configure))
+        .register(function!(set_validate_inputs))
         .register(function!(configure_automatic_cache_eviction))
         .register(function!(evict_cache))
         .inventory()

@@ -25,6 +25,9 @@ from oicana_native import (
 from oicana_native import (
     evict_cache as _evict_cache,
 )
+from oicana_native import (
+    set_validate_inputs as _set_validate_inputs,
+)
 
 from .types import BlobInput, CompilationMode, ExportFormat
 
@@ -163,6 +166,17 @@ class Template:
             File content as bytes
         """
         return bytes(get_file(self._template_id, path))
+
+    def set_validate_inputs(self, validate: bool) -> None:
+        """Enable or disable JSON schema validation for this template.
+
+        When enabled (the default), JSON inputs are validated against their schemas
+        before compilation.
+
+        Args:
+            validate: Whether to validate inputs against their JSON schemas.
+        """
+        _set_validate_inputs(self._template_id, validate)
 
     def cleanup(self) -> None:
         """Clean up cached resources."""

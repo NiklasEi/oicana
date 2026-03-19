@@ -203,6 +203,19 @@ class Template
     }
 
     /**
+     * Enable or disable JSON schema validation for this template.
+     *
+     * When enabled (the default), JSON inputs are validated against their schemas
+     * before compilation.
+     *
+     * @param bool $validate Whether to validate inputs against their JSON schemas.
+     */
+    public function setValidateInputs(bool $validate): void
+    {
+        \OicanaInternal\set_validate_inputs($this->templateId, $validate);
+    }
+
+    /**
      * Configure automatic cache eviction after each compilation.
      *
      * @param int|null $maxAge Maximum age threshold, or null to disable:

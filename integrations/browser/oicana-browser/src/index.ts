@@ -3,6 +3,7 @@ import init from '@oicana/browser-wasm';
 export {
   configure_automatic_cache_eviction as configureAutomaticCacheEviction,
   evict_cache as evictCache,
+  set_validate_inputs as setValidateInputs,
 } from '@oicana/browser-wasm';
 export * from './CompilationMode';
 export * from './ExportFormat';

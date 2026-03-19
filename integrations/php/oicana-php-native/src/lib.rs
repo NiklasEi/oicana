@@ -177,7 +177,9 @@ pub fn compile_template(
 
     let mut inputs = prepare_inputs(json_inputs, blob_inputs)?;
     inputs.with_config(compilation_mode_from_i64(compilation_mode));
-    world.update_inputs(inputs);
+    world
+        .update_inputs(inputs)
+        .map_err(|e| PhpException::default(e.to_string()))?;
 
     let document = world
         .compile()
@@ -303,6 +305,22 @@ pub fn remove_document(document_id: String) -> PhpResult<()> {
     Ok(())
 }
 
+/// Enable or disable JSON schema validation for the given template.
+///
+/// When enabled (the default), JSON inputs are validated against their schemas
+/// before compilation.
+#[php_function]
+#[php(name = "OicanaInternal\\set_validate_inputs")]
+pub fn set_validate_inputs(template: String, validate: bool) -> PhpResult<()> {
+    let Some(mut world) = WORLD_CACHE.get_mut(&template) else {
+        return Err(PhpException::default(
+            "Template was not registered".to_string(),
+        ));
+    };
+    world.validate_inputs = validate;
+    Ok(())
+}
+
 /// Remove the world from the cache.
 ///
 /// The template will have to be registered again before it can be compiled again.
@@ -374,6 +392,7 @@ pub fn get_module(module: ModuleBuilder) -> ModuleBuilder {
         .function(wrap_function!(export_document))
         .function(wrap_function!(remove_document))
         .function(wrap_function!(remove_world))
+        .function(wrap_function!(set_validate_inputs))
         .class::<BlobWithMetadata>()
 }
 

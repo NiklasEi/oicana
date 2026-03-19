@@ -6,6 +6,7 @@ import {
   register_template,
   remove_document,
   remove_world,
+  set_validate_inputs,
   inputs as wasmInputs,
 } from '@oicana/browser-wasm';
 import { CompilationMode } from './CompilationMode';
@@ -168,6 +169,17 @@ export class Template implements Disposable {
    */
   public file(path: string): Uint8Array {
     return get_file(this.template, path);
+  }
+
+  /**
+   * Enable or disable JSON schema validation for this template.
+   *
+   * When enabled (the default), JSON inputs are validated against their schemas
+   * before compilation.
+   * @param validate - whether to validate inputs against their JSON schemas
+   */
+  public setValidateInputs(validate: boolean): void {
+    set_validate_inputs(this.template, validate);
   }
 
   /**
