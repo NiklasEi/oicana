@@ -19,6 +19,7 @@ pub fn package<T>(
     src_dir: &Path,
     writer: T,
     manifest: &TemplateManifest,
+    exclude: Option<&Path>,
 ) -> Result<(), PackageError>
 where
     T: Write + Seek,
@@ -29,7 +30,13 @@ where
 
     let walk_dir = WalkDir::new(src_dir).follow_links(true);
     let it = walk_dir.into_iter().filter_entry(|entry| {
-        manifest.should_path_be_packed(entry.path().strip_prefix(src_dir).unwrap())
+        let relative = entry.path().strip_prefix(src_dir).unwrap();
+        if let Some(excluded) = exclude {
+            if relative == excluded {
+                return false;
+            }
+        }
+        manifest.should_path_be_packed(relative)
     });
 
     zip_dir(
@@ -151,7 +158,7 @@ manifest_version = 1
         .unwrap();
 
         let mut buffer = Cursor::new(Vec::new());
-        package(dir.path(), &mut buffer, &manifest).unwrap();
+        package(dir.path(), &mut buffer, &manifest, None).unwrap();
 
         buffer.set_position(0);
         let mut archive = zip::ZipArchive::new(buffer).unwrap();
@@ -179,7 +186,7 @@ manifest_version = 1
         .unwrap();
 
         let mut buffer = Cursor::new(Vec::new());
-        package(dir.path(), &mut buffer, &manifest).unwrap();
+        package(dir.path(), &mut buffer, &manifest, None).unwrap();
 
         buffer.set_position(0);
         let mut archive = zip::ZipArchive::new(buffer).unwrap();
@@ -206,7 +213,7 @@ manifest_version = 1
         .unwrap();
 
         let mut buffer = Cursor::new(Vec::new());
-        package(dir.path(), &mut buffer, &manifest).unwrap();
+        package(dir.path(), &mut buffer, &manifest, None).unwrap();
 
         buffer.set_position(0);
         let archive = zip::ZipArchive::new(buffer).unwrap();
@@ -224,7 +231,7 @@ manifest_version = 1
 
         let manifest = TemplateManifest::from_toml(manifest()).unwrap();
         let mut buffer = Cursor::new(Vec::new());
-        let result = package(&file_path, &mut buffer, &manifest);
+        let result = package(&file_path, &mut buffer, &manifest, None);
 
         assert!(matches!(result, Err(PackageError::SourceIsNotADirectory)));
     }
@@ -233,7 +240,7 @@ manifest_version = 1
     fn fails_when_source_does_not_exist() {
         let manifest = TemplateManifest::from_toml(manifest()).unwrap();
         let mut buffer = Cursor::new(Vec::new());
-        let result = package(Path::new("/nonexistent/path"), &mut buffer, &manifest);
+        let result = package(Path::new("/nonexistent/path"), &mut buffer, &manifest, None);
 
         assert!(result.is_err());
     }
@@ -260,7 +267,7 @@ manifest_version = 1
         .unwrap();
 
         let mut buffer = Cursor::new(Vec::new());
-        package(dir.path(), &mut buffer, &manifest).unwrap();
+        package(dir.path(), &mut buffer, &manifest, None).unwrap();
 
         buffer.set_position(0);
         let mut archive = zip::ZipArchive::new(buffer).unwrap();
@@ -338,7 +345,7 @@ manifest_version = 1
         .unwrap();
 
         let mut buffer = Cursor::new(Vec::new());
-        package(dir.path(), &mut buffer, &manifest).unwrap();
+        package(dir.path(), &mut buffer, &manifest, None).unwrap();
 
         buffer.set_position(0);
         let mut archive = zip::ZipArchive::new(buffer).unwrap();
@@ -371,7 +378,7 @@ manifest_version = 1
         .unwrap();
 
         let mut buffer = Cursor::new(Vec::new());
-        package(dir.path(), &mut buffer, &manifest).unwrap();
+        package(dir.path(), &mut buffer, &manifest, None).unwrap();
 
         buffer.set_position(0);
         let mut archive = zip::ZipArchive::new(buffer).unwrap();
