@@ -2,6 +2,7 @@ use crate::compile::export::{export_image, export_pdf, ExportFormat, ImageExport
 use anyhow::{Context, Ok};
 use chrono::Utc;
 use clap::Args;
+use console::{style, Emoji};
 use log::{info, warn};
 use oicana::Template;
 use oicana_files::native::NativeTemplate;
@@ -13,6 +14,8 @@ use std::fs::{self, read, read_to_string};
 use std::path::Path;
 
 mod export;
+
+static CHECKMARK: Emoji<'_, '_> = Emoji("✔️", "");
 
 #[rustfmt::skip]
 pub const COMPILE_AFTER_HELP: &str = color_print::cstr!("\
@@ -111,6 +114,12 @@ pub fn compile(args: CompileArgs) -> anyhow::Result<()> {
         ExportFormat::Png => export_image(&document, &out, ImageExportFormat::Png)?,
         ExportFormat::Svg => export_image(&document, &out, ImageExportFormat::Svg)?,
     }
+
+    println!(
+        "{CHECKMARK}  {} compiled to {}",
+        style(&name).bold(),
+        style(out.display()).cyan(),
+    );
 
     Ok(())
 }
