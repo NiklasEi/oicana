@@ -1,4 +1,5 @@
 use chrono::{Datelike, Timelike, Utc};
+use ignore::gitignore::Gitignore;
 use log::trace;
 use std::fs::File;
 use std::io;
@@ -24,6 +25,20 @@ pub fn package<T>(
 where
     T: Write + Seek,
 {
+    let exclude_matcher = manifest.build_exclude_matcher();
+    package_with_exclude(src_dir, writer, &exclude_matcher, exclude)
+}
+
+/// Package a directory as an Oicana template with a pre-built exclude matcher.
+pub fn package_with_exclude<T>(
+    src_dir: &Path,
+    writer: T,
+    exclude_matcher: &Gitignore,
+    exclude: Option<&Path>,
+) -> Result<(), PackageError>
+where
+    T: Write + Seek,
+{
     if !Path::new(src_dir).is_dir() {
         return Err(PackageError::SourceIsNotADirectory);
     }
@@ -36,7 +51,9 @@ where
                 return false;
             }
         }
-        manifest.should_path_be_packed(relative)
+        !exclude_matcher
+            .matched_path_or_any_parents(relative, entry.file_type().is_dir())
+            .is_ignore()
     });
 
     zip_dir(
