@@ -64,8 +64,8 @@ pub struct CompileArgs {
     #[clap(
         short,
         long,
-        help = "Name template for the artifacts",
-        default_value = "{template}_{millies}.{format}"
+        help = "Name template for the artifacts. Available variables: {template}, {version}, {timestamp}, {format}",
+        default_value = "{template}.{format}"
     )]
     name: String,
     #[arg(
@@ -105,7 +105,7 @@ pub fn compile(args: CompileArgs) -> anyhow::Result<()> {
             "{version}",
             &template.manifest().package.version.to_string(),
         )
-        .replace("{millies}", &Utc::now().timestamp_millis().to_string())
+        .replace("{timestamp}", &Utc::now().timestamp_millis().to_string())
         .replace("{format}", args.format.file_ending());
 
     let out = out_dir.join(file_name);
