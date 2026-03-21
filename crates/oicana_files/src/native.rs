@@ -2,7 +2,7 @@
 /// for file access in a Typst World. Used under its MIT License.
 use crate::TemplateFiles;
 use download::PrintDownload;
-use log::{debug, warn};
+use log::debug;
 use std::collections::HashMap;
 use std::fs::{create_dir_all, ReadDir};
 use std::path::{Path, PathBuf};
