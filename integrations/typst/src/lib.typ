@@ -159,7 +159,7 @@
     }
   }
 
-  let oicana-image = key => {
+  let oicana-image = (key, ..args) => {
     if input.keys().contains(key) {
       let blob-input = input.at(key)
       image(
@@ -169,6 +169,7 @@
         } else {
           auto
         },
+        ..args,
       )
     }
   }
