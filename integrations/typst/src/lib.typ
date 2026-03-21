@@ -1,15 +1,15 @@
 /// This package currently requires a function input, because otherwise it is not possible to read files from the consuming project
 /// out of the package. In the future this might be solved with a path type: https://github.com/typst/typst/issues/971
 
-#let version = version(0, 1, 0)
+#let version = version(0, 1, 1)
 
 /// Method to simplify reading Oicana inputs in Typst projects.
 /// Pass a read function to `setup` to allow it to read project files:
 /// ```typst
-/// #import "@preview/oicana:0.1.0": setup
+/// #import "@preview/oicana:0.1.1": setup
 ///
 /// #let read-project-file(path) = return read(path, encoding: none);
-/// #let (input, oicana-image, config) = setup(read-project-file);
+/// #let (input, oicana-image, oicana-config) = setup(read-project-file);
 /// ```
 /// With the following inputs configured in the projects `typst.toml` manifest
 /// ```toml
@@ -26,10 +26,21 @@
 /// ```
 /// You can now use `input` and `oicana-image` like so:
 /// ```typst
-/// #let issuing-date = input.invoice.buyer.name
+/// #let buyer-name = input.invoice.buyer.name
 /// #let logo = oicana-image("logo")
 /// ```
-/// -> (dictionary, function)
+///
+/// Returns a tuple of three values:
+/// - `input`: dictionary of resolved input values, keyed by input key
+/// - `oicana-image`: helper function that takes a blob input key and returns a Typst image
+/// - `oicana-config`: dictionary with compilation metadata (e.g. `production: true/false`)
+///
+/// Inputs are required by default. Set `required = false` in the input definition to allow
+/// missing values. Required inputs without a value cause a compile error.
+///
+/// See https://oicana.com/docs/templates/inputs for more details.
+///
+/// -> (dictionary, function, dictionary)
 #let setup(
   /// Function to read a project file at the given path.
   ///
@@ -144,18 +155,17 @@
             + "' was supplied. Pass a value or set a default/development value in your typst.toml.",
         )
       }
-      if resolved != none {
-        input.insert(definition.key, resolved)
-      }
+      input.insert(definition.key, resolved)
     }
   }
 
   let oicana-image = key => {
     if input.keys().contains(key) {
+      let blob-input = input.at(key)
       image(
-        input.at(key).bytes,
-        format: if input.at(key).meta.keys().contains("image_format") {
-          input.at(key).meta.image_format
+        blob-input.bytes,
+        format: if blob-input.meta.keys().contains("image_format") {
+          blob-input.meta.image_format
         } else {
           auto
         },
