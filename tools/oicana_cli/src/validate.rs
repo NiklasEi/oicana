@@ -1,9 +1,12 @@
 use crate::target::TargetArgs;
 use clap::Args;
+use console::{style, Emoji};
 use log::info;
 use oicana_input::input_definition::InputDefinition;
 use oicana_template::validate_native_template;
 use std::path::Path;
+
+static CHECKMARK: Emoji<'_, '_> = Emoji("✔️", "");
 
 #[derive(Debug, Args)]
 pub struct ValidateArgs {
@@ -23,6 +26,8 @@ pub fn validate(args: ValidateArgs) -> anyhow::Result<()> {
     let templates = args.target.get_targets()?;
 
     let mut all_passed = true;
+    let mut passed_count = 0;
+    let template_count = templates.len();
 
     for template in templates {
         let validation_result = validate_native_template(&template.path);
@@ -44,6 +49,7 @@ pub fn validate(args: ValidateArgs) -> anyhow::Result<()> {
                         template.path, manifest.package.entrypoint
                     );
                     all_passed = false;
+                    continue;
                 }
 
                 let fallback_errors =
@@ -51,6 +57,11 @@ pub fn validate(args: ValidateArgs) -> anyhow::Result<()> {
 
                 if fallback_errors.is_empty() {
                     info!("Template {:?}: all checks passed", template.path);
+                    passed_count += 1;
+                    println!(
+                        "{CHECKMARK}  {} valid",
+                        style(&manifest.package.name).bold(),
+                    );
                 } else {
                     all_passed = false;
                     for error in &fallback_errors {
@@ -62,6 +73,11 @@ pub fn validate(args: ValidateArgs) -> anyhow::Result<()> {
     }
 
     if all_passed {
+        println!(
+            "\nValidated {} template{} successfully",
+            passed_count,
+            if template_count == 1 { "" } else { "s" },
+        );
         Ok(())
     } else {
         anyhow::bail!("Validation failed for one or more templates.")

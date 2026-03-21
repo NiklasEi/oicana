@@ -41,7 +41,7 @@ pub fn test(args: TestArgs) -> anyhow::Result<()> {
     println!(
         "  -> Found {} template{}",
         templates.len(),
-        if templates.len() > 1 { "" } else { "s" }
+        if templates.len() == 1 { "" } else { "s" }
     );
 
     println!(
