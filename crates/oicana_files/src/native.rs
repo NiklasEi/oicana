@@ -2,7 +2,7 @@
 /// for file access in a Typst World. Used under its MIT License.
 use crate::TemplateFiles;
 use download::PrintDownload;
-use log::debug;
+use log::{debug, warn};
 use std::collections::HashMap;
 use std::fs::{create_dir_all, ReadDir};
 use std::path::{Path, PathBuf};
@@ -215,11 +215,13 @@ fn find_fonts(project_root: &Path) -> Vec<FileId> {
                     _ => {}
                 }
             } else if path.is_dir() {
-                append_font_ids(
-                    fonts,
-                    fs::read_dir(path).expect("Failed to read fonts sub dir"),
-                    project_root,
-                );
+                match fs::read_dir(&path) {
+                    Ok(dir) => append_font_ids(fonts, dir, project_root),
+                    Err(error) => debug!(
+                        "Skipping directory {:?} while looking for font files: {}",
+                        path, error
+                    ),
+                };
             }
         }
     }
