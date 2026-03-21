@@ -1,5 +1,12 @@
 # Changelog
 
+## CLI v0.1.0-alpha.10
+## Rust integration v0.1.0-alpha.9
+## Typst integration v0.1.1
+- Make inputs required by default with better error handling
+- Support watch command in CLI
+- Don't copy template dependencies on disk
+- General CLI output improvements
 
 ## CLI v0.1.0-alpha.9
 ## Browser integration v0.1.0-alpha.7
