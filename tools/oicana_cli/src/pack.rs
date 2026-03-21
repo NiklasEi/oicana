@@ -42,7 +42,6 @@ pub const PACK_AFTER_HELP: &str = color_print::cstr!("\
 ");
 
 pub fn pack(args: PackArgs) -> anyhow::Result<()> {
-    // Todo: read `exclude` from manifest and default to exclude zip files and the output dir to better support single dir templates
     let templates = args.target.get_targets()?;
     let out = Path::new(&args.out_dir);
     let packages = package_data_dir().context("Failed to find data directory for packages")?;
@@ -64,7 +63,22 @@ pub fn pack(args: PackArgs) -> anyhow::Result<()> {
         create_dir_all(out)?;
         let mut out_file = File::create(&out_file_path).context("Failed to create the zip file")?;
 
-        package(&template.path, &mut out_file, &template.manifest)?;
+        // Otherwise the zip file includes a partial version of itself if `pack` is called int he template directory
+        let exclude = out_file_path.canonicalize().ok().and_then(|abs_out| {
+            template.path.canonicalize().ok().and_then(|abs_template| {
+                abs_out
+                    .strip_prefix(abs_template)
+                    .ok()
+                    .map(Path::to_path_buf)
+            })
+        });
+
+        package(
+            &template.path,
+            &mut out_file,
+            &template.manifest,
+            exclude.as_deref(),
+        )?;
 
         println!(
             "{PACKAGE}  {} packed to {}",
