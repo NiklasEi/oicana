@@ -84,6 +84,12 @@
   } else { (production: false) }
 
   for definition in input-definitions {
+    let is-required = if definition.keys().contains("required") {
+      definition.required
+    } else {
+      true
+    }
+
     if definition.type == "json" {
       let json-input = if typst-inputs.keys().contains(definition.key) {
         json(bytes(typst-inputs.at(definition.key)))
@@ -95,10 +101,17 @@
       } else if (definition.keys().contains("default")) {
         json(read-project-file(definition.default))
       }
+      if json-input == none and is-required {
+        panic(
+          "No value for the required input '"
+            + definition.key
+            + "' was supplied. Pass a value or set a default/development value in your typst.toml.",
+        )
+      }
       input.insert(definition.key, json-input)
     } else if definition.type == "blob" {
-      if typst-inputs.keys().contains(definition.key) {
-        input.insert(definition.key, typst-inputs.at(definition.key))
+      let resolved = if typst-inputs.keys().contains(definition.key) {
+        typst-inputs.at(definition.key)
       } else if (
         definition.keys().contains("development")
           and oicana-config.production == false
@@ -113,7 +126,7 @@
         } else {
           development.insert("meta", (:))
         }
-        input.insert(definition.key, development)
+        development
       } else if (definition.keys().contains("default")) {
         let default = (:)
         default.insert("bytes", read-project-file(definition.default.file))
@@ -122,7 +135,17 @@
         } else {
           default.insert("meta", (:))
         }
-        input.insert(definition.key, default)
+        default
+      }
+      if resolved == none and is-required {
+        panic(
+          "No value for the required input '"
+            + definition.key
+            + "' was supplied. Pass a value or set a default/development value in your typst.toml.",
+        )
+      }
+      if resolved != none {
+        input.insert(definition.key, resolved)
       }
     }
   }

@@ -57,6 +57,11 @@ impl TemplateInputs {
         self
     }
 
+    /// Check if a value has been supplied for the given key.
+    pub fn contains(&self, key: &str) -> bool {
+        self.inputs.contains(&Str::from(key))
+    }
+
     /// Get the string value of an input by key, if it exists.
     pub fn get_str_value(&self, key: &str) -> Option<String> {
         match self.inputs.at(Str::from(key), None) {

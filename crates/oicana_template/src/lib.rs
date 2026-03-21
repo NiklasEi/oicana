@@ -336,6 +336,7 @@ mod tests {
             inputs: vec![
                 InputDefinition::Json(JsonInputDefinition {
                     key: "invoice".to_string(),
+                    required: true,
                     default: Some("invoice.json".to_string()),
                     development: None,
                     schema: Some("invoice.schema.json".to_string()),
@@ -343,6 +344,7 @@ mod tests {
                 }),
                 InputDefinition::Blob(BlobInputDefinition {
                     key: "logo".to_string(),
+                    required: true,
                     default: Some(FallbackBlobInput {
                         file: "logo.jpg".to_string(),
                         meta: Some(toml::Value::Table({
@@ -357,6 +359,7 @@ mod tests {
                 }),
                 InputDefinition::Json(JsonInputDefinition {
                     key: "test".to_string(),
+                    required: true,
                     default: None,
                     development: None,
                     schema: None,

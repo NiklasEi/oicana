@@ -220,6 +220,7 @@ mod tests {
         let inputs = vec![InputDefinition::Json(
             oicana_input::input_definition::json::JsonInputDefinition {
                 key: "data".to_string(),
+                required: true,
                 default: default_value.map(|_| "default.json".to_string()),
                 development: dev_value.map(|_| "dev.json".to_string()),
                 schema: Some("data.schema.json".to_string()),
@@ -303,6 +304,7 @@ mod tests {
         let inputs = vec![InputDefinition::Json(
             oicana_input::input_definition::json::JsonInputDefinition {
                 key: "data".to_string(),
+                required: true,
                 default: Some("nonexistent.json".to_string()),
                 development: None,
                 schema: Some("data.schema.json".to_string()),
@@ -328,6 +330,7 @@ mod tests {
         let inputs = vec![InputDefinition::Json(
             oicana_input::input_definition::json::JsonInputDefinition {
                 key: "data".to_string(),
+                required: true,
                 default: Some("default.json".to_string()),
                 development: None,
                 schema: Some("data.schema.json".to_string()),
@@ -350,6 +353,7 @@ mod tests {
         let inputs = vec![InputDefinition::Json(
             oicana_input::input_definition::json::JsonInputDefinition {
                 key: "data".to_string(),
+                required: true,
                 default: Some("default.json".to_string()),
                 development: None,
                 schema: None,
@@ -371,6 +375,7 @@ mod tests {
         let inputs = vec![InputDefinition::Json(
             oicana_input::input_definition::json::JsonInputDefinition {
                 key: "data".to_string(),
+                required: true,
                 default: Some("default.json".to_string()),
                 development: None,
                 schema: Some("missing.schema.json".to_string()),

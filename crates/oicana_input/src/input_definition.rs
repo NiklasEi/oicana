@@ -20,3 +20,21 @@ pub enum InputDefinition {
     #[serde(rename = "blob")]
     Blob(BlobInputDefinition),
 }
+
+impl InputDefinition {
+    /// The key identifying this input.
+    pub fn key(&self) -> &str {
+        match self {
+            InputDefinition::Json(def) => &def.key,
+            InputDefinition::Blob(def) => &def.key,
+        }
+    }
+
+    /// Whether this input is required.
+    pub fn required(&self) -> bool {
+        match self {
+            InputDefinition::Json(def) => def.required,
+            InputDefinition::Blob(def) => def.required,
+        }
+    }
+}

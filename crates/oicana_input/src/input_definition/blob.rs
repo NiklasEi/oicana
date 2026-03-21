@@ -7,12 +7,22 @@ pub struct BlobInputDefinition {
     ///
     /// Use this in the Typst code to refer to the current value of the data set.
     pub key: String,
+    /// Whether this input must have a value when compiling the template.
+    ///
+    /// Defaults to `true`. When `true`, compilation will fail if no value
+    /// is supplied and no default or development value is configured.
+    #[serde(default = "default_true")]
+    pub required: bool,
     /// Default value of this input in case no other value is supplied.
     ///
     /// In development mode, [`Self::development`] is preferred.
     pub default: Option<FallbackBlobInput>,
     /// Value for this input in development mode.
     pub development: Option<FallbackBlobInput>,
+}
+
+fn default_true() -> bool {
+    true
 }
 
 /// Default value of a blob input.
