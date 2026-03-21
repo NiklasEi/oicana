@@ -56,6 +56,24 @@ impl NativeTemplate {
         let mut map = self.slots.lock().unwrap();
         f(map.entry(id).or_insert_with(|| FileSlot::new(id)))
     }
+
+    /// Reset the access tracking on all file slots in preparation for a new compilation.
+    pub fn reset(&self) {
+        for slot in self.slots.lock().unwrap().values_mut() {
+            slot.reset();
+        }
+    }
+
+    /// Return the system paths of all files that were accessed during the last compilation.
+    pub fn dependencies(&self) -> Vec<PathBuf> {
+        self.slots
+            .lock()
+            .unwrap()
+            .values()
+            .filter(|slot| slot.accessed())
+            .filter_map(|slot| system_path(slot.id, self).ok())
+            .collect()
+    }
 }
 
 /// The path to Typsts package data directory on the current system
@@ -103,6 +121,17 @@ impl FileSlot {
             file: SlotCell::new(),
             source: SlotCell::new(),
         }
+    }
+
+    /// Whether the file was accessed during the current compilation.
+    pub fn accessed(&self) -> bool {
+        self.source.accessed || self.file.accessed
+    }
+
+    /// Reset the access tracking for the next compilation.
+    pub fn reset(&mut self) {
+        self.source.accessed = false;
+        self.file.accessed = false;
     }
 
     /// Retrieve the source for this file.

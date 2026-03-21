@@ -13,9 +13,9 @@ use std::collections::HashMap;
 use std::fs::{self, read, read_to_string};
 use std::path::Path;
 
-mod export;
+pub(crate) mod export;
 
-static CHECKMARK: Emoji<'_, '_> = Emoji("✔️", "");
+pub(crate) static CHECKMARK: Emoji<'_, '_> = Emoji("✔️", "");
 
 #[rustfmt::skip]
 pub const COMPILE_AFTER_HELP: &str = color_print::cstr!("\
@@ -30,9 +30,9 @@ pub struct CompileArgs {
     #[arg(
         help = "Path to the template. If not given, the current directory is expected to be a template."
     )]
-    template: Option<String>,
+    pub(crate) template: Option<String>,
     #[arg(short, long, help = "Output format", default_value = "pdf")]
-    format: ExportFormat,
+    pub(crate) format: ExportFormat,
     #[clap(
         short,
         long,
@@ -60,21 +60,21 @@ pub struct CompileArgs {
     #[arg(short, long, help = "Compile the template in development mode")]
     development: bool,
     #[clap(short, long, help = "Output directory", default_value = "./output")]
-    out_dir: String,
+    pub(crate) out_dir: String,
     #[clap(
         short,
         long,
         help = "Name template for the artifacts. Available variables: {template}, {version}, {timestamp}, {format}",
         default_value = "{template}.{format}"
     )]
-    name: String,
+    pub(crate) name: String,
     #[arg(
         long,
         help = "PDF standards to enforce (e.g., 'a-3b', 'a-4,ua-1'). Overrides manifest settings.",
         value_name = "STANDARDS",
         value_delimiter = ','
     )]
-    pdf_standards: Option<Vec<String>>,
+    pub(crate) pdf_standards: Option<Vec<String>>,
 }
 
 pub fn compile(args: CompileArgs) -> anyhow::Result<()> {
@@ -98,15 +98,7 @@ pub fn compile(args: CompileArgs) -> anyhow::Result<()> {
     let out_dir = Path::new(&args.out_dir);
     fs::create_dir_all(out_dir)?;
 
-    let file_name = args
-        .name
-        .replace("{template}", &name)
-        .replace(
-            "{version}",
-            &template.manifest().package.version.to_string(),
-        )
-        .replace("{timestamp}", &Utc::now().timestamp_millis().to_string())
-        .replace("{format}", args.format.file_ending());
+    let file_name = build_file_name(&args, &template);
 
     let out = out_dir.join(file_name);
     match args.format {
@@ -124,7 +116,18 @@ pub fn compile(args: CompileArgs) -> anyhow::Result<()> {
     Ok(())
 }
 
-pub fn build_inputs(args: &CompileArgs) -> anyhow::Result<TemplateInputs> {
+pub(crate) fn build_file_name(args: &CompileArgs, template: &Template<NativeTemplate>) -> String {
+    args.name
+        .replace("{template}", &template.manifest().package.name)
+        .replace(
+            "{version}",
+            &template.manifest().package.version.to_string(),
+        )
+        .replace("{timestamp}", &Utc::now().timestamp_millis().to_string())
+        .replace("{format}", args.format.file_ending())
+}
+
+pub(crate) fn build_inputs(args: &CompileArgs) -> anyhow::Result<TemplateInputs> {
     let mut inputs = TemplateInputs::new();
     if !args.development {
         inputs.with_config(CompilationConfig::production());

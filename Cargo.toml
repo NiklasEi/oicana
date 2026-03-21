@@ -113,6 +113,8 @@ json_schema_ast = "0.2.2"
 jsonschema = { version = "0.45", default-features = false }
 rand = "0.8"
 uuid = "1.18.1"
+notify = "7"
+same-file = "1"
 
 [workspace.lints.rust]
 missing_docs = "warn"

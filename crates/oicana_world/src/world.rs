@@ -218,6 +218,11 @@ impl<Files: TemplateFiles> OicanaWorld<Files> {
     pub fn manifest(&self) -> &TemplateManifest {
         &self.manifest
     }
+
+    /// Reset the cached timestamp so the next compilation gets a fresh value.
+    pub fn reset_time(&mut self) {
+        self.now = OnceLock::new();
+    }
 }
 
 /// An error that occurs during world construction.
