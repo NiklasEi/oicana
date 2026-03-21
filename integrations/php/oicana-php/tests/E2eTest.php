@@ -153,7 +153,7 @@ test('compile defaults to production mode', function () {
 
     try {
         expect(fn() => $template->compile(exportFormat: ExportFormat::png(pixelsPerPt: 1.0)))
-            ->toThrow(Exception::class, 'dictionary does not contain key');
+            ->toThrow(Exception::class, 'No value for the required input');
     } finally {
         $template->cleanup();
     }
@@ -163,5 +163,5 @@ test('can control compilation mode when registering', function () {
     $templateBytes = file_get_contents(e2e_template_path());
 
     expect(fn() => new Template($templateBytes, mode: CompilationMode::Production))
-        ->toThrow(Exception::class, 'dictionary does not contain key');
+        ->toThrow(Exception::class, 'No value for the required input');
 });

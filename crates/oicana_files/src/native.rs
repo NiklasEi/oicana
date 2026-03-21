@@ -4,10 +4,10 @@ use crate::TemplateFiles;
 use download::PrintDownload;
 use log::debug;
 use std::collections::HashMap;
-use std::fs::{create_dir_all, ReadDir};
+use std::fs::ReadDir;
 use std::path::{Path, PathBuf};
 use std::sync::Mutex;
-use std::{fs, io, mem};
+use std::{fs, mem};
 use typst::diag::{FileError, FileResult, PackageError};
 use typst::foundations::Bytes;
 use typst::syntax::package::PackageSpec;
@@ -56,6 +56,45 @@ impl NativeTemplate {
         let mut map = self.slots.lock().unwrap();
         f(map.entry(id).or_insert_with(|| FileSlot::new(id)))
     }
+
+    /// Reset the access tracking on all file slots in preparation for a new compilation.
+    pub fn reset(&self) {
+        for slot in self.slots.lock().unwrap().values_mut() {
+            slot.reset();
+        }
+    }
+
+    /// Resolve a package to its source directory.
+    ///
+    /// For `@preview` packages, this uses the global Typst package cache (downloading if needed).
+    /// For local packages, this resolves from the local package registry.
+    pub fn package_dir(&self, spec: &PackageSpec) -> Result<PathBuf, FileError> {
+        if spec.namespace == DEFAULT_NAMESPACE {
+            self.package_storage
+                .prepare_package(spec, &mut PrintDownload(&spec))
+                .map_err(FileError::Package)
+        } else {
+            let local_package = self
+                .packages
+                .join(format!("{}/{}/{}", spec.namespace, spec.name, spec.version));
+            if local_package.is_dir() {
+                Ok(local_package)
+            } else {
+                Err(FileError::Package(PackageError::NotFound(spec.clone())))
+            }
+        }
+    }
+
+    /// Return the system paths of all files that were accessed during the last compilation.
+    pub fn dependencies(&self) -> Vec<PathBuf> {
+        self.slots
+            .lock()
+            .unwrap()
+            .values()
+            .filter(|slot| slot.accessed())
+            .filter_map(|slot| system_path(slot.id, self).ok())
+            .collect()
+    }
 }
 
 /// The path to Typsts package data directory on the current system
@@ -103,6 +142,17 @@ impl FileSlot {
             file: SlotCell::new(),
             source: SlotCell::new(),
         }
+    }
+
+    /// Whether the file was accessed during the current compilation.
+    pub fn accessed(&self) -> bool {
+        self.source.accessed || self.file.accessed
+    }
+
+    /// Reset the access tracking for the next compilation.
+    pub fn reset(&mut self) {
+        self.source.accessed = false;
+        self.file.accessed = false;
     }
 
     /// Retrieve the source for this file.
@@ -215,11 +265,13 @@ fn find_fonts(project_root: &Path) -> Vec<FileId> {
                     _ => {}
                 }
             } else if path.is_dir() {
-                append_font_ids(
-                    fonts,
-                    fs::read_dir(path).expect("Failed to read fonts sub dir"),
-                    project_root,
-                );
+                match fs::read_dir(&path) {
+                    Ok(dir) => append_font_ids(fonts, dir, project_root),
+                    Err(error) => debug!(
+                        "Skipping directory {:?} while looking for font files: {}",
+                        path, error
+                    ),
+                };
             }
         }
     }
@@ -244,106 +296,11 @@ fn system_path(id: FileId, files: &NativeTemplate) -> Result<PathBuf, FileError>
     // will be resolved.
     let mut root = files.root.to_owned();
     if let Some(spec) = id.package() {
-        root = prepare_package(spec, files)?;
+        root = files.package_dir(spec)?;
     }
 
     // Join the path to the root. If it tries to escape, deny
     // access. Note: It can still escape via symlinks, but native
     // templates are only used during development, not at runtime.
     id.vpath().resolve(&root).ok_or(FileError::AccessDenied)
-}
-
-/// Make a package available in the template dependencies directory.
-pub fn prepare_package(spec: &PackageSpec, files: &NativeTemplate) -> Result<PathBuf, FileError> {
-    let subdir = format!(
-        ".dependencies/{}/{}/{}",
-        spec.namespace, spec.name, spec.version
-    );
-
-    let package_dir = files.root.join(&subdir);
-    if package_dir.exists() {
-        return Ok(package_dir);
-    }
-
-    if spec.namespace == DEFAULT_NAMESPACE {
-        // Download preview package from network if it doesn't exist yet.
-        let cached_package = files
-            .package_storage
-            .prepare_package(spec, &mut PrintDownload(&spec))
-            .map_err(FileError::Package)?;
-        debug!("Copying {spec} from {cached_package:?}.");
-        copy_directory(&cached_package, &package_dir)
-            .map_err(|io_error| PackageError::Other(Some(io_error.to_string().into())))?;
-        return Ok(package_dir);
-    }
-
-    let local_package = files
-        .packages
-        .join(format!("{}/{}/{}", spec.namespace, spec.name, spec.version));
-    if local_package.is_dir() {
-        debug!("Copying {spec} from {local_package:?}.");
-        copy_directory(&local_package, &package_dir)
-            .map_err(|io_error| PackageError::Other(Some(io_error.to_string().into())))?;
-        return Ok(package_dir);
-    }
-
-    Err(FileError::Package(PackageError::NotFound(spec.clone())))
-}
-
-fn copy_directory(in_dir: &Path, out_dir: &Path) -> io::Result<()> {
-    create_dir_all(out_dir)?;
-    for file in fs::read_dir(in_dir)? {
-        let file = file?;
-        let path = file.path();
-        if path.is_dir() {
-            copy_directory(&path, &out_dir.join(path.file_name().unwrap()))?;
-        } else if path.is_file() {
-            fs::copy(path.clone(), out_dir.join(path.file_name().unwrap()))?;
-        }
-    }
-
-    Ok(())
-}
-
-#[cfg(test)]
-mod tests {
-    use crate::native::copy_directory;
-    use std::fs::{create_dir_all, File};
-    use std::io::Write;
-    use tempfile::tempdir;
-
-    #[test]
-    fn copy_dir() {
-        let in_dir = tempdir().unwrap();
-        create_dir_all(in_dir.path().join("test").join("src")).unwrap();
-        {
-            let file_path = in_dir.path().join("my-temporary-note.txt");
-            let mut tmp_file = File::create(file_path).unwrap();
-            tmp_file
-                .write_all("Brian was here. Briefly.".as_bytes())
-                .unwrap();
-        }
-        {
-            let file_path = in_dir
-                .path()
-                .join("test")
-                .join("my-temporary-other-note.txt");
-            let mut tmp_file = File::create(file_path).unwrap();
-            tmp_file
-                .write_all("Brian was here. Briefly.".as_bytes())
-                .unwrap();
-        }
-
-        let out_dir = tempdir().unwrap();
-        let out_dir = out_dir.path();
-
-        copy_directory(in_dir.path(), out_dir).unwrap();
-
-        assert!(out_dir
-            .join("test")
-            .join("my-temporary-other-note.txt")
-            .exists());
-        assert!(out_dir.join("test").join("src").exists());
-        assert!(out_dir.join("my-temporary-note.txt").exists());
-    }
 }

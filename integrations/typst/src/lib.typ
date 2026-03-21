@@ -1,15 +1,15 @@
 /// This package currently requires a function input, because otherwise it is not possible to read files from the consuming project
 /// out of the package. In the future this might be solved with a path type: https://github.com/typst/typst/issues/971
 
-#let version = version(0, 1, 0)
+#let version = version(0, 1, 1)
 
 /// Method to simplify reading Oicana inputs in Typst projects.
 /// Pass a read function to `setup` to allow it to read project files:
 /// ```typst
-/// #import "@preview/oicana:0.1.0": setup
+/// #import "@preview/oicana:0.1.1": setup
 ///
 /// #let read-project-file(path) = return read(path, encoding: none);
-/// #let (input, oicana-image, config) = setup(read-project-file);
+/// #let (input, oicana-image, oicana-config) = setup(read-project-file);
 /// ```
 /// With the following inputs configured in the projects `typst.toml` manifest
 /// ```toml
@@ -26,10 +26,21 @@
 /// ```
 /// You can now use `input` and `oicana-image` like so:
 /// ```typst
-/// #let issuing-date = input.invoice.buyer.name
+/// #let buyer-name = input.invoice.buyer.name
 /// #let logo = oicana-image("logo")
 /// ```
-/// -> (dictionary, function)
+///
+/// Returns a tuple of three values:
+/// - `input`: dictionary of resolved input values, keyed by input key
+/// - `oicana-image`: helper function that takes a blob input key and returns a Typst image
+/// - `oicana-config`: dictionary with compilation metadata (e.g. `production: true/false`)
+///
+/// Inputs are required by default. Set `required = false` in the input definition to allow
+/// missing values. Required inputs without a value cause a compile error.
+///
+/// See https://oicana.com/docs/templates/inputs for more details.
+///
+/// -> (dictionary, function, dictionary)
 #let setup(
   /// Function to read a project file at the given path.
   ///
@@ -84,6 +95,12 @@
   } else { (production: false) }
 
   for definition in input-definitions {
+    let is-required = if definition.keys().contains("required") {
+      definition.required
+    } else {
+      true
+    }
+
     if definition.type == "json" {
       let json-input = if typst-inputs.keys().contains(definition.key) {
         json(bytes(typst-inputs.at(definition.key)))
@@ -95,10 +112,17 @@
       } else if (definition.keys().contains("default")) {
         json(read-project-file(definition.default))
       }
+      if json-input == none and is-required {
+        panic(
+          "No value for the required input '"
+            + definition.key
+            + "' was supplied. Pass a value or set a default/development value in your typst.toml.",
+        )
+      }
       input.insert(definition.key, json-input)
     } else if definition.type == "blob" {
-      if typst-inputs.keys().contains(definition.key) {
-        input.insert(definition.key, typst-inputs.at(definition.key))
+      let resolved = if typst-inputs.keys().contains(definition.key) {
+        typst-inputs.at(definition.key)
       } else if (
         definition.keys().contains("development")
           and oicana-config.production == false
@@ -113,7 +137,7 @@
         } else {
           development.insert("meta", (:))
         }
-        input.insert(definition.key, development)
+        development
       } else if (definition.keys().contains("default")) {
         let default = (:)
         default.insert("bytes", read-project-file(definition.default.file))
@@ -122,20 +146,30 @@
         } else {
           default.insert("meta", (:))
         }
-        input.insert(definition.key, default)
+        default
       }
+      if resolved == none and is-required {
+        panic(
+          "No value for the required input '"
+            + definition.key
+            + "' was supplied. Pass a value or set a default/development value in your typst.toml.",
+        )
+      }
+      input.insert(definition.key, resolved)
     }
   }
 
-  let oicana-image = key => {
+  let oicana-image = (key, ..args) => {
     if input.keys().contains(key) {
+      let blob-input = input.at(key)
       image(
-        input.at(key).bytes,
-        format: if input.at(key).meta.keys().contains("image_format") {
-          input.at(key).meta.image_format
+        blob-input.bytes,
+        format: if blob-input.meta.keys().contains("image_format") {
+          blob-input.meta.image_format
         } else {
           auto
         },
+        ..args,
       )
     }
   }

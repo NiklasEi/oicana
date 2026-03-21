@@ -7,10 +7,12 @@ mod pack;
 mod target;
 mod test;
 mod validate;
+mod watch;
 
 use crate::compile::compile;
 use crate::pack::{pack, PackArgs};
 use crate::validate::{validate, ValidateArgs};
+use crate::watch::WATCH_AFTER_HELP;
 use anyhow::Error;
 use clap::Parser;
 use clap_verbosity::{Verbosity, WarnLevel};
@@ -19,6 +21,7 @@ use log::trace;
 use pack::PACK_AFTER_HELP;
 use test::{test, TestArgs, TEST_AFTER_HELP};
 use validate::VALIDATE_AFTER_HELP;
+use watch::watch;
 
 fn main() -> Result<(), Error> {
     let cli = Cli::parse();
@@ -29,6 +32,7 @@ fn main() -> Result<(), Error> {
 
     match cli.command {
         Oicana::Compile(args) => compile(args)?,
+        Oicana::Watch(args) => watch(args)?,
         Oicana::Validate(validate_args) => validate(validate_args)?,
         Oicana::Pack(package_args) => pack(package_args)?,
         Oicana::Test(test_args) => test(test_args)?,
@@ -53,6 +57,8 @@ struct Cli {
 enum Oicana {
     #[clap(about = "Compile oicana templates", after_help = COMPILE_AFTER_HELP)]
     Compile(CompileArgs),
+    #[clap(about = "Recompile oicana templates on changes", after_help = WATCH_AFTER_HELP)]
+    Watch(CompileArgs),
     #[clap(about = "Validate oicana templates", after_help = VALIDATE_AFTER_HELP)]
     Validate(ValidateArgs),
     #[clap(about = "Package oicana templates", after_help = PACK_AFTER_HELP)]

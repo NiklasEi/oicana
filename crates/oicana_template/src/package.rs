@@ -1,4 +1,5 @@
 use chrono::{Datelike, Timelike, Utc};
+use ignore::gitignore::Gitignore;
 use log::trace;
 use std::fs::File;
 use std::io;
@@ -24,10 +25,49 @@ pub fn package<T>(
 where
     T: Write + Seek,
 {
+    let exclude_matcher = manifest.build_exclude_matcher();
+    package_with_exclude(src_dir, writer, &exclude_matcher, exclude)
+}
+
+/// Package a directory as an Oicana template with a pre-built exclude matcher.
+pub fn package_with_exclude<T>(
+    src_dir: &Path,
+    writer: T,
+    exclude_matcher: &Gitignore,
+    exclude: Option<&Path>,
+) -> Result<(), PackageError>
+where
+    T: Write + Seek,
+{
+    package_with_dependencies(src_dir, writer, exclude_matcher, exclude, &[])
+}
+
+/// Package a directory as an Oicana template, including extra dependency directories.
+///
+/// Each entry in `dependencies` is a `(source_dir, zip_prefix)` pair. The contents of
+/// `source_dir` will be added to the zip under the given `zip_prefix` path
+/// (e.g. `.dependencies/preview/pkg/0.1.0`).
+pub fn package_with_dependencies<T>(
+    src_dir: &Path,
+    writer: T,
+    exclude_matcher: &Gitignore,
+    exclude: Option<&Path>,
+    dependencies: &[(PathBuf, PathBuf)],
+) -> Result<(), PackageError>
+where
+    T: Write + Seek,
+{
     if !Path::new(src_dir).is_dir() {
         return Err(PackageError::SourceIsNotADirectory);
     }
 
+    let method = CompressionMethod::ZSTD;
+    let mut zip = ZipWriter::new(writer);
+    let options = SimpleFileOptions::default()
+        .compression_method(method)
+        .unix_permissions(0o755);
+
+    // Add template files
     let walk_dir = WalkDir::new(src_dir).follow_links(true);
     let it = walk_dir.into_iter().filter_entry(|entry| {
         let relative = entry.path().strip_prefix(src_dir).unwrap();
@@ -36,44 +76,53 @@ where
                 return false;
             }
         }
-        manifest.should_path_be_packed(relative)
+        !exclude_matcher
+            .matched_path_or_any_parents(relative, entry.file_type().is_dir())
+            .is_ignore()
     });
 
-    zip_dir(
+    add_dir_to_zip(
+        &mut zip,
         &mut it.filter_map(|e| e.ok()),
         src_dir,
-        writer,
-        CompressionMethod::ZSTD,
+        Path::new(""),
+        options,
     )?;
 
+    // Add dependency directories
+    for (source_dir, zip_prefix) in dependencies {
+        let dep_walk = WalkDir::new(source_dir).follow_links(true);
+        add_dir_to_zip(
+            &mut zip,
+            &mut dep_walk.into_iter().filter_map(|e| e.ok()),
+            source_dir,
+            zip_prefix,
+            options,
+        )?;
+    }
+
+    zip.finish()?;
     Ok(())
 }
 
-fn zip_dir<T>(
+fn add_dir_to_zip<T: Write + Seek>(
+    zip: &mut ZipWriter<T>,
     it: &mut dyn Iterator<Item = DirEntry>,
-    prefix: &Path,
-    writer: T,
-    method: CompressionMethod,
-) -> Result<(), PackageError>
-where
-    T: Write + Seek,
-{
-    let mut zip = ZipWriter::new(writer);
-    let options = SimpleFileOptions::default()
-        .compression_method(method)
-        .unix_permissions(0o755);
-
-    let prefix = Path::new(prefix);
+    strip_prefix: &Path,
+    zip_prefix: &Path,
+    options: SimpleFileOptions,
+) -> Result<(), PackageError> {
     let mut buffer = Vec::with_capacity(4096);
     for entry in it {
         let path = entry.path();
-        let name = path.strip_prefix(prefix).unwrap();
+        let relative = path.strip_prefix(strip_prefix).unwrap();
+        let name = zip_prefix.join(relative);
 
         if path.is_file() {
             trace!("adding file {:?}", name);
             let mut f = File::open(path)?;
             zip.start_file_from_path(
-                name,
+                &name,
                 options.last_modified_time(zip_date_from_system_time(f.metadata()?.modified()?)?),
             )?;
 
@@ -82,10 +131,9 @@ where
             buffer.clear();
         } else if !name.as_os_str().is_empty() {
             trace!("adding dir {:?}", name);
-            zip.add_directory_from_path(name, options)?;
+            zip.add_directory_from_path(&name, options)?;
         }
     }
-    zip.finish()?;
     Ok(())
 }
 

@@ -120,7 +120,7 @@ public class E2ETests
 
         act.Should()
             .Throw<OicanaException>()
-            .WithMessage("error: dictionary does not contain key \"development-blob\"\n   \u250c\u2500 /main.typ:14:41\n   \u2502\n14 \u2502 `development-blob` has value: #str(input.development-blob.bytes)\n   \u2502                                          ^^^^^^^^^^^^^^^^\n\n");
+            .WithMessage("*No value for the required input*", "compilation in production mode should fail for inputs without default values");
     }
 
     [Fact]

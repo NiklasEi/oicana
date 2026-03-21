@@ -1,7 +1,7 @@
 use crate::OicanaConfig;
+use ignore::gitignore::{Gitignore, GitignoreBuilder};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
-use std::path::Path;
 use thiserror::Error;
 use typst::diag::EcoString;
 use typst::syntax::package::{PackageInfo, TemplateInfo, UnknownFields};
@@ -65,34 +65,33 @@ impl TemplateManifest {
         Ok(())
     }
 
-    /// Checks if the given path in a template should be packed
-    pub fn should_path_be_packed(&self, path: &Path) -> bool {
-        // we need to ensure that both start with './' if relative
-        let relative_test = format_relative_path(&self.tool.oicana.tests);
-        let relative_path = format_relative_path(path);
-
-        !relative_path.starts_with(&relative_test)
+    /// Build a gitignore-style matcher from the Typst `package.exclude` patterns.
+    ///
+    /// If no exclude patterns are set, defaults to excluding the test directory
+    /// (configured via `tool.oicana.tests`) and the `output/` directory.
+    pub fn build_exclude_matcher(&self) -> Gitignore {
+        let mut builder = GitignoreBuilder::new("");
+        if self.package.exclude.is_empty() {
+            let test_dir = self.tool.oicana.tests.to_string_lossy().replace('\\', "/");
+            builder
+                .add_line(None, &format!("/{test_dir}/"))
+                .expect("test directory exclude pattern should be valid");
+            builder
+                .add_line(None, "/output/")
+                .expect("output directory exclude pattern should be valid");
+        } else {
+            for pattern in &self.package.exclude {
+                if let Err(error) = builder.add_line(None, pattern.as_str()) {
+                    log::warn!("Ignoring invalid exclude pattern '{pattern}': {error}");
+                }
+            }
+        }
+        builder.build().expect("exclude patterns should be valid")
     }
 
     /// Parse toml to a manifest
     pub fn from_toml(toml_content: &str) -> Result<Self, toml::de::Error> {
         toml::de::from_str::<TemplateManifest>(toml_content)
-    }
-}
-
-fn format_relative_path(path: &Path) -> String {
-    let normalized = path.to_string_lossy().replace('\\', "/");
-
-    if !path.is_relative() {
-        return normalized;
-    }
-
-    match normalized.as_str() {
-        "." => "./".to_string(),
-        ".." => "..".to_string(),
-        "" => "./".to_string(),
-        _ if normalized.starts_with("./") || normalized.starts_with("../") => normalized,
-        _ => format!("./{normalized}"),
     }
 }
 
@@ -155,7 +154,7 @@ mod tests {
     use typst::syntax::package::PackageInfo;
 
     use crate::{
-        manifest::{format_relative_path, ManifestValidationError, TemplateManifest},
+        manifest::{ManifestValidationError, TemplateManifest},
         ExportConfig, OicanaConfig,
     };
 
@@ -163,8 +162,55 @@ mod tests {
         PackageInfo::new("test-package", "0.1.0".parse().unwrap(), "main.typ")
     }
 
+    /// Helper: returns true if the path should be excluded from packing.
+    fn is_excluded(manifest: &TemplateManifest, path: &str, is_dir: bool) -> bool {
+        let matcher = manifest.build_exclude_matcher();
+        matcher
+            .matched_path_or_any_parents(Path::new(path), is_dir)
+            .is_ignore()
+    }
+
     #[test]
-    fn ignores_files_in_tests_dir() {
+    fn excludes_package_exclude_patterns() {
+        let mut package_info = default_package_info();
+        package_info.exclude = vec![
+            "/tests/".into(),
+            "/output/".into(),
+            "docs/*.pdf".into(),
+            "/assets*/".into(),
+        ];
+        let manifest = TemplateManifest::new(
+            package_info,
+            OicanaConfig {
+                manifest_version: 1,
+                inputs: vec![],
+                validate_json_inputs_by_default: true,
+                tests: PathBuf::from("tests"),
+                export: ExportConfig::default(),
+            },
+        );
+
+        // Tests dir excluded via /tests/
+        assert!(is_excluded(&manifest, "tests", true));
+        assert!(is_excluded(&manifest, "tests/file.txt", false));
+        assert!(is_excluded(&manifest, "tests/sub_dir", true));
+        assert!(!is_excluded(&manifest, "test", true));
+        assert!(!is_excluded(&manifest, "sub_dir/tests", true));
+
+        // Output dir excluded via /output/
+        assert!(is_excluded(&manifest, "output", true));
+        assert!(is_excluded(&manifest, "output/result.pdf", false));
+        assert!(!is_excluded(&manifest, "sub_dir/output", true));
+
+        // Custom patterns
+        assert!(is_excluded(&manifest, "docs/manual.pdf", false));
+        assert!(!is_excluded(&manifest, "docs/readme.md", false));
+        assert!(is_excluded(&manifest, "assets_old", true));
+        assert!(!is_excluded(&manifest, "src/assets_old", true));
+    }
+
+    #[test]
+    fn empty_exclude_defaults_to_tests_and_output() {
         let manifest = TemplateManifest::new(
             default_package_info(),
             OicanaConfig {
@@ -176,25 +222,31 @@ mod tests {
             },
         );
 
-        assert!(!manifest.should_path_be_packed(Path::new("./tests")));
-        assert!(!manifest.should_path_be_packed(Path::new("./tests/file.txt")));
-        assert!(!manifest.should_path_be_packed(Path::new("./tests/sub_dir")));
-        assert!(!manifest.should_path_be_packed(Path::new("./tests/sub_dir/file.txt")));
-        assert!(!manifest.should_path_be_packed(Path::new(".\\tests")));
-        assert!(!manifest.should_path_be_packed(Path::new(".\\tests\\file.txt")));
-        assert!(!manifest.should_path_be_packed(Path::new(".\\tests\\sub_dir")));
-        assert!(!manifest.should_path_be_packed(Path::new(".\\tests\\sub_dir\\file.txt")));
+        assert!(is_excluded(&manifest, "tests", true));
+        assert!(is_excluded(&manifest, "tests/file.txt", false));
+        assert!(is_excluded(&manifest, "output", true));
+        assert!(is_excluded(&manifest, "output/result.pdf", false));
+        assert!(!is_excluded(&manifest, "src/main.typ", false));
+        assert!(!is_excluded(&manifest, "sub_dir/tests", true));
+        assert!(!is_excluded(&manifest, "sub_dir/output", true));
+    }
 
-        assert!(manifest.should_path_be_packed(Path::new("./test")));
-        assert!(manifest.should_path_be_packed(Path::new("./sub_dir/tests")));
-        assert!(manifest.should_path_be_packed(Path::new("./sub_dir/tests/file.txt")));
-        assert!(manifest.should_path_be_packed(Path::new("./sub_dir/tests/sub_dir")));
-        assert!(manifest.should_path_be_packed(Path::new("./sub_dir/tests/sub_dir/file.txt")));
-        assert!(manifest.should_path_be_packed(Path::new(".\\test")));
-        assert!(manifest.should_path_be_packed(Path::new(".\\sub_dir\\tests")));
-        assert!(manifest.should_path_be_packed(Path::new(".\\sub_dir\\tests\\file.txt")));
-        assert!(manifest.should_path_be_packed(Path::new(".\\sub_dir\\tests\\sub_dir")));
-        assert!(manifest.should_path_be_packed(Path::new(".\\sub_dir\\tests\\sub_dir\\file.txt")));
+    #[test]
+    fn empty_exclude_respects_custom_tests_dir() {
+        let manifest = TemplateManifest::new(
+            default_package_info(),
+            OicanaConfig {
+                manifest_version: 1,
+                inputs: vec![],
+                validate_json_inputs_by_default: true,
+                tests: PathBuf::from("custom_tests"),
+                export: ExportConfig::default(),
+            },
+        );
+
+        assert!(is_excluded(&manifest, "custom_tests", true));
+        assert!(!is_excluded(&manifest, "tests", true));
+        assert!(is_excluded(&manifest, "output", true));
     }
 
     #[test]
@@ -214,15 +266,5 @@ mod tests {
             manifest.validate(),
             Err(ManifestValidationError::InvalidTestsPath)
         );
-    }
-
-    #[test]
-    fn should_format_relative_path() {
-        assert_eq!(format_relative_path(Path::new("foo")), "./foo");
-        assert_eq!(format_relative_path(Path::new("foo/bar")), "./foo/bar");
-        assert_eq!(format_relative_path(Path::new("./foo")), "./foo");
-        assert_eq!(format_relative_path(Path::new("../foo")), "../foo");
-        assert_eq!(format_relative_path(Path::new(".")), "./");
-        assert_eq!(format_relative_path(Path::new("")), "./");
     }
 }

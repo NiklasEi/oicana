@@ -23,6 +23,7 @@ unicode-ident = { workspace = true }
 chrono = { workspace = true }
 zip = { workspace = true, default-features = false, features = ["zstd", "time"] }
 walkdir = { workspace = true }
+ignore = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 
 [dev-dependencies]

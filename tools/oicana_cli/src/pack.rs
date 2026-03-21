@@ -5,11 +5,11 @@ use console::{style, Emoji};
 use log::info;
 use oicana_files::native::{package_data_dir, NativeTemplate};
 use oicana_files::TemplateFiles;
-use oicana_template::package::package;
+use oicana_template::package::package_with_dependencies;
 use std::collections::HashSet;
 use std::ffi::OsStr;
-use std::fs::{create_dir_all, read_dir, remove_dir_all, File};
-use std::path::Path;
+use std::fs::{create_dir_all, read_dir, File};
+use std::path::{Path, PathBuf};
 use std::str::FromStr;
 use typst::syntax::ast::ModuleImport;
 
@@ -50,20 +50,19 @@ pub fn pack(args: PackArgs) -> anyhow::Result<()> {
         info!("Packing template '{}'.", template.manifest.package.name);
         template.manifest.validate()?;
 
-        let mut files = NativeTemplate::new(&template.path, packages.clone());
+        let files = NativeTemplate::new(&template.path, packages.clone());
 
+        let dependencies = collect_dependencies(&template.path, &files)?;
+
+        create_dir_all(out)?;
         let out_file_path = out.join(
             args.name
                 .replace("{template}", &template.manifest.package.name)
                 .replace("{version}", &template.manifest.package.version.to_string()),
         );
+        let out_file = File::create(&out_file_path).context("Failed to create the zip file")?;
 
-        update_dependencies(&template.path, &mut files)?;
-
-        create_dir_all(out)?;
-        let mut out_file = File::create(&out_file_path).context("Failed to create the zip file")?;
-
-        // Otherwise the zip file includes a partial version of itself if `pack` is called int he template directory
+        // Otherwise the zip file includes a partial version of itself if `pack` is called in the template directory
         let exclude = out_file_path.canonicalize().ok().and_then(|abs_out| {
             template.path.canonicalize().ok().and_then(|abs_template| {
                 abs_out
@@ -73,11 +72,13 @@ pub fn pack(args: PackArgs) -> anyhow::Result<()> {
             })
         });
 
-        package(
+        let exclude_matcher = template.manifest.build_exclude_matcher();
+        package_with_dependencies(
             &template.path,
-            &mut out_file,
-            &template.manifest,
+            out_file,
+            &exclude_matcher,
             exclude.as_deref(),
+            &dependencies,
         )?;
 
         println!(
@@ -90,143 +91,179 @@ pub fn pack(args: PackArgs) -> anyhow::Result<()> {
     Ok(())
 }
 
-/// This will remove the current `.dependencies` directory and
-/// resolve all imports from the template, recreating `.dependencies`
-/// along the way.
-fn update_dependencies<Files: TemplateFiles>(root: &Path, files: &mut Files) -> anyhow::Result<()> {
-    let _ignore = remove_dir_all(root.join(".dependencies"));
-    let mut imported_dependencies = HashSet::new();
+/// Collect all package dependencies by scanning imports in template `.typ` files.
+///
+/// Returns a list of `(source_dir, zip_prefix)` pairs where `source_dir` is the
+/// package's location on disk and `zip_prefix` is the path it should have in the zip
+/// (e.g. `.dependencies/preview/pkg/0.1.0`).
+fn collect_dependencies(
+    root: &Path,
+    files: &NativeTemplate,
+) -> anyhow::Result<Vec<(PathBuf, PathBuf)>> {
+    let mut collected = HashSet::new();
+    let mut result = Vec::new();
 
-    fn prepare_dependencies<Files: TemplateFiles>(
-        root: &Path,
-        dir: &Path,
-        files: &mut Files,
-        imported_dependencies: &mut HashSet<PackageSpec>,
-    ) -> anyhow::Result<()> {
-        if dir.file_name().and_then(OsStr::to_str) == Some(".dependencies") {
-            return Ok(());
+    scan_imports_in_dir(root, root, files, &mut collected, &mut result)?;
+
+    Ok(result)
+}
+
+fn scan_imports_in_dir(
+    root: &Path,
+    dir: &Path,
+    files: &NativeTemplate,
+    collected: &mut HashSet<PackageSpec>,
+    result: &mut Vec<(PathBuf, PathBuf)>,
+) -> anyhow::Result<()> {
+    if dir.file_name().and_then(OsStr::to_str) == Some(".dependencies") {
+        return Ok(());
+    }
+    for entry in read_dir(dir).context("Failed to read directory")? {
+        let entry = entry?;
+        let Ok(meta) = entry.metadata() else {
+            continue;
+        };
+        let path = dir.join(entry.file_name());
+        if meta.is_dir() {
+            scan_imports_in_dir(root, &path, files, collected, result)?;
         }
-        for entry in read_dir(dir).context("Failed to read directory")? {
-            let entry = entry?;
-            let Ok(meta) = entry.metadata() else {
-                continue;
-            };
-            let path = dir.join(entry.file_name());
-            if meta.is_dir() {
-                prepare_dependencies(root, &path, files, imported_dependencies)?;
-            }
-            if path.extension().and_then(|ext| ext.to_str()) == Some("typ") {
-                let fid = FileId::new(
+        if path.extension().and_then(|ext| ext.to_str()) == Some("typ") {
+            let fid =
+                FileId::new(
                     None,
                     VirtualPath::new(path.strip_prefix(root).context(
-                        "Prefix striping failed even though `path` is built from `root`",
+                        "Prefix stripping failed even though `path` is built from `root`",
                     )?),
                 );
-                let source = files.source(fid).context("Can't read source file")?;
-                let imports = source
-                    .root()
-                    .children()
-                    .filter_map(|ch| ch.cast::<ModuleImport>());
-                for import in imports {
-                    let ast::Expr::Str(source_str) = import.source() else {
-                        continue;
-                    };
+            let source = files.source(fid).context("Can't read source file")?;
+            let imports = source
+                .root()
+                .children()
+                .filter_map(|ch| ch.cast::<ModuleImport>());
+            for import in imports {
+                let ast::Expr::Str(source_str) = import.source() else {
+                    continue;
+                };
 
-                    if let Ok(import_spec) = PackageSpec::from_str(source_str.get().as_str()) {
-                        let package_file_id =
-                            FileId::new(Some(import_spec.clone()), VirtualPath::new("/typst.toml"));
-                        // Request the package manifest file. This will be cached in case we already prepared the dependency.
-                        // Otherwise the package will be copied from the local machine's Typst cache or downloaded from the registry.
-                        files.file(package_file_id).context(format!(
-                            "Failed to prepare package for file {package_file_id:?}"
-                        ))?;
-                        if imported_dependencies.insert(import_spec.clone()) {
-                            prepare_dependencies(
-                                root,
-                                &root
-                                    .join(".dependencies")
-                                    .join(import_spec.namespace.to_string())
-                                    .join(import_spec.name.to_string())
-                                    .join(import_spec.version.to_string()),
-                                files,
-                                imported_dependencies,
-                            )?;
-                        }
+                if let Ok(import_spec) = PackageSpec::from_str(source_str.get().as_str()) {
+                    if collected.insert(import_spec.clone()) {
+                        let package_dir = files
+                            .package_dir(&import_spec)
+                            .context(format!("Failed to resolve package {import_spec}"))?;
+
+                        let zip_prefix = PathBuf::from(format!(
+                            ".dependencies/{}/{}/{}",
+                            import_spec.namespace, import_spec.name, import_spec.version
+                        ));
+                        result.push((package_dir.clone(), zip_prefix));
+
+                        // Recursively scan the package directory for transitive dependencies
+                        scan_imports_in_package(
+                            &package_dir,
+                            &import_spec,
+                            files,
+                            collected,
+                            result,
+                        )?;
                     }
                 }
             }
         }
-
-        Ok(())
     }
 
-    prepare_dependencies(root, root, files, &mut imported_dependencies)
+    Ok(())
+}
+
+/// Scan a package directory for imports to find transitive dependencies.
+fn scan_imports_in_package(
+    package_dir: &Path,
+    package_spec: &PackageSpec,
+    files: &NativeTemplate,
+    collected: &mut HashSet<PackageSpec>,
+    result: &mut Vec<(PathBuf, PathBuf)>,
+) -> anyhow::Result<()> {
+    for entry in walkdir::WalkDir::new(package_dir)
+        .into_iter()
+        .filter_map(|e| e.ok())
+    {
+        let path = entry.path();
+        if path.extension().and_then(|ext| ext.to_str()) != Some("typ") {
+            continue;
+        }
+
+        let relative = path.strip_prefix(package_dir).unwrap();
+        let fid = FileId::new(Some(package_spec.clone()), VirtualPath::new(relative));
+        let source = files
+            .source(fid)
+            .context("Can't read source file in package")?;
+        let imports = source
+            .root()
+            .children()
+            .filter_map(|ch| ch.cast::<ModuleImport>());
+
+        for import in imports {
+            let ast::Expr::Str(source_str) = import.source() else {
+                continue;
+            };
+
+            if let Ok(import_spec) = PackageSpec::from_str(source_str.get().as_str()) {
+                if collected.insert(import_spec.clone()) {
+                    let dep_dir = files.package_dir(&import_spec).context(format!(
+                        "Failed to resolve transitive package {import_spec}"
+                    ))?;
+
+                    let zip_prefix = PathBuf::from(format!(
+                        ".dependencies/{}/{}/{}",
+                        import_spec.namespace, import_spec.name, import_spec.version
+                    ));
+                    result.push((dep_dir.clone(), zip_prefix));
+
+                    scan_imports_in_package(&dep_dir, &import_spec, files, collected, result)?;
+                }
+            }
+        }
+    }
+
+    Ok(())
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use oicana_files::{native::NativeTemplate, TemplateFiles};
-    use std::{
-        collections::{HashMap, HashSet},
-        fs::create_dir_all,
-        io::Write,
-        path::PathBuf,
-        sync::RwLock,
-    };
+    use std::collections::HashSet;
+    use std::fs::create_dir_all;
+    use std::io::Write;
     use tempfile::tempdir;
-    use typst::{foundations::Bytes, syntax::package::PackageSpec};
 
-    struct TestFiles {
-        native: NativeTemplate,
-        mocked_packages: HashMap<PackageSpec, String>,
-        packages: RwLock<HashSet<PackageSpec>>,
-        root: PathBuf,
-        fonts: Vec<typst::syntax::FileId>,
-    }
-
-    impl TemplateFiles for TestFiles {
-        fn source(
-            &self,
-            id: typst::syntax::FileId,
-        ) -> typst::diag::FileResult<typst::syntax::Source> {
-            self.native.source(id)
-        }
-
-        // We prevent network calls or checks in the local Typst cache here.
-        fn file(
-            &self,
-            id: typst::syntax::FileId,
-        ) -> typst::diag::FileResult<typst::foundations::Bytes> {
-            if let Some(spec) = id.package() {
-                self.packages.write().unwrap().insert(spec.clone());
-                let package = self.mocked_packages.get(spec).unwrap();
-                let subdir = format!(
-                    ".dependencies/{}/{}/{}",
-                    spec.namespace, spec.name, spec.version
-                );
-                create_dir_all(self.root.join(&subdir)).unwrap();
-                let mut tmp_file =
-                    File::create(self.root.join(&subdir).join("package.typ")).unwrap();
-                tmp_file.write_all(package.as_bytes()).unwrap();
-
-                return Ok(Bytes::from_string(package.clone()));
-            }
-
-            self.native.file(id)
-        }
-
-        fn font_files(&self) -> &Vec<typst::syntax::FileId> {
-            &self.fonts
-        }
+    fn create_mock_package(packages_dir: &Path, spec: &PackageSpec, content: &str) {
+        let package_dir =
+            packages_dir.join(format!("{}/{}/{}", spec.namespace, spec.name, spec.version));
+        create_dir_all(&package_dir).unwrap();
+        let mut f = File::create(package_dir.join("package.typ")).unwrap();
+        f.write_all(content.as_bytes()).unwrap();
+        // Also create a typst.toml so the package is valid
+        let mut m = File::create(package_dir.join("typst.toml")).unwrap();
+        m.write_all(
+            format!(
+                r#"[package]
+name = "{}"
+version = "{}"
+entrypoint = "package.typ"
+"#,
+                spec.name, spec.version
+            )
+            .as_bytes(),
+        )
+        .unwrap();
     }
 
     #[test]
-    fn no_dependency_dir_without_dependencies() {
+    fn no_dependencies_for_template_without_imports() {
         let tempdir = tempdir().unwrap();
         let temp_template = tempdir.path().join("template");
         create_dir_all(&temp_template).unwrap();
         let temp_packages = tempdir.path().join("cache");
+        create_dir_all(&temp_packages).unwrap();
         {
             let file_path = temp_template.join("test.typ");
             let mut tmp_file = File::create(file_path).unwrap();
@@ -234,16 +271,10 @@ mod tests {
                 .write_all("This Typst file has no imports!".as_bytes())
                 .unwrap();
         }
-        let mut files = TestFiles {
-            native: NativeTemplate::new(&temp_template, temp_packages),
-            mocked_packages: HashMap::new(),
-            packages: RwLock::new(HashSet::new()),
-            root: temp_template.to_path_buf(),
-            fonts: vec![],
-        };
+        let files = NativeTemplate::new(&temp_template, temp_packages);
 
-        update_dependencies(&temp_template, &mut files).unwrap();
-        assert!(files.packages.read().unwrap().is_empty());
+        let deps = collect_dependencies(&temp_template, &files).unwrap();
+        assert!(deps.is_empty());
         assert_eq!(
             temp_template.join(".dependencies").try_exists().ok(),
             Some(false)
@@ -261,33 +292,28 @@ mod tests {
             let mut tmp_file = File::create(file_path).unwrap();
             tmp_file
                 .write_all(
-                    "#import \"@preview/test:0.1.0\": *\nThis Typst file imports the test package."
+                    "#import \"@local/test:0.1.0\": *\nThis Typst file imports the test package."
                         .as_bytes(),
                 )
                 .unwrap();
         }
-        let root = temp_template.to_path_buf();
-        let spec = PackageSpec::from_str("@preview/test:0.1.0").unwrap();
-        let mut mocked_packages = HashMap::new();
-        mocked_packages.insert(spec.clone(), "Some package content".to_owned());
-        let mut files = TestFiles {
-            native: NativeTemplate::new(&temp_template, temp_packages),
-            mocked_packages,
-            packages: RwLock::new(HashSet::new()),
-            root: root.clone(),
-            fonts: vec![],
-        };
-        update_dependencies(&temp_template, &mut files).unwrap();
-        assert_eq!(files.packages.read().unwrap().len(), 1);
-        assert!(files.packages.read().unwrap().get(&spec).is_some());
+        let spec = PackageSpec::from_str("@local/test:0.1.0").unwrap();
+        create_mock_package(&temp_packages, &spec, "Some package content");
+
+        let files = NativeTemplate::new(&temp_template, temp_packages);
+        let deps = collect_dependencies(&temp_template, &files).unwrap();
+
+        assert_eq!(deps.len(), 1);
+        assert_eq!(deps[0].1, PathBuf::from(".dependencies/local/test/0.1.0"));
+        // No .dependencies created on disk
         assert_eq!(
             temp_template.join(".dependencies").try_exists().ok(),
-            Some(true)
+            Some(false)
         );
     }
 
     #[test]
-    fn resolves_imports_in_dependencies() {
+    fn resolves_transitive_dependencies() {
         let tempdir = tempdir().unwrap();
         let temp_template = tempdir.path().join("template");
         create_dir_all(&temp_template).unwrap();
@@ -297,34 +323,31 @@ mod tests {
             let mut tmp_file = File::create(file_path).unwrap();
             tmp_file
                 .write_all(
-                    "#import \"@preview/test:0.1.0\": *\nThis Typst file imports the test package."
+                    "#import \"@local/test:0.1.0\": *\nThis Typst file imports the test package."
                         .as_bytes(),
                 )
                 .unwrap();
         }
-        let root = temp_template.to_path_buf();
-        let spec = PackageSpec::from_str("@preview/test:0.1.0").unwrap();
-        let spec2 = PackageSpec::from_str("@preview/test2:0.1.0").unwrap();
-        let mut mocked_packages = HashMap::new();
-        mocked_packages.insert(
-            spec.clone(),
-            "#import \"@preview/test2:0.1.0\": *\nSome package content with import".to_owned(),
+        let spec = PackageSpec::from_str("@local/test:0.1.0").unwrap();
+        let spec2 = PackageSpec::from_str("@local/test2:0.1.0").unwrap();
+        create_mock_package(
+            &temp_packages,
+            &spec,
+            "#import \"@local/test2:0.1.0\": *\nSome package content with import",
         );
-        mocked_packages.insert(spec2.clone(), "Some other package content".to_owned());
-        let mut files = TestFiles {
-            native: NativeTemplate::new(&temp_template, temp_packages),
-            mocked_packages,
-            packages: RwLock::new(HashSet::new()),
-            root: root.clone(),
-            fonts: vec![],
-        };
-        update_dependencies(&temp_template, &mut files).unwrap();
-        assert_eq!(files.packages.read().unwrap().len(), 2);
-        assert!(files.packages.read().unwrap().get(&spec).is_some());
-        assert!(files.packages.read().unwrap().get(&spec2).is_some());
+        create_mock_package(&temp_packages, &spec2, "Some other package content");
+
+        let files = NativeTemplate::new(&temp_template, temp_packages);
+        let deps = collect_dependencies(&temp_template, &files).unwrap();
+
+        assert_eq!(deps.len(), 2);
+        let zip_prefixes: HashSet<_> = deps.iter().map(|(_, p)| p.clone()).collect();
+        assert!(zip_prefixes.contains(&PathBuf::from(".dependencies/local/test/0.1.0")));
+        assert!(zip_prefixes.contains(&PathBuf::from(".dependencies/local/test2/0.1.0")));
+        // No .dependencies created on disk
         assert_eq!(
             temp_template.join(".dependencies").try_exists().ok(),
-            Some(true)
+            Some(false)
         );
     }
 }

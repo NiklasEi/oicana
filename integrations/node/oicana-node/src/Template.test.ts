@@ -97,7 +97,7 @@ describe('e2e test template', () => {
 
     expect(() => {
       template.compile(new Map(), new Map(), Png(1));
-    }).toThrow(/dictionary does not contain key/);
+    }).toThrow(/No value for the required input/);
   });
 
   it('can control compilation mode when registering', async () => {
@@ -111,6 +111,6 @@ describe('e2e test template', () => {
         new Map(),
         CompilationMode.Production,
       );
-    }).toThrow(/dictionary does not contain key/);
+    }).toThrow(/No value for the required input/);
   });
 });

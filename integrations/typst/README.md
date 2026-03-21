@@ -40,10 +40,10 @@ development = { file = "company-logo.png" }
 
 This package will collect the two inputs and prepare them for use in your Typst code. Previewing the following `main.typ` file in a Typst editor, would show the contents of the `data.json` and `company-logo.png` files:
 ```typst
-#import "@preview/oicana:0.1.0": setup
+#import "@preview/oicana:0.1.1": setup
 
 #let read-project-file(path) = return read(path, encoding: none);
-#let (input, oicana-image, config) = setup(read-project-file);
+#let (input, oicana-image, oicana-config) = setup(read-project-file);
 
 this is the current value of the input with the key "data":
 #input.data
@@ -58,10 +58,17 @@ A Typst project that configures Oicana in its manifest file and uses the package
 
 ## Getting started
 
-The [getting started guide][getting-started] will show you how to
+The [getting started guide][getting-started] demonstrates how to
 1. Create an Oicana Template
-2. Compile a PDF based on the template from an ASP.NET application
-3. Add dynamic inputs to the template
+2. Define and use inputs for the template
+3. Compile a PDF based on the template from either a
+   * Browser application using [React](https://react.dev/)
+   * C# application using [ASP.NET](https://dotnet.microsoft.com/en-us/apps/aspnet)
+   * Java application using [Spring Boot](https://spring.io/projects/spring-boot)
+   * Node.js application using [NestJS](https://nestjs.com/)
+   * Rust application with [Axum](https://github.com/tokio-rs/axum)
+   * Python application with [FastAPI](https://fastapi.tiangolo.com/)
+   * PHP application with [Slim](https://www.slimframework.com/)
 
 If you would like to dive in head first, check out [the example templates][example-templates].
 

@@ -133,7 +133,7 @@ def test_compile_defaults_to_production_mode() -> None:
     template = Template(template_bytes)
 
     try:
-        with pytest.raises(Exception, match="dictionary does not contain key"):
+        with pytest.raises(Exception, match="No value for the required input"):
             template.compile(export={"format": "png", "pixelsPerPt": 1.0})
     finally:
         template.cleanup()
@@ -143,7 +143,7 @@ def test_can_control_compilation_mode_when_registering() -> None:
     """Test that compilation mode can be set during template registration."""
     template_bytes = template_file()
 
-    with pytest.raises(Exception, match="dictionary does not contain key"):
+    with pytest.raises(Exception, match="No value for the required input"):
         Template(template_bytes, mode=CompilationMode.PRODUCTION)
 
 
