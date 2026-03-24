@@ -38,5 +38,5 @@
 #let error = catch(() => setup(no-manifest));
 #assert.eq(
   error,
-  "panicked with: \"The `manifest_version` 0 is not supported by this package. Please check if there is an update available!\"",
+  "panicked with: \"The `manifest_version` 0 is not supported by this package version. Please check for updates at https://typst.app/universe/package/oicana\"",
 )

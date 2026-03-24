@@ -294,7 +294,7 @@ fn watch_tests(args: TestArgs) -> anyhow::Result<()> {
 
 /// Run tests for the specified template indices, printing results.
 fn run_tests_for_templates(
-    watched: &mut Vec<WatchedTemplate>,
+    watched: &mut [WatchedTemplate],
     indices: &[usize],
     snapshot_mode: SnapshotMode,
 ) {
@@ -402,7 +402,7 @@ struct WatchMapping {
 /// All paths are canonicalized so that lookups against the absolute paths
 /// reported by the file watcher succeed regardless of how the original
 /// paths were constructed (relative, symlinked, etc.).
-fn build_watch_mapping(watched: &mut Vec<WatchedTemplate>) -> WatchMapping {
+fn build_watch_mapping(watched: &mut [WatchedTemplate]) -> WatchMapping {
     let mut path_to_templates: HashMap<PathBuf, Vec<usize>> = HashMap::new();
     let mut all_paths: Vec<PathBuf> = Vec::new();
 
