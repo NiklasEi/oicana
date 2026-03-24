@@ -2,6 +2,7 @@
 ///
 /// Part of the file watcher implementation is adapted from the Typst CLI,
 /// used under its MIT License.
+use std::collections::{HashMap, HashSet};
 use std::iter;
 use std::path::{Path, PathBuf};
 use std::sync::mpsc::Receiver;
@@ -40,7 +41,7 @@ pub fn watch(args: CompileArgs) -> anyhow::Result<()> {
     let file_name = build_file_name(&args, &template);
     let out = out_dir.join(&file_name);
 
-    let mut watcher = FileWatcher::new(out.clone())?;
+    let mut watcher = FileWatcher::new(HashSet::from([out.clone()]))?;
 
     println!("watching {}", style(&name).bold());
     compile_and_export(&mut template, &args, &out, &name);
@@ -103,18 +104,21 @@ fn compile_and_export(
 }
 
 /// Watches file system activity.
-struct FileWatcher {
-    /// The output file. We ignore any events for it.
-    output: PathBuf,
+///
+/// Part of the file watcher implementation is adapted from the Typst CLI,
+/// used under its MIT License.
+pub(crate) struct FileWatcher {
+    /// Paths to ignore events for (e.g. output files, snapshot files).
+    ignored: HashSet<PathBuf>,
     /// The underlying watcher.
     watcher: RecommendedWatcher,
     /// Notify event receiver.
     rx: Receiver<notify::Result<Event>>,
     /// Keeps track of which paths are watched. The boolean is used for
     /// mark-and-sweep garbage collection.
-    watched: std::collections::HashMap<PathBuf, bool>,
+    watched: HashMap<PathBuf, bool>,
     /// Files that should be watched but don't exist yet.
-    missing: std::collections::HashSet<PathBuf>,
+    missing: HashSet<PathBuf>,
 }
 
 impl FileWatcher {
@@ -128,23 +132,31 @@ impl FileWatcher {
     const POLL_INTERVAL: Duration = Duration::from_millis(300);
 
     /// Create a new file watcher.
-    fn new(output: PathBuf) -> anyhow::Result<Self> {
+    pub(crate) fn new(ignored: HashSet<PathBuf>) -> anyhow::Result<Self> {
         let (tx, rx) = std::sync::mpsc::channel();
         let config = notify::Config::default().with_poll_interval(Self::POLL_INTERVAL);
         let watcher =
             RecommendedWatcher::new(tx, config).context("failed to setup file watching")?;
 
         Ok(Self {
-            output,
+            ignored,
             rx,
             watcher,
-            watched: std::collections::HashMap::new(),
-            missing: std::collections::HashSet::new(),
+            watched: HashMap::new(),
+            missing: HashSet::new(),
         })
     }
 
+    /// Update the set of paths to ignore.
+    pub(crate) fn set_ignored(&mut self, ignored: HashSet<PathBuf>) {
+        self.ignored = ignored;
+    }
+
     /// Update the watcher to watch exactly the listed files.
-    fn update(&mut self, paths: impl IntoIterator<Item = PathBuf>) -> anyhow::Result<()> {
+    pub(crate) fn update(
+        &mut self,
+        paths: impl IntoIterator<Item = PathBuf>,
+    ) -> anyhow::Result<()> {
         // Mark all as unseen.
         for seen in self.watched.values_mut() {
             *seen = false;
@@ -179,7 +191,10 @@ impl FileWatcher {
     }
 
     /// Wait until there is a relevant change to a watched path.
-    fn wait(&mut self) -> anyhow::Result<()> {
+    ///
+    /// Returns the set of changed file paths, or an empty set if only
+    /// previously missing files appeared.
+    pub(crate) fn wait(&mut self) -> anyhow::Result<HashSet<PathBuf>> {
         loop {
             let first = self.rx.recv_timeout(if self.missing.is_empty() {
                 Duration::MAX
@@ -187,7 +202,7 @@ impl FileWatcher {
                 Self::POLL_INTERVAL
             });
 
-            let mut relevant = false;
+            let mut changed = HashSet::new();
             let batch_start = Instant::now();
             for event in first
                 .into_iter()
@@ -217,27 +232,28 @@ impl FileWatcher {
                     }
                 }
 
-                // Don't recompile because the output file changed.
-                if event
-                    .paths
-                    .iter()
-                    .all(|path| is_same_file(path, &self.output).unwrap_or(false))
-                {
-                    continue;
+                for path in &event.paths {
+                    let canonical = path.canonicalize().unwrap_or_else(|_| path.clone());
+                    let is_ignored = self.ignored.contains(&canonical)
+                        || self
+                            .ignored
+                            .iter()
+                            .any(|ignored| is_same_file(path, ignored).unwrap_or(false));
+                    if !is_ignored {
+                        changed.insert(path.clone());
+                    }
                 }
-
-                relevant = true;
             }
 
-            if relevant || self.missing.iter().any(|path| path.exists()) {
-                return Ok(());
+            if !changed.is_empty() || self.missing.iter().any(|path| path.exists()) {
+                return Ok(changed);
             }
         }
     }
 }
 
 /// Whether a kind of watch event is relevant for compilation.
-fn is_relevant_event_kind(kind: &notify::EventKind) -> bool {
+pub(crate) fn is_relevant_event_kind(kind: &notify::EventKind) -> bool {
     match kind {
         notify::EventKind::Any => true,
         notify::EventKind::Access(_) => false,
