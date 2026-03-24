@@ -3199,7 +3199,7 @@ dependencies = [
 
 [[package]]
 name = "oicana"
-version = "0.1.0-alpha.9"
+version = "0.1.0-alpha.10"
 dependencies = [
  "oicana_files",
  "oicana_input",
@@ -3254,7 +3254,7 @@ dependencies = [
 
 [[package]]
 name = "oicana_cli"
-version = "0.1.0-alpha.10"
+version = "0.1.0-alpha.11"
 dependencies = [
  "anyhow",
  "chrono",
@@ -3305,7 +3305,7 @@ dependencies = [
 
 [[package]]
 name = "oicana_export"
-version = "0.1.0-alpha.9"
+version = "0.1.0-alpha.10"
 dependencies = [
  "oicana_files",
  "oicana_input",
@@ -3320,7 +3320,7 @@ dependencies = [
 
 [[package]]
 name = "oicana_files"
-version = "0.1.0-alpha.9"
+version = "0.1.0-alpha.10"
 dependencies = [
  "codespan-reporting",
  "dirs",
@@ -3341,7 +3341,7 @@ dependencies = [
 
 [[package]]
 name = "oicana_input"
-version = "0.1.0-alpha.9"
+version = "0.1.0-alpha.10"
 dependencies = [
  "log",
  "serde",
@@ -3409,7 +3409,7 @@ dependencies = [
 
 [[package]]
 name = "oicana_template"
-version = "0.1.0-alpha.9"
+version = "0.1.0-alpha.10"
 dependencies = [
  "chrono",
  "ignore",
@@ -3427,7 +3427,7 @@ dependencies = [
 
 [[package]]
 name = "oicana_testing"
-version = "0.1.0-alpha.9"
+version = "0.1.0-alpha.10"
 dependencies = [
  "image",
  "json_schema_ast",
@@ -3451,7 +3451,7 @@ dependencies = [
 
 [[package]]
 name = "oicana_world"
-version = "0.1.0-alpha.9"
+version = "0.1.0-alpha.10"
 dependencies = [
  "anyhow",
  "chrono",
@@ -4819,7 +4819,7 @@ dependencies = [
 
 [[package]]
 name = "test_compare"
-version = "0.1.0-alpha.9"
+version = "0.1.0-alpha.10"
 dependencies = [
  "anyhow",
  "clap",
