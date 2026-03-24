@@ -50,6 +50,19 @@ pub struct TestRunner {
 }
 
 impl TestRunner {
+    /// Reset file access tracking for the next compilation cycle.
+    ///
+    /// This clears the accessed flags on file slots but preserves cached data
+    /// and fingerprints, enabling efficient incremental recompilation.
+    pub fn reset(&mut self) {
+        self.instance.reset();
+    }
+
+    /// Return system paths of all files accessed during test compilations.
+    pub fn dependencies(&self) -> Vec<PathBuf> {
+        self.instance.dependencies()
+    }
+
     /// Run the test case
     pub fn run(&mut self, test: Test) -> Result<Vec<String>, TestExecutionError> {
         if let Some(fuzzed_input) = test.fuzzed_inputs {

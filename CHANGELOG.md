@@ -1,5 +1,10 @@
 # Changelog
 
+
+## CLI v0.1.0-alpha.11
+## Rust integration v0.1.0-alpha.10
+- watch mode for tests
+
 ## CLI v0.1.0-alpha.10
 ## Rust integration v0.1.0-alpha.9
 ## Typst integration v0.1.1
