@@ -1,7 +1,8 @@
 use anyhow::{bail, Context, Result};
 
 pub fn update() -> Result<()> {
-    let mut updater = axoupdater::AxoUpdater::new_for("oicana");
+    // receipts get installed by cargo-dist at ~/.config/oicana_cli/.
+    let mut updater = axoupdater::AxoUpdater::new_for("oicana_cli");
 
     updater.load_receipt().context(
         "No install receipt found. \
