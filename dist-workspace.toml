@@ -24,15 +24,17 @@ pr-run-mode = "plan"
 # Which phase dist should use to create the GitHub release
 github-release = "announce"
 # Whether to install an updater program
-install-updater = false
+install-updater = true
 # Path that installers should place binaries in
-install-path = "CARGO_HOME"
+install-path = ["$OICANA_HOME/bin", "~/.oicana/bin"]
 # The preferred Rust toolchain to use in CI (rustup toolchain syntax)
 rust-toolchain-version = "stable"
 # A prefix git tags must include for dist to care about them
 tag-namespace = "oicana_cli"
 # Build only the required packages, and individually
 precise-builds = true
+# Features to pass to cargo build
+features = ["self-update"]
 
 [dist.min-glibc-version]
 # Override glibc version for specific target triplets.
