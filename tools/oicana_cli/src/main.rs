@@ -6,6 +6,8 @@ mod compile;
 mod pack;
 mod target;
 mod test;
+#[cfg(feature = "self-update")]
+mod update;
 mod validate;
 mod watch;
 
@@ -36,6 +38,8 @@ fn main() -> Result<(), Error> {
         Oicana::Validate(validate_args) => validate(validate_args)?,
         Oicana::Pack(package_args) => pack(package_args)?,
         Oicana::Test(test_args) => test(test_args)?,
+        #[cfg(feature = "self-update")]
+        Oicana::Update => update::update()?,
     }
 
     Ok(())
@@ -65,6 +69,9 @@ enum Oicana {
     Pack(PackArgs),
     #[clap(about = "Test oicana templates", after_help = TEST_AFTER_HELP)]
     Test(TestArgs),
+    #[cfg(feature = "self-update")]
+    #[clap(about = "Update oicana to the latest release")]
+    Update,
 }
 
 /// Adds a list of useful links after the normal help text.

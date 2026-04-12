@@ -51,6 +51,8 @@ rand = { workspace = true }
 notify = { workspace = true }
 same-file = { workspace = true }
 
+axoupdater = { version = "0.10", default-features = false, features = ["github_releases", "blocking"], optional = true }
+
 # Explicitly depend on OpenSSL if applicable, so that we can add the
 # `openssl/vendored` feature to it if `vendor-openssl` is enabled.
 [target.'cfg(not(any(target_os = "windows", target_os = "macos", target_os = "ios", target_os = "watchos", target_os = "tvos")))'.dependencies]
@@ -59,6 +61,9 @@ openssl = { workspace = true, optional = true }
 [features]
 # Whether to vendor OpenSSL. Not applicable to Windows and macOS builds.
 vendor-openssl = ["openssl?/vendored"]
+# Enables the `oicana update` subcommand, which updates the binary in place
+# when it was installed via the official shell/powershell installer.
+self-update = ["dep:axoupdater"]
 
 [dev-dependencies]
 tempfile = { workspace = true }
