@@ -3559,7 +3559,7 @@ dependencies = [
 
 [[package]]
 name = "oicana_cli"
-version = "0.1.0-alpha.11"
+version = "0.1.0-alpha.12"
 dependencies = [
  "anyhow",
  "axoupdater",
