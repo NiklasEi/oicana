@@ -1,6 +1,9 @@
 # Changelog
 
 
+## CLI v0.1.0-alpha.14 (WIP in 12/13)
+- Update command when installing CLI via scripts
+
 ## CLI v0.1.0-alpha.11
 ## Rust integration v0.1.0-alpha.10
 - watch mode for tests
