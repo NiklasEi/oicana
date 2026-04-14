@@ -19,7 +19,7 @@ pub fn export_pdf(
     let standards = if let Some(cli_stds) = cli_standards {
         parse_pdf_standards(&cli_stds)?
     } else {
-        world.manifest().tool.oicana.export.pdf.standards.clone()
+        world.manifest().pdf_standards().to_vec()
     };
 
     let pdf_buffer = match export_merged_pdf(document, world, &standards) {

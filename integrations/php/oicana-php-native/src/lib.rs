@@ -284,12 +284,8 @@ pub fn export_document(document_id: String, export_format: String) -> PhpResult<
                 )));
             };
 
-            export_merged_pdf(
-                &document,
-                &*world,
-                &world.manifest().tool.oicana.export.pdf.standards,
-            )
-            .map_err(|e| PhpException::default(format!("Failed to encode PDF: {e:?}")))?
+            export_merged_pdf(&document, &*world, world.manifest().pdf_standards())
+                .map_err(|e| PhpException::default(format!("Failed to encode PDF: {e:?}")))?
         }
         ExportFormat::Svg => export_merged_svg(&document),
     };

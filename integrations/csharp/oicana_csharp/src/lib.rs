@@ -526,11 +526,7 @@ impl Buffer {
     ) -> Buffer {
         match export_options.target {
             CompilationTarget::Pdf => {
-                match export_merged_pdf(
-                    document,
-                    world,
-                    &world.manifest().tool.oicana.export.pdf.standards,
-                ) {
+                match export_merged_pdf(document, world, world.manifest().pdf_standards()) {
                     Err(error) => Buffer::from_error(format!(
                         "Error encoding compilation result as PDF: {error:?}"
                     )),

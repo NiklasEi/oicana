@@ -258,12 +258,8 @@ fn export_document(
                 )));
             };
 
-            export_merged_pdf(
-                &document,
-                &*world,
-                &world.manifest().tool.oicana.export.pdf.standards,
-            )
-            .map_err(|e| PyRuntimeError::new_err(format!("Failed to encode PDF: {e:?}")))?
+            export_merged_pdf(&document, &*world, world.manifest().pdf_standards())
+                .map_err(|e| PyRuntimeError::new_err(format!("Failed to encode PDF: {e:?}")))?
         }
         ExportFormat::Svg => export_merged_svg(&document),
     };
