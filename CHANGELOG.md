@@ -1,5 +1,9 @@
 # Changelog
 
+## Browser integration
+- Use non deprecated parameter for WASM init call
+
+
 
 ## CLI v0.1.0-alpha.14 (WIP in 12/13)
 - Update command when installing CLI via scripts
