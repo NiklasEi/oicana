@@ -2,7 +2,7 @@ using System.Text.Json.Nodes;
 using Oicana.Interop;
 using Oicana.Inputs;
 using CompilationOptions = Oicana.Config.CompilationOptions;
-using ExportOptions = Oicana.Config.ExportOptions;
+using ExportFormat = Oicana.Config.ExportFormat;
 
 namespace Oicana.Template;
 
@@ -16,10 +16,10 @@ public interface ITemplate
     /// </summary>
     /// <param name="jsonInputs">Json inputs for the compilation (key -> JsonNode).</param>
     /// <param name="blobInputs">Blob inputs for the compilation (key -> BlobInput).</param>
-    /// <param name="exportOptions">Options for the document export.</param>
+    /// <param name="exportFormat">Format configuration for the document export.</param>
     /// <param name="compilationOptions">Options for the template compilation.</param>
     /// <exception cref="OicanaException">If the template compilation fails.</exception>
-    Stream Compile(IDictionary<string, JsonNode> jsonInputs, IDictionary<string, BlobInput> blobInputs, ExportOptions exportOptions, CompilationOptions compilationOptions);
+    Stream Compile(IDictionary<string, JsonNode> jsonInputs, IDictionary<string, BlobInput> blobInputs, ExportFormat exportFormat, CompilationOptions compilationOptions);
 
     /// <summary>
     /// Enable or disable JSON schema validation for this template.

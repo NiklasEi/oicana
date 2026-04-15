@@ -24,10 +24,10 @@ internal static class OicanaFfi
     /// <param name="jsonInputs">Json inputs for the compilation (key -> JsonNode).</param>
     /// <param name="blobInputs">Blob inputs for the compilation (key -> BlobInput).</param>
     /// <param name="compilationOptions">Options for the template compilation.</param>
-    /// <param name="exportOptions">Options for the document export.</param>
+    /// <param name="exportFormat">Format configuration for the document export.</param>
     /// <exception cref="OicanaException">If the template compilation fails.</exception>
     /// <returns>Stream containing the compiled template exported as the given <see cref="ExportTarget"/>.</returns>
-    public static Stream ExportTemplateOnce(byte[] templateFile, IDictionary<string, JsonNode> jsonInputs, IDictionary<string, BlobInput> blobInputs, Oicana.Config.CompilationOptions compilationOptions, Oicana.Config.ExportOptions exportOptions)
+    public static Stream ExportTemplateOnce(byte[] templateFile, IDictionary<string, JsonNode> jsonInputs, IDictionary<string, BlobInput> blobInputs, Oicana.Config.CompilationOptions compilationOptions, Oicana.Config.ExportFormat exportFormat)
     {
         GCHandle fileHandle = GCHandle.Alloc(templateFile, GCHandleType.Pinned);
         IntPtr filePointer = fileHandle.AddrOfPinnedObject();
@@ -35,7 +35,7 @@ internal static class OicanaFfi
 
         PreparedInputs preparedInputs = PrepareInputs(jsonInputs, blobInputs);
 
-        var buffer = OicanaFfiInternal.unsafe_export_template_once(fileBuffer, preparedInputs.JsonInputs, preparedInputs.BlobInputs, ConvertCompileOptions(compilationOptions), ConvertExportOptions(exportOptions));
+        var buffer = OicanaFfiInternal.unsafe_export_template_once(fileBuffer, preparedInputs.JsonInputs, preparedInputs.BlobInputs, ConvertCompileOptions(compilationOptions), ConvertExportFormat(exportFormat));
 
         preparedInputs.FreeAll();
         fileHandle.Free();
@@ -98,12 +98,12 @@ internal static class OicanaFfi
     /// `RemoveDocument`.
     /// </summary>
     /// <param name="documentId">Id of document to export.</param>
-    /// <param name="exportOptions">Options for the document export.</param>
+    /// <param name="exportFormat">Format configuration for the document export.</param>
     /// <exception cref="OicanaException">If the template compilation fails.</exception>
     /// <returns>Stream containing the compiled template exported as the given <see cref="ExportTarget"/>.</returns>
-    public static Stream ExportDocument(string documentId, Oicana.Config.ExportOptions exportOptions)
+    public static Stream ExportDocument(string documentId, Oicana.Config.ExportFormat exportFormat)
     {
-        var buffer = OicanaFfiInternal.unsafe_export_document(documentId, ConvertExportOptions(exportOptions));
+        var buffer = OicanaFfiInternal.unsafe_export_document(documentId, ConvertExportFormat(exportFormat));
 
         return HandleBuffer(buffer);
     }
@@ -285,13 +285,13 @@ internal static class OicanaFfi
         };
     }
 
-    internal static Oicana.Interop.ExportOptions ConvertExportOptions(
-        Oicana.Config.ExportOptions exportOptions)
+    internal static Oicana.Interop.ExportOptions ConvertExportFormat(
+        Oicana.Config.ExportFormat exportFormat)
     {
         return new ExportOptions()
         {
-            target = ConvertCompileTarget(exportOptions.ExportTarget),
-            px_per_pt = exportOptions.PixelsPerPt ?? 1.0f
+            target = ConvertCompileTarget(exportFormat.ExportTarget),
+            px_per_pt = exportFormat.PixelsPerPt ?? 1.0f
         };
     }
 

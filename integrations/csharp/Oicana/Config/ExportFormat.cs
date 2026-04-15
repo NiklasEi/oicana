@@ -1,31 +1,31 @@
 namespace Oicana.Config;
 
 /// <summary>
-/// Options for exporting an Oicana template
+/// Export format configuration for an Oicana template compilation.
 /// </summary>
-public class ExportOptions
+public class ExportFormat
 {
     internal ExportTarget ExportTarget;
     internal float? PixelsPerPt;
 
     /// <summary>
-    /// Create new compilation options for compiling to PDF
+    /// Create a new export format configuration for compiling to PDF
     /// </summary>
-    public static ExportOptions Pdf()
+    public static ExportFormat Pdf()
     {
-        return new ExportOptions()
+        return new ExportFormat()
         {
             ExportTarget = ExportTarget.Pdf,
         };
     }
 
     /// <summary>
-    /// Create new compilation options for compiling to PNG
+    /// Create a new export format configuration for compiling to PNG
     /// </summary>
     /// <param name="pixelsPerPt">The number of pixels per pt. Higher numbers take longer, but create sharper images.</param>
-    public static ExportOptions Png(float pixelsPerPt = 1.0f)
+    public static ExportFormat Png(float pixelsPerPt = 1.0f)
     {
-        return new ExportOptions()
+        return new ExportFormat()
         {
             ExportTarget = ExportTarget.Png,
             PixelsPerPt = pixelsPerPt
@@ -33,11 +33,11 @@ public class ExportOptions
     }
 
     /// <summary>
-    /// Create new compilation options for compiling to SVG
+    /// Create a new export format configuration for compiling to SVG
     /// </summary>
-    public static ExportOptions Svg()
+    public static ExportFormat Svg()
     {
-        return new ExportOptions()
+        return new ExportFormat()
         {
             ExportTarget = ExportTarget.Svg,
         };
