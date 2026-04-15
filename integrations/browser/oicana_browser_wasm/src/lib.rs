@@ -343,7 +343,10 @@ impl From<CompilationMode> for oicana_input::CompilationConfig {
 #[serde(tag = "format")]
 enum ExportFormat {
     #[serde(alias = "png")]
-    Png { pixels_per_pt: f32 },
+    Png {
+        #[serde(rename = "pixelsPerPt")]
+        pixels_per_pt: f32,
+    },
     #[serde(alias = "pdf")]
     Pdf,
     #[serde(alias = "svg")]

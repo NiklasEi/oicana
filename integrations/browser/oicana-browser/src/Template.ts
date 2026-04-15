@@ -92,25 +92,25 @@ export class Template implements Disposable {
    * Compile the template with the given inputs
    * @param jsonInputs
    * @param blobInputs
-   * @param exportOptions
+   * @param exportFormat
    */
   public compile(
     jsonInputs: Map<string, string>,
     blobInputs: Map<string, BlobWithMetadata>,
-    exportOptions: ExportFormat,
+    exportFormat: ExportFormat,
   ): Uint8Array<ArrayBuffer>;
 
   /**
    * Compile the template with the given inputs
    * @param jsonInputs
    * @param blobInputs
-   * @param exportOptions
+   * @param exportFormat
    * @param compilationOptions
    */
   public compile(
     jsonInputs: Map<string, string>,
     blobInputs: Map<string, BlobWithMetadata>,
-    exportOptions: ExportFormat,
+    exportFormat: ExportFormat,
     compilationOptions: CompilationMode,
   ): Uint8Array<ArrayBuffer>;
 
@@ -118,13 +118,13 @@ export class Template implements Disposable {
    * Compile the template with the given inputs
    * @param jsonInputs - JSON inputs for the template (defaults to empty map)
    * @param blobInputs - Blob inputs for the template (defaults to empty map)
-   * @param exportOptions - Export format specification (defaults to PDF)
+   * @param exportFormat - Export format specification (defaults to PDF)
    * @param compilationOptions - Compilation mode (defaults to Production)
    */
   public compile(
     jsonInputs?: Map<string, string>,
     blobInputs?: Map<string, BlobWithMetadata>,
-    exportOptions?: ExportFormat,
+    exportFormat?: ExportFormat,
     compilationOptions?: CompilationMode,
   ): Uint8Array {
     for (const blob of blobInputs instanceof Map
@@ -143,7 +143,7 @@ export class Template implements Disposable {
     );
     const result = export_document(
       documentId,
-      this.convertExportFormat(exportOptions),
+      exportFormat ?? { format: 'pdf' },
     );
     remove_document(documentId);
 
@@ -196,23 +196,4 @@ export class Template implements Disposable {
   [Symbol.dispose](): void {
     this.dispose();
   }
-
-  private convertExportFormat(exportFormat?: ExportFormat): InnerExportFormat {
-    if (exportFormat === undefined) return { format: 'pdf' };
-    let exportFormatInner: InnerExportFormat;
-    if (exportFormat.format === 'png') {
-      exportFormatInner = {
-        format: 'png',
-        pixels_per_pt: exportFormat.pixelsPerPt,
-      };
-    } else {
-      exportFormatInner = { format: exportFormat.format };
-    }
-
-    return exportFormatInner;
-  }
 }
-
-type InnerExportFormat =
-  | { format: 'pdf' | 'svg' }
-  | { format: 'png'; pixels_per_pt: number };
