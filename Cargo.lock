@@ -3506,14 +3506,13 @@ dependencies = [
 name = "oicana"
 version = "0.1.0-alpha.10"
 dependencies = [
+ "oicana_export",
  "oicana_files",
  "oicana_input",
  "oicana_template",
  "oicana_world",
  "thiserror 2.0.18",
  "typst",
- "typst-pdf",
- "typst-render",
 ]
 
 [[package]]
@@ -3574,10 +3573,6 @@ dependencies = [
  "log",
  "notify",
  "oicana",
- "oicana_export",
- "oicana_files",
- "oicana_input",
- "oicana_template",
  "oicana_testing",
  "openssl",
  "rand 0.8.5",
@@ -3587,8 +3582,6 @@ dependencies = [
  "tempfile",
  "thiserror 2.0.18",
  "typst",
- "typst-render",
- "typst-svg",
  "walkdir",
 ]
 

@@ -12,17 +12,24 @@ repository = { workspace = true }
 license-file = { workspace = true }
 
 [features]
-native = ["oicana_files/native"]
+default = ["pdf", "packed"]
+
+packed    = ["oicana_files/packed"]
+native    = ["oicana_files/native"]
+preloaded = ["oicana_files/preloaded"]
+
+pdf = ["dep:oicana_export", "oicana_export/pdf"]
+png = ["dep:oicana_export", "oicana_export/png"]
+svg = ["dep:oicana_export", "oicana_export/svg"]
 
 [dependencies]
-oicana_world = { workspace = true }
-oicana_files = { workspace = true }
-oicana_input = { workspace = true }
+oicana_world    = { workspace = true }
+oicana_files    = { workspace = true, default-features = false }
+oicana_input    = { workspace = true }
 oicana_template = { workspace = true }
+oicana_export   = { workspace = true, default-features = false, optional = true }
 
-typst-pdf = { workspace = true }
 typst = { workspace = true }
-typst-render = { workspace = true }
 
 thiserror = { workspace = true }
 

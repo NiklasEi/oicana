@@ -2,8 +2,8 @@ use crate::target::TargetArgs;
 use clap::Args;
 use console::{style, Emoji};
 use log::info;
-use oicana_input::input_definition::InputDefinition;
-use oicana_template::validate_native_template;
+use oicana::input::input_definition::InputDefinition;
+use oicana::template::validate_native_template;
 use std::path::Path;
 
 static CHECKMARK: Emoji<'_, '_> = Emoji("✔️", "");
@@ -218,7 +218,7 @@ mod tests {
         }
 
         let inputs = vec![InputDefinition::Json(
-            oicana_input::input_definition::json::JsonInputDefinition {
+            oicana::input::input_definition::json::JsonInputDefinition {
                 key: "data".to_string(),
                 required: true,
                 default: default_value.map(|_| "default.json".to_string()),
@@ -302,7 +302,7 @@ mod tests {
         write!(schema_file, "{SCHEMA}").unwrap();
 
         let inputs = vec![InputDefinition::Json(
-            oicana_input::input_definition::json::JsonInputDefinition {
+            oicana::input::input_definition::json::JsonInputDefinition {
                 key: "data".to_string(),
                 required: true,
                 default: Some("nonexistent.json".to_string()),
@@ -328,7 +328,7 @@ mod tests {
         write!(f, "not valid json {{").unwrap();
 
         let inputs = vec![InputDefinition::Json(
-            oicana_input::input_definition::json::JsonInputDefinition {
+            oicana::input::input_definition::json::JsonInputDefinition {
                 key: "data".to_string(),
                 required: true,
                 default: Some("default.json".to_string()),
@@ -351,7 +351,7 @@ mod tests {
         write!(f, "not even json").unwrap();
 
         let inputs = vec![InputDefinition::Json(
-            oicana_input::input_definition::json::JsonInputDefinition {
+            oicana::input::input_definition::json::JsonInputDefinition {
                 key: "data".to_string(),
                 required: true,
                 default: Some("default.json".to_string()),
@@ -373,7 +373,7 @@ mod tests {
         write!(f, r#"{{"name": "Alice"}}"#).unwrap();
 
         let inputs = vec![InputDefinition::Json(
-            oicana_input::input_definition::json::JsonInputDefinition {
+            oicana::input::input_definition::json::JsonInputDefinition {
                 key: "data".to_string(),
                 required: true,
                 default: Some("default.json".to_string()),

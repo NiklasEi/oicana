@@ -14,8 +14,8 @@ readme = { workspace = true }
 
 [dependencies]
 oicana_input = { workspace = true }
-oicana_export = { workspace = true }
-oicana_files = { workspace = true }
+oicana_export = { workspace = true, features = ["png"] }
+oicana_files = { workspace = true, features = ["native"] }
 oicana_world = { workspace = true }
 oicana_template = { workspace = true }
 oicana = { workspace = true, features = ["native"] }

@@ -38,7 +38,7 @@ js-sys = { workspace = true }
 [dev-dependencies]
 typst-pdf = { workspace = true }
 anyhow = { workspace = true }
-oicana_files = { workspace = true, features = ["native"] }
+oicana_files = { workspace = true, features = ["native", "preloaded"] }
 
 [lints]
 workspace = true

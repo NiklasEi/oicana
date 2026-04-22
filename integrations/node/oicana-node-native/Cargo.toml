@@ -17,8 +17,8 @@ crate-type = ["cdylib"]
 napi        = "3.0.0"
 napi-derive = "3.0.0"
 
-oicana_export = { workspace = true }
-oicana_files  = { workspace = true }
+oicana_export = { workspace = true, features = ["pdf", "png", "svg"] }
+oicana_files  = { workspace = true, features = ["packed"] }
 oicana_input  = { workspace = true }
 oicana_world  = { workspace = true }
 

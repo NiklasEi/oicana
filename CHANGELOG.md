@@ -1,5 +1,9 @@
 # Changelog
 
+## Rust integration
+- re-export all required oicana crates and Typst types
+- more granular features in the integration and internal crates
+
 ## Browser integration
 - Use non deprecated parameter for WASM init call
 
