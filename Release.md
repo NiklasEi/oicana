@@ -1,6 +1,7 @@
 # Releasing Oicana
 
 1. Bump general crate version in `cargo.toml`
+  * Also bump the versions in the workspace dependencies
 2. Bump CLI version
 3. Integrations
   * bump browser

@@ -59,9 +59,6 @@ vendor-openssl = ["openssl?/vendored"]
 # when it was installed via the official shell/powershell installer.
 self-update = ["dep:axoupdater"]
 
-[build-dependencies]
-cargo_metadata = "0.23"
-
 [dev-dependencies]
 tempfile = { workspace = true }
 
