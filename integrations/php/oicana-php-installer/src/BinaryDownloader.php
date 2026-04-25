@@ -12,7 +12,7 @@ final class BinaryDownloader
     private const GITHUB_RELEASES_URL = 'https://github.com/oicana/oicana/releases/download';
 
     public function __construct(
-        private readonly string $version = '0.1.0-alpha.4'
+        private readonly string $version = '0.1.0-alpha.5'
     ) {
     }
 
