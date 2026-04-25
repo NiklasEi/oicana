@@ -45,11 +45,9 @@ impl<T: Display> Progress for PrintDownload<T> {
 pub fn display_download_progress(out: &mut TermOut, state: &DownloadState) -> io::Result<()> {
     let sum: usize = state.bytes_per_second.iter().sum();
     let len = state.bytes_per_second.len();
-    let speed = if len > 0 {
-        sum / len
-    } else {
-        state.content_len.unwrap_or(0)
-    };
+    let speed = sum
+        .checked_div(len)
+        .unwrap_or(state.content_len.unwrap_or(0));
 
     let total_downloaded = as_bytes_unit(state.total_downloaded);
     let speed_h = as_throughput_unit(speed);
@@ -61,11 +59,7 @@ pub fn display_download_progress(out: &mut TermOut, state: &DownloadState) -> io
             let remaining = content_len - state.total_downloaded;
 
             let download_size = as_bytes_unit(content_len);
-            let eta = Duration::from_secs(if speed == 0 {
-                0
-            } else {
-                (remaining / speed) as u64
-            });
+            let eta = Duration::from_secs(remaining.checked_div(speed).unwrap_or(0) as u64);
 
             writeln!(
                 out,
