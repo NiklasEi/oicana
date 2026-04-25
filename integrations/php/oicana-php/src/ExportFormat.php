@@ -55,11 +55,11 @@ final readonly class ExportFormat
      * Create PNG export format configuration.
      *
      * @param float $pixelsPerPt Resolution multiplier. Higher values produce larger images.
-     *                           - 1.0 = 72 DPI (standard)
+     *                           - 1.0 = 72 DPI (standard, default)
      *                           - 2.0 = 144 DPI (retina)
      *                           - 3.0 = 216 DPI (high quality print)
      */
-    public static function png(float $pixelsPerPt = 2.0): self
+    public static function png(float $pixelsPerPt = 1.0): self
     {
         return new self([
             'format' => 'png',

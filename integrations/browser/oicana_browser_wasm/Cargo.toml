@@ -18,7 +18,7 @@ crate-type = ["cdylib"]
 
 [dependencies]
 oicana_world = { workspace = true }
-oicana_files = { workspace = true }
+oicana_files = { workspace = true, features = ["packed"] }
 oicana_input = { workspace = true }
 oicana_export = { workspace = true, features = ["png", "pdf", "svg"]}
 

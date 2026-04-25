@@ -12,8 +12,10 @@ use typst::syntax::{FileId, Source};
 #[cfg(feature = "native")]
 pub mod native;
 /// Template files in a packed Oicana template.
+#[cfg(feature = "packed")]
 pub mod packed;
 /// Preloaded template files.
+#[cfg(feature = "preloaded")]
 pub mod preloaded;
 
 /// Access files in an Oicana template.

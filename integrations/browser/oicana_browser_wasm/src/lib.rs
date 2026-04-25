@@ -304,12 +304,8 @@ pub fn export_document(document_id: String, export_format: JsValue) -> Result<Ui
                 ));
             };
 
-            export_merged_pdf(
-                &document,
-                &*world,
-                &world.manifest().tool.oicana.export.pdf.standards,
-            )
-            .map(|pdf| bytes_to_js_array(&pdf))
+            export_merged_pdf(&document, &*world, world.manifest().pdf_standards())
+                .map(|pdf| bytes_to_js_array(&pdf))
         }
         ExportFormat::Svg => {
             let svg = export_merged_svg(&document);
@@ -347,7 +343,10 @@ impl From<CompilationMode> for oicana_input::CompilationConfig {
 #[serde(tag = "format")]
 enum ExportFormat {
     #[serde(alias = "png")]
-    Png { pixels_per_pt: f32 },
+    Png {
+        #[serde(rename = "pixelsPerPt")]
+        pixels_per_pt: f32,
+    },
     #[serde(alias = "pdf")]
     Pdf,
     #[serde(alias = "svg")]

@@ -18,6 +18,6 @@ const initialized: Set<string> = new Set();
  */
 export async function initialize(wasmPath: string): Promise<void> {
   if (initialized.has(wasmPath)) return;
-  await init(wasmPath);
+  await init({ module_or_path: wasmPath });
   initialized.add(wasmPath);
 }

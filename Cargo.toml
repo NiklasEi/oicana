@@ -50,9 +50,9 @@ categories = ["template-engine"]
 
 [workspace.dependencies]
 oicana_world = { version = "0.1.0-alpha.9", path = "crates/oicana_world" }
-oicana_files = { version = "0.1.0-alpha.9", path = "crates/oicana_files" }
+oicana_files = { version = "0.1.0-alpha.9", path = "crates/oicana_files", default-features = false }
 oicana_input = { version = "0.1.0-alpha.9", path = "crates/oicana_input" }
-oicana_export = { version = "0.1.0-alpha.9", path = "crates/oicana_export" }
+oicana_export = { version = "0.1.0-alpha.9", path = "crates/oicana_export", default-features = false }
 oicana_template = { version = "0.1.0-alpha.9", path = "crates/oicana_template" }
 oicana_testing = { version = "0.1.0-alpha.9", path = "crates/oicana_testing" }
 oicana = { version = "0.1.0-alpha.9", path = "integrations/rust/oicana" }

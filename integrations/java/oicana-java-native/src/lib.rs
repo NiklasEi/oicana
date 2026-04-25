@@ -295,12 +295,8 @@ pub extern "system" fn Java_com_oicana_OicanaNative_exportDocument<'local>(
                             ),
                         ));
                     };
-                    export_merged_pdf(
-                        &document,
-                        &*world,
-                        &world.manifest().tool.oicana.export.pdf.standards,
-                    )
-                    .map_err(|e| throw_oicana(env, &format!("Failed to encode PDF: {e:?}")))?
+                    export_merged_pdf(&document, &*world, world.manifest().pdf_standards())
+                        .map_err(|e| throw_oicana(env, &format!("Failed to encode PDF: {e:?}")))?
                 }
                 ExportFormat::Svg => export_merged_svg(&document),
             };

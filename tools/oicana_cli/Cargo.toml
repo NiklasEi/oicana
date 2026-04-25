@@ -20,16 +20,10 @@ path = "src/main.rs"
 doc = false
 
 [dependencies]
-oicana_files = { workspace = true, features = ["native"] }
-oicana_input = { workspace = true }
-oicana_template = { workspace = true }
 oicana_testing = { workspace = true }
-oicana_export = { workspace = true, features = ["pdf"] }
-oicana = { workspace = true, features = ["native"] }
+oicana = { workspace = true, features = ["native", "pdf", "png", "svg"] }
 
 typst = { workspace = true }
-typst-render = { workspace = true }
-typst-svg = { workspace = true }
 
 log = { workspace = true }
 env_logger = { workspace = true }

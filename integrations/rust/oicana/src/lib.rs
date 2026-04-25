@@ -4,28 +4,63 @@
 //!
 //! With this library, you can compile Oicana templates from Rust code.
 
+#[cfg(feature = "packed")]
 use std::io::{Read, Seek};
 
-use oicana_files::{
-    packed::{PackedTemplate, PackedTemplateError},
-    TemplateFiles,
-};
-use oicana_input::TemplateInputs;
-use oicana_template::manifest::TemplateManifest;
-use oicana_world::{
-    diagnostics::{DiagnosticColor, TemplateDiagnostics},
-    manifest::{OicanaWorldFiles, OicanaWorldManifestError},
-    world::{OicanaWorld, WorldCreationError},
-    CompiledDocument, InputValidationError, TemplateCompilationFailure,
-};
-use std::sync::atomic::{AtomicUsize, Ordering};
-use thiserror::Error;
-use typst::{
+use ::typst::{
     diag::{FileResult, SourceDiagnostic},
     ecow::EcoVec,
     foundations::Bytes,
     syntax::{FileId, Source},
 };
+#[cfg(feature = "packed")]
+use oicana_files::packed::{PackedTemplate, PackedTemplateError};
+use oicana_files::TemplateFiles;
+use oicana_input::TemplateInputs;
+use oicana_template::manifest::TemplateManifest;
+#[cfg(feature = "packed")]
+use oicana_world::manifest::OicanaWorldFiles;
+use oicana_world::{
+    diagnostics::{DiagnosticColor, TemplateDiagnostics},
+    manifest::OicanaWorldManifestError,
+    world::{OicanaWorld, WorldCreationError},
+    CompiledDocument, InputValidationError, TemplateCompilationFailure,
+};
+use std::sync::atomic::{AtomicUsize, Ordering};
+use thiserror::Error;
+
+/// File-source implementations for Oicana templates.
+pub mod files {
+    pub use oicana_files::TemplateFiles;
+
+    #[cfg(feature = "native")]
+    pub use oicana_files::native;
+    #[cfg(feature = "packed")]
+    pub use oicana_files::packed;
+    #[cfg(feature = "preloaded")]
+    pub use oicana_files::preloaded;
+}
+
+/// Template inputs and compilation configuration.
+pub use oicana_input as input;
+
+/// Oicana world, diagnostics, and compilation primitives.
+pub use oicana_world as world;
+
+/// Template manifest and configuration types.
+pub use oicana_template as template;
+
+/// Export helpers for compiled documents (PDF, PNG, SVG).
+#[cfg(any(feature = "pdf", feature = "png", feature = "svg"))]
+pub use oicana_export as export;
+
+/// Re-exports of Typst types that appear in this crate's public API.
+pub mod typst {
+    pub use ::typst::diag::{FileResult, SourceDiagnostic};
+    pub use ::typst::ecow::EcoVec;
+    pub use ::typst::foundations::Bytes;
+    pub use ::typst::syntax::{FileId, Source};
+}
 
 /// Global cache age configuration.
 ///
@@ -59,6 +94,7 @@ pub struct Template<F: TemplateFiles> {
     world: OicanaWorld<F>,
 }
 
+#[cfg(feature = "packed")]
 impl Template<PackedTemplate> {
     /// Initialize the given template
     pub fn init<R: Read + Seek>(template: R) -> Result<Self, TemplateInitializationError> {
@@ -130,6 +166,7 @@ pub enum TemplateInitializationError {
     WorldCreationError(#[from] WorldCreationError),
 
     /// The packed template could not be read
+    #[cfg(feature = "packed")]
     #[error("{0}")]
     PackedTemplateError(#[from] PackedTemplateError),
 

@@ -1,7 +1,7 @@
 use anyhow::bail;
 use clap::Args;
 use log::{debug, trace};
-use oicana_template::manifest::TemplateManifest;
+use oicana::template::manifest::TemplateManifest;
 use oicana_testing::{
     collect::{collect_tests, TemplateTests},
     SnapshotMode,
@@ -134,7 +134,7 @@ impl TemplateDir {
 mod tests {
     use std::{fs::File, path::PathBuf};
 
-    use oicana_template::{manifest::TemplateManifest, OicanaConfig};
+    use oicana::template::{manifest::TemplateManifest, OicanaConfig};
     use oicana_testing::SnapshotMode;
     use tempfile::tempdir;
     use typst::syntax::package::PackageInfo;
@@ -158,7 +158,7 @@ mod tests {
                     inputs: vec![],
                     validate_json_inputs_by_default: true,
                     tests: PathBuf::from("tests"),
-                    export: oicana_template::ExportConfig::default(),
+                    export: oicana::template::ExportConfig::default(),
                 },
             ),
         };

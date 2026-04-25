@@ -1,4 +1,4 @@
-use crate::OicanaConfig;
+use crate::{OicanaConfig, PdfStandard};
 use ignore::gitignore::{Gitignore, GitignoreBuilder};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
@@ -92,6 +92,11 @@ impl TemplateManifest {
     /// Parse toml to a manifest
     pub fn from_toml(toml_content: &str) -> Result<Self, toml::de::Error> {
         toml::de::from_str::<TemplateManifest>(toml_content)
+    }
+
+    /// The PDF standards configured for this template's export.
+    pub fn pdf_standards(&self) -> &[PdfStandard] {
+        &self.tool.oicana.export.pdf.standards
     }
 }
 

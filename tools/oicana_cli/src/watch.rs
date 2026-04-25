@@ -15,8 +15,8 @@ use same_file::is_same_file;
 
 use crate::compile::export::{export_image, export_pdf, ExportFormat, ImageExportFormat};
 use crate::compile::{build_file_name, build_inputs, CompileArgs, CHECKMARK};
+use oicana::files::native::NativeTemplate;
 use oicana::Template;
-use oicana_files::native::NativeTemplate;
 
 #[rustfmt::skip]
 pub const WATCH_AFTER_HELP: &str = color_print::cstr!("\

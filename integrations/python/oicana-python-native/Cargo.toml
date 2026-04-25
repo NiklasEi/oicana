@@ -25,10 +25,10 @@ serde = { workspace = true }
 
 # Oicana workspace crates
 oicana_world = { workspace = true }
-oicana_files = { workspace = true }
+oicana_files = { workspace = true, features = ["packed"] }
 oicana_input = { workspace = true }
 oicana_template = { workspace = true }
-oicana_export = { workspace = true }
+oicana_export = { workspace = true, features = ["pdf", "png", "svg"] }
 typst = { workspace = true }
 
 [build-dependencies]

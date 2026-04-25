@@ -3,7 +3,7 @@ using Oicana.Interop;
 using Oicana.Inputs;
 using CompilationMode = Oicana.Config.CompilationMode;
 using CompilationOptions = Oicana.Config.CompilationOptions;
-using ExportOptions = Oicana.Config.ExportOptions;
+using ExportFormat = Oicana.Config.ExportFormat;
 
 namespace Oicana.Template;
 
@@ -93,10 +93,10 @@ public class Template : ITemplate, IDisposable
     }
 
     /// <inheritdoc />
-    public Stream Compile(IDictionary<string, JsonNode> jsonInputs, IDictionary<string, BlobInput> blobInputs, ExportOptions exportOptions, CompilationOptions compilationOptions)
+    public Stream Compile(IDictionary<string, JsonNode> jsonInputs, IDictionary<string, BlobInput> blobInputs, ExportFormat exportFormat, CompilationOptions compilationOptions)
     {
         var documentId = OicanaFfi.CompileTemplate(_templateId, jsonInputs, blobInputs, compilationOptions);
-        var result = OicanaFfi.ExportDocument(documentId, exportOptions);
+        var result = OicanaFfi.ExportDocument(documentId, exportFormat);
         OicanaFfi.RemoveDocument(documentId);
         return result;
     }
@@ -106,19 +106,19 @@ public class Template : ITemplate, IDisposable
     /// </summary>
     /// <remarks>
     /// If you want to compile the same document multiple times with different input values,
-    /// create an instance of <see cref="Template"/> and use <see cref="Compile(IDictionary{string, JsonNode}, IDictionary{string, BlobInput}, ExportOptions, CompilationOptions)"/> instead.
+    /// create an instance of <see cref="Template"/> and use <see cref="Compile(IDictionary{string, JsonNode}, IDictionary{string, BlobInput}, ExportFormat, CompilationOptions)"/> instead.
     ///
     /// <see cref="CompileOnce"/> will use caching and thus be slower than compiling a prepared template.
     /// </remarks>
     /// <param name="templateFile">The packed Oicana template to compile.</param>
     /// <param name="jsonInputs">Json inputs for the compilation (key -> JsonNode).</param>
     /// <param name="blobInputs">Blob inputs for the compilation (key -> BlobInput).</param>
-    /// <param name="exportOptions">Options for the document export.</param>
+    /// <param name="exportFormat">Format configuration for the document export.</param>
     /// <param name="compilationOptions">Options for the template compilation.</param>
     /// <exception cref="OicanaException">If the template compilation fails.</exception>
-    public static Stream CompileOnce(byte[] templateFile, IDictionary<string, JsonNode> jsonInputs, IDictionary<string, BlobInput> blobInputs, ExportOptions exportOptions, CompilationOptions compilationOptions)
+    public static Stream CompileOnce(byte[] templateFile, IDictionary<string, JsonNode> jsonInputs, IDictionary<string, BlobInput> blobInputs, ExportFormat exportFormat, CompilationOptions compilationOptions)
     {
-        return OicanaFfi.ExportTemplateOnce(templateFile, jsonInputs, blobInputs, compilationOptions, exportOptions);
+        return OicanaFfi.ExportTemplateOnce(templateFile, jsonInputs, blobInputs, compilationOptions, exportFormat);
     }
 
     /// <inheritdoc />
