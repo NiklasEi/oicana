@@ -5,7 +5,7 @@
 3. Integrations
   * bump browser
     * wasm in integrations/browser/oicana_browser_wasm/Cargo.toml
-    * wrapper integrations/browser/oicana-browser/package.json
+    * wrapper und wasm dep in integrations/browser/oicana-browser/package.json
   * bump C# integration in integrations/csharp/Oicana/Oicana.csproj and integrations/csharp/oicana_csharp/Cargo.toml
   * bump Node.Js integration versions 
     * in integrations/node/oicana-node-native/Cargo.toml and integrations/node/oicana-node-native/package.json

@@ -3,7 +3,7 @@ name = "oicana_cli"
 description = "CLI for working with Oicana templates."
 keywords = { workspace = true }
 categories = { workspace = true }
-version = "0.1.0-alpha.14"
+version = "0.1.0-alpha.15"
 rust-version = { workspace = true }
 authors = { workspace = true }
 edition = { workspace = true }
@@ -58,6 +58,9 @@ vendor-openssl = ["openssl?/vendored"]
 # Enables the `oicana update` subcommand, which updates the binary in place
 # when it was installed via the official shell/powershell installer.
 self-update = ["dep:axoupdater"]
+
+[build-dependencies]
+cargo_metadata = "0.23"
 
 [dev-dependencies]
 tempfile = { workspace = true }

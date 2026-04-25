@@ -1,19 +1,21 @@
 # Changelog
 
-## Rust integration
+## Rust integration v0.1.0-alpha.11
 - re-export all required oicana crates and Typst types
 - more granular features in the integration and internal crates
 
-## Browser integration
+## CLI v0.1.0-alpha.15
+- Update to rust integration v0.1.0-alpha.11
+- Show version of the bundled Typst compiler in version output
+
+## Browser integration v0.1.0-alpha.8
 - Use non deprecated parameter for WASM init call
 
-## C# integration
+## C# integration v0.1.0-alpha.11
 - rename `ExportOptions` -> `ExportFormat` for consistency
 
-## PHP integration
+## PHP integration v0.1.0-alpha.5
 - Change pixels per pt default for png exports from 2 to 1 for consistency
-
-
 
 ## CLI v0.1.0-alpha.14 (WIP in 12/13)
 - Update command when installing CLI via scripts
