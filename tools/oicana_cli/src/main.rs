@@ -45,8 +45,15 @@ fn main() -> Result<(), Error> {
     Ok(())
 }
 
+const VERSION: &str = concat!(
+    env!("CARGO_PKG_VERSION"),
+    " (comes with typst ",
+    env!("TYPST_VERSION"),
+    ")"
+);
+
 #[derive(Parser, Debug)]
-#[clap(name = "oicana", version, author)]
+#[clap(name = "oicana", version = VERSION, author)]
 #[command(name = "oicana")]
 #[command(after_help = AFTER_HELP)]
 #[command(about = "PDF templating with Typst", long_about = LONG_ABOUT)]
