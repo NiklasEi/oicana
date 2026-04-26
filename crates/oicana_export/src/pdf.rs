@@ -24,6 +24,16 @@ fn to_typst_standard(standard: oicana_template::PdfStandard) -> typst_pdf::PdfSt
     }
 }
 
+/// Check whether the given list of Oicana PDF standards forms a combination
+/// Typst can produce (at most one version, at most one validator, and a
+/// version+validator pair must be compatible).
+pub fn validate_pdf_standards(standards: &[oicana_template::PdfStandard]) -> Result<(), String> {
+    let typst_standards: Vec<_> = standards.iter().map(|s| to_typst_standard(*s)).collect();
+    PdfStandards::new(&typst_standards)
+        .map(|_| ())
+        .map_err(|e| format!("Invalid combination of PDF standards: {}", e))
+}
+
 pub fn export_merged_pdf<Diagnostics: TemplateDiagnostics>(
     document: &PagedDocument,
     diagnostics: &Diagnostics,
@@ -177,5 +187,39 @@ mod tests {
         assert!(result
             .unwrap_err()
             .contains("Invalid combination of PDF standards"));
+    }
+
+    #[test]
+    fn validate_pdf_standards_accepts_single_validator() {
+        assert!(validate_pdf_standards(&[oicana_template::PdfStandard::A_3b]).is_ok());
+    }
+
+    #[test]
+    fn validate_pdf_standards_accepts_version_plus_validator() {
+        assert!(validate_pdf_standards(&[
+            oicana_template::PdfStandard::V_2_0,
+            oicana_template::PdfStandard::A_4,
+        ])
+        .is_ok());
+    }
+
+    #[test]
+    fn validate_pdf_standards_rejects_two_validators() {
+        let err = validate_pdf_standards(&[
+            oicana_template::PdfStandard::A_4,
+            oicana_template::PdfStandard::Ua_1,
+        ])
+        .unwrap_err();
+        assert!(err.contains("Invalid combination of PDF standards"));
+    }
+
+    #[test]
+    fn validate_pdf_standards_rejects_two_versions() {
+        let err = validate_pdf_standards(&[
+            oicana_template::PdfStandard::V_1_7,
+            oicana_template::PdfStandard::V_2_0,
+        ])
+        .unwrap_err();
+        assert!(err.contains("Invalid combination of PDF standards"));
     }
 }

@@ -2,6 +2,7 @@
 
 ## CLI
 - template now always exclude output and test directories
+- validate command will ensure the given pdf standards for export are compatible
 
 
 
