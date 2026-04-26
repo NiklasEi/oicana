@@ -2,6 +2,7 @@ use crate::target::TargetArgs;
 use clap::Args;
 use console::{style, Emoji};
 use log::info;
+use oicana::export::pdf::validate_pdf_standards;
 use oicana::input::input_definition::InputDefinition;
 use oicana::template::validate_native_template;
 use std::path::Path;
@@ -52,10 +53,16 @@ pub fn validate(args: ValidateArgs) -> anyhow::Result<()> {
                     continue;
                 }
 
-                let fallback_errors =
+                let mut errors =
                     validate_json_fallback_values(&template.path, &manifest.tool.oicana.inputs);
 
-                if fallback_errors.is_empty() {
+                if let Err(error) =
+                    validate_pdf_standards(&manifest.tool.oicana.export.pdf.standards)
+                {
+                    errors.push(error);
+                }
+
+                if errors.is_empty() {
                     info!("Template {:?}: all checks passed", template.path);
                     passed_count += 1;
                     println!(
@@ -64,7 +71,7 @@ pub fn validate(args: ValidateArgs) -> anyhow::Result<()> {
                     );
                 } else {
                     all_passed = false;
-                    for error in &fallback_errors {
+                    for error in &errors {
                         eprintln!("Template {:?}: {error}", template.path);
                     }
                 }

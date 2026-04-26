@@ -1,4 +1,4 @@
-namespace Oicana.Template;
+namespace Oicana;
 
 /// <summary>
 /// A service for using Oicana templates

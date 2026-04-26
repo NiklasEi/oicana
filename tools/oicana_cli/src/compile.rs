@@ -70,7 +70,7 @@ pub struct CompileArgs {
     pub(crate) name: String,
     #[arg(
         long,
-        help = "PDF standards to enforce (e.g., 'a-3b', 'a-4,ua-1'). Overrides manifest settings.",
+        help = "PDF standards to enforce (e.g., 'a-3b', '2.0,a-4'). Overrides manifest settings.",
         value_name = "STANDARDS",
         value_delimiter = ','
     )]

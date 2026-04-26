@@ -67,23 +67,22 @@ impl TemplateManifest {
 
     /// Build a gitignore-style matcher from the Typst `package.exclude` patterns.
     ///
-    /// If no exclude patterns are set, defaults to excluding the test directory
-    /// (configured via `tool.oicana.tests`) and the `output/` directory.
+    /// The test directory (configured via `tool.oicana.tests`) and the `output/`
+    /// directory are always excluded by default. User-supplied patterns extend
+    /// these defaults and can re-include the defaults with a leading `!`
+    /// (gitignore semantics: later patterns override earlier ones).
     pub fn build_exclude_matcher(&self) -> Gitignore {
         let mut builder = GitignoreBuilder::new("");
-        if self.package.exclude.is_empty() {
-            let test_dir = self.tool.oicana.tests.to_string_lossy().replace('\\', "/");
-            builder
-                .add_line(None, &format!("/{test_dir}/"))
-                .expect("test directory exclude pattern should be valid");
-            builder
-                .add_line(None, "/output/")
-                .expect("output directory exclude pattern should be valid");
-        } else {
-            for pattern in &self.package.exclude {
-                if let Err(error) = builder.add_line(None, pattern.as_str()) {
-                    log::warn!("Ignoring invalid exclude pattern '{pattern}': {error}");
-                }
+        let test_dir = self.tool.oicana.tests.to_string_lossy().replace('\\', "/");
+        builder
+            .add_line(None, &format!("/{test_dir}/"))
+            .expect("test directory exclude pattern should be valid");
+        builder
+            .add_line(None, "/output/")
+            .expect("output directory exclude pattern should be valid");
+        for pattern in &self.package.exclude {
+            if let Err(error) = builder.add_line(None, pattern.as_str()) {
+                log::warn!("Ignoring invalid exclude pattern '{pattern}': {error}");
             }
         }
         builder.build().expect("exclude patterns should be valid")
@@ -134,6 +133,14 @@ pub enum ManifestValidationError {
     InvalidTestsPath,
 }
 
+/// Whether a string is a valid Oicana template name.
+///
+/// Template names follow Typst identifier rules: must start with a letter or
+/// underscore, and may contain letters, digits, `_`, and `-`.
+pub fn is_valid_template_name(name: &str) -> bool {
+    is_ident(name)
+}
+
 /// Whether a string is a valid Typst identifier.
 fn is_ident(string: &str) -> bool {
     let mut chars = string.chars();
@@ -176,14 +183,9 @@ mod tests {
     }
 
     #[test]
-    fn excludes_package_exclude_patterns() {
+    fn package_exclude_patterns_extend_defaults() {
         let mut package_info = default_package_info();
-        package_info.exclude = vec![
-            "/tests/".into(),
-            "/output/".into(),
-            "docs/*.pdf".into(),
-            "/assets*/".into(),
-        ];
+        package_info.exclude = vec!["docs/*.pdf".into(), "/assets*/".into()];
         let manifest = TemplateManifest::new(
             package_info,
             OicanaConfig {
@@ -195,23 +197,65 @@ mod tests {
             },
         );
 
-        // Tests dir excluded via /tests/
+        // Default exclusions still apply alongside the user's patterns.
         assert!(is_excluded(&manifest, "tests", true));
         assert!(is_excluded(&manifest, "tests/file.txt", false));
         assert!(is_excluded(&manifest, "tests/sub_dir", true));
         assert!(!is_excluded(&manifest, "test", true));
         assert!(!is_excluded(&manifest, "sub_dir/tests", true));
 
-        // Output dir excluded via /output/
         assert!(is_excluded(&manifest, "output", true));
         assert!(is_excluded(&manifest, "output/result.pdf", false));
         assert!(!is_excluded(&manifest, "sub_dir/output", true));
 
-        // Custom patterns
+        // User patterns also apply.
         assert!(is_excluded(&manifest, "docs/manual.pdf", false));
         assert!(!is_excluded(&manifest, "docs/readme.md", false));
         assert!(is_excluded(&manifest, "assets_old", true));
         assert!(!is_excluded(&manifest, "src/assets_old", true));
+    }
+
+    #[test]
+    fn negation_re_includes_default_excluded_dirs() {
+        let mut package_info = default_package_info();
+        // `!` patterns negate earlier matches, so defaults can be opted back in.
+        package_info.exclude = vec!["!/tests/".into(), "!/output/".into()];
+        let manifest = TemplateManifest::new(
+            package_info,
+            OicanaConfig {
+                manifest_version: 1,
+                inputs: vec![],
+                validate_json_inputs_by_default: true,
+                tests: PathBuf::from("tests"),
+                export: ExportConfig::default(),
+            },
+        );
+
+        assert!(!is_excluded(&manifest, "tests", true));
+        assert!(!is_excluded(&manifest, "tests/file.txt", false));
+        assert!(!is_excluded(&manifest, "output", true));
+        assert!(!is_excluded(&manifest, "output/result.pdf", false));
+    }
+
+    #[test]
+    fn negation_re_includes_custom_tests_dir() {
+        let mut package_info = default_package_info();
+        package_info.exclude = vec!["!/custom_tests/".into()];
+        let manifest = TemplateManifest::new(
+            package_info,
+            OicanaConfig {
+                manifest_version: 1,
+                inputs: vec![],
+                validate_json_inputs_by_default: true,
+                tests: PathBuf::from("custom_tests"),
+                export: ExportConfig::default(),
+            },
+        );
+
+        assert!(!is_excluded(&manifest, "custom_tests", true));
+        assert!(!is_excluded(&manifest, "custom_tests/file.txt", false));
+        // The output default is untouched.
+        assert!(is_excluded(&manifest, "output", true));
     }
 
     #[test]

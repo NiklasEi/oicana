@@ -1,5 +1,16 @@
 # Changelog
 
+## CLI v0.1.0-alpha.16
+- template now always exclude output and test directories
+- validate command will ensure the given pdf standards for export are compatible
+- `new` command
+
+## Rust integration v0.1.0-alpha.12
+<changes limited to internal crates for the CLI>
+
+## C# integration v0.1.0-alpha.12
+- `Oicana.Template` namespace was removed; all content moved to the root namespace
+
 ## Rust integration v0.1.0-alpha.11
 - re-export all required oicana crates and Typst types
 - more granular features in the integration and internal crates

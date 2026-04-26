@@ -5,7 +5,7 @@ using CompilationMode = Oicana.Config.CompilationMode;
 using CompilationOptions = Oicana.Config.CompilationOptions;
 using ExportFormat = Oicana.Config.ExportFormat;
 
-namespace Oicana.Template;
+namespace Oicana;
 
 /// <summary>
 /// An Oicana template

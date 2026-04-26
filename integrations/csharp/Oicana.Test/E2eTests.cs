@@ -9,8 +9,6 @@ using ExportFormat = Oicana.Config.ExportFormat;
 
 namespace Oicana.Test;
 
-using Oicana.Template;
-
 public class E2ETests
 {
     private readonly byte[] _templateFile = File.ReadAllBytes("../../../../../../e2e-tests/template/oicana-e2e-test-x.y.z.zip");

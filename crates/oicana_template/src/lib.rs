@@ -247,7 +247,7 @@ mod tests {
                 manifest_version = 1
 
                 [tool.oicana.export.pdf]
-                standards = ["a-4", "ua-1"]
+                standards = ["2.0", "a-4"]
                 "#
             )
             .unwrap();
@@ -258,7 +258,7 @@ mod tests {
 
         assert_eq!(
             config.export.pdf.standards,
-            vec![PdfStandard::A_4, PdfStandard::Ua_1]
+            vec![PdfStandard::V_2_0, PdfStandard::A_4]
         );
     }
 
