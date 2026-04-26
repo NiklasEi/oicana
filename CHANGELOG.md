@@ -1,5 +1,10 @@
 # Changelog
 
+## CLI
+- template now always exclude output and test directories
+
+
+
 ## Rust integration v0.1.0-alpha.11
 - re-export all required oicana crates and Typst types
 - more granular features in the integration and internal crates
