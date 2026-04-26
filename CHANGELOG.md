@@ -4,6 +4,10 @@
 - template now always exclude output and test directories
 - validate command will ensure the given pdf standards for export are compatible
 
+## C# integration
+- `Oicana.Template` namespace was removed; all content moved to the root namespace
+
+
 
 
 ## Rust integration v0.1.0-alpha.11

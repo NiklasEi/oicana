@@ -3,7 +3,7 @@ using System.Diagnostics;
 using Microsoft.Extensions.Logging;
 using Oicana.Interop;
 
-namespace Oicana.Template;
+namespace Oicana;
 
 /// <summary>
 /// A service for using Oicana templates
