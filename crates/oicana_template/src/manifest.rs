@@ -133,6 +133,14 @@ pub enum ManifestValidationError {
     InvalidTestsPath,
 }
 
+/// Whether a string is a valid Oicana template name.
+///
+/// Template names follow Typst identifier rules: must start with a letter or
+/// underscore, and may contain letters, digits, `_`, and `-`.
+pub fn is_valid_template_name(name: &str) -> bool {
+    is_ident(name)
+}
+
 /// Whether a string is a valid Typst identifier.
 fn is_ident(string: &str) -> bool {
     let mut chars = string.chars();

@@ -3,6 +3,7 @@
 //! Among other things, this CLI can validate and package Oicana templates.
 
 mod compile;
+mod new;
 mod pack;
 mod target;
 mod test;
@@ -12,6 +13,7 @@ mod validate;
 mod watch;
 
 use crate::compile::compile;
+use crate::new::{new, NewArgs, NEW_AFTER_HELP};
 use crate::pack::{pack, PackArgs};
 use crate::validate::{validate, ValidateArgs};
 use crate::watch::WATCH_AFTER_HELP;
@@ -33,6 +35,7 @@ fn main() -> Result<(), Error> {
     trace!("{cli:?}");
 
     match cli.command {
+        Oicana::New(args) => new(args)?,
         Oicana::Compile(args) => compile(args)?,
         Oicana::Watch(args) => watch(args)?,
         Oicana::Validate(validate_args) => validate(validate_args)?,
@@ -66,6 +69,8 @@ struct Cli {
 
 #[derive(Parser, Debug)]
 enum Oicana {
+    #[clap(about = "Scaffold a new Oicana template", after_help = NEW_AFTER_HELP)]
+    New(NewArgs),
     #[clap(about = "Compile oicana templates", after_help = COMPILE_AFTER_HELP)]
     Compile(CompileArgs),
     #[clap(about = "Recompile oicana templates on changes", after_help = WATCH_AFTER_HELP)]
