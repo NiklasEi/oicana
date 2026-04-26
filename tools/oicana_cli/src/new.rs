@@ -21,7 +21,7 @@ pub struct NewArgs {
     version: String,
 }
 
-const MAIN_TYP: &str = r#"= Hello
+const MAIN_FILE: &str = r#"= Hello
 
 Edit `main.typ` to design your template.
 "#;
@@ -63,7 +63,7 @@ manifest_version = 1
     );
 
     fs::write(dir.join("typst.toml"), typst_toml).context("Failed to write typst.toml")?;
-    fs::write(dir.join("main.typ"), MAIN_TYP).context("Failed to write main.typ")?;
+    fs::write(dir.join("main.typ"), MAIN_FILE).context("Failed to write main.typ")?;
 
     Ok(())
 }
