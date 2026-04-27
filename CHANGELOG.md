@@ -1,5 +1,8 @@
 # Changelog
 
+## CLI v0.1.0-alpha.17
+- set document date on template scaffold
+
 ## CLI v0.1.0-alpha.16
 - template now always exclude output and test directories
 - validate command will ensure the given pdf standards for export are compatible

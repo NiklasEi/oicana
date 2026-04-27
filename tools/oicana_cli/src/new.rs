@@ -21,7 +21,9 @@ pub struct NewArgs {
     version: String,
 }
 
-const MAIN_FILE: &str = r#"= Hello
+const MAIN_FILE: &str = r#"#set document(date: datetime.today())
+
+= Hello
 
 Edit `main.typ` to design your template.
 "#;
