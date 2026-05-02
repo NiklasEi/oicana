@@ -98,6 +98,6 @@ const LONG_ABOUT: &str = r#"
 Oicana is a set of tools and libraries to write document templates
 using Typst and create PDFs from these templates out of code.
 Oicana templates can define inputs and receive values for
-these inputs through several libraries Oicana offers for different
+these inputs through libraries for different
 programming languages and platforms.
 "#;
