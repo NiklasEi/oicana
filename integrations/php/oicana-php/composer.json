@@ -3,7 +3,7 @@
     "description": "PDF templating with Typst",
     "type": "library",
     "license": "PolyForm-Noncommercial-1.0.0",
-    "version": "0.1.0-alpha.5",
+    "version": "0.1.0",
     "keywords": ["oicana", "typst", "pdf", "templating", "typesetting"],
     "homepage": "https://oicana.com",
     "authors": [
@@ -20,7 +20,7 @@
     ],
     "require": {
         "php": "^8.3",
-        "oicana/installer": "^0.1.0-alpha.3"
+        "oicana/installer": "^0.1.0"
     },
     "suggest": {
         "ext-oicana": "Required for PDF generation. Automatically downloaded by oicana-installer, but must be enabled through php.ini"

@@ -1,6 +1,6 @@
 {
   "name": "@oicana/node-native",
-  "version": "0.1.0-alpha.8",
+  "version": "0.1.0",
   "description": "Template project for writing node package with napi-rs",
   "main": "index.js",
   "repository": {
@@ -108,12 +108,12 @@
   },
   "packageManager": "yarn@4.10.3",
   "optionalDependencies": {
-    "@oicana/node-native-darwin-arm64": "0.1.0-alpha.1",
-    "@oicana/node-native-darwin-x64": "0.1.0-alpha.1",
-    "@oicana/node-native-linux-arm64-gnu": "0.1.0-alpha.1",
-    "@oicana/node-native-linux-arm64-musl": "0.1.0-alpha.1",
-    "@oicana/node-native-linux-x64-gnu": "0.1.0-alpha.1",
-    "@oicana/node-native-win32-arm64-msvc": "0.1.0-alpha.1",
-    "@oicana/node-native-win32-x64-msvc": "0.1.0-alpha.1"
+    "@oicana/node-native-darwin-arm64": "0.1.0",
+    "@oicana/node-native-darwin-x64": "0.1.0",
+    "@oicana/node-native-linux-arm64-gnu": "0.1.0",
+    "@oicana/node-native-linux-arm64-musl": "0.1.0",
+    "@oicana/node-native-linux-x64-gnu": "0.1.0",
+    "@oicana/node-native-win32-arm64-msvc": "0.1.0",
+    "@oicana/node-native-win32-x64-msvc": "0.1.0"
   }
 }
