@@ -4,9 +4,6 @@ pub fn update() -> Result<()> {
     // receipts get installed by cargo-dist at ~/.config/oicana_cli/.
     let mut updater = axoupdater::AxoUpdater::new_for("oicana_cli");
 
-    // Oicana is in alpha, so opt in to prereleases for now.
-    updater.configure_version_specifier(axoupdater::UpdateRequest::LatestMaybePrerelease);
-
     updater.load_receipt().context(
         "No install receipt found. \
          `oicana update` only works when oicana was installed via the official \

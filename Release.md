@@ -37,7 +37,7 @@
 
 ## CLI
 
-The CLI is distributed through cargo-dist. Push a tag in the form of `oicana_cli-v0.0.0-alpha.1` to trigger the workflow.
+The CLI is distributed through cargo-dist. Push a tag in the form of `oicana_cli-v0.0.0-rc.1` to trigger the workflow.
 It will build and package the CLI for all platforms currently set up.
 
 The release pipeline is configured to run with latest stable rust.
@@ -89,13 +89,13 @@ The wrapper package `@oicana/node` is currently published manually.
 
 ## PHP
 
-Push a tag `oicana_php-v0.0.0-alpha.1` or manually trigger .github/workflows/publish-integration-php.yml with a version input.
+Push a tag `oicana_php-v0.0.0-rc.1` or manually trigger .github/workflows/publish-integration-php.yml with a version input.
 
 The CD pipeline validates version consistency across all 4 version sources, builds native extensions for PHP 8.3/8.4/8.5 (NTS + ZTS) on Linux, macOS, and Windows, creates a GitHub release with binaries, and triggers a Composer registry rebuild.
 
 ## Java
 
-Push a tag `oicana_java-v0.0.0-alpha.1` or manually trigger .github/workflows/publish-integration-java.yml with a version input.
+Push a tag `oicana_java-v0.0.0-rc.1` or manually trigger .github/workflows/publish-integration-java.yml with a version input.
 
 The CD pipeline validates version consistency, builds JNI native libraries for 5 platforms, and publishes 6 artifacts to Maven Central via the Sonatype Central Portal:
 - `com.oicana:oicana` (API JAR)
