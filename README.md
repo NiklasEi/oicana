@@ -7,11 +7,11 @@ Oicana offers seamless PDF templating across multiple platforms. Define your tem
 
 ## What Oicana offers
 
-- *Multi-platform* - The same templates work with all Oicana integrations.
-- *Powerful Layouting* - Templates can use all of Typst's functionality, including its extensive package ecosystem.
-- *Performant* - Create a PDF in single digit milliseconds.
-- *AI and Version Control Ready* - Templates are text files. They can live next to your code and AI can assist in writing them.
-- *Escape Vendor Lock-in* - Reuse templates with other Typst based solutions. The Typst compiler is open source!
+- *Multi-platform* - the same template works across all integrations: browser, Node.js, C#, Java, Rust, Python, and PHP.
+- *Powerful layouting* - templates use the full power of Typst, including its package ecosystem.
+- *Performant* - PDFs can generate in single-digit milliseconds.
+- *AI and version control ready* - templates are text files. They live next to your code, and AI can help write them.
+- *Escape vendor lock-in* - templates are plain Typst projects. The Typst compiler is open source.
 
 ## Getting started
 
