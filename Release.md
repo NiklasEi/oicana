@@ -111,4 +111,4 @@ Run `cargo publish --workspace --dry-run` to try publishing all crates.
 
 This project uses ORT
 * `~/ort-path/bin/ort --info analyze -f JSON -i . -o ./ort`
-* `~/ort-path/bin/ort --info report -f PlainTextTemplate,StaticHtml,WebApp -i ./ort/analyzer-result.json -o ./ort`
+* `~/ort-path/bin/ort --info report -f PlainTextTemplate -i ./ort/analyzer-result.json -o ./ort`
