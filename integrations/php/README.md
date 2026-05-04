@@ -108,7 +108,7 @@ The packages are published via a custom Composer repository hosted at [oicana/co
 
 **Release process:**
 
-1. Tag a release: `git tag oicana_php-v0.1.0-alpha.1`
+1. Tag a release: `git tag oicana_php-v0.1.0-rc.1`
 2. Push: `git push --tags`
 3. Workflow builds binaries and creates GitHub Release
 4. Satis repository automatically updates within 24 hours (or can be triggered manually)

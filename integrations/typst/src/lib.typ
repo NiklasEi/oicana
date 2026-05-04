@@ -54,6 +54,7 @@
   let manifest = toml(read-project-file("typst.toml"))
   if (
     not manifest.keys().contains("tool")
+      or not type(manifest.tool) == dictionary
       or not manifest.tool.keys().contains("oicana")
   ) {
     panic(

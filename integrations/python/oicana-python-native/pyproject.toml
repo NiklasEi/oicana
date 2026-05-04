@@ -4,7 +4,7 @@ build-backend = "maturin"
 
 [project]
 name = "oicana-native"
-version = "0.1.0a5"
+version = "0.1.0"
 description = "Native Python bindings for Oicana (PDF templating with Typst)"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -14,7 +14,7 @@ authors = [
 ]
 keywords = ["oicana", "typst", "typesetting", "pdf"]
 classifiers = [
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.11",
