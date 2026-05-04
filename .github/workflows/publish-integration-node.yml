@@ -299,7 +299,7 @@ jobs:
           then
             echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" >> ~/.npmrc
             # even a dry-run here will still trigger a publish of the optional dependencies through the 'prepublishOnly' script!
-            npm publish --access public
+            npm publish --access public --tag next
           fi
         working-directory: ${{ env.PROJECT_DIR }}
         env:
@@ -356,7 +356,7 @@ jobs:
             npm publish --access public
           elif echo $version | grep "^[0-9]\+\.[0-9]\+\.[0-9]\+";
           then
-            npm publish --access public
+            npm publish --access public --tag next
           fi
         working-directory: integrations/node/oicana-node
         env:
