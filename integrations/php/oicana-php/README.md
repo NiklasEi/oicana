@@ -4,23 +4,12 @@ PDF templating with Typst for PHP.
 
 ## Installation
 
-First, add the Oicana Composer repository to your `composer.json`:
-
-```json
-{
-    "repositories": [
-        {
-            "type": "composer",
-            "url": "https://composer.oicana.com"
-        }
-    ]
-}
-```
-
-Then install via Composer:
+Install via Composer:
 
 ```bash
-composer require oicana/oicana
+composer config repositories.oicana composer https://composer.oicana.com
+composer config allow-plugins.oicana/installer true
+composer require oicana/oicana:^0.1.0
 ```
 
 The installer will automatically download the appropriate native extension for your platform. To enable the extension, run:
@@ -178,5 +167,11 @@ $source = $template->source('main.typ');  // Get Typst source code
 $file = $template->file('assets/logo.png');  // Get binary file
 ```
 
+## Licensing
 
+Oicana is source-available under [PolyForm Noncommercial License 1.0.0](./LICENSE.md). You can use it for free in any noncommercial context.
+For commercial use, please visit [the Oicana website][oicana-website] for pricing options.
+
+
+[oicana-website]: https://oicana.com
 [oicana-docs]: https://oicana.com/docs

@@ -115,11 +115,9 @@ Example commands to test templates:
 ## Licensing
 
 Oicana is source-available under [PolyForm Noncommercial License 1.0.0](./LICENSE.md). You can use it for free in any noncommercial context.
-
-If you would like to use Oicana in a commercial capacity, please contact us at `hello@oicana.com`.
+For commercial use, please visit [the Oicana website][oicana-website] for pricing options.
 
 The [Typst integration][oicana-typst] and several example projects in the Oicana GitHub organization are open source under their respective licenses.
-The example projects depend on Oicana integrations that are licensed under the before mentioned [PolyForm Noncommercial License 1.0.0](./LICENSE.md).
 
 
 See [NOTICE](NOTICE) for a report of licenses in this project.
@@ -135,3 +133,4 @@ See [NOTICE](NOTICE) for a report of licenses in this project.
 [oicana-typst]: https://typst.app/universe/package/oicana
 [docs]: https://oicana.com/docs
 [getting-started]: https://oicana.com/docs/getting-started/1-setup/
+[oicana-website]: https://oicana.com
