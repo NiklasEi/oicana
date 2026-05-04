@@ -10,3 +10,11 @@ This crate can compile Oicana templates in Rust projects.
 ## Open source example
 
 You can find an example Axum application using this crate on GitHub: https://github.com/oicana/oicana-example-rust-axum
+
+## Licensing
+
+Oicana is source-available under [PolyForm Noncommercial License 1.0.0](./LICENSE.md). You can use it for free in any noncommercial context.
+For commercial use, please visit [the Oicana website][oicana-website] for pricing options.
+
+
+[oicana-website]: https://oicana.com

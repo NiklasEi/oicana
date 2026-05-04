@@ -50,7 +50,11 @@ with Template(template_bytes) as template:
 
 For more information, visit [https://oicana.com/docs](https://oicana.com/docs)
 
-## License
 
-This project is licensed under the PolyForm Noncommercial License 1.0.0.
-See the [LICENSE.md](LICENSE.md) file for details.
+## Licensing
+
+Oicana is source-available under [PolyForm Noncommercial License 1.0.0](./LICENSE.md). You can use it for free in any noncommercial context.
+For commercial use, please visit [the Oicana website][oicana-website] for pricing options.
+
+
+[oicana-website]: https://oicana.com

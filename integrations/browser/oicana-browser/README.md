@@ -10,3 +10,11 @@ This package can live-preview Oicana templates and compile them with given input
 ## Open source example
 
 You can find an example React application using this package on GitHub: https://github.com/oicana/oicana-example-typescript-react
+
+## Licensing
+
+Oicana is source-available under [PolyForm Noncommercial License 1.0.0](./LICENSE.md). You can use it for free in any noncommercial context.
+For commercial use, please visit [the Oicana website][oicana-website] for pricing options.
+
+
+[oicana-website]: https://oicana.com

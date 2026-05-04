@@ -11,3 +11,7 @@ dependencies {
 tasks.test {
     useJUnitPlatform()
 }
+
+tasks.jar {
+    from("README.md")
+}
