@@ -23,14 +23,57 @@ impl BlobInput {
 
     /// Create a blob input for an image, setting the `image_format` metadata
     /// entry that the `oicana-image` helper uses to pick a decoder.
-    pub fn image<B>(key: impl Into<Str>, bytes: B, format: impl Into<Str>) -> Self
+    ///
+    /// For raw pixel data, build the metadata manually with [`Blob::with_metadata`]
+    /// and an `image_format` dictionary containing `encoding`, `width`, and `height`.
+    pub fn image<B>(key: impl Into<Str>, bytes: B, format: ImageFormat) -> Self
     where
         B: AsRef<[u8]> + Send + Sync + 'static,
     {
         BlobInput::new(
             key,
-            Blob::with_metadata(bytes, [("image_format", format.into())]),
+            Blob::with_metadata(bytes, [("image_format", Str::from(format))]),
         )
+    }
+}
+
+/// Encoded image formats supported by Typst's `image` function.
+///
+/// Used with [`BlobInput::image`] to set the `image_format` metadata entry
+/// that the `oicana-image` helper forwards to Typst's `image` function.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum ImageFormat {
+    /// PNG image.
+    Png,
+    /// JPEG image.
+    Jpg,
+    /// GIF image.
+    Gif,
+    /// SVG image.
+    Svg,
+    /// PDF image.
+    Pdf,
+    /// WebP image.
+    Webp,
+}
+
+impl ImageFormat {
+    /// The string representation Typst's `image` function expects.
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            ImageFormat::Png => "png",
+            ImageFormat::Jpg => "jpg",
+            ImageFormat::Gif => "gif",
+            ImageFormat::Svg => "svg",
+            ImageFormat::Pdf => "pdf",
+            ImageFormat::Webp => "webp",
+        }
+    }
+}
+
+impl From<ImageFormat> for Str {
+    fn from(format: ImageFormat) -> Self {
+        Str::from(format.as_str())
     }
 }
 
@@ -187,7 +230,7 @@ mod tests {
 
     #[test]
     fn blob_input_image_sets_format_metadata() {
-        let blob_input = BlobInput::image("logo", vec![9u8, 8, 7], "png");
+        let blob_input = BlobInput::image("logo", vec![9u8, 8, 7], ImageFormat::Png);
 
         assert_eq!(blob_input.key, Str::from("logo"));
         let blob = blob_input.to_value();
@@ -203,6 +246,36 @@ mod tests {
                 .expect("image_format missing"),
             Value::Str("png".into())
         );
+    }
+
+    #[test]
+    fn blob_with_metadata_supports_dict_image_format_for_raw_pixels() {
+        // Raw pixel data needs `image_format` to be a dict with encoding/width/height.
+        // 2x2 rgb8 image = 4 pixels * 3 channels = 12 bytes.
+        let pixels = vec![
+            255u8, 0, 0, 0, 255, 0, 0, 0, 255, 255, 255, 255,
+        ];
+
+        let mut format_dict = Dict::new();
+        format_dict.insert("encoding".into(), Value::Str("rgb8".into()));
+        format_dict.insert("width".into(), Value::Int(2));
+        format_dict.insert("height".into(), Value::Int(2));
+
+        let blob = Blob::with_metadata(pixels, [("image_format", Value::Dict(format_dict))]);
+
+        let Value::Dict(format) = blob
+            .metadata
+            .at("image_format".into(), None)
+            .expect("image_format missing")
+        else {
+            panic!("image_format should be a dict for raw pixel data");
+        };
+        assert_eq!(
+            format.at("encoding".into(), None).unwrap(),
+            Value::Str("rgb8".into())
+        );
+        assert_eq!(format.at("width".into(), None).unwrap(), Value::Int(2));
+        assert_eq!(format.at("height".into(), None).unwrap(), Value::Int(2));
     }
 
     #[test]
