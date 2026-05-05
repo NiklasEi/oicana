@@ -733,7 +733,9 @@ jobs:
         shell: bash
         run: uv pip install --system dist/*.whl
       - name: Install wrapper package
-        run: uv pip install --system --no-deps ".[test]"
+        run: |
+          uv pip install --system --no-deps .
+          uv pip install --system pytest
         working-directory: ./integrations/python/oicana-python
       - name: Run Python E2E tests
         run: pytest tests/test_e2e.py -v
