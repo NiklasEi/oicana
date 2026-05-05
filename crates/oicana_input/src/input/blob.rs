@@ -252,9 +252,7 @@ mod tests {
     fn blob_with_metadata_supports_dict_image_format_for_raw_pixels() {
         // Raw pixel data needs `image_format` to be a dict with encoding/width/height.
         // 2x2 rgb8 image = 4 pixels * 3 channels = 12 bytes.
-        let pixels = vec![
-            255u8, 0, 0, 0, 255, 0, 0, 0, 255, 255, 255, 255,
-        ];
+        let pixels = vec![255u8, 0, 0, 0, 255, 0, 0, 0, 255, 255, 255, 255];
 
         let mut format_dict = Dict::new();
         format_dict.insert("encoding".into(), Value::Str("rgb8".into()));
