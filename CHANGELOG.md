@@ -6,6 +6,8 @@
 ## Rust integration
 - re-export more Typst types
 
+## CLI
+- Compress images before writing them to disc (snapshots and comparison files)
 
 
 
