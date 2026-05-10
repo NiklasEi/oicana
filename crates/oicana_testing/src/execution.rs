@@ -8,11 +8,11 @@ use image::{GenericImageView, ImageError};
 use log::{debug, error};
 use oicana::{CompileError, Template, TemplateInitializationError};
 use oicana_export::png::{export_merged_png, EncodingError};
-use oxipng::PngError;
 use oicana_files::native::{package_data_dir, NativeTemplate};
 use oicana_input::{input::json::JsonInput, input_definition::InputDefinition, TemplateInputs};
 use oicana_template::manifest::TemplateManifest;
 use oicana_world::CompiledDocument;
+use oxipng::PngError;
 use rand::thread_rng;
 use thiserror::Error;
 
