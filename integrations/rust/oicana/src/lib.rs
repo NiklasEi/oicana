@@ -58,7 +58,7 @@ pub use oicana_export as export;
 pub mod typst {
     pub use ::typst::diag::{FileResult, SourceDiagnostic};
     pub use ::typst::ecow::EcoVec;
-    pub use ::typst::foundations::Bytes;
+    pub use ::typst::foundations::{Array, Bytes, Dict, IntoValue, Str, Value};
     pub use ::typst::syntax::{FileId, Source};
 }
 

@@ -1,5 +1,16 @@
 # Changelog
 
+
+# Beta
+
+## Rust integration
+- re-export more Typst types
+
+
+
+
+# Alpha
+
 ## CLI v0.1.0-alpha.17
 - set document date on template scaffold
 
