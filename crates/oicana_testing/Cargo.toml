@@ -29,6 +29,7 @@ thiserror = { workspace = true }
 walkdir = { workspace = true }
 log = { workspace = true }
 image = { workspace = true }
+oxipng = { workspace = true }
 rand = { workspace = true }
 json_schema_fuzz = { workspace = true }
 json_schema_ast = { workspace = true }

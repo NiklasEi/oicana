@@ -8,6 +8,7 @@ use image::{GenericImageView, ImageError};
 use log::{debug, error};
 use oicana::{CompileError, Template, TemplateInitializationError};
 use oicana_export::png::{export_merged_png, EncodingError};
+use oxipng::PngError;
 use oicana_files::native::{package_data_dir, NativeTemplate};
 use oicana_input::{input::json::JsonInput, input_definition::InputDefinition, TemplateInputs};
 use oicana_template::manifest::TemplateManifest;
@@ -160,7 +161,7 @@ impl TestRunner {
                     warnings.push(format!(
                         "Writing snapshot file at {path:?}, because it was missing"
                     ));
-                    fs::write(path, image)?;
+                    fs::write(path, optimize_png(&image)?)?;
                 }
                 SnapshotMode::Compare => {
                     return Err(TestExecutionError::SnapshotMissing(path.clone()))
@@ -181,7 +182,7 @@ impl TestRunner {
                             }
                         }
                         compare_path.set_file_name(new_name);
-                        fs::write(compare_path, image)?;
+                        fs::write(compare_path, optimize_png(&image)?)?;
                     } else {
                         error!("Snapshot file had no file stem!");
                     }
@@ -195,6 +196,12 @@ impl TestRunner {
 
         Ok(warnings)
     }
+}
+
+/// Losslessly recompress a PNG byte buffer at oxipng's strongest preset before
+/// it lands on disk as a snapshot.
+fn optimize_png(image: &[u8]) -> Result<Vec<u8>, PngError> {
+    oxipng::optimize_from_memory(image, &oxipng::Options::max_compression())
 }
 
 /// Compare the image file at `path` with the given data. If there is a pixel value with a higher difference
@@ -252,6 +259,9 @@ pub enum TestExecutionError {
     /// Failed to compare the snapshot
     #[error("Failed to compare the snapshot: {0}")]
     Comparison(#[from] ImageError),
+    /// Failed to optimize the snapshot PNG bytes before writing
+    #[error("Failed to optimize snapshot PNG: {0}")]
+    PngOptimization(#[from] PngError),
     /// The snapshot does not match the result. Rerun with `--update`/`-u` to update it.
     #[error("The snapshot '{0}' does not match the result. Rerun with --update/-u to update it.")]
     SnapshotMismatch(PathBuf),
