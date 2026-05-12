@@ -239,7 +239,10 @@ pub unsafe extern "C" fn unsafe_export_document(
         return Buffer::from_error("Document not found!".to_string());
     };
 
-    let template_id = template_id_from_document_id(document_id);
+    let template_id = match template_id_from_document_id(document_id) {
+        Ok(template_id) => template_id,
+        Err(error) => return Buffer::from_error(error),
+    };
     let Some(world) = WORLD_CACHE.get(template_id) else {
         return Buffer::from_error(format!(
             "World '{template_id}' for the given document '{document_id}' not found!"
@@ -400,8 +403,21 @@ fn new_document_id(template_id: &str) -> String {
     format!("{}:{}", Uuid::new_v4(), template_id)
 }
 
-fn template_id_from_document_id(document_id: &str) -> &str {
-    &document_id[37..]
+fn template_id_from_document_id(document_id: &str) -> Result<&str, String> {
+    if document_id.len() <= 37 {
+        return Err(format!(
+            "Invalid document ID format (length {}): {document_id}",
+            document_id.len()
+        ));
+    }
+    if let Some(colon_idx) = document_id.find(':') {
+        if colon_idx == 36 {
+            return Ok(&document_id[37..]);
+        }
+    }
+    Err(format!(
+        "Invalid document ID format (no colon at position 36): {document_id}"
+    ))
 }
 
 unsafe fn prepare_world(

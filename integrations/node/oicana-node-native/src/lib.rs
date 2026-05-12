@@ -148,8 +148,21 @@ fn new_document_id(template_id: &str) -> String {
   format!("{}:{}", Uuid::new_v4(), template_id)
 }
 
-fn template_id_from_document_id(document_id: &str) -> &str {
-  &document_id[37..]
+fn template_id_from_document_id(document_id: &str) -> Result<&str> {
+  if document_id.len() <= 37 {
+    return Err(Error::from_reason(format!(
+      "Invalid document ID format (length {}): {document_id}",
+      document_id.len()
+    )));
+  }
+  if let Some(colon_idx) = document_id.find(':') {
+    if colon_idx == 36 {
+      return Ok(&document_id[37..]);
+    }
+  }
+  Err(Error::from_reason(format!(
+    "Invalid document ID format (no colon at position 36): {document_id}"
+  )))
 }
 
 /// Load all input definitions for the given template.
@@ -216,7 +229,7 @@ pub fn export_document(document_id: String, export_format: String) -> Result<Buf
         .map(|pix_map| pix_map.into())
     }
     ExportFormat::Pdf => {
-      let template_id = template_id_from_document_id(&document_id);
+      let template_id = template_id_from_document_id(&document_id)?;
       let Some(world) = WORLD_CACHE.get(template_id) else {
         return Err(Error::from_reason(format!(
           "World '{template_id}' for the given document '{document_id}' not found!"
