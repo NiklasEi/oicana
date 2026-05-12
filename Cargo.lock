@@ -3561,18 +3561,13 @@ version = "0.1.0"
 dependencies = [
  "console_error_panic_hook",
  "console_log",
- "dashmap",
  "js-sys",
  "log",
- "oicana_export",
- "oicana_files",
- "oicana_input",
+ "oicana_ffi_core",
  "oicana_world",
- "once_cell",
  "serde",
  "serde-wasm-bindgen",
  "serde_json",
- "typst",
  "uuid",
  "wasm-bindgen",
 ]
@@ -3581,19 +3576,9 @@ dependencies = [
 name = "oicana-python-native"
 version = "0.1.0"
 dependencies = [
- "dashmap",
- "oicana_export",
- "oicana_files",
- "oicana_input",
- "oicana_template",
- "oicana_world",
- "once_cell",
+ "oicana_ffi_core",
  "pyo3",
  "pyo3-build-config 0.23.5",
- "serde",
- "serde_json",
- "typst",
- "uuid",
 ]
 
 [[package]]
@@ -3629,17 +3614,9 @@ dependencies = [
 name = "oicana_csharp"
 version = "0.1.0"
 dependencies = [
- "dashmap",
  "interoptopus",
  "interoptopus_backend_csharp",
- "oicana_export",
- "oicana_files",
- "oicana_input",
- "oicana_world",
- "once_cell",
- "serde_json",
- "typst",
- "uuid",
+ "oicana_ffi_core",
 ]
 
 [[package]]
@@ -3655,6 +3632,23 @@ dependencies = [
  "typst-pdf",
  "typst-render",
  "typst-svg",
+]
+
+[[package]]
+name = "oicana_ffi_core"
+version = "0.1.0"
+dependencies = [
+ "dashmap",
+ "oicana_export",
+ "oicana_files",
+ "oicana_input",
+ "oicana_world",
+ "once_cell",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.18",
+ "typst",
+ "uuid",
 ]
 
 [[package]]
@@ -3692,58 +3686,26 @@ dependencies = [
 name = "oicana_java_native"
 version = "0.1.0"
 dependencies = [
- "dashmap",
  "jni 0.22.4",
- "oicana_export",
- "oicana_files",
- "oicana_input",
- "oicana_world",
- "once_cell",
- "serde",
- "serde_json",
- "typst",
- "typst-pdf",
- "typst-render",
- "uuid",
+ "oicana_ffi_core",
 ]
 
 [[package]]
 name = "oicana_node_native"
 version = "0.1.0"
 dependencies = [
- "dashmap",
  "napi",
  "napi-build",
  "napi-derive",
- "oicana_export",
- "oicana_files",
- "oicana_input",
- "oicana_world",
- "once_cell",
- "serde",
- "serde_json",
- "typst",
- "typst-pdf",
- "typst-render",
- "uuid",
+ "oicana_ffi_core",
 ]
 
 [[package]]
 name = "oicana_php_native"
 version = "0.1.0"
 dependencies = [
- "dashmap",
  "ext-php-rs",
- "oicana_export",
- "oicana_files",
- "oicana_input",
- "oicana_template",
- "oicana_world",
- "once_cell",
- "serde",
- "serde_json",
- "typst",
- "uuid",
+ "oicana_ffi_core",
 ]
 
 [[package]]

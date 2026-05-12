@@ -7,41 +7,17 @@
 #[macro_use]
 extern crate napi_derive;
 
-use dashmap::DashMap;
+use std::collections::HashMap;
+
 use napi::bindgen_prelude::{Buffer, Result, Uint8Array};
 use napi::Error;
-use oicana_export::pdf::export_merged_pdf;
-use oicana_export::png::export_merged_png;
-use oicana_export::svg::export_merged_svg;
-use oicana_files::packed::PackedTemplate;
-use oicana_files::TemplateFiles;
-use oicana_input::input::blob::{Blob, BlobInput};
-use oicana_input::input::json::JsonInput;
-use oicana_input::{CompilationConfig, TemplateInputs};
-use oicana_world::diagnostics::DiagnosticColor;
-use oicana_world::manifest::OicanaWorldFiles;
-use oicana_world::world::OicanaWorld;
-use once_cell::sync::Lazy;
-use serde::Deserialize;
-use std::collections::HashMap;
-use std::io::Cursor;
-use std::str::FromStr;
-use std::sync::atomic::{AtomicUsize, Ordering};
-use typst::foundations::Bytes;
-use typst::layout::PagedDocument;
-use typst::syntax::{FileId, VirtualPath};
-use uuid::Uuid;
+
+use oicana_ffi_core as core;
 
 /// Error string when a requested template is not registered yet. Call `[register_template]` before
 /// trying to use the template through a different method.
 #[napi]
 pub const NOT_REGISTERED: &str = "Template is not registered";
-
-/// Global cache age configuration.
-///
-/// Default is 10, meaning cache entries used during the last 10 eviction cycles are kept.
-/// usize::MAX is used internally to represent disabled eviction.
-static CACHE_EVICTION_AGE: AtomicUsize = AtomicUsize::new(10);
 
 /// Configure automatic cache eviction after each compilation.
 ///
@@ -54,10 +30,7 @@ static CACHE_EVICTION_AGE: AtomicUsize = AtomicUsize::new(10);
 ///   - `n` - Keeps entries used within the last n evictions
 #[napi]
 pub fn configure_automatic_cache_eviction(max_age: Option<u32>) {
-  CACHE_EVICTION_AGE.store(
-    max_age.map(|v| v as usize).unwrap_or(usize::MAX),
-    Ordering::Relaxed,
-  );
+  core::configure_automatic_cache_eviction(max_age.map(|v| v as usize));
 }
 
 /// Manually evict the comemo cache with the given age threshold.
@@ -66,7 +39,7 @@ pub fn configure_automatic_cache_eviction(max_age: Option<u32>) {
 /// regardless of the configured default age.
 #[napi]
 pub fn evict_cache(max_age: u32) {
-  oicana_world::evict_cache(max_age as usize);
+  core::evict_cache(max_age as usize);
 }
 
 /// Register the given template. This will read the template files as a [`PackedTemplate`] and
@@ -80,33 +53,14 @@ pub fn register_template(
   blob_inputs: HashMap<String, BlobWithMetadata>,
   compilation_mode: CompilationMode,
 ) -> Result<String> {
-  let files = PackedTemplate::new(Cursor::new(files))
-    .map_err(|error| Error::from_reason(error.to_string()))?;
-  let manifest = files
-    .manifest()
-    .map_err(|error| Error::from_reason(error.to_string()))?;
-
-  let mut inputs = prepare_inputs(json_inputs, blob_inputs)?;
-  inputs.with_config(compilation_mode.into());
-  let mut zip_world = OicanaWorld::new(files, inputs, manifest)
-    .map_err(|error| Error::from_reason(error.to_string()))?;
-  zip_world.color = DiagnosticColor::None;
-
-  let document = zip_world
-    .compile()
-    .map_err(|error| Error::from_reason(error.to_string()))?;
-
-  let result_id = new_document_id(&template);
-
-  WORLD_CACHE.insert(template, zip_world);
-  DOCUMENT_CACHE.insert(result_id.clone(), document.document);
-
-  let cache_age = CACHE_EVICTION_AGE.load(Ordering::Relaxed);
-  if cache_age != usize::MAX {
-    oicana_world::evict_cache(cache_age);
-  }
-
-  Ok(result_id)
+  core::register_template(
+    &template,
+    &files,
+    json_inputs,
+    into_core_blobs(blob_inputs),
+    compilation_mode.into(),
+  )
+  .map_err(into_napi_err)
 }
 
 /// Compile the identified template with the given inputs.
@@ -120,49 +74,13 @@ pub fn compile_template(
   blob_inputs: HashMap<String, BlobWithMetadata>,
   compilation_mode: CompilationMode,
 ) -> Result<String> {
-  let Some(mut world) = WORLD_CACHE.get_mut(&template) else {
-    return Err(Error::from_reason("Template was not registered"));
-  };
-  let mut inputs = prepare_inputs(json_inputs, blob_inputs)?;
-  inputs.with_config(compilation_mode.into());
-  world
-    .update_inputs(inputs)
-    .map_err(|error| Error::from_reason(error.to_string()))?;
-
-  let document = world
-    .compile()
-    .map_err(|error| Error::from_reason(error.to_string()))?;
-
-  let result_id = new_document_id(&template);
-  DOCUMENT_CACHE.insert(result_id.clone(), document.document);
-
-  let cache_age = CACHE_EVICTION_AGE.load(Ordering::Relaxed);
-  if cache_age != usize::MAX {
-    oicana_world::evict_cache(cache_age);
-  }
-
-  Ok(result_id)
-}
-
-fn new_document_id(template_id: &str) -> String {
-  format!("{}:{}", Uuid::new_v4(), template_id)
-}
-
-fn template_id_from_document_id(document_id: &str) -> Result<&str> {
-  if document_id.len() <= 37 {
-    return Err(Error::from_reason(format!(
-      "Invalid document ID format (length {}): {document_id}",
-      document_id.len()
-    )));
-  }
-  if let Some(colon_idx) = document_id.find(':') {
-    if colon_idx == 36 {
-      return Ok(&document_id[37..]);
-    }
-  }
-  Err(Error::from_reason(format!(
-    "Invalid document ID format (no colon at position 36): {document_id}"
-  )))
+  core::compile_template(
+    &template,
+    json_inputs,
+    into_core_blobs(blob_inputs),
+    compilation_mode.into(),
+  )
+  .map_err(into_napi_err)
 }
 
 /// Load all input definitions for the given template.
@@ -171,12 +89,7 @@ fn template_id_from_document_id(document_id: &str) -> Result<&str> {
 /// identifier.
 #[napi]
 pub fn inputs(template: String) -> Result<String> {
-  let Some(world) = WORLD_CACHE.get_mut(&template) else {
-    return Err(Error::from_reason("Template was not registered"));
-  };
-  let oicana_config = &world.manifest().tool.oicana;
-
-  serde_json::ser::to_string(&oicana_config).map_err(|error| Error::from_reason(error.to_string()))
+  core::inputs(&template).map_err(into_napi_err)
 }
 
 /// Load the source of the given file in the template.
@@ -185,14 +98,7 @@ pub fn inputs(template: String) -> Result<String> {
 /// identifier.
 #[napi]
 pub fn get_source(template: String, file: String) -> Result<String> {
-  let Some(world) = WORLD_CACHE.get_mut(&template) else {
-    return Err(Error::from_reason("Template was not registered"));
-  };
-  world
-    .files
-    .source(FileId::new(None, VirtualPath::new(file)))
-    .map_err(|error| Error::from_reason(error.to_string()))
-    .map(|source| source.text().to_string())
+  core::get_source(&template, &file).map_err(into_napi_err)
 }
 
 /// Load the source of the given file in the template.
@@ -201,14 +107,9 @@ pub fn get_source(template: String, file: String) -> Result<String> {
 /// identifier.
 #[napi]
 pub fn get_file(template: String, file: String) -> Result<Buffer> {
-  let Some(world) = WORLD_CACHE.get_mut(&template) else {
-    return Err(Error::from_reason("Template was not registered"));
-  };
-  let bytes = world
-    .files
-    .file(FileId::new(None, VirtualPath::new(file)))
-    .map_err(|error| Error::from_reason(error.to_string()))?;
-  Ok(bytes.to_vec().into()) // This is currently copying, although we own bytes here.
+  core::get_file(&template, &file)
+    .map(Into::into)
+    .map_err(into_napi_err)
 }
 
 /// Export the given document
@@ -216,42 +117,16 @@ pub fn get_file(template: String, file: String) -> Result<Buffer> {
 /// Make sure to call `removeDocument` with the documentId afterwards, to free the memory.
 #[napi]
 pub fn export_document(document_id: String, export_format: String) -> Result<Buffer> {
-  let Some(document) = DOCUMENT_CACHE.get(&document_id) else {
-    return Err(Error::from_reason("Document not found!"));
-  };
-  let export_format =
-    serde_json::from_str(&export_format).map_err(|error| Error::from_reason(error.to_string()))?;
-  match export_format {
-    ExportFormat::Png { pixels_per_pt } => {
-      let pix_map_result = export_merged_png(&document, pixels_per_pt);
-      pix_map_result
-        .map_err(|error| Error::from_reason(format!("Failed to encode PNG: {error:?}")))
-        .map(|pix_map| pix_map.into())
-    }
-    ExportFormat::Pdf => {
-      let template_id = template_id_from_document_id(&document_id)?;
-      let Some(world) = WORLD_CACHE.get(template_id) else {
-        return Err(Error::from_reason(format!(
-          "World '{template_id}' for the given document '{document_id}' not found!"
-        )));
-      };
-
-      export_merged_pdf(&document, &*world, world.manifest().pdf_standards())
-        .map_err(|error| Error::from_reason(format!("Failed to encode PDF: {error:?}")))
-        .map(|pdf| pdf.into())
-    }
-    ExportFormat::Svg => {
-      let svg = export_merged_svg(&document);
-
-      Ok(svg.into())
-    }
-  }
+  let format = core::parse_export_format(&export_format).map_err(into_napi_err)?;
+  core::export_document(&document_id, format)
+    .map(Into::into)
+    .map_err(into_napi_err)
 }
 
 /// Remove the document from the cache.
 #[napi]
 pub fn remove_document(document_id: String) -> Result<()> {
-  DOCUMENT_CACHE.remove(&document_id);
+  core::remove_document(&document_id);
   Ok(())
 }
 
@@ -264,11 +139,7 @@ pub fn remove_document(document_id: String) -> Result<()> {
 /// identifier.
 #[napi]
 pub fn set_validate_inputs(template: String, validate: bool) -> Result<()> {
-  let Some(mut world) = WORLD_CACHE.get_mut(&template) else {
-    return Err(Error::from_reason(NOT_REGISTERED));
-  };
-  world.validate_inputs = validate;
-  Ok(())
+  core::set_validate_inputs(&template, validate).map_err(into_napi_err)
 }
 
 /// Remove the world from the cache.
@@ -276,62 +147,8 @@ pub fn set_validate_inputs(template: String, validate: bool) -> Result<()> {
 /// The template will have to be registered again before it can be compiled again.
 #[napi]
 pub fn remove_world(template_id: String) -> Result<()> {
-  WORLD_CACHE.remove(&template_id);
+  core::remove_world(&template_id);
   Ok(())
-}
-
-fn prepare_inputs(
-  json_inputs: HashMap<String, String>,
-  blob_inputs: HashMap<String, BlobWithMetadata>,
-) -> Result<TemplateInputs> {
-  let mut inputs = TemplateInputs::new();
-  add_json_inputs(&mut inputs, json_inputs);
-  add_blob_inputs(&mut inputs, blob_inputs)?;
-  Ok(inputs)
-}
-
-fn add_json_inputs(inputs: &mut TemplateInputs, mut json_inputs: HashMap<String, String>) {
-  json_inputs
-    .drain()
-    .map(|(key, value)| JsonInput::new(key, value))
-    .for_each(|input| {
-      inputs.with_input(input);
-    });
-}
-
-fn add_blob_inputs(
-  inputs: &mut TemplateInputs,
-  mut blob_inputs: HashMap<String, BlobWithMetadata>,
-) -> Result<()> {
-  for (key, value) in blob_inputs.drain() {
-    let mut blob = Blob::from(Bytes::new(value.bytes.to_vec()));
-    let json_value = serde_json::Value::from_str(&value.meta).map_err(|error| {
-      Error::from_reason(format!(
-        "Failed to parse metadata JSON for '{key}': {error:?}"
-      ))
-    })?;
-    blob.metadata = Deserialize::deserialize(json_value).map_err(|error| {
-      Error::from_reason(format!(
-        "Failed to deserialize metadata for '{key}': {error:?}"
-      ))
-    })?;
-    inputs.with_input(BlobInput::new(key, blob));
-  }
-  Ok(())
-}
-
-#[derive(Deserialize)]
-#[serde(tag = "format")]
-enum ExportFormat {
-  #[serde(alias = "png")]
-  Png {
-    #[serde(rename = "pixelsPerPt")]
-    pixels_per_pt: f32,
-  },
-  #[serde(alias = "pdf")]
-  Pdf,
-  #[serde(alias = "svg")]
-  Svg,
 }
 
 #[napi]
@@ -340,11 +157,11 @@ pub enum CompilationMode {
   Development,
 }
 
-impl From<CompilationMode> for oicana_input::CompilationConfig {
+impl From<CompilationMode> for core::CompilationMode {
   fn from(value: CompilationMode) -> Self {
     match value {
-      CompilationMode::Development => CompilationConfig::development(),
-      CompilationMode::Production => CompilationConfig::production(),
+      CompilationMode::Production => core::CompilationMode::Production,
+      CompilationMode::Development => core::CompilationMode::Development,
     }
   }
 }
@@ -358,6 +175,23 @@ pub struct BlobWithMetadata {
   pub meta: String,
 }
 
-static WORLD_CACHE: Lazy<DashMap<String, OicanaWorld<PackedTemplate>>> = Lazy::new(DashMap::new);
+fn into_core_blobs(
+  blobs: HashMap<String, BlobWithMetadata>,
+) -> HashMap<String, core::BlobWithMetadata> {
+  blobs
+    .into_iter()
+    .map(|(key, value)| {
+      (
+        key,
+        core::BlobWithMetadata {
+          bytes: value.bytes.to_vec(),
+          meta: value.meta,
+        },
+      )
+    })
+    .collect()
+}
 
-static DOCUMENT_CACHE: Lazy<DashMap<String, PagedDocument>> = Lazy::new(DashMap::new);
+fn into_napi_err(error: core::FfiError) -> Error {
+  Error::from_reason(error.to_string())
+}

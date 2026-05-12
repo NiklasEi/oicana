@@ -17,20 +17,7 @@ crate-type = ["cdylib"]
 napi        = "3.0.0"
 napi-derive = "3.0.0"
 
-oicana_export = { workspace = true, features = ["pdf", "png", "svg"] }
-oicana_files  = { workspace = true, features = ["packed"] }
-oicana_input  = { workspace = true }
-oicana_world  = { workspace = true }
-
-typst        = { workspace = true }
-typst-pdf    = { workspace = true }
-typst-render = { workspace = true }
-
-dashmap    = { workspace = true }
-once_cell  = { workspace = true }
-serde      = { workspace = true, features = ["derive"] }
-serde_json = { workspace = true }
-uuid       = { workspace = true, features = ["v4"] }
+oicana_ffi_core = { workspace = true }
 
 [build-dependencies]
 napi-build = "2"

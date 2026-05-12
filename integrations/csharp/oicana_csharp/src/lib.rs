@@ -1,35 +1,13 @@
 //! This crate defines FFI bindings for PDF templating from C#
 
-use dashmap::DashMap;
+use std::collections::HashMap;
+use std::slice;
+
 use interoptopus::patterns::slice::FFISlice;
 use interoptopus::patterns::string::AsciiPointer;
 use interoptopus::{ffi_function, ffi_type, function, Inventory, InventoryBuilder};
-use oicana_export::pdf::export_merged_pdf;
-use oicana_export::png::export_merged_png;
-use oicana_export::svg::export_merged_svg;
-use oicana_files::packed::PackedTemplate;
-use oicana_files::TemplateFiles;
-use oicana_input::input::blob::{Blob, BlobInput};
-use oicana_input::input::json::JsonInput;
-use oicana_input::{CompilationConfig, TemplateInputs};
-use oicana_world::manifest::OicanaWorldFiles;
-use oicana_world::world::OicanaWorld;
-use oicana_world::{CompiledDocument, TemplateCompilationFailure};
-use once_cell::sync::Lazy;
-use std::io::Cursor;
-use std::slice;
-use std::sync::atomic::{AtomicUsize, Ordering};
-use std::sync::{Arc, Mutex};
-use typst::foundations::Bytes;
-use typst::layout::PagedDocument;
-use typst::syntax::{FileId, VirtualPath};
-use uuid::Uuid;
 
-/// Global cache age configuration.
-///
-/// Default is 10, meaning cache entries used during the last 10 eviction cycles are kept.
-/// usize::MAX is used internally to represent disabled eviction.
-static CACHE_EVICTION_AGE: AtomicUsize = AtomicUsize::new(10);
+use oicana_ffi_core as core;
 
 /// Configure automatic cache eviction after each compilation.
 ///
@@ -43,11 +21,12 @@ static CACHE_EVICTION_AGE: AtomicUsize = AtomicUsize::new(10);
 #[ffi_function]
 #[no_mangle]
 pub extern "C" fn configure_automatic_cache_eviction(max_age: i64) {
-    if max_age < 0 {
-        CACHE_EVICTION_AGE.store(usize::MAX, Ordering::Relaxed);
+    let max_age = if max_age < 0 {
+        None
     } else {
-        CACHE_EVICTION_AGE.store(max_age as usize, Ordering::Relaxed);
-    }
+        Some(max_age as usize)
+    };
+    core::configure_automatic_cache_eviction(max_age);
 }
 
 /// Manually evict the comemo cache with the given age threshold.
@@ -63,10 +42,9 @@ pub extern "C" fn configure_automatic_cache_eviction(max_age: i64) {
 #[ffi_function]
 #[no_mangle]
 pub extern "C" fn evict_cache(max_age: i64) {
-    if max_age < 0 {
-        return;
+    if max_age >= 0 {
+        core::evict_cache(max_age as usize);
     }
-    oicana_world::evict_cache(max_age as usize);
 }
 
 /// Register a template for the given identifier
@@ -92,29 +70,22 @@ pub unsafe extern "C" fn unsafe_register_template(
     compilation_options: CompilationOptions,
 ) -> Buffer {
     let template = match template.as_str() {
-        Ok(template) => template.to_owned(),
+        Ok(template) => template,
         Err(error) => return Buffer::from_error(format!("Invalid template ID: {error:?}")),
     };
+    let files = unsafe { slice_from_buffer(files) };
+    let (json_map, blob_map) = match unsafe { parse_inputs(json_inputs, blob_inputs) } {
+        Ok(parsed) => parsed,
+        Err(error) => return error,
+    };
 
-    match unsafe { prepare_world(files, json_inputs, blob_inputs, compilation_options.mode) } {
-        Ok(world) => {
-            WORLD_CACHE.insert(template.clone(), world);
-            let Some(mut world) = WORLD_CACHE.get_mut(&template) else {
-                return Buffer::from_error(format!(
-                    "Failed to retrieve template '{template}' from cache after insertion"
-                ));
-            };
-            let document_result = world.value_mut().compile();
-
-            let cache_age = CACHE_EVICTION_AGE.load(Ordering::Relaxed);
-            if cache_age != usize::MAX {
-                oicana_world::evict_cache(cache_age);
-            }
-
-            Buffer::from_document_result(document_result, template)
-        }
-        Err(error) => error,
-    }
+    Buffer::from_string_result(core::register_template(
+        template,
+        files,
+        json_map,
+        blob_map,
+        compilation_options.mode.into(),
+    ))
 }
 
 /// Compile the given template once.
@@ -140,24 +111,19 @@ pub unsafe extern "C" fn unsafe_export_template_once(
     compile_options: CompilationOptions,
     export_options: ExportOptions,
 ) -> Buffer {
-    match unsafe { prepare_world(files, json_inputs, blob_inputs, compile_options.mode) } {
-        Ok(mut world) => {
-            let document_result = world.compile();
+    let files = unsafe { slice_from_buffer(files) };
+    let (json_map, blob_map) = match unsafe { parse_inputs(json_inputs, blob_inputs) } {
+        Ok(parsed) => parsed,
+        Err(error) => return error,
+    };
 
-            let cache_age = CACHE_EVICTION_AGE.load(Ordering::Relaxed);
-            if cache_age != usize::MAX {
-                oicana_world::evict_cache(cache_age);
-            }
-
-            match document_result {
-                Ok(document) => {
-                    Buffer::from_document_export(&document.document, export_options, &world)
-                }
-                Err(error) => Buffer::from_error(format!("{error}")),
-            }
-        }
-        Err(error) => error,
-    }
+    Buffer::from_bytes_result(core::compile_once(
+        files,
+        json_map,
+        blob_map,
+        compile_options.mode.into(),
+        export_options.into(),
+    ))
 }
 
 /// Compile the template with the given identifier
@@ -182,41 +148,20 @@ pub unsafe extern "C" fn unsafe_compile_template(
     compilation_options: CompilationOptions,
 ) -> Buffer {
     let template = match template.as_str() {
-        Ok(template) => template.to_owned(),
+        Ok(template) => template,
         Err(error) => return Buffer::from_error(format!("Invalid template ID: {error:?}")),
     };
-    let world = WORLD_CACHE.get_mut(&template);
-    let inputs = unsafe { prepare_inputs(json_inputs, blob_inputs, compilation_options.mode) };
-    let inputs = match inputs {
-        Err(error) => {
-            return Buffer::from_error(format!("The inputs could not be prepared: {error:?}"))
-        }
-        Ok(inputs) => inputs,
+    let (json_map, blob_map) = match unsafe { parse_inputs(json_inputs, blob_inputs) } {
+        Ok(parsed) => parsed,
+        Err(error) => return error,
     };
 
-    let Some(mut world) = world else {
-        return Buffer::from_error(format!("The template '{template}' is not registered"));
-    };
-
-    let world = world.value_mut();
-    if let Err(error) = world.update_inputs(inputs) {
-        return Buffer::from_error(format!("{error}"));
-    }
-    let document_result = world.compile();
-    let document = match document_result {
-        Ok(document) => document,
-        Err(error) => return Buffer::from_error(format!("{error}")),
-    };
-    let result_id = new_document_id(&template);
-
-    DOCUMENT_CACHE.insert(result_id.clone(), document.document);
-
-    let cache_age = CACHE_EVICTION_AGE.load(Ordering::Relaxed);
-    if cache_age != usize::MAX {
-        oicana_world::evict_cache(cache_age);
-    }
-
-    Buffer::from_ok_string(result_id)
+    Buffer::from_string_result(core::compile_template(
+        template,
+        json_map,
+        blob_map,
+        compilation_options.mode.into(),
+    ))
 }
 
 /// Export the given document
@@ -235,21 +180,7 @@ pub unsafe extern "C" fn unsafe_export_document(
         Ok(document_id) => document_id,
         Err(error) => return Buffer::from_error(format!("Invalid document ID: {error:?}")),
     };
-    let Some(document) = DOCUMENT_CACHE.get(document_id) else {
-        return Buffer::from_error("Document not found!".to_string());
-    };
-
-    let template_id = match template_id_from_document_id(document_id) {
-        Ok(template_id) => template_id,
-        Err(error) => return Buffer::from_error(error),
-    };
-    let Some(world) = WORLD_CACHE.get(template_id) else {
-        return Buffer::from_error(format!(
-            "World '{template_id}' for the given document '{document_id}' not found!"
-        ));
-    };
-
-    Buffer::from_document_export(&document, export_options, &world)
+    Buffer::from_bytes_result(core::export_document(document_id, export_options.into()))
 }
 
 /// Load the inputs of the given template.
@@ -263,18 +194,7 @@ pub extern "C" fn inputs(template: AsciiPointer) -> Buffer {
         Ok(template) => template,
         Err(error) => return Buffer::from_error(format!("{error:?}")),
     };
-    let world = WORLD_CACHE.get_mut(template);
-    let Some(world) = world else {
-        return Buffer::from_error(format!("The template '{template}' is not registered"));
-    };
-
-    let manifest = &world.manifest().tool.oicana;
-    let inputs = match serde_json::ser::to_string(manifest).map_err(|error| format!("{error:?}")) {
-        Ok(inputs) => inputs,
-        Err(error) => return Buffer::from_error(error),
-    };
-
-    Buffer::from_ok(inputs.into_bytes())
+    Buffer::from_string_result(core::inputs(template))
 }
 
 /// Load the source at the given path in the template.
@@ -288,24 +208,11 @@ pub extern "C" fn get_source(template: AsciiPointer, path: AsciiPointer) -> Buff
         Ok(template) => template,
         Err(error) => return Buffer::from_error(format!("Invalid template ID: {error:?}")),
     };
-    let world = WORLD_CACHE.get_mut(template);
-    let Some(world) = world else {
-        return Buffer::from_error(format!("The template '{template}' is not registered"));
-    };
-
     let path = match path.as_str() {
         Ok(path) => path,
         Err(error) => return Buffer::from_error(format!("Invalid path: {error:?}")),
     };
-    let source = match world
-        .files
-        .source(FileId::new(None, VirtualPath::new(path)))
-    {
-        Ok(source) => source,
-        Err(error) => return Buffer::from_error(error.to_string()),
-    };
-
-    Buffer::from_ok(source.text().to_owned().into_bytes())
+    Buffer::from_string_result(core::get_source(template, path))
 }
 
 /// Load the file at the given path in the template.
@@ -319,21 +226,11 @@ pub extern "C" fn get_file(template: AsciiPointer, path: AsciiPointer) -> Buffer
         Ok(template) => template,
         Err(error) => return Buffer::from_error(format!("Invalid template ID: {error:?}")),
     };
-    let world = WORLD_CACHE.get_mut(template);
-    let Some(world) = world else {
-        return Buffer::from_error(format!("The template '{template}' is not registered"));
-    };
-
     let path = match path.as_str() {
         Ok(path) => path,
         Err(error) => return Buffer::from_error(format!("Invalid path: {error:?}")),
     };
-    let file = match world.files.file(FileId::new(None, VirtualPath::new(path))) {
-        Ok(file) => file,
-        Err(error) => return Buffer::from_error(error.to_string()),
-    };
-
-    Buffer::from_ok(file.to_vec())
+    Buffer::from_bytes_result(core::get_file(template, path))
 }
 
 /// Frees a buffer allocated by `compile_template`.
@@ -375,88 +272,15 @@ pub extern "C" fn set_validate_inputs(template: AsciiPointer, validate: bool) ->
         Ok(template) => template,
         Err(error) => return Buffer::from_error(format!("{error:?}")),
     };
-    let Some(mut world) = WORLD_CACHE.get_mut(template) else {
-        return Buffer::from_error(format!("The template '{template}' is not registered"));
-    };
-    world.validate_inputs = validate;
-    Buffer::from_ok(Vec::new())
+    Buffer::from_unit_result(core::set_validate_inputs(template, validate))
 }
 
 /// Configure Oicana.
 #[ffi_function]
 #[no_mangle]
 pub extern "C" fn configure(config: Config) -> Buffer {
-    for mut world in WORLD_CACHE.iter_mut() {
-        world.color = config.color.into();
-    }
-
-    match CONFIGURATION.lock() {
-        Ok(mut cfg) => {
-            cfg.color = config.color;
-            Buffer::from_ok(Vec::new())
-        }
-        Err(error) => Buffer::from_error(error.to_string()),
-    }
-}
-
-fn new_document_id(template_id: &str) -> String {
-    format!("{}:{}", Uuid::new_v4(), template_id)
-}
-
-fn template_id_from_document_id(document_id: &str) -> Result<&str, String> {
-    if document_id.len() <= 37 {
-        return Err(format!(
-            "Invalid document ID format (length {}): {document_id}",
-            document_id.len()
-        ));
-    }
-    if let Some(colon_idx) = document_id.find(':') {
-        if colon_idx == 36 {
-            return Ok(&document_id[37..]);
-        }
-    }
-    Err(format!(
-        "Invalid document ID format (no colon at position 36): {document_id}"
-    ))
-}
-
-unsafe fn prepare_world(
-    files: Buffer,
-    json_inputs: FFISlice<FfiJsonInput>,
-    blob_inputs: FFISlice<FfiBlobInput>,
-    compilation_mode: CompilationMode,
-) -> Result<OicanaWorld<PackedTemplate>, Buffer> {
-    let files = unsafe {
-        match PackedTemplate::new(Cursor::new(slice::from_raw_parts::<u8>(
-            files.data,
-            files.len as usize,
-        ))) {
-            Ok(packed) => packed,
-            Err(error) => return Err(Buffer::from_error(format!("{error}"))),
-        }
-    };
-    let manifest = match files.manifest() {
-        Ok(manifest) => manifest,
-        Err(error) => return Err(Buffer::from_error(format!("{error}"))),
-    };
-    let inputs = unsafe { prepare_inputs(json_inputs, blob_inputs, compilation_mode) };
-    let inputs = match inputs {
-        Err(error) => {
-            return Err(Buffer::from_error(format!(
-                "The inputs could not be prepared: {error:?}"
-            )))
-        }
-        Ok(inputs) => inputs,
-    };
-
-    let color = get_diagnostic_color();
-
-    OicanaWorld::new(files, inputs, manifest)
-        .map_err(|error| Buffer::from_error(format!("{error}")))
-        .map(|mut world| {
-            world.color = color;
-            world
-        })
+    core::configure_diagnostic_color(config.color.into());
+    Buffer::from_ok(Vec::new())
 }
 
 /// Remove the document from the cache.
@@ -467,8 +291,8 @@ pub extern "C" fn remove_document(document_id: AsciiPointer) -> Buffer {
         Ok(document_id) => document_id,
         Err(error) => return Buffer::from_error(format!("{error:?}")),
     };
-    DOCUMENT_CACHE.remove(document_id);
-    Buffer::from_ok(Vec::with_capacity(0))
+    core::remove_document(document_id);
+    Buffer::from_ok(Vec::new())
 }
 
 /// Clear the specified template from the internal cache.
@@ -482,8 +306,8 @@ pub extern "C" fn remove_world(template_id: AsciiPointer) -> Buffer {
         Ok(template_id) => template_id,
         Err(error) => return Buffer::from_error(format!("{error:?}")),
     };
-    WORLD_CACHE.remove(template_id);
-    Buffer::from_ok(Vec::with_capacity(0))
+    core::remove_world(template_id);
+    Buffer::from_ok(Vec::new())
 }
 
 /// Access to a piece of Rust memory.
@@ -510,16 +334,7 @@ impl Buffer {
     }
 
     fn from_ok_string(string: String) -> Self {
-        let mut buf = string.into_bytes().into_boxed_slice();
-        let len = buf.len() as u32;
-        let data = buf.as_mut_ptr();
-        std::mem::forget(buf);
-
-        Buffer {
-            data,
-            len,
-            error: false,
-        }
+        Buffer::from_ok(string.into_bytes())
     }
 
     fn from_ok(value: Vec<u8>) -> Self {
@@ -535,42 +350,24 @@ impl Buffer {
         }
     }
 
-    fn from_document_export(
-        document: &PagedDocument,
-        export_options: ExportOptions,
-        world: &OicanaWorld<PackedTemplate>,
-    ) -> Buffer {
-        match export_options.target {
-            CompilationTarget::Pdf => {
-                match export_merged_pdf(document, world, world.manifest().pdf_standards()) {
-                    Err(error) => Buffer::from_error(format!(
-                        "Error encoding compilation result as PDF: {error:?}"
-                    )),
-                    Ok(pdf) => Buffer::from_ok(pdf),
-                }
-            }
-            CompilationTarget::Png => match export_merged_png(document, 1.0) {
-                Err(error) => Buffer::from_error(format!(
-                    "Error encoding compilation result as PNG: {error:?}"
-                )),
-                Ok(png) => Buffer::from_ok(png),
-            },
-            CompilationTarget::Svg => Buffer::from_ok(export_merged_svg(document)),
+    fn from_bytes_result(result: Result<Vec<u8>, core::FfiError>) -> Self {
+        match result {
+            Ok(bytes) => Buffer::from_ok(bytes),
+            Err(error) => Buffer::from_error(error.to_string()),
         }
     }
 
-    /// Prepare a buffer hamdling compilation errors and result
-    fn from_document_result(
-        document_result: Result<CompiledDocument, TemplateCompilationFailure>,
-        template: String,
-    ) -> Self {
-        match document_result {
-            Ok(compilation_result) => {
-                let result_id = new_document_id(&template);
-                DOCUMENT_CACHE.insert(result_id.clone(), compilation_result.document);
-                Buffer::from_ok_string(result_id)
-            }
-            Err(error) => Buffer::from_error(format!("{error:?}")),
+    fn from_string_result(result: Result<String, core::FfiError>) -> Self {
+        match result {
+            Ok(string) => Buffer::from_ok_string(string),
+            Err(error) => Buffer::from_error(error.to_string()),
+        }
+    }
+
+    fn from_unit_result(result: Result<(), core::FfiError>) -> Self {
+        match result {
+            Ok(()) => Buffer::from_ok(Vec::new()),
+            Err(error) => Buffer::from_error(error.to_string()),
         }
     }
 }
@@ -629,6 +426,15 @@ pub enum CompilationMode {
     Production,
 }
 
+impl From<CompilationMode> for core::CompilationMode {
+    fn from(mode: CompilationMode) -> Self {
+        match mode {
+            CompilationMode::Development => core::CompilationMode::Development,
+            CompilationMode::Production => core::CompilationMode::Production,
+        }
+    }
+}
+
 /// Options for compiling the template
 #[ffi_type]
 #[repr(C)]
@@ -650,39 +456,16 @@ pub struct ExportOptions {
     pub px_per_pt: f32,
 }
 
-unsafe fn prepare_inputs(
-    json_inputs: FFISlice<FfiJsonInput>,
-    blob_inputs: FFISlice<FfiBlobInput>,
-    compilation_mode: CompilationMode,
-) -> Result<TemplateInputs, Box<dyn std::error::Error + Send + Sync>> {
-    let mut inputs = TemplateInputs::new();
-    for blob_input in blob_inputs.iter() {
-        let mut blob = Blob::from(Bytes::new(unsafe {
-            slice::from_raw_parts::<u8>(blob_input.data.data, blob_input.data.len as usize)
-        }));
-        let key = blob_input.key.as_str()?;
-        let meta = blob_input.meta.as_str()?;
-        blob.metadata = serde_json::from_str(meta)?;
-        inputs.with_input(BlobInput {
-            key: key.into(),
-            value: blob,
-        });
+impl From<ExportOptions> for core::ExportFormat {
+    fn from(opts: ExportOptions) -> Self {
+        match opts.target {
+            CompilationTarget::Pdf => core::ExportFormat::Pdf,
+            CompilationTarget::Png => core::ExportFormat::Png {
+                pixels_per_pt: opts.px_per_pt,
+            },
+            CompilationTarget::Svg => core::ExportFormat::Svg,
+        }
     }
-    for json_input in json_inputs.iter() {
-        let key = json_input.key.as_str()?;
-        let data = json_input.data.as_str()?;
-        inputs.with_input(JsonInput {
-            key: key.into(),
-            value: data.to_owned(),
-        });
-    }
-
-    match compilation_mode {
-        CompilationMode::Development => inputs.with_config(CompilationConfig::development()),
-        CompilationMode::Production => inputs.with_config(CompilationConfig::production()),
-    };
-
-    Ok(inputs)
 }
 
 /// Formats that the compiled documents can be rendered into.
@@ -696,11 +479,11 @@ pub enum DiagnosticColor {
     Ansi,
 }
 
-impl From<DiagnosticColor> for oicana_world::diagnostics::DiagnosticColor {
+impl From<DiagnosticColor> for core::DiagnosticColor {
     fn from(value: DiagnosticColor) -> Self {
         match value {
-            DiagnosticColor::Ansi => oicana_world::diagnostics::DiagnosticColor::Ansi,
-            DiagnosticColor::None => oicana_world::diagnostics::DiagnosticColor::None,
+            DiagnosticColor::Ansi => core::DiagnosticColor::Ansi,
+            DiagnosticColor::None => core::DiagnosticColor::None,
         }
     }
 }
@@ -714,23 +497,54 @@ pub struct Config {
     pub color: DiagnosticColor,
 }
 
-/// Get the currently configured diagnostic color.
-fn get_diagnostic_color() -> oicana_world::diagnostics::DiagnosticColor {
-    match CONFIGURATION.lock() {
-        Ok(config) => config.color.into(),
-        Err(_) => oicana_world::diagnostics::DiagnosticColor::None,
-    }
+unsafe fn slice_from_buffer<'a>(buffer: Buffer) -> &'a [u8] {
+    unsafe { slice::from_raw_parts::<u8>(buffer.data, buffer.len as usize) }
 }
 
-static CONFIGURATION: Lazy<Arc<Mutex<Config>>> = Lazy::new(|| {
-    Arc::new(Mutex::new(Config {
-        color: DiagnosticColor::None,
-    }))
-});
+type ParsedInputs = (
+    HashMap<String, String>,
+    HashMap<String, core::BlobWithMetadata>,
+);
 
-static WORLD_CACHE: Lazy<DashMap<String, OicanaWorld<PackedTemplate>>> = Lazy::new(DashMap::new);
+unsafe fn parse_inputs(
+    json_inputs: FFISlice<FfiJsonInput>,
+    blob_inputs: FFISlice<FfiBlobInput>,
+) -> Result<ParsedInputs, Buffer> {
+    let mut json_map = HashMap::new();
+    for input in json_inputs.iter() {
+        let key = input
+            .key
+            .as_str()
+            .map_err(|error| Buffer::from_error(format!("Invalid JSON input key: {error:?}")))?;
+        let data = input
+            .data
+            .as_str()
+            .map_err(|error| Buffer::from_error(format!("Invalid JSON input data: {error:?}")))?;
+        json_map.insert(key.to_owned(), data.to_owned());
+    }
 
-static DOCUMENT_CACHE: Lazy<DashMap<String, PagedDocument>> = Lazy::new(DashMap::new);
+    let mut blob_map = HashMap::new();
+    for input in blob_inputs.iter() {
+        let key = input
+            .key
+            .as_str()
+            .map_err(|error| Buffer::from_error(format!("Invalid blob input key: {error:?}")))?;
+        let meta = input
+            .meta
+            .as_str()
+            .map_err(|error| Buffer::from_error(format!("Invalid blob input meta: {error:?}")))?;
+        let bytes = unsafe { slice_from_buffer(input.data) }.to_vec();
+        blob_map.insert(
+            key.to_owned(),
+            core::BlobWithMetadata {
+                bytes,
+                meta: meta.to_owned(),
+            },
+        );
+    }
+
+    Ok((json_map, blob_map))
+}
 
 /// List methods for auto generated bindings
 pub fn my_inventory() -> Inventory {
