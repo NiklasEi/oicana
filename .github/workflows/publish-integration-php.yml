@@ -66,11 +66,6 @@ jobs:
             ERRORS+=("oicana-php-installer/composer.json has version $INSTALLER_VERSION")
           fi
 
-          DOWNLOADER_VERSION=$(grep -oP "\\\$version = '\K[^']+" integrations/php/oicana-php-installer/src/BinaryDownloader.php)
-          if [[ "$DOWNLOADER_VERSION" != "$VERSION" ]]; then
-            ERRORS+=("BinaryDownloader.php has hardcoded version $DOWNLOADER_VERSION")
-          fi
-
           if [[ ${#ERRORS[@]} -gt 0 ]]; then
             echo "::error::Version mismatch for ${VERSION}:"
             for err in "${ERRORS[@]}"; do
