@@ -3,6 +3,7 @@ import {
   type BlobWithMetadata as BlobWithMetadataNative,
   compileTemplate,
   exportDocument,
+  getWarnings,
   CompilationMode as NativeCompilationMode,
   registerTemplate,
   removeDocument,
@@ -20,6 +21,7 @@ import type { BlobWithMetadata } from './inputs/index.js';
  */
 export class Template implements Disposable {
   private readonly template: string;
+  private lastWarnings: string | undefined;
 
   /**
    * Register a template with the given template file
@@ -54,7 +56,7 @@ export class Template implements Disposable {
   ) {
     this.template = randomUUID();
 
-    registerTemplate(
+    const documentId = registerTemplate(
       this.template,
       template,
       Object.fromEntries(jsonInputs ?? new Map<string, string>()),
@@ -65,6 +67,8 @@ export class Template implements Disposable {
         compilationOptions ?? CompilationMode.Development,
       ),
     );
+    this.lastWarnings = getWarnings(documentId) ?? undefined;
+    removeDocument(documentId);
   }
 
   /**
@@ -131,12 +135,21 @@ export class Template implements Disposable {
       ),
       this.mapCompilationMode(compilationOptions ?? CompilationMode.Production),
     );
+    this.lastWarnings = getWarnings(document) ?? undefined;
     try {
       const exportedDocument = exportDocument(document, JSON.stringify(format));
       return exportedDocument;
     } finally {
       removeDocument(document);
     }
+  }
+
+  /**
+   * Warnings produced by the most recent compilation (constructor warm-up or
+   * `compile()`), or `undefined` if there were none.
+   */
+  public warnings(): string | undefined {
+    return this.lastWarnings;
   }
 
   /**

@@ -130,6 +130,13 @@ pub fn remove_document(document_id: String) -> Result<()> {
   Ok(())
 }
 
+/// Return any compilation warnings produced for the given document, or `null`
+/// if there were none. Warnings are cleared when the document is removed.
+#[napi]
+pub fn get_warnings(document_id: String) -> Option<String> {
+  core::get_warnings(&document_id)
+}
+
 /// Enable or disable JSON schema validation for the given template.
 ///
 /// When enabled (the default), JSON inputs are validated against their schemas

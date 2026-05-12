@@ -295,6 +295,24 @@ pub extern "C" fn remove_document(document_id: AsciiPointer) -> Buffer {
     Buffer::from_ok(Vec::new())
 }
 
+/// Return any compilation warnings produced for the given document.
+///
+/// On success the buffer contains either the warnings text (UTF-8) or is
+/// empty when there were no warnings. Warnings are cleared together with
+/// the document by [`remove_document`].
+#[ffi_function]
+#[no_mangle]
+pub extern "C" fn get_warnings(document_id: AsciiPointer) -> Buffer {
+    let document_id = match document_id.as_str() {
+        Ok(document_id) => document_id,
+        Err(error) => return Buffer::from_error(format!("{error:?}")),
+    };
+    match core::get_warnings(document_id) {
+        Some(warnings) => Buffer::from_ok_string(warnings),
+        None => Buffer::from_ok(Vec::new()),
+    }
+}
+
 /// Clear the specified template from the internal cache.
 ///
 /// This method requires a previous successful call to [`unsafe_register_template`].
@@ -559,6 +577,7 @@ pub fn my_inventory() -> Inventory {
         .register(function!(unsafe_free_buffer))
         .register(function!(remove_world))
         .register(function!(remove_document))
+        .register(function!(get_warnings))
         .register(function!(configure))
         .register(function!(set_validate_inputs))
         .register(function!(configure_automatic_cache_eviction))

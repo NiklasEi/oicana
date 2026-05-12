@@ -157,6 +157,13 @@ fn remove_document(document_id: String) -> PyResult<()> {
     Ok(())
 }
 
+/// Return any compilation warnings produced for the given document, or `None`
+/// if there were none. Warnings are cleared when the document is removed.
+#[pyfunction]
+fn get_warnings(document_id: String) -> Option<String> {
+    core::get_warnings(&document_id)
+}
+
 /// Enable or disable JSON schema validation for the given template.
 ///
 /// When enabled (the default), JSON inputs are validated against their schemas
@@ -212,6 +219,7 @@ fn oicana_native(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(get_source, m)?)?;
     m.add_function(wrap_pyfunction!(get_file, m)?)?;
     m.add_function(wrap_pyfunction!(remove_document, m)?)?;
+    m.add_function(wrap_pyfunction!(get_warnings, m)?)?;
     m.add_function(wrap_pyfunction!(remove_world, m)?)?;
     m.add_function(wrap_pyfunction!(set_validate_inputs, m)?)?;
     m.add_function(wrap_pyfunction!(configure_automatic_cache_eviction, m)?)?;

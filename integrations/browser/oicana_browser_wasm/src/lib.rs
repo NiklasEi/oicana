@@ -5,7 +5,7 @@
 use std::collections::HashMap;
 
 use js_sys::Uint8Array;
-use log::{info, Level};
+use log::{info, warn, Level};
 use serde::Deserialize;
 use serde_wasm_bindgen::from_value;
 use wasm_bindgen::prelude::wasm_bindgen;
@@ -72,6 +72,7 @@ pub fn register_template(
     )
     .map_err(|error| error.to_string())?;
 
+    log_warnings(&result_id);
     info!(
         "Done compiling document in {}ms",
         get_current_time() - start
@@ -101,6 +102,7 @@ pub fn compile_template(
     let result_id = core::compile_template(&template, json_map, blob_map, compilation_mode.into())
         .map_err(|error| error.to_string())?;
 
+    log_warnings(&result_id);
     info!(
         "Done preparing document in {}ms",
         get_current_time() - start
@@ -144,6 +146,14 @@ pub fn remove_document(document_id: String) -> Result<(), String> {
     Ok(())
 }
 
+/// Return any compilation warnings produced for the given document, or
+/// `undefined` if there were none. Warnings are cleared when the document
+/// is removed.
+#[wasm_bindgen]
+pub fn get_warnings(document_id: String) -> Option<String> {
+    core::get_warnings(&document_id)
+}
+
 /// Enable or disable JSON schema validation for the given template.
 ///
 /// When enabled (the default), JSON inputs are validated against their schemas
@@ -181,6 +191,12 @@ pub fn export_document(document_id: String, export_format: JsValue) -> Result<Ui
 fn init_logging() {
     console_error_panic_hook::set_once();
     let _ = console_log::init_with_level(Level::Debug);
+}
+
+fn log_warnings(document_id: &str) {
+    if let Some(warnings) = core::get_warnings(document_id) {
+        warn!("{warnings}");
+    }
 }
 
 fn bytes_to_js_array(bytes: &[u8]) -> Uint8Array {

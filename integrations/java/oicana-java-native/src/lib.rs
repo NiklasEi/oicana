@@ -201,6 +201,25 @@ pub extern "system" fn Java_com_oicana_OicanaNative_removeDocument<'local>(
         .resolve::<jni::errors::ThrowRuntimeExAndDefault>()
 }
 
+/// Return any compilation warnings produced for the given document, or `null`
+/// if there were none. Warnings are cleared when the document is removed.
+#[unsafe(no_mangle)]
+pub extern "system" fn Java_com_oicana_OicanaNative_getWarnings<'local>(
+    mut unowned_env: EnvUnowned<'local>,
+    _class: JClass<'local>,
+    document_id: JString<'local>,
+) -> JString<'local> {
+    unowned_env
+        .with_env(|env| -> jni::errors::Result<JString<'_>> {
+            let id = document_id.try_to_string(env)?;
+            match core::get_warnings(&id) {
+                Some(warnings) => Ok(JString::from_str(env, &warnings)?),
+                None => Ok(JString::default()),
+            }
+        })
+        .resolve::<jni::errors::ThrowRuntimeExAndDefault>()
+}
+
 #[unsafe(no_mangle)]
 pub extern "system" fn Java_com_oicana_OicanaNative_removeWorld<'local>(
     mut unowned_env: EnvUnowned<'local>,

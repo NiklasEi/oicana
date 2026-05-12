@@ -175,6 +175,14 @@ pub fn remove_document(document_id: String) -> PhpResult<()> {
     Ok(())
 }
 
+/// Return any compilation warnings produced for the given document, or `null`
+/// if there were none. Warnings are cleared when the document is removed.
+#[php_function]
+#[php(name = "OicanaInternal\\get_warnings")]
+pub fn get_warnings(document_id: String) -> Option<String> {
+    core::get_warnings(&document_id)
+}
+
 /// Enable or disable JSON schema validation for the given template.
 ///
 /// When enabled (the default), JSON inputs are validated against their schemas
@@ -231,6 +239,7 @@ pub fn get_module(module: ModuleBuilder) -> ModuleBuilder {
         .function(wrap_function!(get_file))
         .function(wrap_function!(export_document))
         .function(wrap_function!(remove_document))
+        .function(wrap_function!(get_warnings))
         .function(wrap_function!(remove_world))
         .function(wrap_function!(set_validate_inputs))
         .class::<BlobWithMetadata>()

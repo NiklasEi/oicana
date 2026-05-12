@@ -175,6 +175,7 @@ pub enum FfiError {
 
 static WORLD_CACHE: Lazy<DashMap<String, OicanaWorld<PackedTemplate>>> = Lazy::new(DashMap::new);
 static DOCUMENT_CACHE: Lazy<DashMap<String, PagedDocument>> = Lazy::new(DashMap::new);
+static WARNINGS_CACHE: Lazy<DashMap<String, String>> = Lazy::new(DashMap::new);
 
 /// Cache age threshold for automatic eviction. `usize::MAX` means disabled.
 /// Default keeps entries used within the last 10 evictions.
@@ -253,6 +254,7 @@ pub fn register_template(
 
     let result_id = new_document_id(template_id);
     WORLD_CACHE.insert(template_id.to_owned(), world);
+    store_warnings(&result_id, document.warnings);
     DOCUMENT_CACHE.insert(result_id.clone(), document.document);
 
     auto_evict();
@@ -285,6 +287,7 @@ pub fn compile_template(
         .map_err(|error| FfiError::Compilation(error.to_string()))?;
 
     let result_id = new_document_id(template_id);
+    store_warnings(&result_id, document.warnings);
     DOCUMENT_CACHE.insert(result_id.clone(), document.document);
 
     auto_evict();
@@ -413,9 +416,26 @@ pub fn set_validate_inputs(template_id: &str, validate: bool) -> Result<(), FfiE
     Ok(())
 }
 
-/// Drop the cached document, freeing its memory.
+/// Drop the cached document (and any warnings stored alongside it), freeing
+/// its memory.
 pub fn remove_document(document_id: &str) {
     DOCUMENT_CACHE.remove(document_id);
+    WARNINGS_CACHE.remove(document_id);
+}
+
+/// Return any compilation warnings produced for the given document.
+///
+/// Warnings are stored when [`register_template`] or [`compile_template`]
+/// successfully produce a document. They are cleared together with the
+/// document by [`remove_document`].
+pub fn get_warnings(document_id: &str) -> Option<String> {
+    WARNINGS_CACHE.get(document_id).map(|entry| entry.clone())
+}
+
+fn store_warnings(document_id: &str, warnings: Option<String>) {
+    if let Some(warnings) = warnings {
+        WARNINGS_CACHE.insert(document_id.to_owned(), warnings);
+    }
 }
 
 /// Drop the cached world for a template. Subsequent compilations require

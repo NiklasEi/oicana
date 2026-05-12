@@ -66,6 +66,12 @@ export declare function getFile(template: string, file: string): Buffer
 export declare function getSource(template: string, file: string): string
 
 /**
+ * Return any compilation warnings produced for the given document, or `null`
+ * if there were none. Warnings are cleared when the document is removed.
+ */
+export declare function getWarnings(documentId: string): string | null
+
+/**
  * Load all input definitions for the given template.
  *
  * Calling this method requires a previous call to [`register_template`] with the same template

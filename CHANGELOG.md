@@ -9,6 +9,25 @@
 ## CLI
 - Compress images before writing them to disc (snapshots and comparison files)
 
+## Browser integration
+- Expose getter for compilation warnings
+
+## C# integration
+- Expose getter for compilation warnings
+
+## Java integration
+- Expose getter for compilation warnings
+
+## Node.js integration
+- Expose getter for compilation warnings
+
+## PHP integration
+- Expose getter for compilation warnings
+
+## Python integration
+- Expose getter for compilation warnings
+
+
 
 
 # Alpha
