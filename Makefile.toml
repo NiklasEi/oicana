@@ -267,19 +267,19 @@ dependencies = ["lint-python"]
 description = "Apply phpcbf (PHP_CodeSniffer auto-fixer) to the php wrapper."
 cwd = "integrations/php/oicana-php"
 command = "composer"
-args = ["cs-fix"]
+args = ["--no-plugins", "--no-interaction", "cs-fix"]
 
 [tasks.format-check-php]
 description = "Verify PSR coding style with phpcs (composer cs-check)."
 cwd = "integrations/php/oicana-php"
 command = "composer"
-args = ["cs-check"]
+args = ["--no-plugins", "--no-interaction", "cs-check"]
 
 [tasks.lint-php]
 description = "Run phpstan static analysis over the php wrapper."
 cwd = "integrations/php/oicana-php"
 command = "composer"
-args = ["phpstan"]
+args = ["--no-plugins", "--no-interaction", "phpstan"]
 
 [tasks.check-php]
 description = "Alias for lint-php (phpstan is the php static check)."
