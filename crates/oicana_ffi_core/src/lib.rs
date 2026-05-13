@@ -1,7 +1,7 @@
 //! Shared core logic for Oicana FFI integrations.
 //!
 //! Each language integration (node, python, php, java, csharp, browser-wasm) is
-//! a thin shim around the functions in this crate. The shim handles marshalling
+//! a thin shim around the functions in this crate. The shim handles marshaling
 //! between language-native types and the neutral types exposed here, then calls
 //! into the corresponding function in this crate.
 
