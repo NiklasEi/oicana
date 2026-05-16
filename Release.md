@@ -20,7 +20,6 @@
     * integrations/php/oicana-php-native/Cargo.toml
     * integrations/php/oicana-php/composer.json
     * integrations/php/oicana-php-installer/composer.json
-    * integrations/php/oicana-php-installer/src/BinaryDownloader.php
   * Java:
     * integrations/java/oicana-java-native/Cargo.toml
     * integrations/java/build.gradle.kts (version in `subprojects` block)

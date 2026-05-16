@@ -17,18 +17,9 @@ readme = "README.md"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-oicana_world = { workspace = true }
-oicana_files = { workspace = true, features = ["packed"] }
-oicana_input = { workspace = true }
-oicana_export = { workspace = true, features = ["png", "pdf", "svg"]}
-
-typst = { workspace = true }
+oicana_ffi_core = { workspace = true }
 
 interoptopus = { workspace = true }
-dashmap = { workspace = true }
-once_cell = { workspace = true }
-serde_json = { workspace = true }
-uuid = { workspace = true, features = ["v4"] }
 
 [dev-dependencies]
 interoptopus_backend_csharp = { workspace = true }

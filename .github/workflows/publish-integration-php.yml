@@ -66,11 +66,6 @@ jobs:
             ERRORS+=("oicana-php-installer/composer.json has version $INSTALLER_VERSION")
           fi
 
-          DOWNLOADER_VERSION=$(grep -oP "\\\$version = '\K[^']+" integrations/php/oicana-php-installer/src/BinaryDownloader.php)
-          if [[ "$DOWNLOADER_VERSION" != "$VERSION" ]]; then
-            ERRORS+=("BinaryDownloader.php has hardcoded version $DOWNLOADER_VERSION")
-          fi
-
           if [[ ${#ERRORS[@]} -gt 0 ]]; then
             echo "::error::Version mismatch for ${VERSION}:"
             for err in "${ERRORS[@]}"; do
@@ -202,6 +197,23 @@ jobs:
 
       - name: List binaries
         run: ls -lh binaries/
+
+      - name: Generate checksums.json
+        working-directory: binaries
+        run: |
+          python3 - <<'PY' > checksums.json
+          import hashlib, json, os, sys
+          binaries = {}
+          for f in sorted(os.listdir('.')):
+              if f == 'checksums.json' or not os.path.isfile(f):
+                  continue
+              with open(f, 'rb') as fh:
+                  h = hashlib.sha256(fh.read()).hexdigest()
+              binaries[f] = f"sha256:{h}"
+          json.dump({"binaries": binaries}, sys.stdout, indent=2, sort_keys=True)
+          print()
+          PY
+          cat checksums.json
 
       - name: Check if release exists
         id: check_release

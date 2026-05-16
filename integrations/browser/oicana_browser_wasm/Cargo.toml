@@ -17,12 +17,8 @@ readme = "README.md"
 crate-type = ["cdylib"]
 
 [dependencies]
+oicana_ffi_core = { workspace = true }
 oicana_world = { workspace = true }
-oicana_files = { workspace = true, features = ["packed"] }
-oicana_input = { workspace = true }
-oicana_export = { workspace = true, features = ["png", "pdf", "svg"]}
-
-typst = { workspace = true }
 
 wasm-bindgen = { workspace = true }
 serde-wasm-bindgen = { workspace = true }
@@ -32,8 +28,6 @@ console_log = { workspace = true }
 log = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
-dashmap = { workspace = true }
-once_cell = { workspace = true }
 uuid = { workspace = true, features = ["v4", "js"] }
 
 [lints]

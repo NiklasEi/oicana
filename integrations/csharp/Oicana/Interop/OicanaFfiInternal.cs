@@ -126,6 +126,14 @@ namespace Oicana.Interop
         [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl, EntryPoint = "remove_document")]
         public static extern Buffer remove_document(string document_id);
 
+        /// Return any compilation warnings produced for the given document.
+        ///
+        /// On success the buffer contains either the warnings text (UTF-8) or is
+        /// empty when there were no warnings. Warnings are cleared together with
+        /// the document by [`remove_document`].
+        [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl, EntryPoint = "get_warnings")]
+        public static extern Buffer get_warnings(string document_id);
+
         /// Configure Oicana.
         [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl, EntryPoint = "configure")]
         public static extern Buffer configure(Config config);

@@ -564,6 +564,7 @@ module.exports.evictCache = nativeBinding.evictCache
 module.exports.exportDocument = nativeBinding.exportDocument
 module.exports.getFile = nativeBinding.getFile
 module.exports.getSource = nativeBinding.getSource
+module.exports.getWarnings = nativeBinding.getWarnings
 module.exports.inputs = nativeBinding.inputs
 module.exports.NOT_REGISTERED = nativeBinding.NOT_REGISTERED
 module.exports.registerTemplate = nativeBinding.registerTemplate

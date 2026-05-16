@@ -20,11 +20,16 @@ use Composer\Script\ScriptEvents;
  */
 final class InstallerPlugin implements PluginInterface, EventSubscriberInterface
 {
+    private const PACKAGE_NAME = 'oicana/installer';
+
+    private ?Composer $composer = null;
+
     /**
      * {@inheritdoc}
      */
     public function activate(Composer $composer, IOInterface $io): void
     {
+        $this->composer = $composer;
     }
 
     /**
@@ -74,7 +79,8 @@ final class InstallerPlugin implements PluginInterface, EventSubscriberInterface
                 $platform->getDescription()
             ));
 
-            $downloader = new BinaryDownloader();
+            $version = $this->resolveOwnVersion();
+            $downloader = new BinaryDownloader($version);
             $extensionPath = $downloader->download($platform);
 
             $io->write('<info>✓ Extension downloaded to: ' . $extensionPath . '</info>');
@@ -141,5 +147,39 @@ final class InstallerPlugin implements PluginInterface, EventSubscriberInterface
         $io->write('<comment>You can re-display this command at any time with:</comment>');
         $io->write('<comment>  vendor/bin/oicana-env</comment>');
         $io->write('');
+    }
+
+    /**
+     * Resolve the version of this plugin from Composer's local repository.
+     *
+     * Falling back to anything else would defeat the point of this lookup, so
+     * a missing package or unresolved version is treated as a hard error.
+     */
+    private function resolveOwnVersion(): string
+    {
+        if ($this->composer === null) {
+            throw new \RuntimeException('Composer instance not available; activate() was not called');
+        }
+
+        // When the installer is being built/tested in its own checkout it is
+        // the root package and not present in the local vendor repository.
+        $rootPackage = $this->composer->getPackage();
+        if ($rootPackage->getName() === self::PACKAGE_NAME) {
+            return $rootPackage->getPrettyVersion();
+        }
+
+        $package = $this->composer
+            ->getRepositoryManager()
+            ->getLocalRepository()
+            ->findPackage(self::PACKAGE_NAME, '*');
+
+        if ($package === null) {
+            throw new \RuntimeException(sprintf(
+                'Could not find package "%s" in the local repository',
+                self::PACKAGE_NAME
+            ));
+        }
+
+        return $package->getPrettyVersion();
     }
 }

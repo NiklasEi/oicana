@@ -1,0 +1,32 @@
+[package]
+name = "oicana_ffi_core"
+description = "Shared core logic for Oicana FFI integrations."
+keywords = { workspace = true }
+categories = { workspace = true }
+version = { workspace = true }
+rust-version = { workspace = true }
+authors = { workspace = true }
+edition = { workspace = true }
+homepage = { workspace = true }
+repository = { workspace = true }
+license-file = { workspace = true }
+readme = { workspace = true }
+publish = false
+
+[dependencies]
+oicana_export = { workspace = true, features = ["pdf", "png", "svg"] }
+oicana_files = { workspace = true, features = ["packed"] }
+oicana_input = { workspace = true }
+oicana_world = { workspace = true }
+
+typst = { workspace = true }
+
+dashmap = { workspace = true }
+once_cell = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+uuid = { workspace = true, features = ["v4"] }
+
+[lints]
+workspace = true

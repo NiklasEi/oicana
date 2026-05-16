@@ -4,62 +4,15 @@
 
 #![deny(clippy::all)]
 
-use dashmap::DashMap;
+use std::collections::HashMap;
+
 use jni::errors::Error;
 use jni::objects::{JByteArray, JClass, JMap, JObject, JString};
 use jni::strings::JNIString;
 use jni::sys::jint;
 use jni::{jni_sig, Env, EnvUnowned};
-use oicana_export::pdf::export_merged_pdf;
-use oicana_export::png::export_merged_png;
-use oicana_export::svg::export_merged_svg;
-use oicana_files::packed::PackedTemplate;
-use oicana_files::TemplateFiles;
-use oicana_input::input::blob::{Blob, BlobInput};
-use oicana_input::input::json::JsonInput;
-use oicana_input::{CompilationConfig, TemplateInputs};
-use oicana_world::diagnostics::DiagnosticColor;
-use oicana_world::manifest::OicanaWorldFiles;
-use oicana_world::world::OicanaWorld;
-use once_cell::sync::Lazy;
-use serde::Deserialize;
-use std::collections::HashMap;
-use std::io::Cursor;
-use std::str::FromStr;
-use std::sync::atomic::{AtomicUsize, Ordering};
-use typst::foundations::Bytes;
-use typst::layout::PagedDocument;
-use typst::syntax::{FileId, VirtualPath};
-use uuid::Uuid;
 
-static WORLD_CACHE: Lazy<DashMap<String, OicanaWorld<PackedTemplate>>> = Lazy::new(DashMap::new);
-static DOCUMENT_CACHE: Lazy<DashMap<String, PagedDocument>> = Lazy::new(DashMap::new);
-
-/// Global cache age configuration.
-/// Default is 10. usize::MAX means disabled.
-static CACHE_EVICTION_AGE: AtomicUsize = AtomicUsize::new(10);
-
-fn new_document_id(template_id: &str) -> String {
-    format!("{}:{}", Uuid::new_v4(), template_id)
-}
-
-fn template_id_from_document_id(document_id: &str) -> &str {
-    &document_id[37..]
-}
-
-#[derive(Deserialize)]
-#[serde(tag = "format")]
-enum ExportFormat {
-    #[serde(alias = "png")]
-    Png {
-        #[serde(rename = "pixelsPerPt")]
-        pixels_per_pt: f32,
-    },
-    #[serde(alias = "pdf")]
-    Pdf,
-    #[serde(alias = "svg")]
-    Svg,
-}
+use oicana_ffi_core as core;
 
 /// Throw a Java OicanaException, returning Error::JavaException for use with `?`.
 fn throw_oicana(env: &mut Env, message: &str) -> Error {
@@ -68,6 +21,10 @@ fn throw_oicana(env: &mut Env, message: &str) -> Error {
         JNIString::from(message),
     );
     Error::JavaException
+}
+
+fn throw_ffi(env: &mut Env, error: core::FfiError) -> Error {
+    throw_oicana(env, &error.to_string())
 }
 
 /// Safely cast a JObject to JString (the caller must ensure the object is a java.lang.String).
@@ -99,17 +56,12 @@ fn extract_string_map<'local>(
     Ok(result)
 }
 
-/// A blob with its metadata, extracted from a Java BlobWithMetadata object.
-struct NativeBlobWithMetadata {
-    bytes: Vec<u8>,
-    meta: String,
-}
-
-/// Extract a HashMap<String, BlobWithMetadata> from a Java Map<String, BlobWithMetadata>.
+/// Extract a HashMap<String, core::BlobWithMetadata> from a Java
+/// Map<String, BlobWithMetadata>.
 fn extract_blob_map<'local>(
     env: &mut Env<'local>,
     map: JObject<'local>,
-) -> Result<HashMap<String, NativeBlobWithMetadata>, Error> {
+) -> Result<HashMap<String, core::BlobWithMetadata>, Error> {
     if map.is_null() {
         return Ok(HashMap::new());
     }
@@ -141,39 +93,15 @@ fn extract_blob_map<'local>(
         // Safety: we know the field type is String
         let meta = unsafe { jobject_as_jstring(env, meta_obj) }.try_to_string(env)?;
 
-        result.insert(key_str, NativeBlobWithMetadata { bytes, meta });
+        result.insert(key_str, core::BlobWithMetadata { bytes, meta });
     }
     Ok(result)
 }
 
-fn prepare_inputs(
-    json_inputs: HashMap<String, String>,
-    blob_inputs: HashMap<String, NativeBlobWithMetadata>,
-) -> Result<TemplateInputs, String> {
-    let mut inputs = TemplateInputs::new();
-    for (key, value) in json_inputs {
-        inputs.with_input(JsonInput::new(key, value));
-    }
-    for (key, value) in blob_inputs {
-        let mut blob = Blob::from(Bytes::new(value.bytes));
-        let json_value = serde_json::Value::from_str(&value.meta).map_err(|e| e.to_string())?;
-        blob.metadata = Deserialize::deserialize(json_value).map_err(|e| e.to_string())?;
-        inputs.with_input(BlobInput::new(key, blob));
-    }
-    Ok(inputs)
-}
-
-fn compilation_config_from_mode(mode: jint) -> CompilationConfig {
+fn compilation_mode_from_jint(mode: jint) -> core::CompilationMode {
     match mode {
-        1 => CompilationConfig::development(),
-        _ => CompilationConfig::production(),
-    }
-}
-
-fn evict_if_configured() {
-    let cache_age = CACHE_EVICTION_AGE.load(Ordering::Relaxed);
-    if cache_age != usize::MAX {
-        oicana_world::evict_cache(cache_age);
+        1 => core::CompilationMode::Development,
+        _ => core::CompilationMode::Production,
     }
 }
 
@@ -194,29 +122,14 @@ pub extern "system" fn Java_com_oicana_OicanaNative_registerTemplate<'local>(
             let json_map = extract_string_map(env, json_inputs)?;
             let blob_map = extract_blob_map(env, blob_inputs)?;
 
-            let packed = PackedTemplate::new(Cursor::new(file_bytes))
-                .map_err(|e| throw_oicana(env, &e.to_string()))?;
-            let manifest = packed
-                .manifest()
-                .map_err(|e| throw_oicana(env, &e.to_string()))?;
-
-            let mut inputs =
-                prepare_inputs(json_map, blob_map).map_err(|e| throw_oicana(env, &e))?;
-            inputs.with_config(compilation_config_from_mode(compilation_mode));
-
-            let mut world = OicanaWorld::new(packed, inputs, manifest)
-                .map_err(|e| throw_oicana(env, &e.to_string()))?;
-            world.color = DiagnosticColor::None;
-
-            let document = world
-                .compile()
-                .map_err(|e| throw_oicana(env, &e.to_string()))?;
-            let result_id = new_document_id(&template_id);
-
-            WORLD_CACHE.insert(template_id, world);
-            DOCUMENT_CACHE.insert(result_id.clone(), document.document);
-
-            evict_if_configured();
+            let result_id = core::register_template(
+                &template_id,
+                &file_bytes,
+                json_map,
+                blob_map,
+                compilation_mode_from_jint(compilation_mode),
+            )
+            .map_err(|e| throw_ffi(env, e))?;
 
             Ok(JString::from_str(env, &result_id)?)
         })
@@ -235,28 +148,16 @@ pub extern "system" fn Java_com_oicana_OicanaNative_compileTemplate<'local>(
     unowned_env
         .with_env(|env| -> jni::errors::Result<JString<'_>> {
             let template_id = template_id.try_to_string(env)?;
-
-            let Some(mut world) = WORLD_CACHE.get_mut(&template_id) else {
-                return Err(throw_oicana(env, "Template was not registered"));
-            };
-
             let json_map = extract_string_map(env, json_inputs)?;
             let blob_map = extract_blob_map(env, blob_inputs)?;
 
-            let mut inputs =
-                prepare_inputs(json_map, blob_map).map_err(|e| throw_oicana(env, &e))?;
-            inputs.with_config(compilation_config_from_mode(compilation_mode));
-            world
-                .update_inputs(inputs)
-                .map_err(|e| throw_oicana(env, &e.to_string()))?;
-
-            let document = world
-                .compile()
-                .map_err(|e| throw_oicana(env, &e.to_string()))?;
-            let result_id = new_document_id(&template_id);
-            DOCUMENT_CACHE.insert(result_id.clone(), document.document);
-
-            evict_if_configured();
+            let result_id = core::compile_template(
+                &template_id,
+                json_map,
+                blob_map,
+                compilation_mode_from_jint(compilation_mode),
+            )
+            .map_err(|e| throw_ffi(env, e))?;
 
             Ok(JString::from_str(env, &result_id)?)
         })
@@ -275,31 +176,10 @@ pub extern "system" fn Java_com_oicana_OicanaNative_exportDocument<'local>(
             let document_id = document_id.try_to_string(env)?;
             let export_format_str = export_format.try_to_string(env)?;
 
-            let Some(document) = DOCUMENT_CACHE.get(&document_id) else {
-                return Err(throw_oicana(env, "Document not found"));
-            };
-
-            let format: ExportFormat = serde_json::from_str(&export_format_str)
-                .map_err(|e| throw_oicana(env, &e.to_string()))?;
-
-            let bytes = match format {
-                ExportFormat::Png { pixels_per_pt } => export_merged_png(&document, pixels_per_pt)
-                    .map_err(|e| throw_oicana(env, &format!("Failed to encode PNG: {e:?}")))?,
-                ExportFormat::Pdf => {
-                    let template_id = template_id_from_document_id(&document_id);
-                    let Some(world) = WORLD_CACHE.get(template_id) else {
-                        return Err(throw_oicana(
-                            env,
-                            &format!(
-                                "World '{template_id}' for document '{document_id}' not found"
-                            ),
-                        ));
-                    };
-                    export_merged_pdf(&document, &*world, world.manifest().pdf_standards())
-                        .map_err(|e| throw_oicana(env, &format!("Failed to encode PDF: {e:?}")))?
-                }
-                ExportFormat::Svg => export_merged_svg(&document),
-            };
+            let format =
+                core::parse_export_format(&export_format_str).map_err(|e| throw_ffi(env, e))?;
+            let bytes =
+                core::export_document(&document_id, format).map_err(|e| throw_ffi(env, e))?;
 
             Ok(env.byte_array_from_slice(&bytes)?)
         })
@@ -315,8 +195,27 @@ pub extern "system" fn Java_com_oicana_OicanaNative_removeDocument<'local>(
     unowned_env
         .with_env(|env| -> jni::errors::Result<()> {
             let id = document_id.try_to_string(env)?;
-            DOCUMENT_CACHE.remove(&id);
+            core::remove_document(&id);
             Ok(())
+        })
+        .resolve::<jni::errors::ThrowRuntimeExAndDefault>()
+}
+
+/// Return any compilation warnings produced for the given document, or `null`
+/// if there were none. Warnings are cleared when the document is removed.
+#[unsafe(no_mangle)]
+pub extern "system" fn Java_com_oicana_OicanaNative_getWarnings<'local>(
+    mut unowned_env: EnvUnowned<'local>,
+    _class: JClass<'local>,
+    document_id: JString<'local>,
+) -> JString<'local> {
+    unowned_env
+        .with_env(|env| -> jni::errors::Result<JString<'_>> {
+            let id = document_id.try_to_string(env)?;
+            match core::get_warnings(&id) {
+                Some(warnings) => Ok(JString::from_str(env, &warnings)?),
+                None => Ok(JString::default()),
+            }
         })
         .resolve::<jni::errors::ThrowRuntimeExAndDefault>()
 }
@@ -330,7 +229,7 @@ pub extern "system" fn Java_com_oicana_OicanaNative_removeWorld<'local>(
     unowned_env
         .with_env(|env| -> jni::errors::Result<()> {
             let id = template_id.try_to_string(env)?;
-            WORLD_CACHE.remove(&id);
+            core::remove_world(&id);
             Ok(())
         })
         .resolve::<jni::errors::ThrowRuntimeExAndDefault>()
@@ -345,14 +244,7 @@ pub extern "system" fn Java_com_oicana_OicanaNative_inputs<'local>(
     unowned_env
         .with_env(|env| -> jni::errors::Result<JString<'_>> {
             let template_id = template_id.try_to_string(env)?;
-
-            let Some(world) = WORLD_CACHE.get(&template_id) else {
-                return Err(throw_oicana(env, "Template was not registered"));
-            };
-            let oicana_config = &world.manifest().tool.oicana;
-            let json = serde_json::ser::to_string(&oicana_config)
-                .map_err(|e| throw_oicana(env, &e.to_string()))?;
-
+            let json = core::inputs(&template_id).map_err(|e| throw_ffi(env, e))?;
             Ok(JString::from_str(env, &json)?)
         })
         .resolve::<jni::errors::ThrowRuntimeExAndDefault>()
@@ -369,16 +261,9 @@ pub extern "system" fn Java_com_oicana_OicanaNative_getSource<'local>(
         .with_env(|env| -> jni::errors::Result<JString<'_>> {
             let template_id = template_id.try_to_string(env)?;
             let file_path = file.try_to_string(env)?;
-
-            let Some(world) = WORLD_CACHE.get(&template_id) else {
-                return Err(throw_oicana(env, "Template was not registered"));
-            };
-            let source = world
-                .files
-                .source(FileId::new(None, VirtualPath::new(&file_path)))
-                .map_err(|e| throw_oicana(env, &e.to_string()))?;
-
-            Ok(JString::from_str(env, source.text())?)
+            let source =
+                core::get_source(&template_id, &file_path).map_err(|e| throw_ffi(env, e))?;
+            Ok(JString::from_str(env, &source)?)
         })
         .resolve::<jni::errors::ThrowRuntimeExAndDefault>()
 }
@@ -394,15 +279,7 @@ pub extern "system" fn Java_com_oicana_OicanaNative_getFile<'local>(
         .with_env(|env| -> jni::errors::Result<JByteArray<'_>> {
             let template_id = template_id.try_to_string(env)?;
             let file_path = file.try_to_string(env)?;
-
-            let Some(world) = WORLD_CACHE.get(&template_id) else {
-                return Err(throw_oicana(env, "Template was not registered"));
-            };
-            let bytes = world
-                .files
-                .file(FileId::new(None, VirtualPath::new(&file_path)))
-                .map_err(|e| throw_oicana(env, &e.to_string()))?;
-
+            let bytes = core::get_file(&template_id, &file_path).map_err(|e| throw_ffi(env, e))?;
             Ok(env.byte_array_from_slice(&bytes)?)
         })
         .resolve::<jni::errors::ThrowRuntimeExAndDefault>()
@@ -418,10 +295,8 @@ pub extern "system" fn Java_com_oicana_OicanaNative_setValidateInputs<'local>(
     unowned_env
         .with_env(|env| -> jni::errors::Result<()> {
             let template_id = template_id.try_to_string(env)?;
-            let Some(mut world) = WORLD_CACHE.get_mut(&template_id) else {
-                return Err(throw_oicana(env, "Template was not registered"));
-            };
-            world.validate_inputs = validate != 0;
+            core::set_validate_inputs(&template_id, validate != 0)
+                .map_err(|e| throw_ffi(env, e))?;
             Ok(())
         })
         .resolve::<jni::errors::ThrowRuntimeExAndDefault>()
@@ -433,11 +308,12 @@ pub extern "system" fn Java_com_oicana_OicanaNative_configureAutomaticCacheEvict
     _class: JClass<'local>,
     max_age: jint,
 ) {
-    if max_age < 0 {
-        CACHE_EVICTION_AGE.store(usize::MAX, Ordering::Relaxed);
+    let max_age = if max_age < 0 {
+        None
     } else {
-        CACHE_EVICTION_AGE.store(max_age as usize, Ordering::Relaxed);
-    }
+        Some(max_age as usize)
+    };
+    core::configure_automatic_cache_eviction(max_age);
 }
 
 #[unsafe(no_mangle)]
@@ -446,5 +322,7 @@ pub extern "system" fn Java_com_oicana_OicanaNative_evictCache<'local>(
     _class: JClass<'local>,
     max_age: jint,
 ) {
-    oicana_world::evict_cache(max_age as usize);
+    if max_age >= 0 {
+        core::evict_cache(max_age as usize);
+    }
 }

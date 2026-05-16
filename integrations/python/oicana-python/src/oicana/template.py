@@ -1,4 +1,5 @@
 """Oicana Python integration."""
+
 from __future__ import annotations
 
 import json

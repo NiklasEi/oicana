@@ -3,6 +3,7 @@ import {
   export_document,
   get_file,
   get_source,
+  get_warnings,
   register_template,
   remove_document,
   remove_world,
@@ -24,6 +25,7 @@ import type {
  */
 export class Template implements Disposable {
   private readonly template: string;
+  private lastWarnings: string | undefined;
 
   /**
    * Register a template with the given template file
@@ -70,6 +72,7 @@ export class Template implements Disposable {
       blobInputs ?? new Map(),
       compilationOptions ?? CompilationMode.Development,
     );
+    this.lastWarnings = get_warnings(documentId);
     remove_document(documentId);
   }
 
@@ -141,6 +144,7 @@ export class Template implements Disposable {
       blobInputs ?? new Map(),
       compilationOptions ?? CompilationMode.Production,
     );
+    this.lastWarnings = get_warnings(documentId);
     const result = export_document(
       documentId,
       exportFormat ?? { format: 'pdf' },
@@ -148,6 +152,14 @@ export class Template implements Disposable {
     remove_document(documentId);
 
     return result;
+  }
+
+  /**
+   * Warnings produced by the most recent compilation (constructor warm-up or
+   * `compile()`), or `undefined` if there were none.
+   */
+  public warnings(): string | undefined {
+    return this.lastWarnings;
   }
 
   /**

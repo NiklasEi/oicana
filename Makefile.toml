@@ -1,0 +1,363 @@
+# cargo-make tasks for formatting, linting, and checking the workspace.
+#
+# Aggregate tasks:
+#   cargo make format        - apply formatters across every toolchain
+#   cargo make format-check  - verify formatting without modifying files
+#   cargo make lint          - run all linters
+#   cargo make check         - run all type/compile checks
+#   cargo make test          - run unit/integration tests where available
+#   cargo make ci            - mirror what GitHub Actions runs
+#
+# Per-toolchain tasks follow the same naming with a suffix (e.g. `lint-rust`,
+# `format-node-native`, `check-csharp`). Run `cargo make --list-all-steps` for
+# the full list.
+
+[config]
+default_to_workspace = false
+skip_core_tasks = true
+min_version = "0.37.0"
+
+# ---------------------------------------------------------------------------
+# Default
+# ---------------------------------------------------------------------------
+
+[tasks.default]
+description = "Print the list of available top-level tasks."
+script_runner = "@shell"
+script = '''
+echo "Available top-level tasks:"
+echo "  cargo make format         apply formatters across every toolchain"
+echo "  cargo make format-check   verify formatting without modifying files"
+echo "  cargo make lint           run all linters"
+echo "  cargo make check          run all type/compile checks"
+echo "  cargo make test           run unit/integration tests"
+echo "  cargo make ci             format-check + lint + check + spell-check"
+echo "  cargo make install-deps   install per-integration tooling deps"
+echo
+echo "Run 'cargo make --list-all-steps' for the full list."
+'''
+
+# ---------------------------------------------------------------------------
+# Aggregate tasks
+# ---------------------------------------------------------------------------
+
+[tasks.format]
+description = "Apply formatters across every toolchain."
+dependencies = [
+    "format-rust",
+    "format-node-native",
+    "format-node",
+    "format-browser",
+    "format-csharp",
+    "format-python",
+    "format-php",
+    "format-typst",
+]
+
+[tasks.format-check]
+description = "Verify formatting without modifying files."
+dependencies = [
+    "format-check-rust",
+    "format-check-node-native",
+    "format-check-node",
+    "format-check-browser",
+    "format-check-csharp",
+    "format-check-python",
+    "format-check-php",
+    "format-check-typst",
+]
+
+[tasks.lint]
+description = "Run all linters."
+dependencies = [
+    "lint-rust",
+    "lint-node-native",
+    "lint-node",
+    "lint-browser",
+    "lint-python",
+    "lint-php",
+]
+
+[tasks.check]
+description = "Run all type/compile checks."
+dependencies = [
+    "check-rust",
+    "check-node",
+    "check-browser",
+    "check-python",
+    "check-php",
+]
+
+[tasks.test]
+description = "Run unit/integration tests where available."
+dependencies = [
+    "test-rust",
+    "test-php-native",
+]
+
+[tasks.ci]
+description = "Run the full set of checks that CI runs (format-check + lint + check + spell-check)."
+dependencies = [
+    "format-check",
+    "lint",
+    "check",
+    "spell-check",
+]
+
+# ---------------------------------------------------------------------------
+# Rust workspace (crates/*, tools/*, and Rust-side of every integration)
+# ---------------------------------------------------------------------------
+
+[tasks.format-rust]
+description = "Format every Rust crate in the workspace (covers crates/, tools/, integrations/**/*native*, oicana_browser_wasm)."
+command = "cargo"
+args = ["fmt", "--all"]
+
+[tasks.format-check-rust]
+description = "Verify Rust formatting across the workspace."
+command = "cargo"
+args = ["fmt", "--all", "--", "--check"]
+
+[tasks.lint-rust]
+description = "Run clippy across the workspace with warnings denied."
+command = "cargo"
+args = ["clippy", "--all-targets", "--all-features", "--", "-Dwarnings"]
+
+[tasks.check-rust]
+description = "Run cargo check across the workspace."
+command = "cargo"
+args = ["check", "--all-features", "--all-targets"]
+
+[tasks.test-rust]
+description = "Run cargo test across the workspace."
+command = "cargo"
+args = ["test", "--all-targets", "--all-features"]
+
+# ---------------------------------------------------------------------------
+# Node native binding (integrations/node/oicana-node-native)
+# ---------------------------------------------------------------------------
+
+[tasks.format-node-native]
+description = "Run prettier + taplo + cargo fmt for the node-native crate."
+cwd = "integrations/node/oicana-node-native"
+command = "yarn"
+args = ["format"]
+
+[tasks.format-check-node-native]
+description = "Check prettier + taplo + cargo fmt for the node-native crate."
+cwd = "integrations/node/oicana-node-native"
+command = "yarn"
+args = ["format:check"]
+
+[tasks.lint-node-native]
+description = "Run oxlint over the node-native crate."
+cwd = "integrations/node/oicana-node-native"
+command = "yarn"
+args = ["lint"]
+
+# ---------------------------------------------------------------------------
+# Node wrapper (integrations/node/oicana-node) - biome
+# ---------------------------------------------------------------------------
+
+[tasks.format-node]
+description = "Apply biome formatting to the node wrapper."
+cwd = "integrations/node/oicana-node"
+command = "npm"
+args = ["run", "format"]
+
+[tasks.format-check-node]
+description = "Verify biome formatting for the node wrapper (uses 'biome ci' which checks formatting and lints)."
+cwd = "integrations/node/oicana-node"
+command = "npm"
+args = ["run", "lint"]
+
+[tasks.lint-node]
+description = "Run biome ci over the node wrapper."
+cwd = "integrations/node/oicana-node"
+command = "npm"
+args = ["run", "lint"]
+
+[tasks.check-node]
+description = "Type-check the node wrapper (tsc build)."
+cwd = "integrations/node/oicana-node"
+command = "npm"
+args = ["run", "build"]
+
+# ---------------------------------------------------------------------------
+# Browser wrapper (integrations/browser/oicana-browser) - biome
+# ---------------------------------------------------------------------------
+
+[tasks.format-browser]
+description = "Apply biome formatting to the browser wrapper."
+cwd = "integrations/browser/oicana-browser"
+command = "npm"
+args = ["run", "format"]
+
+[tasks.format-check-browser]
+description = "Verify biome formatting for the browser wrapper."
+cwd = "integrations/browser/oicana-browser"
+command = "npm"
+args = ["run", "lint"]
+
+[tasks.lint-browser]
+description = "Run biome ci over the browser wrapper."
+cwd = "integrations/browser/oicana-browser"
+command = "npm"
+args = ["run", "lint"]
+
+[tasks.check-browser]
+description = "Type-check the browser wrapper (tsc build)."
+cwd = "integrations/browser/oicana-browser"
+command = "npm"
+args = ["run", "build"]
+
+# ---------------------------------------------------------------------------
+# C# (integrations/csharp)
+# ---------------------------------------------------------------------------
+
+[tasks.format-csharp]
+description = "Apply 'dotnet format' to the C# solution."
+cwd = "integrations/csharp"
+command = "dotnet"
+args = ["format"]
+
+[tasks.format-check-csharp]
+description = "Verify the C# solution is formatted ('dotnet format --verify-no-changes')."
+cwd = "integrations/csharp"
+command = "dotnet"
+args = ["format", "--verify-no-changes"]
+
+# ---------------------------------------------------------------------------
+# Python (integrations/python)
+# ---------------------------------------------------------------------------
+
+[tasks.format-python]
+description = "Apply ruff formatting to the python wrapper."
+cwd = "integrations/python/oicana-python"
+command = "uv"
+args = ["run", "ruff", "format", "src/"]
+
+[tasks.format-check-python]
+description = "Check ruff formatting for the python wrapper."
+cwd = "integrations/python/oicana-python"
+command = "uv"
+args = ["run", "ruff", "format", "--check", "src/"]
+
+[tasks.lint-python]
+description = "Run ruff and mypy over the python wrapper."
+cwd = "integrations/python/oicana-python"
+script_runner = "@shell"
+script = '''
+uv run ruff check src/
+uv run mypy src/oicana
+'''
+
+[tasks.check-python]
+description = "Alias for lint-python (mypy is the python type check)."
+dependencies = ["lint-python"]
+
+# ---------------------------------------------------------------------------
+# PHP (integrations/php/oicana-php) - phpcs/phpstan
+# ---------------------------------------------------------------------------
+
+[tasks.format-php]
+description = "Apply phpcbf (PHP_CodeSniffer auto-fixer) to the php wrapper."
+cwd = "integrations/php/oicana-php"
+command = "composer"
+args = ["--no-plugins", "--no-interaction", "cs-fix"]
+
+[tasks.format-check-php]
+description = "Verify PSR coding style with phpcs (composer cs-check)."
+cwd = "integrations/php/oicana-php"
+command = "composer"
+args = ["--no-plugins", "--no-interaction", "cs-check"]
+
+[tasks.lint-php]
+description = "Run phpstan static analysis over the php wrapper."
+cwd = "integrations/php/oicana-php"
+command = "composer"
+args = ["--no-plugins", "--no-interaction", "phpstan"]
+
+[tasks.check-php]
+description = "Alias for lint-php (phpstan is the php static check)."
+dependencies = ["lint-php"]
+
+[tasks.test-php-native]
+description = "Run cargo test for the PHP native extension crate."
+cwd = "integrations/php/oicana-php-native"
+command = "cargo"
+args = ["test"]
+
+# ---------------------------------------------------------------------------
+# Typst package (integrations/typst)
+# ---------------------------------------------------------------------------
+
+[tasks.format-typst]
+description = "Format Typst sources with typstyle."
+cwd = "integrations/typst"
+command = "typstyle"
+args = ["--inplace", "."]
+
+[tasks.format-check-typst]
+description = "Verify Typst formatting with typstyle --check."
+cwd = "integrations/typst"
+command = "typstyle"
+args = ["--check", "."]
+
+# ---------------------------------------------------------------------------
+# Spelling (typos)
+# ---------------------------------------------------------------------------
+
+[tasks.spell-check]
+description = "Run the typos spell checker over the repository."
+command = "typos"
+
+# ---------------------------------------------------------------------------
+# Install dependencies for each integration
+# ---------------------------------------------------------------------------
+
+[tasks.install-deps]
+description = "Install dependencies for every integration so format/lint/check can run."
+dependencies = [
+    "install-node-native-deps",
+    "install-node-deps",
+    "install-browser-deps",
+    "install-python-deps",
+    "install-php-deps",
+]
+
+[tasks.install-node-native-deps]
+description = "yarn install for the node-native crate."
+cwd = "integrations/node/oicana-node-native"
+command = "yarn"
+args = ["install"]
+
+[tasks.install-node-deps]
+description = "npm install for the node wrapper (skips the unpublished @oicana/node-native peer)."
+cwd = "integrations/node/oicana-node"
+script_runner = "@shell"
+script = '''
+npm pkg delete dependencies['@oicana/node-native']
+npm install --no-audit --no-fund
+'''
+
+[tasks.install-browser-deps]
+description = "npm install for the browser wrapper (skips the unpublished @oicana/browser-wasm peer)."
+cwd = "integrations/browser/oicana-browser"
+script_runner = "@shell"
+script = '''
+npm pkg delete dependencies['@oicana/browser-wasm']
+npm install --no-audit --no-fund
+'''
+
+[tasks.install-python-deps]
+description = "uv sync for the python workspace."
+cwd = "integrations/python"
+command = "uv"
+args = ["sync"]
+
+[tasks.install-php-deps]
+description = "composer install for the php wrapper."
+cwd = "integrations/php/oicana-php"
+command = "composer"
+args = ["install", "--no-interaction"]

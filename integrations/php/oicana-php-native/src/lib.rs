@@ -8,69 +8,11 @@
 // Required by ext_php_rs
 #![cfg_attr(windows, feature(abi_vectorcall))]
 
-use dashmap::DashMap;
-use ext_php_rs::prelude::*;
-use once_cell::sync::Lazy;
-use serde::Deserialize;
 use std::collections::HashMap;
-use std::io::Cursor;
-use std::str::FromStr;
-use std::sync::atomic::{AtomicUsize, Ordering};
 
-use oicana_export::pdf::export_merged_pdf;
-use oicana_export::png::export_merged_png;
-use oicana_export::svg::export_merged_svg;
-use oicana_files::TemplateFiles;
-use oicana_files::packed::PackedTemplate;
-use oicana_input::input::blob::{Blob, BlobInput};
-use oicana_input::input::json::JsonInput;
-use oicana_input::{CompilationConfig, TemplateInputs};
-use oicana_world::diagnostics::DiagnosticColor;
-use oicana_world::manifest::OicanaWorldFiles;
-use oicana_world::world::OicanaWorld;
-use typst::foundations::Bytes;
-use typst::layout::PagedDocument;
-use typst::syntax::{FileId, VirtualPath};
+use ext_php_rs::prelude::*;
 
-static WORLD_CACHE: Lazy<DashMap<String, OicanaWorld<PackedTemplate>>> = Lazy::new(DashMap::new);
-static DOCUMENT_CACHE: Lazy<DashMap<String, PagedDocument>> = Lazy::new(DashMap::new);
-
-/// Global cache age configuration.
-///
-/// Default is 10, meaning cache entries used during the last 10 eviction cycles are kept.
-/// usize::MAX is used internally to represent disabled eviction.
-static CACHE_EVICTION_AGE: AtomicUsize = AtomicUsize::new(10);
-
-/// Configure automatic cache eviction after each compilation.
-///
-/// # Parameters
-///
-/// `max_age` - Maximum age threshold, or null to disable:
-///   - `null` - Disables cache eviction (cache never cleared)
-///   - `0` - Clears all cache entries with every eviction
-///   - `1` - Keeps only entries used since the last eviction
-///   - `n` - Keeps entries used within the last n evictions
-#[php_function]
-#[php(name = "OicanaInternal\\configure_automatic_cache_eviction")]
-pub fn configure_automatic_cache_eviction(max_age: Option<i64>) {
-    let age = match max_age {
-        Some(age) if age >= 0 => age as usize,
-        _ => usize::MAX,
-    };
-    CACHE_EVICTION_AGE.store(age, Ordering::Relaxed);
-}
-
-/// Manually evict the comemo cache with the given age threshold.
-///
-/// This directly calls the underlying eviction with the specified age,
-/// regardless of the configured default age.
-#[php_function]
-#[php(name = "OicanaInternal\\evict_cache")]
-pub fn evict_cache(max_age: i64) {
-    if max_age >= 0 {
-        oicana_world::evict_cache(max_age as usize);
-    }
-}
+use oicana_ffi_core as core;
 
 /// Compilation mode constant for production mode.
 ///
@@ -83,10 +25,10 @@ pub const COMPILATION_MODE_PRODUCTION: i64 = 0;
 /// when inputs are not explicitly provided.
 pub const COMPILATION_MODE_DEVELOPMENT: i64 = 1;
 
-fn compilation_mode_from_i64(mode: i64) -> CompilationConfig {
+fn compilation_mode_from_i64(mode: i64) -> core::CompilationMode {
     match mode {
-        0 => CompilationConfig::production(),
-        _ => CompilationConfig::development(),
+        0 => core::CompilationMode::Production,
+        _ => core::CompilationMode::Development,
     }
 }
 
@@ -114,6 +56,34 @@ impl BlobWithMetadata {
     }
 }
 
+/// Configure automatic cache eviction after each compilation.
+///
+/// # Parameters
+///
+/// `max_age` - Maximum age threshold, or null to disable:
+///   - `null` - Disables cache eviction (cache never cleared)
+///   - `0` - Clears all cache entries with every eviction
+///   - `1` - Keeps only entries used since the last eviction
+///   - `n` - Keeps entries used within the last n evictions
+#[php_function]
+#[php(name = "OicanaInternal\\configure_automatic_cache_eviction")]
+pub fn configure_automatic_cache_eviction(max_age: Option<i64>) {
+    let max_age = max_age.and_then(|age| usize::try_from(age).ok());
+    core::configure_automatic_cache_eviction(max_age);
+}
+
+/// Manually evict the comemo cache with the given age threshold.
+///
+/// This directly calls the underlying eviction with the specified age,
+/// regardless of the configured default age.
+#[php_function]
+#[php(name = "OicanaInternal\\evict_cache")]
+pub fn evict_cache(max_age: i64) {
+    if let Ok(max_age) = usize::try_from(max_age) {
+        core::evict_cache(max_age);
+    }
+}
+
 /// Register the given template. This will read the template files as a PackedTemplate and
 /// compile it once with the given inputs. The Typst World will be cached and reused for
 /// subsequent calls to the other methods with the same template identifier.
@@ -126,35 +96,14 @@ pub fn register_template(
     blob_inputs: HashMap<String, &BlobWithMetadata>,
     compilation_mode: i64,
 ) -> PhpResult<String> {
-    let packed = PackedTemplate::new(Cursor::new(&files))
-        .map_err(|e| PhpException::default(e.to_string()))?;
-
-    let manifest = packed
-        .manifest()
-        .map_err(|e| PhpException::default(e.to_string()))?;
-
-    let mut inputs = prepare_inputs(json_inputs, blob_inputs)?;
-    inputs.with_config(compilation_mode_from_i64(compilation_mode));
-
-    let mut zip_world = OicanaWorld::new(packed, inputs, manifest)
-        .map_err(|e| PhpException::default(e.to_string()))?;
-    zip_world.color = DiagnosticColor::None;
-
-    let document = zip_world
-        .compile()
-        .map_err(|e| PhpException::default(e.to_string()))?;
-
-    let result_id = new_document_id(&template);
-
-    WORLD_CACHE.insert(template, zip_world);
-    DOCUMENT_CACHE.insert(result_id.clone(), document.document);
-
-    let cache_age = CACHE_EVICTION_AGE.load(Ordering::Relaxed);
-    if cache_age != usize::MAX {
-        oicana_world::evict_cache(cache_age);
-    }
-
-    Ok(result_id)
+    core::register_template(
+        &template,
+        &files,
+        json_inputs,
+        into_core_blobs(blob_inputs),
+        compilation_mode_from_i64(compilation_mode),
+    )
+    .map_err(into_php_err)
 }
 
 /// Compile the identified template with the given inputs.
@@ -169,39 +118,13 @@ pub fn compile_template(
     blob_inputs: HashMap<String, &BlobWithMetadata>,
     compilation_mode: i64,
 ) -> PhpResult<String> {
-    let Some(mut world) = WORLD_CACHE.get_mut(&template) else {
-        return Err(PhpException::default(
-            "Template was not registered".to_string(),
-        ));
-    };
-
-    let mut inputs = prepare_inputs(json_inputs, blob_inputs)?;
-    inputs.with_config(compilation_mode_from_i64(compilation_mode));
-    world
-        .update_inputs(inputs)
-        .map_err(|e| PhpException::default(e.to_string()))?;
-
-    let document = world
-        .compile()
-        .map_err(|e| PhpException::default(e.to_string()))?;
-
-    let result_id = new_document_id(&template);
-    DOCUMENT_CACHE.insert(result_id.clone(), document.document);
-
-    let cache_age = CACHE_EVICTION_AGE.load(Ordering::Relaxed);
-    if cache_age != usize::MAX {
-        oicana_world::evict_cache(cache_age);
-    }
-
-    Ok(result_id)
-}
-
-fn new_document_id(template_id: &str) -> String {
-    format!("{}:{}", uuid::Uuid::new_v4(), template_id)
-}
-
-fn template_id_from_document_id(document_id: &str) -> &str {
-    &document_id[37..]
+    core::compile_template(
+        &template,
+        json_inputs,
+        into_core_blobs(blob_inputs),
+        compilation_mode_from_i64(compilation_mode),
+    )
+    .map_err(into_php_err)
 }
 
 /// Load all input definitions for the given template.
@@ -211,14 +134,7 @@ fn template_id_from_document_id(document_id: &str) -> &str {
 #[php_function]
 #[php(name = "OicanaInternal\\inputs")]
 pub fn inputs(template: String) -> PhpResult<String> {
-    let Some(world) = WORLD_CACHE.get_mut(&template) else {
-        return Err(PhpException::default(
-            "Template was not registered".to_string(),
-        ));
-    };
-    let oicana_config = &world.manifest().tool.oicana;
-
-    serde_json::ser::to_string(&oicana_config).map_err(|e| PhpException::default(e.to_string()))
+    core::inputs(&template).map_err(into_php_err)
 }
 
 /// Load the source of the given file in the template.
@@ -228,16 +144,7 @@ pub fn inputs(template: String) -> PhpResult<String> {
 #[php_function]
 #[php(name = "OicanaInternal\\get_source")]
 pub fn get_source(template: String, file: String) -> PhpResult<String> {
-    let Some(world) = WORLD_CACHE.get_mut(&template) else {
-        return Err(PhpException::default(
-            "Template was not registered".to_string(),
-        ));
-    };
-    world
-        .files
-        .source(FileId::new(None, VirtualPath::new(file)))
-        .map_err(|e| PhpException::default(e.to_string()))
-        .map(|source| source.text().to_string())
+    core::get_source(&template, &file).map_err(into_php_err)
 }
 
 /// Load the binary file content from the template.
@@ -247,17 +154,7 @@ pub fn get_source(template: String, file: String) -> PhpResult<String> {
 #[php_function]
 #[php(name = "OicanaInternal\\get_file")]
 pub fn get_file(template: String, file: String) -> PhpResult<Vec<u8>> {
-    let Some(world) = WORLD_CACHE.get_mut(&template) else {
-        return Err(PhpException::default(
-            "Template was not registered".to_string(),
-        ));
-    };
-    let bytes = world
-        .files
-        .file(FileId::new(None, VirtualPath::new(file)))
-        .map_err(|e| PhpException::default(e.to_string()))?;
-
-    Ok(bytes.to_vec())
+    core::get_file(&template, &file).map_err(into_php_err)
 }
 
 /// Export the given document
@@ -266,39 +163,24 @@ pub fn get_file(template: String, file: String) -> PhpResult<Vec<u8>> {
 #[php_function]
 #[php(name = "OicanaInternal\\export_document")]
 pub fn export_document(document_id: String, export_format: String) -> PhpResult<Vec<u8>> {
-    let Some(document) = DOCUMENT_CACHE.get(&document_id) else {
-        return Err(PhpException::default("Document not found!".to_string()));
-    };
-
-    let export_format: ExportFormat =
-        serde_json::from_str(&export_format).map_err(|e| PhpException::default(e.to_string()))?;
-
-    let bytes = match export_format {
-        ExportFormat::Png { pixels_per_pt } => export_merged_png(&document, pixels_per_pt)
-            .map_err(|e| PhpException::default(format!("Failed to encode PNG: {e:?}")))?,
-        ExportFormat::Pdf => {
-            let template_id = template_id_from_document_id(&document_id);
-            let Some(world) = WORLD_CACHE.get(template_id) else {
-                return Err(PhpException::default(format!(
-                    "World '{template_id}' for the given document '{document_id}' not found!"
-                )));
-            };
-
-            export_merged_pdf(&document, &*world, world.manifest().pdf_standards())
-                .map_err(|e| PhpException::default(format!("Failed to encode PDF: {e:?}")))?
-        }
-        ExportFormat::Svg => export_merged_svg(&document),
-    };
-
-    Ok(bytes)
+    let format = core::parse_export_format(&export_format).map_err(into_php_err)?;
+    core::export_document(&document_id, format).map_err(into_php_err)
 }
 
 /// Remove the document from the cache.
 #[php_function]
 #[php(name = "OicanaInternal\\remove_document")]
 pub fn remove_document(document_id: String) -> PhpResult<()> {
-    DOCUMENT_CACHE.remove(&document_id);
+    core::remove_document(&document_id);
     Ok(())
+}
+
+/// Return any compilation warnings produced for the given document, or `null`
+/// if there were none. Warnings are cleared when the document is removed.
+#[php_function]
+#[php(name = "OicanaInternal\\get_warnings")]
+pub fn get_warnings(document_id: String) -> Option<String> {
+    core::get_warnings(&document_id)
 }
 
 /// Enable or disable JSON schema validation for the given template.
@@ -308,13 +190,7 @@ pub fn remove_document(document_id: String) -> PhpResult<()> {
 #[php_function]
 #[php(name = "OicanaInternal\\set_validate_inputs")]
 pub fn set_validate_inputs(template: String, validate: bool) -> PhpResult<()> {
-    let Some(mut world) = WORLD_CACHE.get_mut(&template) else {
-        return Err(PhpException::default(
-            "Template was not registered".to_string(),
-        ));
-    };
-    world.validate_inputs = validate;
-    Ok(())
+    core::set_validate_inputs(&template, validate).map_err(into_php_err)
 }
 
 /// Remove the world from the cache.
@@ -323,53 +199,29 @@ pub fn set_validate_inputs(template: String, validate: bool) -> PhpResult<()> {
 #[php_function]
 #[php(name = "OicanaInternal\\remove_world")]
 pub fn remove_world(template_id: String) -> PhpResult<()> {
-    WORLD_CACHE.remove(&template_id);
+    core::remove_world(&template_id);
     Ok(())
 }
 
-fn prepare_inputs(
-    json_inputs: HashMap<String, String>,
-    blob_inputs: HashMap<String, &BlobWithMetadata>,
-) -> PhpResult<TemplateInputs> {
-    let mut inputs = TemplateInputs::new();
-
-    for (key, value) in json_inputs {
-        inputs.with_input(JsonInput::new(key, value));
-    }
-
-    for (key, value) in blob_inputs {
-        let bytes_vec = value.bytes.clone();
-        let mut blob = Blob::from(Bytes::new(bytes_vec));
-
-        blob.metadata =
-            Deserialize::deserialize(serde_json::Value::from_str(&value.meta).map_err(|e| {
-                PhpException::default(format!("Failed to parse metadata JSON: {e:?}"))
-            })?)
-            .map_err(|e| PhpException::default(format!("Failed to deserialize metadata: {e:?}")))?;
-
-        inputs.with_input(BlobInput::new(key, blob));
-    }
-
-    Ok(inputs)
+fn into_core_blobs(
+    blobs: HashMap<String, &BlobWithMetadata>,
+) -> HashMap<String, core::BlobWithMetadata> {
+    blobs
+        .into_iter()
+        .map(|(key, value)| {
+            (
+                key,
+                core::BlobWithMetadata {
+                    bytes: value.bytes.clone(),
+                    meta: value.meta.clone(),
+                },
+            )
+        })
+        .collect()
 }
 
-/// Export format configuration for document rendering.
-#[derive(Deserialize)]
-#[serde(tag = "format")]
-enum ExportFormat {
-    /// PNG export with configurable resolution.
-    #[serde(alias = "png")]
-    Png {
-        /// Pixels per point for PNG rendering resolution.
-        #[serde(rename = "pixelsPerPt")]
-        pixels_per_pt: f32,
-    },
-    /// PDF export format.
-    #[serde(alias = "pdf")]
-    Pdf,
-    /// SVG export format.
-    #[serde(alias = "svg")]
-    Svg,
+fn into_php_err(error: core::FfiError) -> PhpException {
+    PhpException::default(error.to_string())
 }
 
 /// Registers the PHP module with ext-php-rs.
@@ -387,6 +239,7 @@ pub fn get_module(module: ModuleBuilder) -> ModuleBuilder {
         .function(wrap_function!(get_file))
         .function(wrap_function!(export_document))
         .function(wrap_function!(remove_document))
+        .function(wrap_function!(get_warnings))
         .function(wrap_function!(remove_world))
         .function(wrap_function!(set_validate_inputs))
         .class::<BlobWithMetadata>()

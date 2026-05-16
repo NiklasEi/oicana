@@ -6,6 +6,7 @@ members = [
     "crates/oicana_template",
     "crates/oicana_testing",
     "crates/oicana_export",
+    "crates/oicana_ffi_core",
     "integrations/browser/oicana_browser_wasm",
     "integrations/csharp/oicana_csharp",
     "integrations/rust/oicana",
@@ -24,6 +25,7 @@ default-members = [
     "crates/oicana_template",
     "crates/oicana_testing",
     "crates/oicana_export",
+    "crates/oicana_ffi_core",
     "integrations/browser/oicana_browser_wasm",
     "integrations/csharp/oicana_csharp",
     "integrations/rust/oicana",
@@ -53,6 +55,7 @@ oicana_world = { version = "0.1.0", path = "crates/oicana_world" }
 oicana_files = { version = "0.1.0", path = "crates/oicana_files", default-features = false }
 oicana_input = { version = "0.1.0", path = "crates/oicana_input" }
 oicana_export = { version = "0.1.0", path = "crates/oicana_export", default-features = false }
+oicana_ffi_core = { version = "0.1.0", path = "crates/oicana_ffi_core" }
 oicana_template = { version = "0.1.0", path = "crates/oicana_template" }
 oicana_testing = { version = "0.1.0", path = "crates/oicana_testing" }
 oicana = { version = "0.1.0", path = "integrations/rust/oicana" }
