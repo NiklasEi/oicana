@@ -144,13 +144,10 @@ command = "yarn"
 args = ["format"]
 
 [tasks.format-check-node-native]
-description = "Check prettier/taplo formatting for the node-native crate (cargo fmt is covered by format-check-rust)."
+description = "Check prettier + taplo + cargo fmt for the node-native crate."
 cwd = "integrations/node/oicana-node-native"
-script_runner = "@shell"
-script = '''
-yarn prettier . --check
-yarn taplo format --check
-'''
+command = "yarn"
+args = ["format:check"]
 
 [tasks.lint-node-native]
 description = "Run oxlint over the node-native crate."

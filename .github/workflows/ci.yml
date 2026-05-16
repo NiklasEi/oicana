@@ -95,16 +95,9 @@ jobs:
       - name: Oxlint
         run: yarn lint
         working-directory: integrations/node/oicana-node-native
-      - name: Format
-        run: yarn format
+      - name: Format check
+        run: yarn format:check
         working-directory: integrations/node/oicana-node-native
-      - name: Validate format was already correct
-        run: |
-          if [ -n "$(git status --porcelain './integrations/node/oicana-node-native/')" ]; then
-            echo "::error::Run `yarn format` in integrations/node/oicana-node-native."
-            git --no-pager diff --color=always './integrations/node/oicana-node-native/'
-            exit 1
-          fi
 
   check-node-wrapper:
     runs-on: ubuntu-latest
