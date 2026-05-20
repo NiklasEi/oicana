@@ -88,23 +88,38 @@
     let config = sys.inputs.at("oicana-config")
     if (
       not config.keys().contains("production")
-        or type(config.at("production")) != bool
+        or not type(config.at("production")) == bool
     ) {
-      panic("oicana config found but does not contain a 'production' boolean!")
+      panic(
+        "oicana config found but does not contain a 'production' property of type bool!",
+      )
     }
     config
   } else { (production: false) }
 
   for definition in input-definitions {
+    let key = if (
+      definition.keys().contains("key") and type(definition.key) == str
+    ) {
+      definition.key
+    } else {
+      panic("Every input needs a 'key' property of type string")
+    }
+
     let is-required = if definition.keys().contains("required") {
+      if type(definition.required) != bool {
+        panic(
+          "The 'required' property of input '" + key + "' is not of type bool",
+        )
+      }
       definition.required
     } else {
       true
     }
 
     if definition.type == "json" {
-      let json-input = if typst-inputs.keys().contains(definition.key) {
-        json(bytes(typst-inputs.at(definition.key)))
+      let json-input = if typst-inputs.keys().contains(key) {
+        json(bytes(typst-inputs.at(key)))
       } else if (
         definition.keys().contains("development")
           and oicana-config.production == false
@@ -116,14 +131,14 @@
       if json-input == none and is-required {
         panic(
           "No value for the required input '"
-            + definition.key
+            + key
             + "' was supplied. Pass a value or set a default/development value in your typst.toml.",
         )
       }
-      input.insert(definition.key, json-input)
+      input.insert(key, json-input)
     } else if definition.type == "blob" {
-      let resolved = if typst-inputs.keys().contains(definition.key) {
-        typst-inputs.at(definition.key)
+      let resolved = if typst-inputs.keys().contains(key) {
+        typst-inputs.at(key)
       } else if (
         definition.keys().contains("development")
           and oicana-config.production == false
@@ -152,16 +167,22 @@
       if resolved == none and is-required {
         panic(
           "No value for the required input '"
-            + definition.key
+            + key
             + "' was supplied. Pass a value or set a default/development value in your typst.toml.",
         )
       }
-      input.insert(definition.key, resolved)
+      input.insert(key, resolved)
+    } else {
+      panic(
+        "Found unknown input type '"
+          + definition.type
+          + "'. Should be \"json\" or \"blob\".",
+      )
     }
   }
 
   let oicana-image = (key, ..args) => {
-    if input.keys().contains(key) {
+    if input.keys().contains(key) and not input.at(key) == none {
       let blob-input = input.at(key)
       image(
         blob-input.bytes,
