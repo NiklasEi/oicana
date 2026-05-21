@@ -12,8 +12,6 @@ use std::collections::HashMap;
 use napi::bindgen_prelude::{Buffer, Result, Uint8Array};
 use napi::Error;
 
-use oicana_ffi_core as core;
-
 /// Error string when a requested template is not registered yet. Call `[register_template]` before
 /// trying to use the template through a different method.
 #[napi]
@@ -30,7 +28,7 @@ pub const NOT_REGISTERED: &str = "Template is not registered";
 ///   - `n` - Keeps entries used within the last n evictions
 #[napi]
 pub fn configure_automatic_cache_eviction(max_age: Option<u32>) {
-  core::configure_automatic_cache_eviction(max_age.map(|v| v as usize));
+  oicana_ffi_core::configure_automatic_cache_eviction(max_age.map(|v| v as usize));
 }
 
 /// Manually evict the comemo cache with the given age threshold.
@@ -39,7 +37,7 @@ pub fn configure_automatic_cache_eviction(max_age: Option<u32>) {
 /// regardless of the configured default age.
 #[napi]
 pub fn evict_cache(max_age: u32) {
-  core::evict_cache(max_age as usize);
+  oicana_ffi_core::evict_cache(max_age as usize);
 }
 
 /// Register the given template. This will read the template files as a [`PackedTemplate`] and
@@ -53,7 +51,7 @@ pub fn register_template(
   blob_inputs: HashMap<String, BlobWithMetadata>,
   compilation_mode: CompilationMode,
 ) -> Result<String> {
-  core::register_template(
+  oicana_ffi_core::register_template(
     &template,
     &files,
     json_inputs,
@@ -74,7 +72,7 @@ pub fn compile_template(
   blob_inputs: HashMap<String, BlobWithMetadata>,
   compilation_mode: CompilationMode,
 ) -> Result<String> {
-  core::compile_template(
+  oicana_ffi_core::compile_template(
     &template,
     json_inputs,
     into_core_blobs(blob_inputs),
@@ -89,7 +87,7 @@ pub fn compile_template(
 /// identifier.
 #[napi]
 pub fn inputs(template: String) -> Result<String> {
-  core::inputs(&template).map_err(into_napi_err)
+  oicana_ffi_core::inputs(&template).map_err(into_napi_err)
 }
 
 /// Load the source of the given file in the template.
@@ -98,7 +96,7 @@ pub fn inputs(template: String) -> Result<String> {
 /// identifier.
 #[napi]
 pub fn get_source(template: String, file: String) -> Result<String> {
-  core::get_source(&template, &file).map_err(into_napi_err)
+  oicana_ffi_core::get_source(&template, &file).map_err(into_napi_err)
 }
 
 /// Load the source of the given file in the template.
@@ -107,7 +105,7 @@ pub fn get_source(template: String, file: String) -> Result<String> {
 /// identifier.
 #[napi]
 pub fn get_file(template: String, file: String) -> Result<Buffer> {
-  core::get_file(&template, &file)
+  oicana_ffi_core::get_file(&template, &file)
     .map(Into::into)
     .map_err(into_napi_err)
 }
@@ -117,8 +115,8 @@ pub fn get_file(template: String, file: String) -> Result<Buffer> {
 /// Make sure to call `removeDocument` with the documentId afterwards, to free the memory.
 #[napi]
 pub fn export_document(document_id: String, export_format: String) -> Result<Buffer> {
-  let format = core::parse_export_format(&export_format).map_err(into_napi_err)?;
-  core::export_document(&document_id, format)
+  let format = oicana_ffi_core::parse_export_format(&export_format).map_err(into_napi_err)?;
+  oicana_ffi_core::export_document(&document_id, format)
     .map(Into::into)
     .map_err(into_napi_err)
 }
@@ -126,7 +124,7 @@ pub fn export_document(document_id: String, export_format: String) -> Result<Buf
 /// Remove the document from the cache.
 #[napi]
 pub fn remove_document(document_id: String) -> Result<()> {
-  core::remove_document(&document_id);
+  oicana_ffi_core::remove_document(&document_id);
   Ok(())
 }
 
@@ -134,7 +132,7 @@ pub fn remove_document(document_id: String) -> Result<()> {
 /// if there were none. Warnings are cleared when the document is removed.
 #[napi]
 pub fn get_warnings(document_id: String) -> Option<String> {
-  core::get_warnings(&document_id)
+  oicana_ffi_core::get_warnings(&document_id)
 }
 
 /// Enable or disable JSON schema validation for the given template.
@@ -146,7 +144,7 @@ pub fn get_warnings(document_id: String) -> Option<String> {
 /// identifier.
 #[napi]
 pub fn set_validate_inputs(template: String, validate: bool) -> Result<()> {
-  core::set_validate_inputs(&template, validate).map_err(into_napi_err)
+  oicana_ffi_core::set_validate_inputs(&template, validate).map_err(into_napi_err)
 }
 
 /// Remove the world from the cache.
@@ -154,7 +152,7 @@ pub fn set_validate_inputs(template: String, validate: bool) -> Result<()> {
 /// The template will have to be registered again before it can be compiled again.
 #[napi]
 pub fn remove_world(template_id: String) -> Result<()> {
-  core::remove_world(&template_id);
+  oicana_ffi_core::remove_world(&template_id);
   Ok(())
 }
 
@@ -164,11 +162,11 @@ pub enum CompilationMode {
   Development,
 }
 
-impl From<CompilationMode> for core::CompilationMode {
+impl From<CompilationMode> for oicana_ffi_core::CompilationMode {
   fn from(value: CompilationMode) -> Self {
     match value {
-      CompilationMode::Production => core::CompilationMode::Production,
-      CompilationMode::Development => core::CompilationMode::Development,
+      CompilationMode::Production => oicana_ffi_core::CompilationMode::Production,
+      CompilationMode::Development => oicana_ffi_core::CompilationMode::Development,
     }
   }
 }
@@ -184,13 +182,13 @@ pub struct BlobWithMetadata {
 
 fn into_core_blobs(
   blobs: HashMap<String, BlobWithMetadata>,
-) -> HashMap<String, core::BlobWithMetadata> {
+) -> HashMap<String, oicana_ffi_core::BlobWithMetadata> {
   blobs
     .into_iter()
     .map(|(key, value)| {
       (
         key,
-        core::BlobWithMetadata {
+        oicana_ffi_core::BlobWithMetadata {
           bytes: value.bytes.to_vec(),
           meta: value.meta,
         },
@@ -199,6 +197,6 @@ fn into_core_blobs(
     .collect()
 }
 
-fn into_napi_err(error: core::FfiError) -> Error {
+fn into_napi_err(error: oicana_ffi_core::FfiError) -> Error {
   Error::from_reason(error.to_string())
 }
