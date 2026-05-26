@@ -5,7 +5,7 @@
 use std::collections::HashMap;
 
 use js_sys::Uint8Array;
-use log::{info, warn, Level};
+use log::{trace, warn, Level};
 use serde::Deserialize;
 use serde_wasm_bindgen::from_value;
 use wasm_bindgen::prelude::wasm_bindgen;
@@ -73,7 +73,7 @@ pub fn register_template(
     .map_err(|error| error.to_string())?;
 
     log_warnings(&result_id);
-    info!(
+    trace!(
         "Done compiling document in {}ms",
         get_current_time() - start
     );
@@ -103,7 +103,7 @@ pub fn compile_template(
         .map_err(|error| error.to_string())?;
 
     log_warnings(&result_id);
-    info!(
+    trace!(
         "Done preparing document in {}ms",
         get_current_time() - start
     );
@@ -184,13 +184,13 @@ pub fn export_document(document_id: String, export_format: JsValue) -> Result<Ui
         .map_err(|error| format!("Failed to convert to export format: {error:?}"))?;
     let start = get_current_time();
     let bytes = core::export_document(&document_id, format).map_err(|error| error.to_string())?;
-    info!("Exported document in {}ms", get_current_time() - start);
+    trace!("Exported document in {}ms", get_current_time() - start);
     Ok(bytes_to_js_array(&bytes))
 }
 
 fn init_logging() {
     console_error_panic_hook::set_once();
-    let _ = console_log::init_with_level(Level::Debug);
+    let _ = console_log::init_with_level(Level::Trace);
 }
 
 fn log_warnings(document_id: &str) {
