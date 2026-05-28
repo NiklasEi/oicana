@@ -3,6 +3,13 @@
 
 # Beta
 
+
+
+## Browser integration
+- Move standard logs to trace
+
+
+
 ## Rust integration
 - re-export more Typst types
 
