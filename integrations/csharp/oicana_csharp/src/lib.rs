@@ -7,8 +7,6 @@ use interoptopus::patterns::slice::FFISlice;
 use interoptopus::patterns::string::AsciiPointer;
 use interoptopus::{ffi_function, ffi_type, function, Inventory, InventoryBuilder};
 
-use oicana_ffi_core as core;
-
 /// Configure automatic cache eviction after each compilation.
 ///
 /// # Parameters
@@ -26,7 +24,7 @@ pub extern "C" fn configure_automatic_cache_eviction(max_age: i64) {
     } else {
         Some(max_age as usize)
     };
-    core::configure_automatic_cache_eviction(max_age);
+    oicana_ffi_core::configure_automatic_cache_eviction(max_age);
 }
 
 /// Manually evict the comemo cache with the given age threshold.
@@ -43,7 +41,7 @@ pub extern "C" fn configure_automatic_cache_eviction(max_age: i64) {
 #[no_mangle]
 pub extern "C" fn evict_cache(max_age: i64) {
     if max_age >= 0 {
-        core::evict_cache(max_age as usize);
+        oicana_ffi_core::evict_cache(max_age as usize);
     }
 }
 
@@ -79,7 +77,7 @@ pub unsafe extern "C" fn unsafe_register_template(
         Err(error) => return error,
     };
 
-    Buffer::from_string_result(core::register_template(
+    Buffer::from_string_result(oicana_ffi_core::register_template(
         template,
         files,
         json_map,
@@ -117,7 +115,7 @@ pub unsafe extern "C" fn unsafe_export_template_once(
         Err(error) => return error,
     };
 
-    Buffer::from_bytes_result(core::compile_once(
+    Buffer::from_bytes_result(oicana_ffi_core::compile_once(
         files,
         json_map,
         blob_map,
@@ -156,7 +154,7 @@ pub unsafe extern "C" fn unsafe_compile_template(
         Err(error) => return error,
     };
 
-    Buffer::from_string_result(core::compile_template(
+    Buffer::from_string_result(oicana_ffi_core::compile_template(
         template,
         json_map,
         blob_map,
@@ -180,7 +178,10 @@ pub unsafe extern "C" fn unsafe_export_document(
         Ok(document_id) => document_id,
         Err(error) => return Buffer::from_error(format!("Invalid document ID: {error:?}")),
     };
-    Buffer::from_bytes_result(core::export_document(document_id, export_options.into()))
+    Buffer::from_bytes_result(oicana_ffi_core::export_document(
+        document_id,
+        export_options.into(),
+    ))
 }
 
 /// Load the inputs of the given template.
@@ -194,7 +195,7 @@ pub extern "C" fn inputs(template: AsciiPointer) -> Buffer {
         Ok(template) => template,
         Err(error) => return Buffer::from_error(format!("{error:?}")),
     };
-    Buffer::from_string_result(core::inputs(template))
+    Buffer::from_string_result(oicana_ffi_core::inputs(template))
 }
 
 /// Load the source at the given path in the template.
@@ -212,7 +213,7 @@ pub extern "C" fn get_source(template: AsciiPointer, path: AsciiPointer) -> Buff
         Ok(path) => path,
         Err(error) => return Buffer::from_error(format!("Invalid path: {error:?}")),
     };
-    Buffer::from_string_result(core::get_source(template, path))
+    Buffer::from_string_result(oicana_ffi_core::get_source(template, path))
 }
 
 /// Load the file at the given path in the template.
@@ -230,7 +231,7 @@ pub extern "C" fn get_file(template: AsciiPointer, path: AsciiPointer) -> Buffer
         Ok(path) => path,
         Err(error) => return Buffer::from_error(format!("Invalid path: {error:?}")),
     };
-    Buffer::from_bytes_result(core::get_file(template, path))
+    Buffer::from_bytes_result(oicana_ffi_core::get_file(template, path))
 }
 
 /// Frees a buffer allocated by `compile_template`.
@@ -272,14 +273,14 @@ pub extern "C" fn set_validate_inputs(template: AsciiPointer, validate: bool) ->
         Ok(template) => template,
         Err(error) => return Buffer::from_error(format!("{error:?}")),
     };
-    Buffer::from_unit_result(core::set_validate_inputs(template, validate))
+    Buffer::from_unit_result(oicana_ffi_core::set_validate_inputs(template, validate))
 }
 
 /// Configure Oicana.
 #[ffi_function]
 #[no_mangle]
 pub extern "C" fn configure(config: Config) -> Buffer {
-    core::configure_diagnostic_color(config.color.into());
+    oicana_ffi_core::configure_diagnostic_color(config.color.into());
     Buffer::from_ok(Vec::new())
 }
 
@@ -291,7 +292,7 @@ pub extern "C" fn remove_document(document_id: AsciiPointer) -> Buffer {
         Ok(document_id) => document_id,
         Err(error) => return Buffer::from_error(format!("{error:?}")),
     };
-    core::remove_document(document_id);
+    oicana_ffi_core::remove_document(document_id);
     Buffer::from_ok(Vec::new())
 }
 
@@ -307,7 +308,7 @@ pub extern "C" fn get_warnings(document_id: AsciiPointer) -> Buffer {
         Ok(document_id) => document_id,
         Err(error) => return Buffer::from_error(format!("{error:?}")),
     };
-    match core::get_warnings(document_id) {
+    match oicana_ffi_core::get_warnings(document_id) {
         Some(warnings) => Buffer::from_ok_string(warnings),
         None => Buffer::from_ok(Vec::new()),
     }
@@ -324,7 +325,7 @@ pub extern "C" fn remove_world(template_id: AsciiPointer) -> Buffer {
         Ok(template_id) => template_id,
         Err(error) => return Buffer::from_error(format!("{error:?}")),
     };
-    core::remove_world(template_id);
+    oicana_ffi_core::remove_world(template_id);
     Buffer::from_ok(Vec::new())
 }
 
@@ -368,21 +369,21 @@ impl Buffer {
         }
     }
 
-    fn from_bytes_result(result: Result<Vec<u8>, core::FfiError>) -> Self {
+    fn from_bytes_result(result: Result<Vec<u8>, oicana_ffi_core::FfiError>) -> Self {
         match result {
             Ok(bytes) => Buffer::from_ok(bytes),
             Err(error) => Buffer::from_error(error.to_string()),
         }
     }
 
-    fn from_string_result(result: Result<String, core::FfiError>) -> Self {
+    fn from_string_result(result: Result<String, oicana_ffi_core::FfiError>) -> Self {
         match result {
             Ok(string) => Buffer::from_ok_string(string),
             Err(error) => Buffer::from_error(error.to_string()),
         }
     }
 
-    fn from_unit_result(result: Result<(), core::FfiError>) -> Self {
+    fn from_unit_result(result: Result<(), oicana_ffi_core::FfiError>) -> Self {
         match result {
             Ok(()) => Buffer::from_ok(Vec::new()),
             Err(error) => Buffer::from_error(error.to_string()),
@@ -444,11 +445,11 @@ pub enum CompilationMode {
     Production,
 }
 
-impl From<CompilationMode> for core::CompilationMode {
+impl From<CompilationMode> for oicana_ffi_core::CompilationMode {
     fn from(mode: CompilationMode) -> Self {
         match mode {
-            CompilationMode::Development => core::CompilationMode::Development,
-            CompilationMode::Production => core::CompilationMode::Production,
+            CompilationMode::Development => oicana_ffi_core::CompilationMode::Development,
+            CompilationMode::Production => oicana_ffi_core::CompilationMode::Production,
         }
     }
 }
@@ -474,14 +475,14 @@ pub struct ExportOptions {
     pub px_per_pt: f32,
 }
 
-impl From<ExportOptions> for core::ExportFormat {
+impl From<ExportOptions> for oicana_ffi_core::ExportFormat {
     fn from(opts: ExportOptions) -> Self {
         match opts.target {
-            CompilationTarget::Pdf => core::ExportFormat::Pdf,
-            CompilationTarget::Png => core::ExportFormat::Png {
+            CompilationTarget::Pdf => oicana_ffi_core::ExportFormat::Pdf,
+            CompilationTarget::Png => oicana_ffi_core::ExportFormat::Png {
                 pixels_per_pt: opts.px_per_pt,
             },
-            CompilationTarget::Svg => core::ExportFormat::Svg,
+            CompilationTarget::Svg => oicana_ffi_core::ExportFormat::Svg,
         }
     }
 }
@@ -497,11 +498,11 @@ pub enum DiagnosticColor {
     Ansi,
 }
 
-impl From<DiagnosticColor> for core::DiagnosticColor {
+impl From<DiagnosticColor> for oicana_ffi_core::DiagnosticColor {
     fn from(value: DiagnosticColor) -> Self {
         match value {
-            DiagnosticColor::Ansi => core::DiagnosticColor::Ansi,
-            DiagnosticColor::None => core::DiagnosticColor::None,
+            DiagnosticColor::Ansi => oicana_ffi_core::DiagnosticColor::Ansi,
+            DiagnosticColor::None => oicana_ffi_core::DiagnosticColor::None,
         }
     }
 }
@@ -521,7 +522,7 @@ unsafe fn slice_from_buffer<'a>(buffer: Buffer) -> &'a [u8] {
 
 type ParsedInputs = (
     HashMap<String, String>,
-    HashMap<String, core::BlobWithMetadata>,
+    HashMap<String, oicana_ffi_core::BlobWithMetadata>,
 );
 
 unsafe fn parse_inputs(
@@ -554,7 +555,7 @@ unsafe fn parse_inputs(
         let bytes = unsafe { slice_from_buffer(input.data) }.to_vec();
         blob_map.insert(
             key.to_owned(),
-            core::BlobWithMetadata {
+            oicana_ffi_core::BlobWithMetadata {
                 bytes,
                 meta: meta.to_owned(),
             },

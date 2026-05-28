@@ -8,8 +8,6 @@ use pyo3::exceptions::PyRuntimeError;
 use pyo3::prelude::*;
 use pyo3::types::{PyBytes, PyDict};
 
-use oicana_ffi_core as core;
-
 /// Compilation mode enum
 #[pyclass(eq, eq_int)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -18,11 +16,11 @@ pub enum CompilationMode {
     Development,
 }
 
-impl From<CompilationMode> for core::CompilationMode {
+impl From<CompilationMode> for oicana_ffi_core::CompilationMode {
     fn from(mode: CompilationMode) -> Self {
         match mode {
-            CompilationMode::Production => core::CompilationMode::Production,
-            CompilationMode::Development => core::CompilationMode::Development,
+            CompilationMode::Production => oicana_ffi_core::CompilationMode::Production,
+            CompilationMode::Development => oicana_ffi_core::CompilationMode::Development,
         }
     }
 }
@@ -56,7 +54,7 @@ impl BlobWithMetadata {
 #[pyfunction]
 #[pyo3(signature = (max_age=None))]
 fn configure_automatic_cache_eviction(max_age: Option<usize>) {
-    core::configure_automatic_cache_eviction(max_age);
+    oicana_ffi_core::configure_automatic_cache_eviction(max_age);
 }
 
 /// Manually evict the comemo cache with the given age threshold.
@@ -65,7 +63,7 @@ fn configure_automatic_cache_eviction(max_age: Option<usize>) {
 /// regardless of the configured default age.
 #[pyfunction]
 fn evict_cache(max_age: usize) {
-    core::evict_cache(max_age);
+    oicana_ffi_core::evict_cache(max_age);
 }
 
 /// Register the given template. This will read the template files as a PackedTemplate and
@@ -81,7 +79,7 @@ fn register_template(
     compilation_mode: CompilationMode,
 ) -> PyResult<String> {
     let blobs = into_core_blobs(py, blob_inputs)?;
-    core::register_template(
+    oicana_ffi_core::register_template(
         &template,
         files.as_bytes(),
         json_inputs,
@@ -104,7 +102,7 @@ fn compile_template(
     compilation_mode: CompilationMode,
 ) -> PyResult<String> {
     let blobs = into_core_blobs(py, blob_inputs)?;
-    core::compile_template(&template, json_inputs, blobs, compilation_mode.into())
+    oicana_ffi_core::compile_template(&template, json_inputs, blobs, compilation_mode.into())
         .map_err(into_py_err)
 }
 
@@ -114,7 +112,7 @@ fn compile_template(
 /// identifier.
 #[pyfunction]
 fn inputs(template: String) -> PyResult<String> {
-    core::inputs(&template).map_err(into_py_err)
+    oicana_ffi_core::inputs(&template).map_err(into_py_err)
 }
 
 /// Load the source of the given file in the template.
@@ -123,7 +121,7 @@ fn inputs(template: String) -> PyResult<String> {
 /// identifier.
 #[pyfunction]
 fn get_source(template: String, file: String) -> PyResult<String> {
-    core::get_source(&template, &file).map_err(into_py_err)
+    oicana_ffi_core::get_source(&template, &file).map_err(into_py_err)
 }
 
 /// Load the binary file content from the template.
@@ -132,7 +130,7 @@ fn get_source(template: String, file: String) -> PyResult<String> {
 /// identifier.
 #[pyfunction]
 fn get_file(py: Python<'_>, template: String, file: String) -> PyResult<Bound<'_, PyBytes>> {
-    let bytes = core::get_file(&template, &file).map_err(into_py_err)?;
+    let bytes = oicana_ffi_core::get_file(&template, &file).map_err(into_py_err)?;
     Ok(PyBytes::new(py, &bytes))
 }
 
@@ -145,15 +143,15 @@ fn export_document(
     document_id: String,
     export_format: String,
 ) -> PyResult<Bound<'_, PyBytes>> {
-    let format = core::parse_export_format(&export_format).map_err(into_py_err)?;
-    let bytes = core::export_document(&document_id, format).map_err(into_py_err)?;
+    let format = oicana_ffi_core::parse_export_format(&export_format).map_err(into_py_err)?;
+    let bytes = oicana_ffi_core::export_document(&document_id, format).map_err(into_py_err)?;
     Ok(PyBytes::new(py, &bytes))
 }
 
 /// Remove the document from the cache.
 #[pyfunction]
 fn remove_document(document_id: String) -> PyResult<()> {
-    core::remove_document(&document_id);
+    oicana_ffi_core::remove_document(&document_id);
     Ok(())
 }
 
@@ -161,7 +159,7 @@ fn remove_document(document_id: String) -> PyResult<()> {
 /// if there were none. Warnings are cleared when the document is removed.
 #[pyfunction]
 fn get_warnings(document_id: String) -> Option<String> {
-    core::get_warnings(&document_id)
+    oicana_ffi_core::get_warnings(&document_id)
 }
 
 /// Enable or disable JSON schema validation for the given template.
@@ -173,7 +171,7 @@ fn get_warnings(document_id: String) -> Option<String> {
 /// identifier.
 #[pyfunction]
 fn set_validate_inputs(template: String, validate: bool) -> PyResult<()> {
-    core::set_validate_inputs(&template, validate).map_err(into_py_err)
+    oicana_ffi_core::set_validate_inputs(&template, validate).map_err(into_py_err)
 }
 
 /// Remove the world from the cache.
@@ -181,14 +179,14 @@ fn set_validate_inputs(template: String, validate: bool) -> PyResult<()> {
 /// The template will have to be registered again before it can be compiled again.
 #[pyfunction]
 fn remove_world(template_id: String) -> PyResult<()> {
-    core::remove_world(&template_id);
+    oicana_ffi_core::remove_world(&template_id);
     Ok(())
 }
 
 fn into_core_blobs(
     py: Python<'_>,
     blob_inputs: &Bound<'_, PyDict>,
-) -> PyResult<HashMap<String, core::BlobWithMetadata>> {
+) -> PyResult<HashMap<String, oicana_ffi_core::BlobWithMetadata>> {
     let mut blobs = HashMap::with_capacity(blob_inputs.len());
     for (key, value) in blob_inputs.iter() {
         let key: String = key.extract()?;
@@ -197,7 +195,7 @@ fn into_core_blobs(
         let bytes = blob.bytes.bind(py).as_bytes().to_vec();
         blobs.insert(
             key,
-            core::BlobWithMetadata {
+            oicana_ffi_core::BlobWithMetadata {
                 bytes,
                 meta: blob.meta.clone(),
             },
@@ -206,7 +204,7 @@ fn into_core_blobs(
     Ok(blobs)
 }
 
-fn into_py_err(error: core::FfiError) -> PyErr {
+fn into_py_err(error: oicana_ffi_core::FfiError) -> PyErr {
     PyRuntimeError::new_err(error.to_string())
 }
 

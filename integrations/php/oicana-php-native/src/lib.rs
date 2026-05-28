@@ -12,8 +12,6 @@ use std::collections::HashMap;
 
 use ext_php_rs::prelude::*;
 
-use oicana_ffi_core as core;
-
 /// Compilation mode constant for production mode.
 ///
 /// In production mode, all required inputs must be explicitly provided.
@@ -25,10 +23,10 @@ pub const COMPILATION_MODE_PRODUCTION: i64 = 0;
 /// when inputs are not explicitly provided.
 pub const COMPILATION_MODE_DEVELOPMENT: i64 = 1;
 
-fn compilation_mode_from_i64(mode: i64) -> core::CompilationMode {
+fn compilation_mode_from_i64(mode: i64) -> oicana_ffi_core::CompilationMode {
     match mode {
-        0 => core::CompilationMode::Production,
-        _ => core::CompilationMode::Development,
+        0 => oicana_ffi_core::CompilationMode::Production,
+        _ => oicana_ffi_core::CompilationMode::Development,
     }
 }
 
@@ -69,7 +67,7 @@ impl BlobWithMetadata {
 #[php(name = "OicanaInternal\\configure_automatic_cache_eviction")]
 pub fn configure_automatic_cache_eviction(max_age: Option<i64>) {
     let max_age = max_age.and_then(|age| usize::try_from(age).ok());
-    core::configure_automatic_cache_eviction(max_age);
+    oicana_ffi_core::configure_automatic_cache_eviction(max_age);
 }
 
 /// Manually evict the comemo cache with the given age threshold.
@@ -80,7 +78,7 @@ pub fn configure_automatic_cache_eviction(max_age: Option<i64>) {
 #[php(name = "OicanaInternal\\evict_cache")]
 pub fn evict_cache(max_age: i64) {
     if let Ok(max_age) = usize::try_from(max_age) {
-        core::evict_cache(max_age);
+        oicana_ffi_core::evict_cache(max_age);
     }
 }
 
@@ -96,7 +94,7 @@ pub fn register_template(
     blob_inputs: HashMap<String, &BlobWithMetadata>,
     compilation_mode: i64,
 ) -> PhpResult<String> {
-    core::register_template(
+    oicana_ffi_core::register_template(
         &template,
         &files,
         json_inputs,
@@ -118,7 +116,7 @@ pub fn compile_template(
     blob_inputs: HashMap<String, &BlobWithMetadata>,
     compilation_mode: i64,
 ) -> PhpResult<String> {
-    core::compile_template(
+    oicana_ffi_core::compile_template(
         &template,
         json_inputs,
         into_core_blobs(blob_inputs),
@@ -134,7 +132,7 @@ pub fn compile_template(
 #[php_function]
 #[php(name = "OicanaInternal\\inputs")]
 pub fn inputs(template: String) -> PhpResult<String> {
-    core::inputs(&template).map_err(into_php_err)
+    oicana_ffi_core::inputs(&template).map_err(into_php_err)
 }
 
 /// Load the source of the given file in the template.
@@ -144,7 +142,7 @@ pub fn inputs(template: String) -> PhpResult<String> {
 #[php_function]
 #[php(name = "OicanaInternal\\get_source")]
 pub fn get_source(template: String, file: String) -> PhpResult<String> {
-    core::get_source(&template, &file).map_err(into_php_err)
+    oicana_ffi_core::get_source(&template, &file).map_err(into_php_err)
 }
 
 /// Load the binary file content from the template.
@@ -154,7 +152,7 @@ pub fn get_source(template: String, file: String) -> PhpResult<String> {
 #[php_function]
 #[php(name = "OicanaInternal\\get_file")]
 pub fn get_file(template: String, file: String) -> PhpResult<Vec<u8>> {
-    core::get_file(&template, &file).map_err(into_php_err)
+    oicana_ffi_core::get_file(&template, &file).map_err(into_php_err)
 }
 
 /// Export the given document
@@ -163,15 +161,15 @@ pub fn get_file(template: String, file: String) -> PhpResult<Vec<u8>> {
 #[php_function]
 #[php(name = "OicanaInternal\\export_document")]
 pub fn export_document(document_id: String, export_format: String) -> PhpResult<Vec<u8>> {
-    let format = core::parse_export_format(&export_format).map_err(into_php_err)?;
-    core::export_document(&document_id, format).map_err(into_php_err)
+    let format = oicana_ffi_core::parse_export_format(&export_format).map_err(into_php_err)?;
+    oicana_ffi_core::export_document(&document_id, format).map_err(into_php_err)
 }
 
 /// Remove the document from the cache.
 #[php_function]
 #[php(name = "OicanaInternal\\remove_document")]
 pub fn remove_document(document_id: String) -> PhpResult<()> {
-    core::remove_document(&document_id);
+    oicana_ffi_core::remove_document(&document_id);
     Ok(())
 }
 
@@ -180,7 +178,7 @@ pub fn remove_document(document_id: String) -> PhpResult<()> {
 #[php_function]
 #[php(name = "OicanaInternal\\get_warnings")]
 pub fn get_warnings(document_id: String) -> Option<String> {
-    core::get_warnings(&document_id)
+    oicana_ffi_core::get_warnings(&document_id)
 }
 
 /// Enable or disable JSON schema validation for the given template.
@@ -190,7 +188,7 @@ pub fn get_warnings(document_id: String) -> Option<String> {
 #[php_function]
 #[php(name = "OicanaInternal\\set_validate_inputs")]
 pub fn set_validate_inputs(template: String, validate: bool) -> PhpResult<()> {
-    core::set_validate_inputs(&template, validate).map_err(into_php_err)
+    oicana_ffi_core::set_validate_inputs(&template, validate).map_err(into_php_err)
 }
 
 /// Remove the world from the cache.
@@ -199,19 +197,19 @@ pub fn set_validate_inputs(template: String, validate: bool) -> PhpResult<()> {
 #[php_function]
 #[php(name = "OicanaInternal\\remove_world")]
 pub fn remove_world(template_id: String) -> PhpResult<()> {
-    core::remove_world(&template_id);
+    oicana_ffi_core::remove_world(&template_id);
     Ok(())
 }
 
 fn into_core_blobs(
     blobs: HashMap<String, &BlobWithMetadata>,
-) -> HashMap<String, core::BlobWithMetadata> {
+) -> HashMap<String, oicana_ffi_core::BlobWithMetadata> {
     blobs
         .into_iter()
         .map(|(key, value)| {
             (
                 key,
-                core::BlobWithMetadata {
+                oicana_ffi_core::BlobWithMetadata {
                     bytes: value.bytes.clone(),
                     meta: value.meta.clone(),
                 },
@@ -220,7 +218,7 @@ fn into_core_blobs(
         .collect()
 }
 
-fn into_php_err(error: core::FfiError) -> PhpException {
+fn into_php_err(error: oicana_ffi_core::FfiError) -> PhpException {
     PhpException::default(error.to_string())
 }
 

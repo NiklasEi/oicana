@@ -11,7 +11,6 @@ use serde_wasm_bindgen::from_value;
 use wasm_bindgen::prelude::wasm_bindgen;
 use wasm_bindgen::JsValue;
 
-use oicana_ffi_core as core;
 use oicana_world::get_current_time;
 
 /// Error string when a requested template is not registered yet. Call `[register_template]` before
@@ -29,7 +28,7 @@ pub const NOT_REGISTERED: &str = "Template is not registered";
 ///   - `n` - Keeps entries used within the last n evictions
 #[wasm_bindgen]
 pub fn configure_automatic_cache_eviction(max_age: Option<usize>) {
-    core::configure_automatic_cache_eviction(max_age);
+    oicana_ffi_core::configure_automatic_cache_eviction(max_age);
 }
 
 /// Manually evict the comemo cache with the given age threshold.
@@ -38,7 +37,7 @@ pub fn configure_automatic_cache_eviction(max_age: Option<usize>) {
 /// regardless of the configured default age.
 #[wasm_bindgen]
 pub fn evict_cache(max_age: usize) {
-    core::evict_cache(max_age);
+    oicana_ffi_core::evict_cache(max_age);
 }
 
 /// Register the given template. This will read the template as a [`PackedTemplate`] and compile it
@@ -63,7 +62,7 @@ pub fn register_template(
     let mut bytes = vec![0; files.length() as usize];
     files.copy_to(&mut bytes[..]);
 
-    let result_id = core::register_template(
+    let result_id = oicana_ffi_core::register_template(
         &template,
         &bytes,
         json_map,
@@ -99,8 +98,9 @@ pub fn compile_template(
     let compilation_mode: CompilationMode = from_value(compilation_mode)
         .map_err(|error| format!("Failed to convert to compilation mode: {error:?}"))?;
 
-    let result_id = core::compile_template(&template, json_map, blob_map, compilation_mode.into())
-        .map_err(|error| error.to_string())?;
+    let result_id =
+        oicana_ffi_core::compile_template(&template, json_map, blob_map, compilation_mode.into())
+            .map_err(|error| error.to_string())?;
 
     log_warnings(&result_id);
     trace!(
@@ -117,7 +117,7 @@ pub fn compile_template(
 #[wasm_bindgen]
 pub fn inputs(template: String) -> Result<String, String> {
     init_logging();
-    core::inputs(&template).map_err(|error| error.to_string())
+    oicana_ffi_core::inputs(&template).map_err(|error| error.to_string())
 }
 
 /// Load the source of the given file in the template.
@@ -126,7 +126,7 @@ pub fn inputs(template: String) -> Result<String, String> {
 /// identifier.
 #[wasm_bindgen]
 pub fn get_source(template: String, file: String) -> Result<String, String> {
-    core::get_source(&template, &file).map_err(|error| error.to_string())
+    oicana_ffi_core::get_source(&template, &file).map_err(|error| error.to_string())
 }
 
 /// Load the source of the given file in the template.
@@ -135,14 +135,14 @@ pub fn get_source(template: String, file: String) -> Result<String, String> {
 /// identifier.
 #[wasm_bindgen]
 pub fn get_file(template: String, file: String) -> Result<Uint8Array, String> {
-    let bytes = core::get_file(&template, &file).map_err(|error| error.to_string())?;
+    let bytes = oicana_ffi_core::get_file(&template, &file).map_err(|error| error.to_string())?;
     Ok(bytes_to_js_array(&bytes))
 }
 
 /// Remove the document from the cache.
 #[wasm_bindgen]
 pub fn remove_document(document_id: String) -> Result<(), String> {
-    core::remove_document(&document_id);
+    oicana_ffi_core::remove_document(&document_id);
     Ok(())
 }
 
@@ -151,7 +151,7 @@ pub fn remove_document(document_id: String) -> Result<(), String> {
 /// is removed.
 #[wasm_bindgen]
 pub fn get_warnings(document_id: String) -> Option<String> {
-    core::get_warnings(&document_id)
+    oicana_ffi_core::get_warnings(&document_id)
 }
 
 /// Enable or disable JSON schema validation for the given template.
@@ -163,7 +163,7 @@ pub fn get_warnings(document_id: String) -> Option<String> {
 /// identifier.
 #[wasm_bindgen]
 pub fn set_validate_inputs(template: String, validate: bool) -> Result<(), String> {
-    core::set_validate_inputs(&template, validate).map_err(|error| error.to_string())
+    oicana_ffi_core::set_validate_inputs(&template, validate).map_err(|error| error.to_string())
 }
 
 /// Remove the world from the cache.
@@ -171,7 +171,7 @@ pub fn set_validate_inputs(template: String, validate: bool) -> Result<(), Strin
 /// The template will have to be registered again before it can be compiled again.
 #[wasm_bindgen]
 pub fn remove_world(template_id: String) -> Result<(), String> {
-    core::remove_world(&template_id);
+    oicana_ffi_core::remove_world(&template_id);
     Ok(())
 }
 
@@ -180,10 +180,11 @@ pub fn remove_world(template_id: String) -> Result<(), String> {
 /// Make sure to call `removeDocument` with the documentId afterwards, to free the memory.
 #[wasm_bindgen]
 pub fn export_document(document_id: String, export_format: JsValue) -> Result<Uint8Array, String> {
-    let format: core::ExportFormat = from_value(export_format)
+    let format: oicana_ffi_core::ExportFormat = from_value(export_format)
         .map_err(|error| format!("Failed to convert to export format: {error:?}"))?;
     let start = get_current_time();
-    let bytes = core::export_document(&document_id, format).map_err(|error| error.to_string())?;
+    let bytes = oicana_ffi_core::export_document(&document_id, format)
+        .map_err(|error| error.to_string())?;
     trace!("Exported document in {}ms", get_current_time() - start);
     Ok(bytes_to_js_array(&bytes))
 }
@@ -194,7 +195,7 @@ fn init_logging() {
 }
 
 fn log_warnings(document_id: &str) {
-    if let Some(warnings) = core::get_warnings(document_id) {
+    if let Some(warnings) = oicana_ffi_core::get_warnings(document_id) {
         warn!("{warnings}");
     }
 }
@@ -211,7 +212,9 @@ fn decode_json_inputs(value: JsValue) -> Result<HashMap<String, String>, String>
     })
 }
 
-fn decode_blob_inputs(value: JsValue) -> Result<HashMap<String, core::BlobWithMetadata>, String> {
+fn decode_blob_inputs(
+    value: JsValue,
+) -> Result<HashMap<String, oicana_ffi_core::BlobWithMetadata>, String> {
     let blobs: HashMap<String, BlobWithMetadata> = from_value(value).map_err(|error| {
         format!("Failed to deserialize HashMap<String, BlobWithMetadata> from JavaScript value: {error:?}")
     })?;
@@ -222,7 +225,7 @@ fn decode_blob_inputs(value: JsValue) -> Result<HashMap<String, core::BlobWithMe
                 .map_err(|error| format!("Failed to encode metadata for '{key}': {error:?}"))?;
             Ok((
                 key,
-                core::BlobWithMetadata {
+                oicana_ffi_core::BlobWithMetadata {
                     bytes: blob.bytes,
                     meta,
                 },
@@ -239,11 +242,11 @@ enum CompilationMode {
     Development,
 }
 
-impl From<CompilationMode> for core::CompilationMode {
+impl From<CompilationMode> for oicana_ffi_core::CompilationMode {
     fn from(value: CompilationMode) -> Self {
         match value {
-            CompilationMode::Development => core::CompilationMode::Development,
-            CompilationMode::Production => core::CompilationMode::Production,
+            CompilationMode::Development => oicana_ffi_core::CompilationMode::Development,
+            CompilationMode::Production => oicana_ffi_core::CompilationMode::Production,
         }
     }
 }
