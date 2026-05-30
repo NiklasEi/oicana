@@ -1,0 +1,6 @@
+[tool.oicana]
+manifest_version = 1
+
+[[tool.oicana.inputs]]
+type = "xml"
+key = "data"

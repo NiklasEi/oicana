@@ -1,37 +1,45 @@
 # Changelog
 
-
-# Beta
-
+## Upcoming
 
 
-## Browser integration
+### Typst package
+- fix image helper for optional blob inputs
+
+### Browser integration
 - Move standard logs to trace
 
 
 
-## Rust integration
+
+
+## Beta
+
+
+
+
+### Rust integration
 - re-export more Typst types
 
-## CLI
+### CLI
 - Compress images before writing them to disc (snapshots and comparison files)
 
-## Browser integration
+### Browser integration
 - Expose getter for compilation warnings
 
-## C# integration
+### C# integration
 - Expose getter for compilation warnings
 
-## Java integration
+### Java integration
 - Expose getter for compilation warnings
 
-## Node.js integration
+### Node.js integration
 - Expose getter for compilation warnings
 
-## PHP integration
+### PHP integration
 - Expose getter for compilation warnings
 
-## Python integration
+### Python integration
 - Expose getter for compilation warnings
 
 
@@ -39,130 +47,130 @@
 
 # Alpha
 
-## CLI v0.1.0-alpha.17
+### CLI v0.1.0-alpha.17
 - set document date on template scaffold
 
-## CLI v0.1.0-alpha.16
+### CLI v0.1.0-alpha.16
 - template now always exclude output and test directories
 - validate command will ensure the given pdf standards for export are compatible
 - `new` command
 
-## Rust integration v0.1.0-alpha.12
+### Rust integration v0.1.0-alpha.12
 <changes limited to internal crates for the CLI>
 
-## C# integration v0.1.0-alpha.12
+### C# integration v0.1.0-alpha.12
 - `Oicana.Template` namespace was removed; all content moved to the root namespace
 
-## Rust integration v0.1.0-alpha.11
+### Rust integration v0.1.0-alpha.11
 - re-export all required oicana crates and Typst types
 - more granular features in the integration and internal crates
 
-## CLI v0.1.0-alpha.15
+### CLI v0.1.0-alpha.15
 - Update to rust integration v0.1.0-alpha.11
 - Show version of the bundled Typst compiler in version output
 
-## Browser integration v0.1.0-alpha.8
+### Browser integration v0.1.0-alpha.8
 - Use non deprecated parameter for WASM init call
 
-## C# integration v0.1.0-alpha.11
+### C# integration v0.1.0-alpha.11
 - rename `ExportOptions` -> `ExportFormat` for consistency
 
-## PHP integration v0.1.0-alpha.5
+### PHP integration v0.1.0-alpha.5
 - Change pixels per pt default for png exports from 2 to 1 for consistency
 
-## CLI v0.1.0-alpha.14 (WIP in 12/13)
+### CLI v0.1.0-alpha.14 (WIP in 12/13)
 - Update command when installing CLI via scripts
 
-## CLI v0.1.0-alpha.11
-## Rust integration v0.1.0-alpha.10
+### CLI v0.1.0-alpha.11
+### Rust integration v0.1.0-alpha.10
 - watch mode for tests
 
-## CLI v0.1.0-alpha.10
-## Rust integration v0.1.0-alpha.9
-## Typst integration v0.1.1
+### CLI v0.1.0-alpha.10
+### Rust integration v0.1.0-alpha.9
+### Typst integration v0.1.1
 - Make inputs required by default with better error handling
 - Support watch command in CLI
 - Don't copy template dependencies on disk
 - General CLI output improvements
 
-## CLI v0.1.0-alpha.9
-## Browser integration v0.1.0-alpha.7
-## C# integration v0.1.0-alpha.10
-## Node.js integration v0.1.0-alpha.8
-## Python integration v0.1.0-alpha.5
-## PHP integration v0.1.0-alpha.4
-## Java integration v0.1.0-alpha.3
-## Rust integration v0.1.0-alpha.8
+### CLI v0.1.0-alpha.9
+### Browser integration v0.1.0-alpha.7
+### C# integration v0.1.0-alpha.10
+### Node.js integration v0.1.0-alpha.8
+### Python integration v0.1.0-alpha.5
+### PHP integration v0.1.0-alpha.4
+### Java integration v0.1.0-alpha.3
+### Rust integration v0.1.0-alpha.8
 - Add JSON input validation for inputs with schemas
 
-## Browser integration v0.1.0-alpha.6
+### Browser integration v0.1.0-alpha.6
 - return Uint8Array<ArrayBuffer> from compile methods
 - Implement Disposable for automatic cleanup with `using`
 
-## Node.js integration v0.1.0-alpha.7
+### Node.js integration v0.1.0-alpha.7
 - Implement Disposable for automatic cleanup with `using`
 - more error handling
 - expose cache eviction methods
 
-## PHP integration v0.1.0-alpha.3
+### PHP integration v0.1.0-alpha.3
 - expose cache eviction methods
 
-## Python integration v0.1.0-alpha.4
+### Python integration v0.1.0-alpha.4
 - expose cache eviction methods
 - rename `export_format` parameter to `export`
 
-## Rust integration v0.1.0-alpha.7
+### Rust integration v0.1.0-alpha.7
 - follow sym links when packing templates
 - remove some possible panics
 
-## CLI v0.1.0-alpha.8
+### CLI v0.1.0-alpha.8
 - print packaged templates
 - follow sym links when packing templates
 - remove some possible panics
 
-## C# integration v0.1.0-alpha.9
+### C# integration v0.1.0-alpha.9
 - Expose cache eviction on `Configuration` and `Template`
 
-## Java integration v0.1.0-alpha.2
+### Java integration v0.1.0-alpha.2
 - improve overloads for Template#Compile
 
-## C# integration v0.1.0-alpha.8
+### C# integration v0.1.0-alpha.8
 - Take inputs as dictionary
 - Remove possible panics in error handling
 
 
-## Browser integration v0.1.0-alpha.4
-## Node.js integration v0.1.0-alpha.5
+### Browser integration v0.1.0-alpha.4
+### Node.js integration v0.1.0-alpha.5
 - Remove log statements
 
-## C# integration v0.1.0-alpha.6
-## Browser integration v0.1.0-alpha.3
-## Node.js integration v0.1.0-alpha.4
+### C# integration v0.1.0-alpha.6
+### Browser integration v0.1.0-alpha.3
+### Node.js integration v0.1.0-alpha.4
 - Unify function parameters
 - Fix default compilation mode
 
-## Crates v0.1.0-alpha.5
-## CLI v0.1.0-alpha.6
-## C# integration v0.1.0-alpha.5
-## Browser integration v0.1.0-alpha.2
-## Node.js integration v0.1.0-alpha.3
-## Rust integration v0.1.0-alpha.5
+### Crates v0.1.0-alpha.5
+### CLI v0.1.0-alpha.6
+### C# integration v0.1.0-alpha.5
+### Browser integration v0.1.0-alpha.2
+### Node.js integration v0.1.0-alpha.3
+### Rust integration v0.1.0-alpha.5
 - Fix template paths on Windows
 - Update to Typst 0.14
 
-## Browser v0.1.0-alpha.2
+### Browser v0.1.0-alpha.2
 - improved Browser compatibility (e.g. works on newer Firefox Android now) 
 
-## C# integration v0.1.0-alpha.4
+### C# integration v0.1.0-alpha.4
 - DO NOT USE; broken on Windows
 
-## Crates v0.1.0-alpha.4 and CLI v0.1.0-alpha.5
+### Crates v0.1.0-alpha.4 and CLI v0.1.0-alpha.5
 - fix fuzzing tests from paths other than template root ((#28)[https://github.com/oicana/oicana/pull/20])
 
-## Crates v0.1.0-alpha.3 and CLI v0.1.0-alpha.4
+### Crates v0.1.0-alpha.3 and CLI v0.1.0-alpha.4
 - mostly changes for CLI - v0.1.0-alpha.3
 
-## CLI - v0.1.0-alpha.3
+### CLI - v0.1.0-alpha.3
 - fix CLI sometimes packaging test files ((#20)[https://github.com/oicana/oicana/pull/20])
 - tests can be without a snapshot file ((#16)[https://github.com/oicana/oicana/pull/16])
 - tests can fuzz json inputs with a json schema ((#16)[https://github.com/oicana/oicana/pull/16])
