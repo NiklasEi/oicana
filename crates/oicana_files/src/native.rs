@@ -236,13 +236,11 @@ impl<T: Clone> SlotCell<T> {
 /// otherwise it gets the file path of the ID and reads the file from disk.
 fn read(id: FileId, files: &NativeTemplate) -> Result<Vec<u8>, FileError> {
     let path = &system_path(id, files)?;
-    if fs::metadata(path)
-        .map_err(|_| FileError::NotFound(path.clone()))?
-        .is_dir()
-    {
+    let f = |error| FileError::from_io(error, path);
+    if fs::metadata(path).map_err(f)?.is_dir() {
         Err(FileError::IsDirectory)
     } else {
-        Ok(fs::read(path).unwrap())
+        fs::read(path).map_err(f)
     }
 }
 
@@ -303,4 +301,80 @@ fn system_path(id: FileId, files: &NativeTemplate) -> Result<PathBuf, FileError>
     // access. Note: It can still escape via symlinks, but native
     // templates are only used during development, not at runtime.
     id.vpath().resolve(&root).ok_or(FileError::AccessDenied)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use tempfile::TempDir;
+
+    fn template(root: &Path) -> NativeTemplate {
+        NativeTemplate::new(root, root.join(".packages"))
+    }
+
+    fn symlink_file(src: &Path, dst: &Path) {
+        #[cfg(unix)]
+        std::os::unix::fs::symlink(src, dst).unwrap();
+        #[cfg(windows)]
+        std::os::windows::fs::symlink_file(src, dst).unwrap();
+    }
+
+    #[test]
+    fn reads_source_and_bytes_of_a_file() {
+        let dir = TempDir::new().unwrap();
+        fs::write(dir.path().join("main.typ"), "Hello").unwrap();
+        let files = template(dir.path());
+
+        let id = FileId::new(None, VirtualPath::new("main.typ"));
+        assert_eq!(files.source(id).unwrap().text(), "Hello");
+        assert_eq!(files.file(id).unwrap().as_slice(), b"Hello");
+    }
+
+    #[test]
+    fn reading_a_missing_file_returns_not_found() {
+        let dir = TempDir::new().unwrap();
+        let files = template(dir.path());
+
+        let id = FileId::new(None, VirtualPath::new("missing.typ"));
+        assert!(matches!(files.file(id), Err(FileError::NotFound(_))));
+        assert!(matches!(files.source(id), Err(FileError::NotFound(_))));
+    }
+
+    #[test]
+    fn reading_follows_a_symlink_to_its_target() {
+        let dir = TempDir::new().unwrap();
+        let target = dir.path().join("real.typ");
+        fs::write(&target, "from target").unwrap();
+        symlink_file(&target, &dir.path().join("link.typ"));
+        let files = template(dir.path());
+
+        let id = FileId::new(None, VirtualPath::new("link.typ"));
+        assert_eq!(files.source(id).unwrap().text(), "from target");
+        assert_eq!(files.file(id).unwrap().as_slice(), b"from target");
+    }
+
+    #[test]
+    fn reading_a_directory_returns_is_directory() {
+        let dir = TempDir::new().unwrap();
+        fs::create_dir(dir.path().join("sub")).unwrap();
+        let files = template(dir.path());
+
+        let id = FileId::new(None, VirtualPath::new("sub"));
+        assert!(matches!(files.file(id), Err(FileError::IsDirectory)));
+    }
+
+    #[test]
+    fn path_escaping_the_root_is_denied() {
+        let dir = TempDir::new().unwrap();
+        let files = template(dir.path());
+
+        let id = FileId::new(None, VirtualPath::new("../../etc/passwd"));
+        assert!(matches!(files.file(id), Err(FileError::AccessDenied)));
+    }
+
+    #[test]
+    fn decode_utf8_strips_bom() {
+        assert_eq!(decode_utf8(b"\xef\xbb\xbfhello").unwrap(), "hello");
+        assert_eq!(decode_utf8(b"hello").unwrap(), "hello");
+    }
 }
