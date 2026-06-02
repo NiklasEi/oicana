@@ -300,7 +300,9 @@ impl<Files: TemplateFiles> World for OicanaWorld<Files> {
 
         let naive = match offset {
             None => now.naive_local(),
-            Some(o) => now.naive_utc() + chrono::Duration::try_hours(o)?,
+            Some(o) => now
+                .naive_utc()
+                .checked_add_signed(chrono::Duration::try_hours(o)?)?,
         };
 
         Datetime::from_ymd(
@@ -942,5 +944,23 @@ mod tests {
         assert!(display.contains("invoice"));
         assert!(display.contains("name"));
         assert!(display.contains("/age"));
+    }
+
+    #[test]
+    fn today_with_extreme_offset_returns_none() {
+        use typst::World;
+
+        let files = template_with(simple_manifest(), "Test");
+        let manifest = files.manifest().unwrap();
+        let world = OicanaWorld::new(files, TemplateInputs::new(), manifest).unwrap();
+
+        // An offset large enough to push the date out of range must not panic.
+        assert!(world.today(Some(100_000_000_000)).is_none());
+        assert!(world.today(Some(-100_000_000_000)).is_none());
+        assert!(world.today(Some(i64::MAX)).is_none());
+        assert!(world.today(Some(i64::MIN)).is_none());
+
+        assert!(world.today(Some(0)).is_some());
+        assert!(world.today(None).is_some());
     }
 }

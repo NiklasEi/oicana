@@ -7,7 +7,7 @@ use std::{
 use image::{GenericImageView, ImageError};
 use log::{debug, error};
 use oicana::{CompileError, Template, TemplateInitializationError};
-use oicana_export::png::{export_merged_png, EncodingError};
+use oicana_export::png::{export_merged_png, PngExportError};
 use oicana_files::native::{package_data_dir, NativeTemplate};
 use oicana_input::{input::json::JsonInput, input_definition::InputDefinition, TemplateInputs};
 use oicana_template::manifest::TemplateManifest;
@@ -249,7 +249,7 @@ pub enum TestExecutionError {
     CompileError(#[from] CompileError),
     /// Failed to export png image
     #[error("{0}")]
-    ExportError(#[from] EncodingError),
+    ExportError(#[from] PngExportError),
     /// Failure during fuzzing setup
     #[error("{0}")]
     FuzzingSetup(String),

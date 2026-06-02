@@ -1,12 +1,27 @@
+use thiserror::Error;
 use typst::layout::{Abs, PagedDocument};
 
 pub use png::EncodingError;
 
+/// An error that occurred while exporting a document to PNG.
+#[derive(Debug, Error)]
+pub enum PngExportError {
+    /// The requested scale (`pixels_per_pt`) is not a positive, finite number.
+    #[error("pixels per point must be a positive, finite number, got {0}")]
+    InvalidScale(f32),
+    /// Encoding the rendered pixmap to PNG failed.
+    #[error(transparent)]
+    Encoding(#[from] EncodingError),
+}
+
 pub fn export_merged_png(
     document: &PagedDocument,
     pixels_per_pt: f32,
-) -> Result<Vec<u8>, EncodingError> {
-    typst_render::render_merged(document, pixels_per_pt, Abs::pt(15.), None).encode_png()
+) -> Result<Vec<u8>, PngExportError> {
+    if !pixels_per_pt.is_finite() || pixels_per_pt <= 0.0 {
+        return Err(PngExportError::InvalidScale(pixels_per_pt));
+    }
+    Ok(typst_render::render_merged(document, pixels_per_pt, Abs::pt(15.), None).encode_png()?)
 }
 
 #[cfg(test)]
@@ -145,6 +160,31 @@ manifest_version = 1
 
         assert!(png.len() > 50);
         assert_eq!(&png[0..8], PNG_SIGNATURE);
+    }
+
+    #[test]
+    fn degenerate_dpi_is_rejected() {
+        let document = compile(simple_template());
+
+        for dpi in [
+            0.0f32,
+            -1.0,
+            -0.5,
+            f32::NAN,
+            f32::INFINITY,
+            f32::NEG_INFINITY,
+        ] {
+            assert!(
+                matches!(
+                    export_merged_png(&document, dpi),
+                    Err(PngExportError::InvalidScale(_))
+                ),
+                "dpi {dpi} should be rejected as an invalid scale"
+            );
+        }
+
+        assert!(export_merged_png(&document, f32::MIN_POSITIVE).is_ok());
+        assert!(export_merged_png(&document, 0.1).is_ok());
     }
 
     #[test]

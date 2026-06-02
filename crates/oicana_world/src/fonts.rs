@@ -2,6 +2,7 @@ use std::fs;
 use std::path::PathBuf;
 use std::sync::OnceLock;
 
+use log::warn;
 use oicana_files::TemplateFiles;
 use typst::foundations::Bytes;
 use typst::text::{Font, FontBook};
@@ -55,8 +56,13 @@ impl FontCollection {
 
     fn add_template_fonts<Files: TemplateFiles>(&mut self, files: &Files) {
         for file_id in files.font_files() {
-            let data = files.file(*file_id).expect("Failed to read font file");
-            self.load_fonts_from_bytes(data);
+            match files.file(*file_id) {
+                Ok(data) => self.load_fonts_from_bytes(data),
+                Err(error) => warn!(
+                    "Skipping font file {}: {error}",
+                    file_id.vpath().as_rooted_path().display()
+                ),
+            }
         }
     }
 
@@ -76,5 +82,48 @@ impl FontCollection {
                 font: OnceLock::from(Some(font)),
             });
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use typst::diag::{FileError, FileResult};
+    use typst::syntax::{FileId, Source, VirtualPath};
+
+    struct UnreadableFontTemplate {
+        fonts: Vec<FileId>,
+    }
+
+    impl TemplateFiles for UnreadableFontTemplate {
+        fn source(&self, id: FileId) -> FileResult<Source> {
+            Err(FileError::NotFound(
+                id.vpath().as_rooted_path().to_path_buf(),
+            ))
+        }
+
+        fn file(&self, id: FileId) -> FileResult<Bytes> {
+            Err(FileError::NotFound(
+                id.vpath().as_rooted_path().to_path_buf(),
+            ))
+        }
+
+        fn font_files(&self) -> &Vec<FileId> {
+            &self.fonts
+        }
+    }
+
+    #[test]
+    fn unreadable_template_font_is_skipped() {
+        let template = UnreadableFontTemplate {
+            fonts: vec![FileId::new(None, VirtualPath::new("fonts/missing.ttf"))],
+        };
+
+        let mut collection = FontCollection::new();
+        collection.collect(&template);
+
+        assert!(!collection.fonts.is_empty());
+        assert!(collection.book.info(collection.fonts.len() - 1).is_some());
+        assert!(collection.book.info(collection.fonts.len()).is_none());
     }
 }

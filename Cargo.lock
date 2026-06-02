@@ -3628,6 +3628,7 @@ dependencies = [
  "oicana_template",
  "oicana_world",
  "png 0.17.16",
+ "thiserror 2.0.18",
  "typst",
  "typst-pdf",
  "typst-render",

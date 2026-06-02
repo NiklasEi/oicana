@@ -14,7 +14,7 @@ readme = { workspace = true }
 
 [features]
 default = ["pdf", "svg", "png"]
-png = ["dep:typst-render", "dep:png"]
+png = ["dep:typst-render", "dep:png", "dep:thiserror"]
 pdf = ["dep:typst-pdf"]
 svg = ["dep:typst-svg"]
 
@@ -28,6 +28,7 @@ typst-svg = { workspace = true, optional = true }
 typst = { workspace = true }
 
 png = { workspace = true, optional = true }
+thiserror = { workspace = true, optional = true }
 
 [dev-dependencies]
 oicana_files = { workspace = true, features = ["preloaded"] }

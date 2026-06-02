@@ -3,6 +3,9 @@
 ## Upcoming
 
 
+### Crates
+- fixed some edge-case panics
+
 ### Typst package
 - fix image helper for optional blob inputs
 
