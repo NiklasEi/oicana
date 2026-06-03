@@ -10,13 +10,13 @@ import {
   set_validate_inputs,
   inputs as wasmInputs,
 } from '@oicana/browser-wasm';
-import { CompilationMode } from './CompilationMode';
-import type { ExportFormat } from './ExportFormat';
+import { CompilationMode } from './CompilationMode.js';
+import type { ExportFormat } from './ExportFormat.js';
 import type {
   BlobInputDefinition,
   BlobWithMetadata,
   JsonInputDefinition,
-} from './inputs';
+} from './inputs/index.js';
 
 /**
  * A template

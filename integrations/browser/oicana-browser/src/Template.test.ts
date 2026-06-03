@@ -1,9 +1,9 @@
 import { readFile, writeFile } from 'node:fs/promises';
 import { describe, expect, it } from 'vitest';
-import { CompilationMode } from './CompilationMode';
-import { Png } from './ExportFormat';
-import type { BlobWithMetadata } from './inputs';
-import { Template } from './Template';
+import { CompilationMode } from './CompilationMode.js';
+import { Png } from './ExportFormat.js';
+import type { BlobWithMetadata } from './inputs/index.js';
+import { Template } from './Template.js';
 
 const asset = (file: string) => {
   return readFile(`../../../assets/${file}`);
