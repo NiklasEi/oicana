@@ -11,8 +11,7 @@
 
 ### Browser integration
 - Move standard logs to trace
-
-
+- Use explicit extensions in imports
 
 
 

@@ -5,10 +5,10 @@ export {
   evict_cache as evictCache,
   set_validate_inputs as setValidateInputs,
 } from '@oicana/browser-wasm';
-export * from './CompilationMode';
-export * from './ExportFormat';
-export * from './inputs';
-export * from './Template';
+export * from './CompilationMode.js';
+export * from './ExportFormat.js';
+export * from './inputs/index.js';
+export * from './Template.js';
 
 const initialized: Set<string> = new Set();
 
