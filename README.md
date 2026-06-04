@@ -66,7 +66,7 @@ The Oicana Typst package has to be set up for every template. It will handle inp
 
 The package needs minimal setup:
 ```typst
-#import "@preview/oicana:0.1.1": setup
+#import "@preview/oicana:0.2.0": setup
 
 #let read-project-file(path) = return read(path, encoding: none);
 #let (input, oicana-image, oicana-config) = setup(read-project-file);

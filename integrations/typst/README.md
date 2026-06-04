@@ -38,7 +38,7 @@ development = { file = "company-logo.png" }
 
 This package will collect the two inputs and prepare them for use in your Typst code. Previewing the following `main.typ` file in a Typst editor, would show the contents of the `data.json` and `company-logo.png` files:
 ```typst
-#import "@preview/oicana:0.1.1": setup
+#import "@preview/oicana:0.2.0": setup
 
 #let read-project-file(path) = return read(path, encoding: none);
 #let (input, oicana-image, oicana-config) = setup(read-project-file);
