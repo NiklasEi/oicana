@@ -1,12 +1,12 @@
 /// This package currently requires a function input, because otherwise it is not possible to read files from the consuming project
 /// out of the package. In the future this might be solved with a path type: https://github.com/typst/typst/issues/971
 
-#let version = version(0, 1, 1)
+#let version = version(0, 2, 0)
 
 /// Method to simplify reading Oicana inputs in Typst projects.
 /// Pass a read function to `setup` to allow it to read project files:
 /// ```typst
-/// #import "@preview/oicana:0.1.1": setup
+/// #import "@preview/oicana:0.2.0": setup
 ///
 /// #let read-project-file(path) = return read(path, encoding: none);
 /// #let (input, oicana-image, oicana-config) = setup(read-project-file);

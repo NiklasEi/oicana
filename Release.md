@@ -15,6 +15,7 @@
   * Python:
     * native: integrations/python/oicana-python-native/pyproject.toml and integrations/python/oicana-python-native/Cargo.toml
     * wrapper: integrations/python/oicana-python/pyproject.toml
+    * integrations/python/oicana-python/src/oicana/__init__.py
     * run `uv sync` in integrations/python/oicana-python
   * PHP:
     * integrations/php/oicana-php-native/Cargo.toml
@@ -23,6 +24,9 @@
   * Java:
     * integrations/java/oicana-java-native/Cargo.toml
     * integrations/java/build.gradle.kts (version in `subprojects` block)
+  * Typst package
+    * Bump version in integrations/typst/typst.toml
+    * Bump code version and version in docs in integrations/typst/src/lib.typ
 4. Run `cargo publish --workspace` to publish the rust integration and CLI to crates.io
 5.
   * tag CLI version `oicana_cli-v*` => will trigger CD pipeline

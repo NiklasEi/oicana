@@ -3,51 +3,43 @@
 ## Upcoming
 
 
-### Crates
-- fixed some edge-case panics
 
-### Typst package
+## v0.2.0
+- fixed some edge-case panics is the central crates
+
+### Rust integration v0.2.0
+- re-export more Typst types
+
+### CLI v0.2.0
+- Compress images before writing them to disc (snapshots and comparison files)
+
+### Typst package v0.2.0
 - fix image helper for optional blob inputs
 
-### Browser integration
+### Browser integration v0.2.0
+- Expose getter for compilation warnings
 - Move standard logs to trace
 - Use explicit extensions in imports
 
-
-
-## Beta
-
-
-
-
-### Rust integration
-- re-export more Typst types
-
-### CLI
-- Compress images before writing them to disc (snapshots and comparison files)
-
-### Browser integration
+### C# integration v0.2.0
 - Expose getter for compilation warnings
 
-### C# integration
+### Java integration v0.2.0
 - Expose getter for compilation warnings
 
-### Java integration
+### Node.js integration v0.2.0
 - Expose getter for compilation warnings
 
-### Node.js integration
+### PHP integration v0.2.0
 - Expose getter for compilation warnings
 
-### PHP integration
-- Expose getter for compilation warnings
-
-### Python integration
+### Python integration v0.2.0
 - Expose getter for compilation warnings
 
 
 
 
-# Alpha
+## Alpha
 
 ### CLI v0.1.0-alpha.17
 - set document date on template scaffold
