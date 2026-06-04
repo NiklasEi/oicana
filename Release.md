@@ -15,6 +15,7 @@
   * Python:
     * native: integrations/python/oicana-python-native/pyproject.toml and integrations/python/oicana-python-native/Cargo.toml
     * wrapper: integrations/python/oicana-python/pyproject.toml
+    * integrations/python/oicana-python/src/oicana/__init__.py
     * run `uv sync` in integrations/python/oicana-python
   * PHP:
     * integrations/php/oicana-php-native/Cargo.toml
