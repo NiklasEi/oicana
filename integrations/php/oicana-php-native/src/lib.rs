@@ -135,6 +135,14 @@ pub fn inputs(template: String) -> PhpResult<String> {
     oicana_ffi_core::inputs(&template).map_err(into_php_err)
 }
 
+/// Return the sizes (in points) of every page of a compiled document as a JSON
+/// array of `{ "width": float, "height": float }`.
+#[php_function]
+#[php(name = "OicanaInternal\\document_pages")]
+pub fn document_pages(document_id: String) -> PhpResult<String> {
+    oicana_ffi_core::document_pages(&document_id).map_err(into_php_err)
+}
+
 /// Load the source of the given file in the template.
 ///
 /// Calling this method requires a previous call to `register_template` with the same template
@@ -157,12 +165,20 @@ pub fn get_file(template: String, file: String) -> PhpResult<Vec<u8>> {
 
 /// Export the given document
 ///
+/// `page_range` is a JSON object `{ "start"?: int, "end"?: int }` with 1-based,
+/// inclusive bounds, or an empty string to export the whole document.
+///
 /// Make sure to call `remove_document` with the document_id afterwards, to free the memory.
 #[php_function]
 #[php(name = "OicanaInternal\\export_document")]
-pub fn export_document(document_id: String, export_format: String) -> PhpResult<Vec<u8>> {
+pub fn export_document(
+    document_id: String,
+    export_format: String,
+    page_range: String,
+) -> PhpResult<Vec<u8>> {
     let format = oicana_ffi_core::parse_export_format(&export_format).map_err(into_php_err)?;
-    oicana_ffi_core::export_document(&document_id, format).map_err(into_php_err)
+    let page = oicana_ffi_core::parse_page_range(&page_range).map_err(into_php_err)?;
+    oicana_ffi_core::export_document(&document_id, format, page).map_err(into_php_err)
 }
 
 /// Remove the document from the cache.
@@ -233,6 +249,7 @@ pub fn get_module(module: ModuleBuilder) -> ModuleBuilder {
         .function(wrap_function!(register_template))
         .function(wrap_function!(compile_template))
         .function(wrap_function!(inputs))
+        .function(wrap_function!(document_pages))
         .function(wrap_function!(get_source))
         .function(wrap_function!(get_file))
         .function(wrap_function!(export_document))

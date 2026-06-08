@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING
 from oicana_native import (
     BlobWithMetadata,
     compile_template,
+    document_pages,
     export_document,
     get_file,
     get_source,
@@ -30,10 +31,25 @@ from oicana_native import (
     set_validate_inputs as _set_validate_inputs,
 )
 
-from .types import BlobInput, CompilationMode, ExportFormat
+from .types import BlobInput, CompilationMode, ExportFormat, PageRange, PageSize
 
 if TYPE_CHECKING:
     from typing import Any
+
+
+def _serialize_page_range(pages: PageRange | None) -> str:
+    """Serialize a page range for the native ``export_document`` call.
+
+    ``None`` becomes an empty string, meaning "the whole document".
+    """
+    if pages is None:
+        return ""
+    payload: dict[str, int] = {}
+    if pages.start is not None:
+        payload["start"] = pages.start
+    if pages.end is not None:
+        payload["end"] = pages.end
+    return json.dumps(payload)
 
 
 class Template:
@@ -41,7 +57,7 @@ class Template:
 
     Example:
         >>> with Template(template_bytes) as template:
-        ...     pdf = template.compile(
+        ...     pdf = template.export(
         ...         json_inputs={"name": '{"value": "Alice"}'},
         ...         export={"format": "pdf"}
         ...     )
@@ -89,13 +105,14 @@ class Template:
         )
         remove_document(doc_id)
 
-    def compile(
+    def export(
         self,
         *,
         json_inputs: dict[str, str] | None = None,
         blob_inputs: dict[str, BlobInput] | None = None,
         export: ExportFormat = {"format": "pdf"},  # type: ignore[typeddict-item]
         mode: CompilationMode = CompilationMode.PRODUCTION,
+        pages: PageRange | None = None,
     ) -> bytes:
         """Compile template and export to the given format.
 
@@ -104,10 +121,69 @@ class Template:
             blob_inputs: Blob inputs
             export: Export format and configuration (pdf/png/svg)
             mode: Compilation mode
+            pages: 1-based, inclusive page range (defaults to the whole document)
 
         Returns:
             Compiled document bytes
         """
+        doc_id = self._compile_to_document_id(json_inputs, blob_inputs, mode)
+        self._document_ids.append(doc_id)
+        try:
+            result = export_document(doc_id, json.dumps(export), _serialize_page_range(pages))
+        finally:
+            remove_document(doc_id)
+            self._document_ids.remove(doc_id)
+
+        return bytes(result)
+
+    def compile_document(
+        self,
+        *,
+        json_inputs: dict[str, str] | None = None,
+        blob_inputs: dict[str, BlobInput] | None = None,
+        mode: CompilationMode = CompilationMode.PRODUCTION,
+    ) -> CompiledDocument:
+        """Compile the template and return a handle to the compiled document.
+
+        Unlike :meth:`export`, the document is kept in memory so individual
+        pages can be exported on demand (e.g. for a paginated preview) without
+        re-compiling. Use the result as a context manager or call ``close()`` to
+        free it.
+
+        Args:
+            json_inputs: JSON inputs
+            blob_inputs: Blob inputs
+            mode: Compilation mode
+
+        Returns:
+            A :class:`CompiledDocument` handle.
+        """
+        doc_id = self._compile_to_document_id(json_inputs, blob_inputs, mode)
+        return CompiledDocument(doc_id)
+
+    def pages(
+        self,
+        *,
+        json_inputs: dict[str, str] | None = None,
+        blob_inputs: dict[str, BlobInput] | None = None,
+        mode: CompilationMode = CompilationMode.PRODUCTION,
+    ) -> list[PageSize]:
+        """Compile the template and return the sizes (in points) of every page.
+
+        Convenient for one-off use. To also export pages, prefer
+        :meth:`compile_document` so the template is compiled only once.
+        """
+        with self.compile_document(
+            json_inputs=json_inputs, blob_inputs=blob_inputs, mode=mode
+        ) as document:
+            return list(document.pages)
+
+    def _compile_to_document_id(
+        self,
+        json_inputs: dict[str, str] | None,
+        blob_inputs: dict[str, BlobInput] | None,
+        mode: CompilationMode,
+    ) -> str:
         native_mode = (
             NativeCompilationMode.Production
             if mode == CompilationMode.PRODUCTION
@@ -122,20 +198,12 @@ class Template:
                 meta_str = json.dumps(blob.metadata) if blob.metadata else "{}"
                 native_blobs[key] = BlobWithMetadata(blob.data, meta_str)
 
-        doc_id = compile_template(
+        return compile_template(
             self._template_id,
             native_json,
             native_blobs,
             native_mode,
         )
-        self._document_ids.append(doc_id)
-
-        result = export_document(doc_id, json.dumps(export))
-
-        remove_document(doc_id)
-        self._document_ids.remove(doc_id)
-
-        return bytes(result)
 
     def inputs(self) -> dict[str, Any]:
         """Get input definitions from manifest.
@@ -199,6 +267,82 @@ class Template:
         """Destructor cleanup."""
         try:
             self.cleanup()
+        except Exception:
+            pass  # Best effort cleanup
+
+
+class CompiledDocument:
+    """A compiled document kept in memory so its pages can be exported on demand.
+
+    Obtain one via :meth:`Template.compile_document`. Use it as a context manager
+    (``with template.compile_document() as document: ...``) or call
+    :meth:`close` to release the underlying document.
+
+    Example:
+        >>> with template.compile_document(json_inputs={...}) as document:
+        ...     for index, _page in enumerate(document.pages):
+        ...         png = document.export_page(index, pixels_per_pt=2.0)
+    """
+
+    def __init__(self, document_id: str) -> None:
+        """Wrap an already-compiled document. Use Template.compile_document()."""
+        self._document_id: str | None = document_id
+        self.pages: list[PageSize] = [
+            PageSize(width=page["width"], height=page["height"])
+            for page in json.loads(document_pages(document_id))
+        ]
+
+    def export_page(self, page_index: int, pixels_per_pt: float) -> bytes:
+        """Export a single (zero-based) page of the document to PNG.
+
+        Args:
+            page_index: Zero-based index of the page to export
+            pixels_per_pt: Resolution in pixels per point
+        """
+        return self.export(
+            {"format": "png", "pixelsPerPt": pixels_per_pt},
+            pages=PageRange.single(page_index + 1),
+        )
+
+    def to_pdf(self, pages: PageRange | None = None) -> bytes:
+        """Export the document to a PDF file, optionally restricted to a range.
+
+        Args:
+            pages: 1-based, inclusive page range (defaults to the whole document)
+        """
+        return self.export({"format": "pdf"}, pages=pages)
+
+    def export(self, export: ExportFormat, pages: PageRange | None = None) -> bytes:
+        """Export the document in the given format.
+
+        Args:
+            export: Export format and configuration (pdf/png/svg)
+            pages: 1-based, inclusive page range (defaults to the whole document)
+        """
+        if self._document_id is None:
+            raise RuntimeError("CompiledDocument has already been closed")
+        return bytes(
+            export_document(self._document_id, json.dumps(export), _serialize_page_range(pages))
+        )
+
+    def close(self) -> None:
+        """Release the cached document. The instance must not be used after."""
+        if self._document_id is not None:
+            remove_document(self._document_id)
+            self._document_id = None
+
+    def __enter__(self) -> CompiledDocument:
+        """Context manager entry."""
+        return self
+
+    def __exit__(self, *args: object) -> None:
+        """Context manager exit; releases the document."""
+        self.close()
+
+    def __del__(self) -> None:
+        """Destructor cleanup."""
+        try:
+            self.close()
         except Exception:
             pass  # Best effort cleanup
 

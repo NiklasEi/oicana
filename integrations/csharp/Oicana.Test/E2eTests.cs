@@ -23,7 +23,7 @@ public class E2ETests
     {
         var template = new Template(_templateFile);
 
-        var document = template.Compile(new Dictionary<string, JsonNode>(), new Dictionary<string, BlobInput>(), ExportFormat.Png(1.0f), new CompilationOptions(CompilationMode.Development));
+        var document = template.Export(new Dictionary<string, JsonNode>(), new Dictionary<string, BlobInput>(), ExportFormat.Png(1.0f), new CompilationOptions(CompilationMode.Development));
         using var fileStream = File.Create("e2e/development.png");
         document.CopyTo(fileStream);
     }
@@ -51,7 +51,7 @@ public class E2ETests
         {
             ["development-json"] = JsonSerializer.Deserialize<JsonNode>("{ \"name\": \"Input\", \"foo\": [41, \"testing\"] }")!
         };
-        var document = template.Compile(jsonInputs, blobInputs, ExportFormat.Png(1.0f), new CompilationOptions(CompilationMode.Production));
+        var document = template.Export(jsonInputs, blobInputs, ExportFormat.Png(1.0f), new CompilationOptions(CompilationMode.Production));
         using var fileStream = File.Create("e2e/production.png");
         document.CopyTo(fileStream);
     }
@@ -105,7 +105,7 @@ public class E2ETests
             ["both-json"] = jsonData
         };
 
-        var document = template.Compile(jsonInputs, blobInputs, ExportFormat.Png(1.0f), new CompilationOptions(CompilationMode.Production));
+        var document = template.Export(jsonInputs, blobInputs, ExportFormat.Png(1.0f), new CompilationOptions(CompilationMode.Production));
         using var fileStream = File.Create("e2e/all-inputs.png");
         document.CopyTo(fileStream);
     }
@@ -114,7 +114,7 @@ public class E2ETests
     public void GetsReadableErrors()
     {
         var template = new Template(_templateFile);
-        Action act = () => template.Compile(new Dictionary<string, JsonNode>(), new Dictionary<string, BlobInput>(), ExportFormat.Png(1.0f), new CompilationOptions(CompilationMode.Production));
+        Action act = () => template.Export(new Dictionary<string, JsonNode>(), new Dictionary<string, BlobInput>(), ExportFormat.Png(1.0f), new CompilationOptions(CompilationMode.Production));
 
         act.Should()
             .Throw<OicanaException>()

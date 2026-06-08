@@ -1,8 +1,8 @@
 use anyhow::{bail, Context};
 use clap::ValueEnum;
-use oicana::export::pdf::export_merged_pdf;
-use oicana::export::png::export_merged_png;
-use oicana::export::svg::export_merged_svg;
+use oicana::export::pdf;
+use oicana::export::png;
+use oicana::export::svg;
 use oicana::files::native::NativeTemplate;
 use oicana::template::PdfStandard;
 use oicana::Template;
@@ -22,7 +22,7 @@ pub fn export_pdf(
         world.manifest().pdf_standards().to_vec()
     };
 
-    let pdf_buffer = match export_merged_pdf(document, world, &standards) {
+    let pdf_buffer = match pdf::export_pdf(document, world, &standards, None) {
         Ok(pdf_buffer) => pdf_buffer,
         Err(diagnostics) => {
             bail!("Failed to compile PDF\n{diagnostics}");
@@ -73,8 +73,8 @@ pub fn export_image(
     fmt: ImageExportFormat,
 ) -> anyhow::Result<()> {
     let buffer = match fmt {
-        ImageExportFormat::Png => export_merged_png(document, 1.)?,
-        ImageExportFormat::Svg => export_merged_svg(document),
+        ImageExportFormat::Png => png::export_png(document, 1., None)?,
+        ImageExportFormat::Svg => svg::export_svg(document, None)?,
     };
 
     fs::write(out, buffer).context("Failed to write image")?;

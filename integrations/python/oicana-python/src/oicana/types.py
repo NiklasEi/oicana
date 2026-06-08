@@ -37,6 +37,35 @@ ExportFormat = Union[ExportFormatPdf, ExportFormatSvg, ExportFormatPng]
 
 
 @dataclass
+class PageRange:
+    """A contiguous, 1-based inclusive range of document pages to export.
+
+    Both bounds are optional; leaving one as ``None`` keeps it open.
+    """
+
+    start: int | None = None
+    end: int | None = None
+
+    @classmethod
+    def single(cls, page: int) -> PageRange:
+        """A range selecting exactly the given 1-based page."""
+        return cls(start=page, end=page)
+
+    @classmethod
+    def of(cls, start: int | None = None, end: int | None = None) -> PageRange:
+        """A range with the given (optional) 1-based, inclusive bounds."""
+        return cls(start=start, end=end)
+
+
+@dataclass
+class PageSize:
+    """Size of a single document page, in typographic points (pt)."""
+
+    width: float
+    height: float
+
+
+@dataclass
 class BlobInput:
     """Binary blob input with optional metadata."""
 

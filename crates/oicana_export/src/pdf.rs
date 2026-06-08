@@ -1,6 +1,11 @@
 use oicana_world::diagnostics::TemplateDiagnostics;
-use typst::{foundations::Smart, layout::PagedDocument};
+use typst::{
+    foundations::Smart,
+    layout::{PageRanges, PagedDocument},
+};
 use typst_pdf::{PdfOptions, PdfStandards};
+
+use crate::pages::PageRange;
 
 fn to_typst_standard(standard: oicana_template::PdfStandard) -> typst_pdf::PdfStandard {
     match standard {
@@ -34,18 +39,29 @@ pub fn validate_pdf_standards(standards: &[oicana_template::PdfStandard]) -> Res
         .map_err(|e| format!("Invalid combination of PDF standards: {}", e))
 }
 
-pub fn export_merged_pdf<Diagnostics: TemplateDiagnostics>(
+/// Export the document to PDF.
+///
+/// When `pages` is `None` the whole document is exported; otherwise only the
+/// pages in the range are exported.
+pub fn export_pdf<Diagnostics: TemplateDiagnostics>(
     document: &PagedDocument,
     diagnostics: &Diagnostics,
     standards: &[oicana_template::PdfStandard],
+    pages: Option<&PageRange>,
 ) -> Result<Vec<u8>, String> {
     let typst_standards: Vec<_> = standards.iter().map(|s| to_typst_standard(*s)).collect();
+
+    // In Typst 0.14 producing a tagged PDF while skipping pages trips an
+    // internal assertion. Only disable tagging when pages are actually skipped.
+    let skips_pages = pages.is_some_and(|range| {
+        range.selected_indices(document.pages.len()).len() != document.pages.len()
+    });
 
     let options = PdfOptions {
         ident: Smart::Auto,
         timestamp: None,
-        page_ranges: None,
-        tagged: true,
+        page_ranges: pages.map(PageRanges::from),
+        tagged: !skips_pages,
         standards: PdfStandards::new(&typst_standards)
             .map_err(|e| format!("Invalid combination of PDF standards: {}", e))?,
     };
@@ -106,7 +122,7 @@ mod tests {
     #[test]
     fn exports_simple_document_to_pdf() {
         let (document, world) = compile(simple_template());
-        let pdf = export_merged_pdf(&document, &world, &[oicana_template::PdfStandard::A_3b])
+        let pdf = export_pdf(&document, &world, &[oicana_template::PdfStandard::A_3b], None)
             .expect("PDF export to work");
 
         assert_eq!(&pdf[0..4], b"%PDF");
@@ -118,7 +134,7 @@ mod tests {
     fn exports_multipage_document_to_pdf() {
         let (document, world) = compile(multipage_template());
         let pdf =
-            export_merged_pdf(&document, &world, &[oicana_template::PdfStandard::A_3b]).unwrap();
+            export_pdf(&document, &world, &[oicana_template::PdfStandard::A_3b], None).unwrap();
 
         assert!(pdf.len() > 500);
         assert_eq!(&pdf[0..4], b"%PDF");
@@ -132,9 +148,9 @@ mod tests {
         let (doc2, world2) = compile(simple_template());
 
         let pdf1 =
-            export_merged_pdf(&doc1, &world1, &[oicana_template::PdfStandard::A_3b]).unwrap();
+            export_pdf(&doc1, &world1, &[oicana_template::PdfStandard::A_3b], None).unwrap();
         let pdf2 =
-            export_merged_pdf(&doc2, &world2, &[oicana_template::PdfStandard::A_3b]).unwrap();
+            export_pdf(&doc2, &world2, &[oicana_template::PdfStandard::A_3b], None).unwrap();
 
         assert_eq!(pdf1, pdf2);
     }
@@ -144,16 +160,18 @@ mod tests {
         let (single_doc, single_world) = compile(simple_template());
         let (multi_doc, multi_world) = compile(multipage_template());
 
-        let single_pdf = export_merged_pdf(
+        let single_pdf = export_pdf(
             &single_doc,
             &single_world,
             &[oicana_template::PdfStandard::A_3b],
+            None,
         )
         .unwrap();
-        let multi_pdf = export_merged_pdf(
+        let multi_pdf = export_pdf(
             &multi_doc,
             &multi_world,
             &[oicana_template::PdfStandard::A_3b],
+            None,
         )
         .unwrap();
 
@@ -161,10 +179,33 @@ mod tests {
     }
 
     #[test]
+    fn exports_a_page_range() {
+        let (document, world) = compile(multipage_template());
+
+        let single = export_pdf(
+            &document,
+            &world,
+            &[oicana_template::PdfStandard::A_3b],
+            Some(&PageRange::single(1)),
+        )
+        .unwrap();
+        let full = export_pdf(
+            &document,
+            &world,
+            &[oicana_template::PdfStandard::A_3b],
+            None,
+        )
+        .unwrap();
+
+        assert_eq!(&single[0..4], b"%PDF");
+        assert!(single.len() < full.len());
+    }
+
+    #[test]
     fn exports_with_different_standard() {
         let (document, world) = compile(simple_template());
         let pdf =
-            export_merged_pdf(&document, &world, &[oicana_template::PdfStandard::A_4]).unwrap();
+            export_pdf(&document, &world, &[oicana_template::PdfStandard::A_4], None).unwrap();
 
         assert_eq!(&pdf[0..4], b"%PDF");
         let end = String::from_utf8_lossy(&pdf[pdf.len() - 10..]);
@@ -174,13 +215,14 @@ mod tests {
     #[test]
     fn rejects_incompatible_standards() {
         let (document, world) = compile(simple_template());
-        let result = export_merged_pdf(
+        let result = export_pdf(
             &document,
             &world,
             &[
                 oicana_template::PdfStandard::A_4,
                 oicana_template::PdfStandard::Ua_1,
             ],
+            None,
         );
 
         assert!(result.is_err());

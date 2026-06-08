@@ -566,6 +566,7 @@ module.exports.getFile = nativeBinding.getFile
 module.exports.getSource = nativeBinding.getSource
 module.exports.getWarnings = nativeBinding.getWarnings
 module.exports.inputs = nativeBinding.inputs
+module.exports.documentPages = nativeBinding.documentPages
 module.exports.NOT_REGISTERED = nativeBinding.NOT_REGISTERED
 module.exports.registerTemplate = nativeBinding.registerTemplate
 module.exports.removeDocument = nativeBinding.removeDocument

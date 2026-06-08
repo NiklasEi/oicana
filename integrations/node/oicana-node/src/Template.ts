@@ -11,8 +11,10 @@ import {
   setValidateInputs,
 } from '@oicana/node-native';
 import { CompilationMode } from './CompilationMode.js';
+import { CompiledDocument } from './CompiledDocument.js';
 import type { ExportFormat } from './ExportFormat.js';
 import type { BlobWithMetadata } from './inputs/index.js';
+import { type PageRange, serializePageRange } from './PageRange.js';
 
 /**
  * A template
@@ -72,40 +74,42 @@ export class Template implements Disposable {
   }
 
   /**
-   * Compile the template to a PDF file without any inputs in production mode
+   * Compile the template and export it to a PDF file, without inputs, in
+   * production mode.
    */
-  public compile(): Uint8Array;
+  public export(): Uint8Array;
 
   /**
-   * Compile the template to a PDF file with given inputs in production mode
+   * Compile the template with the given inputs and export it to a PDF file in
+   * production mode.
    * @param jsonInputs
    * @param blobInputs
    */
-  public compile(
+  public export(
     jsonInputs: Map<string, string>,
     blobInputs: Map<string, BlobWithMetadata>,
   ): Uint8Array;
 
   /**
-   * Compile the template with the given inputs
+   * Compile the template with the given inputs and export it in the given format.
    * @param jsonInputs
    * @param blobInputs
    * @param exportOptions
    */
-  public compile(
+  public export(
     jsonInputs: Map<string, string>,
     blobInputs: Map<string, BlobWithMetadata>,
     exportOptions: ExportFormat,
   ): Uint8Array;
 
   /**
-   * Compile the template with the given inputs
+   * Compile the template with the given inputs and export it in the given format.
    * @param jsonInputs
    * @param blobInputs
    * @param exportOptions
    * @param compilationOptions
    */
-  public compile(
+  public export(
     jsonInputs: Map<string, string>,
     blobInputs: Map<string, BlobWithMetadata>,
     exportOptions: ExportFormat,
@@ -113,21 +117,89 @@ export class Template implements Disposable {
   ): Uint8Array;
 
   /**
-   * Compile the template with the given inputs
+   * Compile the template with the given inputs and export a range of pages
+   * @param jsonInputs
+   * @param blobInputs
+   * @param exportOptions
+   * @param compilationOptions
+   * @param pages
+   */
+  public export(
+    jsonInputs: Map<string, string>,
+    blobInputs: Map<string, BlobWithMetadata>,
+    exportOptions: ExportFormat,
+    compilationOptions: CompilationMode,
+    pages: PageRange,
+  ): Uint8Array;
+
+  /**
+   * Compile the template and export it in a single call, then free the document.
+   *
+   * To export the document
+   * several times (multiple formats, page ranges, or individual pages) from a
+   * single compilation, use {@link compile} and call `export` on the returned
+   * {@link CompiledDocument}.
    * @param jsonInputs - JSON inputs for the template (defaults to empty map)
    * @param blobInputs - Blob inputs for the template (defaults to empty map)
    * @param exportOptions - Export format specification (defaults to PDF)
+   * @param compilationOptions - Compilation mode (defaults to Production)
+   * @param pages - 1-based, inclusive page range (defaults to the whole document)
+   */
+  public export(
+    jsonInputs?: Map<string, string>,
+    blobInputs?: Map<string, BlobWithMetadata>,
+    exportOptions?: ExportFormat,
+    compilationOptions?: CompilationMode,
+    pages?: PageRange,
+  ): Uint8Array {
+    const format: ExportFormat = exportOptions ?? { format: 'pdf' };
+
+    const document = this.compileToDocumentId(
+      jsonInputs,
+      blobInputs,
+      compilationOptions,
+    );
+    try {
+      return exportDocument(
+        document,
+        JSON.stringify(format),
+        serializePageRange(pages),
+      );
+    } finally {
+      removeDocument(document);
+    }
+  }
+
+  /**
+   * Compile the template and return a handle to the compiled document.
+   *
+   * The document is kept in memory so it can be exported one or more times
+   * (whole document, a page range, or individual pages) without re-compiling.
+   * Call `dispose()` on the returned document (or use `using`) to free it. For a
+   * single one-shot export, prefer {@link export}.
+   * @param jsonInputs - JSON inputs for the template (defaults to empty map)
+   * @param blobInputs - Blob inputs for the template (defaults to empty map)
    * @param compilationOptions - Compilation mode (defaults to Production)
    */
   public compile(
     jsonInputs?: Map<string, string>,
     blobInputs?: Map<string, BlobWithMetadata>,
-    exportOptions?: ExportFormat,
     compilationOptions?: CompilationMode,
-  ): Uint8Array {
-    const format: ExportFormat = exportOptions ?? { format: 'pdf' };
+  ): CompiledDocument {
+    const documentId = this.compileToDocumentId(
+      jsonInputs,
+      blobInputs,
+      compilationOptions,
+    );
+    return new CompiledDocument(documentId);
+  }
 
-    const document = compileTemplate(
+  private compileToDocumentId(
+    jsonInputs?: Map<string, string>,
+    blobInputs?: Map<string, BlobWithMetadata>,
+    compilationOptions?: CompilationMode,
+  ): string {
+    const documentId = compileTemplate(
       this.template,
       Object.fromEntries(jsonInputs ?? new Map<string, string>()),
       this.convertBlobWithMetadata(
@@ -135,18 +207,13 @@ export class Template implements Disposable {
       ),
       this.mapCompilationMode(compilationOptions ?? CompilationMode.Production),
     );
-    this.lastWarnings = getWarnings(document) ?? undefined;
-    try {
-      const exportedDocument = exportDocument(document, JSON.stringify(format));
-      return exportedDocument;
-    } finally {
-      removeDocument(document);
-    }
+    this.lastWarnings = getWarnings(documentId) ?? undefined;
+    return documentId;
   }
 
   /**
-   * Warnings produced by the most recent compilation (constructor warm-up or
-   * `compile()`), or `undefined` if there were none.
+   * Warnings produced by the most recent compilation (constructor warm-up, or a
+   * `compile()` / `export()` call), or `undefined` if there were none.
    */
   public warnings(): string | undefined {
     return this.lastWarnings;

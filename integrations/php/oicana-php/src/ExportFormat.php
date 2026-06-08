@@ -12,13 +12,13 @@ namespace Oicana;
  * Example:
  * ```php
  * // PDF export
- * $pdf = $template->compile(exportFormat: ExportFormat::pdf());
+ * $pdf = $template->export(exportFormat: ExportFormat::pdf());
  *
  * // PNG export with custom resolution
- * $png = $template->compile(exportFormat: ExportFormat::png(pixelsPerPt: 3.0));
+ * $png = $template->export(exportFormat: ExportFormat::png(pixelsPerPt: 3.0));
  *
  * // SVG export
- * $svg = $template->compile(exportFormat: ExportFormat::svg());
+ * $svg = $template->export(exportFormat: ExportFormat::svg());
  * ```
  */
 final readonly class ExportFormat

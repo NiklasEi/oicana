@@ -1,3 +1,5 @@
+pub mod pages;
+
 #[cfg(feature = "pdf")]
 pub mod pdf;
 #[cfg(feature = "png")]

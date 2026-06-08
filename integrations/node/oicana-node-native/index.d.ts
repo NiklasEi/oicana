@@ -50,9 +50,12 @@ export declare function evictCache(maxAge: number): void
 /**
  * Export the given document
  *
+ * `page_range` is a JSON object `{ "start"?: number, "end"?: number }` with
+ * 1-based, inclusive bounds, or an empty string to export the whole document.
+ *
  * Make sure to call `removeDocument` with the documentId afterwards, to free the memory.
  */
-export declare function exportDocument(documentId: string, exportFormat: string): Buffer
+export declare function exportDocument(documentId: string, exportFormat: string, pageRange: string): Buffer
 
 /**
  * Load the source of the given file in the template.
@@ -83,6 +86,12 @@ export declare function getWarnings(documentId: string): string | null
  * identifier.
  */
 export declare function inputs(template: string): string
+
+/**
+ * Return the sizes (in points) of every page of a compiled document as a JSON
+ * array of `{ "width": number, "height": number }`.
+ */
+export declare function documentPages(documentId: string): string
 
 /**
  * Error string when a requested template is not registered yet. Call `[register_template]` before

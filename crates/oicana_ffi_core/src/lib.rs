@@ -12,16 +12,17 @@ use std::sync::atomic::{AtomicU8, AtomicUsize, Ordering};
 
 use dashmap::DashMap;
 use once_cell::sync::Lazy;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use thiserror::Error;
 use typst::foundations::Bytes;
 use typst::layout::PagedDocument;
 use typst::syntax::{FileId, VirtualPath};
 use uuid::Uuid;
 
-use oicana_export::pdf::export_merged_pdf;
-use oicana_export::png::export_merged_png;
-use oicana_export::svg::export_merged_svg;
+pub use oicana_export::pages::PageRange;
+use oicana_export::pdf::export_pdf;
+use oicana_export::png::{export_png, PngExportError};
+use oicana_export::svg::{export_svg, SvgExportError};
 use oicana_files::packed::PackedTemplate;
 use oicana_files::TemplateFiles;
 use oicana_input::input::blob::{Blob, BlobInput};
@@ -171,6 +172,28 @@ pub enum FfiError {
     /// The `export_format` JSON could not be parsed into an [`ExportFormat`].
     #[error("Failed to parse export format: {0}")]
     ExportFormatParse(String),
+
+    /// The `page_range` JSON could not be parsed into a [`PageRange`].
+    #[error("Failed to parse page range: {0}")]
+    PageRangeParse(String),
+}
+
+impl From<PngExportError> for FfiError {
+    fn from(error: PngExportError) -> Self {
+        FfiError::Export {
+            format: "PNG",
+            error: format!("{error:?}"),
+        }
+    }
+}
+
+impl From<SvgExportError> for FfiError {
+    fn from(error: SvgExportError) -> Self {
+        FfiError::Export {
+            format: "SVG",
+            error: format!("{error:?}"),
+        }
+    }
 }
 
 static WORLD_CACHE: Lazy<DashMap<String, OicanaWorld<PackedTemplate>>> = Lazy::new(DashMap::new);
@@ -218,6 +241,20 @@ pub fn configure_diagnostic_color(color: DiagnosticColor) {
 /// build [`ExportFormat`] themselves and skip this.
 pub fn parse_export_format(json: &str) -> Result<ExportFormat, FfiError> {
     serde_json::from_str(json).map_err(|error| FfiError::ExportFormatParse(error.to_string()))
+}
+
+/// Parse an optional [`PageRange`] from its JSON object representation.
+///
+/// An empty string means "no range" (the whole document). Otherwise the JSON is
+/// a `{ "start"?: number, "end"?: number }` object with 1-based, inclusive
+/// bounds.
+pub fn parse_page_range(json: &str) -> Result<Option<PageRange>, FfiError> {
+    if json.is_empty() {
+        return Ok(None);
+    }
+    serde_json::from_str(json)
+        .map(Some)
+        .map_err(|error| FfiError::PageRangeParse(error.to_string()))
 }
 
 /// Register a template under the given identifier.
@@ -306,6 +343,7 @@ pub fn compile_once(
     blob_inputs: HashMap<String, BlobWithMetadata>,
     mode: CompilationMode,
     format: ExportFormat,
+    pages: Option<PageRange>,
 ) -> Result<Vec<u8>, FfiError> {
     let packed = PackedTemplate::new(Cursor::new(files))
         .map_err(|error| FfiError::PackedTemplate(error.to_string()))?;
@@ -326,7 +364,15 @@ pub fn compile_once(
 
     auto_evict();
 
-    encode_document(&document.document, &world, format)
+    let document = &document.document;
+    Ok(match format {
+        ExportFormat::Png { pixels_per_pt } => export_png(document, pixels_per_pt, pages.as_ref())?,
+        ExportFormat::Pdf => {
+            export_pdf(document, &world, world.manifest().pdf_standards(), pages.as_ref())
+                .map_err(pdf_export_error)?
+        }
+        ExportFormat::Svg => export_svg(document, pages.as_ref())?,
+    })
 }
 
 /// Export a previously-compiled document.
@@ -334,18 +380,17 @@ pub fn compile_once(
 /// PDF export needs access to the originating world (for embedded fonts and
 /// PDF standards configuration), so the world for the document's template
 /// must still be present in the cache.
-pub fn export_document(document_id: &str, format: ExportFormat) -> Result<Vec<u8>, FfiError> {
+pub fn export_document(
+    document_id: &str,
+    format: ExportFormat,
+    pages: Option<PageRange>,
+) -> Result<Vec<u8>, FfiError> {
     let Some(document) = DOCUMENT_CACHE.get(document_id) else {
         return Err(FfiError::DocumentNotFound(document_id.to_owned()));
     };
 
-    match format {
-        ExportFormat::Png { pixels_per_pt } => {
-            export_merged_png(&document, pixels_per_pt).map_err(|error| FfiError::Export {
-                format: "PNG",
-                error: format!("{error:?}"),
-            })
-        }
+    Ok(match format {
+        ExportFormat::Png { pixels_per_pt } => export_png(&document, pixels_per_pt, pages.as_ref())?,
         ExportFormat::Pdf => {
             let template_id = template_id_from_document_id(document_id)?;
             let Some(world) = WORLD_CACHE.get(template_id) else {
@@ -354,15 +399,42 @@ pub fn export_document(document_id: &str, format: ExportFormat) -> Result<Vec<u8
                     document_id: document_id.to_owned(),
                 });
             };
-            export_merged_pdf(&document, &*world, world.manifest().pdf_standards()).map_err(
-                |error| FfiError::Export {
-                    format: "PDF",
-                    error: format!("{error:?}"),
-                },
-            )
+            export_pdf(&document, &*world, world.manifest().pdf_standards(), pages.as_ref())
+                .map_err(pdf_export_error)?
         }
-        ExportFormat::Svg => Ok(export_merged_svg(&document)),
-    }
+        ExportFormat::Svg => export_svg(&document, pages.as_ref())?,
+    })
+}
+
+/// Size of a single document page, in typographic points (pt).
+#[derive(Debug, Clone, Copy, Serialize)]
+pub struct PageSize {
+    /// Page width in points.
+    pub width: f64,
+    /// Page height in points.
+    pub height: f64,
+}
+
+/// Return the sizes (in points) of every page of a previously-compiled document,
+/// serialized as a JSON array of `{ "width": f64, "height": f64 }`.
+pub fn document_pages(document_id: &str) -> Result<String, FfiError> {
+    let Some(document) = DOCUMENT_CACHE.get(document_id) else {
+        return Err(FfiError::DocumentNotFound(document_id.to_owned()));
+    };
+
+    let pages: Vec<PageSize> = document
+        .pages
+        .iter()
+        .map(|page| {
+            let size = page.frame.size();
+            PageSize {
+                width: size.x.to_pt(),
+                height: size.y.to_pt(),
+            }
+        })
+        .collect();
+
+    serde_json::to_string(&pages).map_err(|error| FfiError::InputsSerialization(error.to_string()))
 }
 
 /// Return the template's input definitions serialized as a JSON string.
@@ -514,24 +586,11 @@ fn prepare_inputs(
     Ok(inputs)
 }
 
-fn encode_document(
-    document: &PagedDocument,
-    world: &OicanaWorld<PackedTemplate>,
-    format: ExportFormat,
-) -> Result<Vec<u8>, FfiError> {
-    match format {
-        ExportFormat::Png { pixels_per_pt } => {
-            export_merged_png(document, pixels_per_pt).map_err(|error| FfiError::Export {
-                format: "PNG",
-                error: format!("{error:?}"),
-            })
-        }
-        ExportFormat::Pdf => export_merged_pdf(document, world, world.manifest().pdf_standards())
-            .map_err(|error| FfiError::Export {
-                format: "PDF",
-                error: format!("{error:?}"),
-            }),
-        ExportFormat::Svg => Ok(export_merged_svg(document)),
+/// Map the bare `String` error from [`export_pdf`] to an [`FfiError`].
+fn pdf_export_error(error: String) -> FfiError {
+    FfiError::Export {
+        format: "PDF",
+        error: format!("{error:?}"),
     }
 }
 
@@ -558,6 +617,40 @@ mod tests {
     fn rejects_unknown_export_format() {
         let err = parse_export_format(r#"{"format":"docx"}"#).unwrap_err();
         assert!(matches!(err, FfiError::ExportFormatParse(_)));
+    }
+
+    #[test]
+    fn parses_empty_page_range_as_none() {
+        assert_eq!(parse_page_range("").unwrap(), None);
+    }
+
+    #[test]
+    fn parses_page_range_bounds() {
+        assert_eq!(
+            parse_page_range(r#"{"start":2,"end":3}"#).unwrap(),
+            Some(PageRange {
+                start: Some(2),
+                end: Some(3),
+            })
+        );
+        assert_eq!(
+            parse_page_range(r#"{"start":2}"#).unwrap(),
+            Some(PageRange::from(2))
+        );
+        assert_eq!(
+            parse_page_range(r#"{"end":4}"#).unwrap(),
+            Some(PageRange::to(4))
+        );
+        assert_eq!(
+            parse_page_range("{}").unwrap(),
+            Some(PageRange::default())
+        );
+    }
+
+    #[test]
+    fn rejects_invalid_page_range() {
+        let err = parse_page_range(r#"{"start":"two"}"#).unwrap_err();
+        assert!(matches!(err, FfiError::PageRangeParse(_)));
     }
 
     #[test]

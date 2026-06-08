@@ -16,7 +16,7 @@ describe('e2e test template', () => {
     );
     const template = new Template(templateFile);
 
-    const image = template.compile(
+    const image = template.export(
       new Map(),
       new Map(),
       Png(1),
@@ -43,7 +43,7 @@ describe('e2e test template', () => {
     const jsonInputs = new Map<string, string>();
     jsonInputs.set('development-json', json.toString());
 
-    const image = template.compile(jsonInputs, blobInputs, Png(1));
+    const image = template.export(jsonInputs, blobInputs, Png(1));
 
     await writeFile('testOutput/production.png', image);
   });
@@ -75,7 +75,7 @@ describe('e2e test template', () => {
     jsonInputs.set('development-json', json.toString());
     jsonInputs.set('both-json', json.toString());
 
-    const image = template.compile(jsonInputs, blobInputs, Png(1));
+    const image = template.export(jsonInputs, blobInputs, Png(1));
 
     await writeFile('testOutput/all-inputs.png', image);
   });
@@ -99,7 +99,7 @@ describe('e2e test template', () => {
       'development-json': json.toString(),
     };
 
-    template.compile(
+    template.export(
       jsonInputs as unknown as Map<string, string>,
       blobInputs as unknown as Map<string, BlobWithMetadata>,
       Png(1),
@@ -112,17 +112,17 @@ describe('e2e test template', () => {
     );
     const template = new Template(templateFile);
 
-    template.compile(new Map(), new Map(), Png(1), CompilationMode.Development);
+    template.export(new Map(), new Map(), Png(1), CompilationMode.Development);
   });
 
-  it('compile defaults to production mode', async () => {
+  it('export defaults to production mode', async () => {
     const templateFile = await readFile(
       '../../../e2e-tests/template/oicana-e2e-test-x.y.z.zip',
     );
     const template = new Template(templateFile);
 
     expect(() => {
-      template.compile(new Map(), new Map(), Png(1));
+      template.export(new Map(), new Map(), Png(1));
     }).toThrow(/No value for the required input/);
   });
 

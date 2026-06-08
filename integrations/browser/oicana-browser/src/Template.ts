@@ -11,12 +11,14 @@ import {
   inputs as wasmInputs,
 } from '@oicana/browser-wasm';
 import { CompilationMode } from './CompilationMode.js';
+import { CompiledDocument } from './CompiledDocument.js';
 import type { ExportFormat } from './ExportFormat.js';
 import type {
   BlobInputDefinition,
   BlobWithMetadata,
   JsonInputDefinition,
 } from './inputs/index.js';
+import type { PageRange } from './PageRange.js';
 
 /**
  * A template
@@ -77,40 +79,42 @@ export class Template implements Disposable {
   }
 
   /**
-   * Compile the template to a PDF file without any inputs in production mode
+   * Compile the template and export it to a PDF file, without inputs, in
+   * production mode.
    */
-  public compile(): Uint8Array<ArrayBuffer>;
+  public export(): Uint8Array<ArrayBuffer>;
 
   /**
-   * Compile the template to a PDF file with given inputs in production mode
+   * Compile the template with the given inputs and export it to a PDF file in
+   * production mode.
    * @param jsonInputs
    * @param blobInputs
    */
-  public compile(
+  public export(
     jsonInputs: Map<string, string>,
     blobInputs: Map<string, BlobWithMetadata>,
   ): Uint8Array<ArrayBuffer>;
 
   /**
-   * Compile the template with the given inputs
+   * Compile the template with the given inputs and export it in the given format.
    * @param jsonInputs
    * @param blobInputs
    * @param exportFormat
    */
-  public compile(
+  public export(
     jsonInputs: Map<string, string>,
     blobInputs: Map<string, BlobWithMetadata>,
     exportFormat: ExportFormat,
   ): Uint8Array<ArrayBuffer>;
 
   /**
-   * Compile the template with the given inputs
+   * Compile the template with the given inputs and export it in the given format.
    * @param jsonInputs
    * @param blobInputs
    * @param exportFormat
    * @param compilationOptions
    */
-  public compile(
+  public export(
     jsonInputs: Map<string, string>,
     blobInputs: Map<string, BlobWithMetadata>,
     exportFormat: ExportFormat,
@@ -118,18 +122,86 @@ export class Template implements Disposable {
   ): Uint8Array<ArrayBuffer>;
 
   /**
-   * Compile the template with the given inputs
+   * Compile the template with the given inputs and export a range of pages
+   * @param jsonInputs
+   * @param blobInputs
+   * @param exportFormat
+   * @param compilationOptions
+   * @param pages
+   */
+  public export(
+    jsonInputs: Map<string, string>,
+    blobInputs: Map<string, BlobWithMetadata>,
+    exportFormat: ExportFormat,
+    compilationOptions: CompilationMode,
+    pages: PageRange,
+  ): Uint8Array<ArrayBuffer>;
+
+  /**
+   * Compile the template and export it.
+   *
+   * This is the one-shot path: the compiled document is not kept. To export it
+   * several times (multiple formats, page ranges, or individual pages) from a
+   * single compilation, use {@link compile} and call `export` on the returned
+   * {@link CompiledDocument}.
    * @param jsonInputs - JSON inputs for the template (defaults to empty map)
    * @param blobInputs - Blob inputs for the template (defaults to empty map)
    * @param exportFormat - Export format specification (defaults to PDF)
+   * @param compilationOptions - Compilation mode (defaults to Production)
+   * @param pages - 1-based, inclusive page range (defaults to the whole document)
+   */
+  public export(
+    jsonInputs?: Map<string, string>,
+    blobInputs?: Map<string, BlobWithMetadata>,
+    exportFormat?: ExportFormat,
+    compilationOptions?: CompilationMode,
+    pages?: PageRange,
+  ): Uint8Array {
+    const documentId = this.compileToDocumentId(
+      jsonInputs,
+      blobInputs,
+      compilationOptions,
+    );
+    try {
+      return export_document(
+        documentId,
+        exportFormat ?? { format: 'pdf' },
+        pages,
+      );
+    } finally {
+      remove_document(documentId);
+    }
+  }
+
+  /**
+   * Compile the template.
+   *
+   * The document is kept in memory so it can be exported one or more times
+   * (whole document, a page range, or individual pages) without re-compiling.
+   * Call `dispose()` on the returned document (or use `using`) to free it.
+   * For a single one-shot export, prefer {@link export}.
+   * @param jsonInputs - JSON inputs for the template (defaults to empty map)
+   * @param blobInputs - Blob inputs for the template (defaults to empty map)
    * @param compilationOptions - Compilation mode (defaults to Production)
    */
   public compile(
     jsonInputs?: Map<string, string>,
     blobInputs?: Map<string, BlobWithMetadata>,
-    exportFormat?: ExportFormat,
     compilationOptions?: CompilationMode,
-  ): Uint8Array {
+  ): CompiledDocument {
+    const documentId = this.compileToDocumentId(
+      jsonInputs,
+      blobInputs,
+      compilationOptions,
+    );
+    return new CompiledDocument(documentId);
+  }
+
+  private compileToDocumentId(
+    jsonInputs?: Map<string, string>,
+    blobInputs?: Map<string, BlobWithMetadata>,
+    compilationOptions?: CompilationMode,
+  ): string {
     for (const blob of blobInputs instanceof Map
       ? (blobInputs?.entries() ?? [])
       : Object.entries<BlobWithMetadata>(blobInputs ?? {})) {
@@ -145,18 +217,12 @@ export class Template implements Disposable {
       compilationOptions ?? CompilationMode.Production,
     );
     this.lastWarnings = get_warnings(documentId);
-    const result = export_document(
-      documentId,
-      exportFormat ?? { format: 'pdf' },
-    );
-    remove_document(documentId);
-
-    return result;
+    return documentId;
   }
 
   /**
-   * Warnings produced by the most recent compilation (constructor warm-up or
-   * `compile()`), or `undefined` if there were none.
+   * Warnings produced by the most recent compilation (constructor warm-up, or a
+   * `compile()` / `export()` call), or `undefined` if there were none.
    */
   public warnings(): string | undefined {
     return this.lastWarnings;

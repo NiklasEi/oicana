@@ -13,7 +13,7 @@ import java.util.UUID;
  * <p>Use try-with-resources for automatic cleanup:
  * <pre>{@code
  * try (var template = new Template(zipBytes)) {
- *     byte[] pdf = template.compile(Map.of("name", "{\"value\": \"World\"}"), Map.of());
+ *     byte[] pdf = template.export(Map.of("name", "{\"value\": \"World\"}"), Map.of());
  * }
  * }</pre>
  */
@@ -57,8 +57,8 @@ public class Template implements AutoCloseable {
      *
      * @return the compiled document as a byte array
      */
-    public byte[] compile() {
-        return compile(Map.of(), Map.of(), ExportFormat.pdf(), CompilationMode.PRODUCTION);
+    public byte[] export() {
+        return export(Map.of(), Map.of(), ExportFormat.pdf(), CompilationMode.PRODUCTION);
     }
 
     /**
@@ -68,8 +68,8 @@ public class Template implements AutoCloseable {
      * @param mode         the compilation mode
      * @return the compiled document as a byte array
      */
-    public byte[] compile(ExportFormat exportFormat, CompilationMode mode) {
-        return compile(Map.of(), Map.of(), exportFormat, mode);
+    public byte[] export(ExportFormat exportFormat, CompilationMode mode) {
+        return export(Map.of(), Map.of(), exportFormat, mode);
     }
 
     /**
@@ -79,8 +79,8 @@ public class Template implements AutoCloseable {
      * @param blobInputs the blob inputs for the template
      * @return the compiled document as a byte array
      */
-    public byte[] compile(Map<String, String> jsonInputs, Map<String, BlobInput> blobInputs) {
-        return compile(jsonInputs, blobInputs, ExportFormat.pdf(), CompilationMode.PRODUCTION);
+    public byte[] export(Map<String, String> jsonInputs, Map<String, BlobInput> blobInputs) {
+        return export(jsonInputs, blobInputs, ExportFormat.pdf(), CompilationMode.PRODUCTION);
     }
 
     /**
@@ -92,8 +92,24 @@ public class Template implements AutoCloseable {
      * @param mode         the compilation mode
      * @return the compiled document as a byte array
      */
-    public byte[] compile(Map<String, String> jsonInputs, Map<String, BlobInput> blobInputs,
+    public byte[] export(Map<String, String> jsonInputs, Map<String, BlobInput> blobInputs,
                           ExportFormat exportFormat, CompilationMode mode) {
+        return export(jsonInputs, blobInputs, exportFormat, mode, null);
+    }
+
+    /**
+     * Compile the template and export a range of pages.
+     *
+     * @param jsonInputs   the JSON inputs for the template
+     * @param blobInputs   the blob inputs for the template
+     * @param exportFormat the output format
+     * @param mode         the compilation mode
+     * @param pages        the 1-based, inclusive page range to export, or {@code null} for the
+     *                     whole document
+     * @return the compiled document as a byte array
+     */
+    public byte[] export(Map<String, String> jsonInputs, Map<String, BlobInput> blobInputs,
+                          ExportFormat exportFormat, CompilationMode mode, PageRange pages) {
         ensureNotClosed();
         String documentId = OicanaNative.compileTemplate(
                 this.templateId,
@@ -102,7 +118,38 @@ public class Template implements AutoCloseable {
                 mode.value
         );
         try {
-            return OicanaNative.exportDocument(documentId, exportFormat.toJsonString());
+            return OicanaNative.exportDocument(
+                    documentId,
+                    exportFormat.toJsonString(),
+                    pages == null ? "" : pages.toJsonString()
+            );
+        } finally {
+            OicanaNative.removeDocument(documentId);
+        }
+    }
+
+    /**
+     * Compile the template and return the size of every page as a JSON string.
+     *
+     * The result is a JSON array of {@code {"width": <pt>, "height": <pt>}} objects in
+     * document order.
+     *
+     * @param jsonInputs the JSON inputs for the template
+     * @param blobInputs the blob inputs for the template
+     * @param mode       the compilation mode
+     * @return a JSON array describing each page's size in points
+     */
+    public String pages(Map<String, String> jsonInputs, Map<String, BlobInput> blobInputs,
+                        CompilationMode mode) {
+        ensureNotClosed();
+        String documentId = OicanaNative.compileTemplate(
+                this.templateId,
+                jsonInputs,
+                convertBlobInputs(blobInputs),
+                mode.value
+        );
+        try {
+            return OicanaNative.documentPages(documentId);
         } finally {
             OicanaNative.removeDocument(documentId);
         }
@@ -119,11 +166,11 @@ public class Template implements AutoCloseable {
      * @param mode         the compilation mode
      * @return the compiled document as a byte array
      */
-    public static byte[] compileOnce(byte[] templateFile, Map<String, String> jsonInputs,
+    public static byte[] exportOnce(byte[] templateFile, Map<String, String> jsonInputs,
                                      Map<String, BlobInput> blobInputs,
                                      ExportFormat exportFormat, CompilationMode mode) {
         try (var template = new Template(templateFile, jsonInputs, blobInputs, mode)) {
-            return template.compile(jsonInputs, blobInputs, exportFormat, mode);
+            return template.export(jsonInputs, blobInputs, exportFormat, mode);
         }
     }
 

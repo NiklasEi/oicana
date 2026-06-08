@@ -39,7 +39,7 @@ class E2eTest {
     @Test
     void development() throws IOException {
         try (var template = new Template(templateFile())) {
-            byte[] image = template.compile(
+            byte[] image = template.export(
                     Map.of(),
                     Map.of(),
                     ExportFormat.png(1.0f),
@@ -57,7 +57,7 @@ class E2eTest {
         String json = new String(asset("inputs/input.json"));
 
         try (var template = new Template(templateFile())) {
-            byte[] image = template.compile(
+            byte[] image = template.export(
                     Map.of("development-json", json),
                     Map.of("development-blob", new BlobInput(
                             blob,
@@ -78,7 +78,7 @@ class E2eTest {
         String json = new String(asset("inputs/input.json"));
 
         try (var template = new Template(templateFile())) {
-            byte[] image = template.compile(
+            byte[] image = template.export(
                     Map.of(
                             "default-json", json,
                             "development-json", json,
@@ -110,7 +110,7 @@ class E2eTest {
     @Test
     void explicitDevelopmentModeAllowsCompileWithEmptyInputs() throws IOException {
         try (var template = new Template(templateFile())) {
-            byte[] image = template.compile(
+            byte[] image = template.export(
                     Map.of(),
                     Map.of(),
                     ExportFormat.png(1.0f),
@@ -124,7 +124,7 @@ class E2eTest {
     @Test
     void compileDefaultsToProductionMode() throws IOException {
         try (var template = new Template(templateFile())) {
-            assertThrows(OicanaException.class, () -> template.compile());
+            assertThrows(OicanaException.class, () -> template.export());
         }
     }
 

@@ -120,6 +120,16 @@ pub fn inputs(template: String) -> Result<String, String> {
     oicana_ffi_core::inputs(&template).map_err(|error| error.to_string())
 }
 
+/// Return the sizes (in points) of every page of a compiled document as a JSON
+/// array of `{ "width": number, "height": number }`.
+///
+/// Calling this method requires a previous call to [`compile_template`] (or
+/// [`register_template`]) that produced the given `document_id`.
+#[wasm_bindgen]
+pub fn document_pages(document_id: String) -> Result<String, String> {
+    oicana_ffi_core::document_pages(&document_id).map_err(|error| error.to_string())
+}
+
 /// Load the source of the given file in the template.
 ///
 /// Calling this method requires a previous call to [`register_template`] with the same template
@@ -177,13 +187,22 @@ pub fn remove_world(template_id: String) -> Result<(), String> {
 
 /// Export the given document
 ///
+/// `page_range` is a `{ start?: number; end?: number }` object with 1-based,
+/// inclusive bounds, or `undefined`/`null` to export the whole document.
+///
 /// Make sure to call `removeDocument` with the documentId afterwards, to free the memory.
 #[wasm_bindgen]
-pub fn export_document(document_id: String, export_format: JsValue) -> Result<Uint8Array, String> {
+pub fn export_document(
+    document_id: String,
+    export_format: JsValue,
+    page_range: JsValue,
+) -> Result<Uint8Array, String> {
     let format: oicana_ffi_core::ExportFormat = from_value(export_format)
         .map_err(|error| format!("Failed to convert to export format: {error:?}"))?;
+    let page: Option<oicana_ffi_core::PageRange> = from_value(page_range)
+        .map_err(|error| format!("Failed to convert to page range: {error:?}"))?;
     let start = get_current_time();
-    let bytes = oicana_ffi_core::export_document(&document_id, format)
+    let bytes = oicana_ffi_core::export_document(&document_id, format, page)
         .map_err(|error| error.to_string())?;
     trace!("Exported document in {}ms", get_current_time() - start);
     Ok(bytes_to_js_array(&bytes))

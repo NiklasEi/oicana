@@ -16,7 +16,7 @@ use Oicana\Inputs\BlobInput;
  * ```php
  * $template = new Template($templateBytes);
  * try {
- *     $pdf = $template->compile(
+ *     $pdf = $template->export(
  *         jsonInputs: ['name' => '{"value": "Alice"}'],
  *         exportFormat: ExportFormat::pdf()
  *     );
@@ -81,14 +81,16 @@ class Template
      * @param array<string, BlobInput> $blobInputs Blob inputs
      * @param ExportFormat|null $exportFormat Export format configuration (defaults to PDF)
      * @param CompilationMode $mode Compilation mode
+     * @param PageRange|null $pages 1-based, inclusive page range (defaults to the whole document)
      * @return string Compiled document bytes (PDF, PNG, or SVG)
      * @throws \Exception If compilation or export fails
      */
-    public function compile(
+    public function export(
         array $jsonInputs = [],
         array $blobInputs = [],
         ?ExportFormat $exportFormat = null,
-        CompilationMode $mode = CompilationMode::Production
+        CompilationMode $mode = CompilationMode::Production,
+        ?PageRange $pages = null
     ): string {
         $formatArray = ($exportFormat ?? ExportFormat::pdf())->toArray();
 
@@ -105,7 +107,11 @@ class Template
         $this->documentIds[] = $docId;
 
         try {
-            $bytes = \OicanaInternal\export_document($docId, json_encode($formatArray));
+            $bytes = \OicanaInternal\export_document(
+                $docId,
+                json_encode($formatArray),
+                self::serializePageRange($pages)
+            );
             return pack('C*', ...$bytes);
         } finally {
             \OicanaInternal\remove_document($docId);
@@ -117,34 +123,87 @@ class Template
     }
 
     /**
+     * Compile the template and return the size (in points) of every page.
+     *
+     * Each entry is an array with `width` and `height` keys in typographic
+     * points.
+     *
+     * @param array<string, string|array<mixed>> $jsonInputs JSON inputs (key => JSON string or array)
+     * @param array<string, BlobInput> $blobInputs Blob inputs
+     * @param CompilationMode $mode Compilation mode
+     * @return list<array{width: float, height: float}> Page sizes in points
+     * @throws \Exception If compilation fails
+     */
+    public function pages(
+        array $jsonInputs = [],
+        array $blobInputs = [],
+        CompilationMode $mode = CompilationMode::Production
+    ): array {
+        $jsonInputs = self::encodeJsonInputs($jsonInputs);
+        $nativeBlobs = $this->prepareBlobInputs($blobInputs);
+
+        $docId = \OicanaInternal\compile_template(
+            $this->templateId,
+            $jsonInputs,
+            $nativeBlobs,
+            $mode->toNative()
+        );
+
+        try {
+            $pagesJson = \OicanaInternal\document_pages($docId);
+            return json_decode($pagesJson, true);
+        } finally {
+            \OicanaInternal\remove_document($docId);
+        }
+    }
+
+    /**
      * Compile the given template once without caching.
      *
      * This is a convenience method for one-off compilations where you don't need
      * to reuse the template. For multiple compilations with the same template,
-     * create an instance of Template and use compile() instead.
+     * create an instance of Template and use export() instead.
      *
      * @param string $templateBytes Template zip file bytes
      * @param array<string, string|array<mixed>> $jsonInputs JSON inputs (key => JSON string or array)
      * @param array<string, BlobInput> $blobInputs Blob inputs
      * @param ExportFormat|null $exportFormat Export format configuration (defaults to PDF)
      * @param CompilationMode $mode Compilation mode
+     * @param PageRange|null $pages 1-based, inclusive page range (defaults to the whole document)
      * @return string Compiled document bytes (PDF, PNG, or SVG)
      * @throws \Exception If compilation or export fails
      */
-    public static function compileOnce(
+    public static function exportOnce(
         string $templateBytes,
         array $jsonInputs = [],
         array $blobInputs = [],
         ?ExportFormat $exportFormat = null,
-        CompilationMode $mode = CompilationMode::Production
+        CompilationMode $mode = CompilationMode::Production,
+        ?PageRange $pages = null
     ): string {
         $template = new self($templateBytes, mode: CompilationMode::Development);
 
         try {
-            return $template->compile($jsonInputs, $blobInputs, $exportFormat, $mode);
+            return $template->export($jsonInputs, $blobInputs, $exportFormat, $mode, $pages);
         } finally {
             $template->cleanup();
         }
+    }
+
+    /**
+     * Serialize a page range for the native `export_document` call.
+     *
+     * A null range becomes an empty string, meaning "the whole document".
+     *
+     * @throws \JsonException If encoding fails
+     */
+    private static function serializePageRange(?PageRange $pages): string
+    {
+        if ($pages === null) {
+            return '';
+        }
+
+        return json_encode((object) $pages->toArray(), JSON_THROW_ON_ERROR);
     }
 
     /**

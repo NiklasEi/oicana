@@ -31,7 +31,7 @@ test('template compiles to PDF in development mode', function () {
     $template = new Template($templateBytes, mode: CompilationMode::Development);
 
     try {
-        $pdf = $template->compile(mode: CompilationMode::Development);
+        $pdf = $template->export(mode: CompilationMode::Development);
 
         expect($pdf)
             ->not->toBeEmpty()
@@ -49,7 +49,7 @@ test('template compiles with JSON inputs', function () {
     assert(is_string($jsonContent));
 
     try {
-        $pdf = $template->compile(
+        $pdf = $template->export(
             jsonInputs: ['development-json' => $jsonContent],
             mode: CompilationMode::Development
         );
@@ -72,7 +72,7 @@ test('template compiles with blob inputs', function () {
     ]);
 
     try {
-        $pdf = $template->compile(
+        $pdf = $template->export(
             blobInputs: ['development-blob' => $blobInput],
             mode: CompilationMode::Development
         );
@@ -88,7 +88,7 @@ test('template exports to SVG', function () {
     $template = new Template($templateBytes, mode: CompilationMode::Development);
 
     try {
-        $svg = $template->compile(
+        $svg = $template->export(
             exportFormat: ExportFormat::svg(),
             mode: CompilationMode::Development
         );
@@ -106,7 +106,7 @@ test('template exports to PNG', function () {
     $template = new Template($templateBytes, mode: CompilationMode::Development);
 
     try {
-        $png = $template->compile(
+        $png = $template->export(
             exportFormat: ExportFormat::png(pixelsPerPt: 2.0),
             mode: CompilationMode::Development
         );
@@ -139,7 +139,7 @@ test('compilation modes work correctly', function () {
     // Development mode - should work without explicit inputs
     $devTemplate = new Template($templateBytes, mode: CompilationMode::Development);
     try {
-        $devPdf = $devTemplate->compile(mode: CompilationMode::Development);
+        $devPdf = $devTemplate->export(mode: CompilationMode::Development);
         expect($devPdf)->not->toBeEmpty();
     } finally {
         $devTemplate->cleanup();
@@ -152,7 +152,7 @@ test('production mode requires all inputs', function () {
 
     try {
         // Production mode without required inputs should fail
-        expect(fn() => $template->compile(mode: CompilationMode::Production))
+        expect(fn() => $template->export(mode: CompilationMode::Production))
             ->toThrow(Exception::class);
     } finally {
         $template->cleanup();
@@ -164,8 +164,8 @@ test('compile defaults to production mode', function () {
     $template = new Template($templateBytes, mode: CompilationMode::Development);
 
     try {
-        // Default compile() should use production mode and fail without inputs
-        expect(fn() => $template->compile())
+        // Default export() should use production mode and fail without inputs
+        expect(fn() => $template->export())
             ->toThrow(Exception::class);
     } finally {
         $template->cleanup();

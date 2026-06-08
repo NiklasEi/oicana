@@ -4,6 +4,7 @@ using Oicana.Inputs;
 using CompilationMode = Oicana.Config.CompilationMode;
 using CompilationOptions = Oicana.Config.CompilationOptions;
 using ExportFormat = Oicana.Config.ExportFormat;
+using PageRange = Oicana.Config.PageRange;
 
 namespace Oicana;
 
@@ -29,7 +30,7 @@ public class Template : ITemplate, IDisposable
     /// Reuse instances of this class if possible.
     ///
     /// If you want to compile a template once and not cache the template
-    /// use <see cref="CompileOnce"/> instead.
+    /// use <see cref="ExportOnce"/> instead.
     /// </summary>
     /// <param name="templateFile">The packed Oicana template to register.</param>
     /// <exception cref="OicanaException">If the initial template compilation fails.</exception>
@@ -46,7 +47,7 @@ public class Template : ITemplate, IDisposable
     /// Reuse instances of this class if possible.
     ///
     /// If you want to compile a template once and not cache the template
-    /// use <see cref="CompileOnce"/> instead.
+    /// use <see cref="ExportOnce"/> instead.
     /// </summary>
     /// <param name="templateFile">The packed Oicana template to register.</param>
     /// <param name="templateId">Identifier of the template</param>
@@ -63,7 +64,7 @@ public class Template : ITemplate, IDisposable
     /// Reuse instances of this class if possible.
     ///
     /// If you want to compile a template once and not cache the template
-    /// use <see cref="CompileOnce"/> instead.
+    /// use <see cref="ExportOnce"/> instead.
     /// </summary>
     /// <param name="templateFile">The packed Oicana template to register.</param>
     /// <param name="compilationMode">Compilation mode to use for the initial template compilation during registration</param>
@@ -78,7 +79,7 @@ public class Template : ITemplate, IDisposable
     /// Reuse instances of this class if possible.
     ///
     /// If you want to compile a template once and not cache the template
-    /// use <see cref="CompileOnce"/> instead.
+    /// use <see cref="ExportOnce"/> instead.
     /// </summary>
     /// <param name="templateFile">The packed Oicana template to register.</param>
     /// <param name="jsonInputs">Json inputs for the initial compilation (key -> JsonNode).</param>
@@ -93,12 +94,26 @@ public class Template : ITemplate, IDisposable
     }
 
     /// <inheritdoc />
-    public Stream Compile(IDictionary<string, JsonNode> jsonInputs, IDictionary<string, BlobInput> blobInputs, ExportFormat exportFormat, CompilationOptions compilationOptions)
+    public Stream Export(IDictionary<string, JsonNode> jsonInputs, IDictionary<string, BlobInput> blobInputs, ExportFormat exportFormat, CompilationOptions compilationOptions, PageRange? pages = null)
     {
         var documentId = OicanaFfi.CompileTemplate(_templateId, jsonInputs, blobInputs, compilationOptions);
-        var result = OicanaFfi.ExportDocument(documentId, exportFormat);
+        var result = OicanaFfi.ExportDocument(documentId, exportFormat, pages);
         OicanaFfi.RemoveDocument(documentId);
         return result;
+    }
+
+    /// <inheritdoc />
+    public string Pages(IDictionary<string, JsonNode> jsonInputs, IDictionary<string, BlobInput> blobInputs, CompilationOptions compilationOptions)
+    {
+        var documentId = OicanaFfi.CompileTemplate(_templateId, jsonInputs, blobInputs, compilationOptions);
+        try
+        {
+            return OicanaFfi.DocumentPages(documentId);
+        }
+        finally
+        {
+            OicanaFfi.RemoveDocument(documentId);
+        }
     }
 
     /// <summary>
@@ -106,19 +121,20 @@ public class Template : ITemplate, IDisposable
     /// </summary>
     /// <remarks>
     /// If you want to compile the same document multiple times with different input values,
-    /// create an instance of <see cref="Template"/> and use <see cref="Compile(IDictionary{string, JsonNode}, IDictionary{string, BlobInput}, ExportFormat, CompilationOptions)"/> instead.
+    /// create an instance of <see cref="Template"/> and use <see cref="Export(IDictionary{string, JsonNode}, IDictionary{string, BlobInput}, ExportFormat, CompilationOptions, PageRange)"/> instead.
     ///
-    /// <see cref="CompileOnce"/> will use caching and thus be slower than compiling a prepared template.
+    /// <see cref="ExportOnce"/> will use caching and thus be slower than compiling a prepared template.
     /// </remarks>
     /// <param name="templateFile">The packed Oicana template to compile.</param>
     /// <param name="jsonInputs">Json inputs for the compilation (key -> JsonNode).</param>
     /// <param name="blobInputs">Blob inputs for the compilation (key -> BlobInput).</param>
     /// <param name="exportFormat">Format configuration for the document export.</param>
     /// <param name="compilationOptions">Options for the template compilation.</param>
+    /// <param name="pages">1-based, inclusive page range to export, or <c>null</c> for the whole document.</param>
     /// <exception cref="OicanaException">If the template compilation fails.</exception>
-    public static Stream CompileOnce(byte[] templateFile, IDictionary<string, JsonNode> jsonInputs, IDictionary<string, BlobInput> blobInputs, ExportFormat exportFormat, CompilationOptions compilationOptions)
+    public static Stream ExportOnce(byte[] templateFile, IDictionary<string, JsonNode> jsonInputs, IDictionary<string, BlobInput> blobInputs, ExportFormat exportFormat, CompilationOptions compilationOptions, PageRange? pages = null)
     {
-        return OicanaFfi.ExportTemplateOnce(templateFile, jsonInputs, blobInputs, compilationOptions, exportFormat);
+        return OicanaFfi.ExportTemplateOnce(templateFile, jsonInputs, blobInputs, compilationOptions, exportFormat, pages);
     }
 
     /// <inheritdoc />

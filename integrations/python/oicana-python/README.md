@@ -22,7 +22,7 @@ with open("template.zip", "rb") as f:
 
 # Create template and compile
 with Template(template_bytes) as template:
-    pdf = template.compile(
+    pdf = template.export(
         json_inputs={
             "invoice": json.dumps({
                 "number": "INV-001",

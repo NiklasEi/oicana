@@ -32,7 +32,7 @@ test('e2e development', function () {
     $template = new Template($templateBytes);
 
     try {
-        $image = $template->compile(
+        $image = $template->export(
             exportFormat: ExportFormat::png(pixelsPerPt: 1.0),
             mode: CompilationMode::Development
         );
@@ -67,7 +67,7 @@ test('e2e production', function () {
     ];
 
     try {
-        $image = $template->compile(
+        $image = $template->export(
             jsonInputs: $jsonInputs,
             blobInputs: $blobInputs,
             exportFormat: ExportFormat::png(pixelsPerPt: 1.0)
@@ -115,7 +115,7 @@ test('e2e all-inputs', function () {
     ];
 
     try {
-        $image = $template->compile(
+        $image = $template->export(
             jsonInputs: $jsonInputs,
             blobInputs: $blobInputs,
             exportFormat: ExportFormat::png(pixelsPerPt: 1.0)
@@ -136,7 +136,7 @@ test('explicit development mode allows compile with empty inputs', function () {
     $template = new Template($templateBytes);
 
     try {
-        $image = $template->compile(
+        $image = $template->export(
             exportFormat: ExportFormat::png(pixelsPerPt: 1.0),
             mode: CompilationMode::Development
         );
@@ -152,7 +152,7 @@ test('compile defaults to production mode', function () {
     $template = new Template($templateBytes, mode: CompilationMode::Development);
 
     try {
-        expect(fn() => $template->compile(exportFormat: ExportFormat::png(pixelsPerPt: 1.0)))
+        expect(fn() => $template->export(exportFormat: ExportFormat::png(pixelsPerPt: 1.0)))
             ->toThrow(Exception::class, 'No value for the required input');
     } finally {
         $template->cleanup();

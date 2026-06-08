@@ -90,6 +90,13 @@ pub fn inputs(template: String) -> Result<String> {
   oicana_ffi_core::inputs(&template).map_err(into_napi_err)
 }
 
+/// Return the sizes (in points) of every page of a compiled document as a JSON
+/// array of `{ "width": number, "height": number }`.
+#[napi]
+pub fn document_pages(document_id: String) -> Result<String> {
+  oicana_ffi_core::document_pages(&document_id).map_err(into_napi_err)
+}
+
 /// Load the source of the given file in the template.
 ///
 /// Calling this method requires a previous call to [`register_template`] with the same template
@@ -112,11 +119,19 @@ pub fn get_file(template: String, file: String) -> Result<Buffer> {
 
 /// Export the given document
 ///
+/// `page_range` is a JSON object `{ "start"?: number, "end"?: number }` with
+/// 1-based, inclusive bounds, or an empty string to export the whole document.
+///
 /// Make sure to call `removeDocument` with the documentId afterwards, to free the memory.
 #[napi]
-pub fn export_document(document_id: String, export_format: String) -> Result<Buffer> {
+pub fn export_document(
+  document_id: String,
+  export_format: String,
+  page_range: String,
+) -> Result<Buffer> {
   let format = oicana_ffi_core::parse_export_format(&export_format).map_err(into_napi_err)?;
-  oicana_ffi_core::export_document(&document_id, format)
+  let page = oicana_ffi_core::parse_page_range(&page_range).map_err(into_napi_err)?;
+  oicana_ffi_core::export_document(&document_id, format, page)
     .map(Into::into)
     .map_err(into_napi_err)
 }

@@ -2,6 +2,12 @@
 
 ## Upcoming
 
+- expose difference between compile and export to all integrations
+  - compiling a template with given inputs returns a compiled document, which can be
+    - exported to any format
+    - exported page by page
+  - exporting a template with given inputs will directly return a final PDF/PNG/SVG and not store a compiled document
+- The old `compile*` methods in integrations are now called `export`
 
 
 ## v0.2.0

@@ -6,18 +6,18 @@ namespace Oicana.Config;
 public enum ExportTarget
 {
     /// <summary>
-    /// Render the template to a PDF file.
+    /// Export to a PDF file.
     ///
-    /// The exported standard is PDF/A-3b
+    /// The exported standard is PDF/A-3b by default
     /// </summary>
     Pdf = 0,
     /// <summary>
-    /// Render the template into a png image.
+    /// Export to a PNG image.
     /// </summary>
-    /// <remarks>The image is not optimized for file size to speed up compilation.</remarks>
+    /// <remarks>The image is not optimized for file size.</remarks>
     Png = 1,
     /// <summary>
-    /// Render the template as SVG file.
+    /// Export to an SVG file.
     /// </summary>
     Svg = 2,
 }

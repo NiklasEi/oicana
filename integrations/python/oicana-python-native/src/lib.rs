@@ -115,6 +115,13 @@ fn inputs(template: String) -> PyResult<String> {
     oicana_ffi_core::inputs(&template).map_err(into_py_err)
 }
 
+/// Return the sizes (in points) of every page of a compiled document as a JSON
+/// array of `{ "width": float, "height": float }`.
+#[pyfunction]
+fn document_pages(document_id: String) -> PyResult<String> {
+    oicana_ffi_core::document_pages(&document_id).map_err(into_py_err)
+}
+
 /// Load the source of the given file in the template.
 ///
 /// Calling this method requires a previous call to `register_template` with the same template
@@ -136,15 +143,21 @@ fn get_file(py: Python<'_>, template: String, file: String) -> PyResult<Bound<'_
 
 /// Export the given document
 ///
+/// `page_range` is a JSON object `{ "start"?: int, "end"?: int }` with 1-based,
+/// inclusive bounds, or an empty string to export the whole document.
+///
 /// Make sure to call `remove_document` with the document_id afterwards, to free the memory.
 #[pyfunction]
 fn export_document(
     py: Python<'_>,
     document_id: String,
     export_format: String,
+    page_range: String,
 ) -> PyResult<Bound<'_, PyBytes>> {
     let format = oicana_ffi_core::parse_export_format(&export_format).map_err(into_py_err)?;
-    let bytes = oicana_ffi_core::export_document(&document_id, format).map_err(into_py_err)?;
+    let page = oicana_ffi_core::parse_page_range(&page_range).map_err(into_py_err)?;
+    let bytes =
+        oicana_ffi_core::export_document(&document_id, format, page).map_err(into_py_err)?;
     Ok(PyBytes::new(py, &bytes))
 }
 
@@ -214,6 +227,7 @@ fn oicana_native(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(compile_template, m)?)?;
     m.add_function(wrap_pyfunction!(export_document, m)?)?;
     m.add_function(wrap_pyfunction!(inputs, m)?)?;
+    m.add_function(wrap_pyfunction!(document_pages, m)?)?;
     m.add_function(wrap_pyfunction!(get_source, m)?)?;
     m.add_function(wrap_pyfunction!(get_file, m)?)?;
     m.add_function(wrap_pyfunction!(remove_document, m)?)?;
