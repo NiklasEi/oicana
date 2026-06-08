@@ -136,7 +136,7 @@ class Template:
 
         return bytes(result)
 
-    def compile_document(
+    def compile(
         self,
         *,
         json_inputs: dict[str, str] | None = None,
@@ -145,10 +145,9 @@ class Template:
     ) -> CompiledDocument:
         """Compile the template and return a handle to the compiled document.
 
-        Unlike :meth:`export`, the document is kept in memory so individual
-        pages can be exported on demand (e.g. for a paginated preview) without
-        re-compiling. Use the result as a context manager or call ``close()`` to
-        free it.
+        Unlike :meth:`export`, the document is kept in memory so it can be
+        exported one or more times without re-compiling. Use the result as
+        a context manager or call ``close()`` to free it.
 
         Args:
             json_inputs: JSON inputs
@@ -160,23 +159,6 @@ class Template:
         """
         doc_id = self._compile_to_document_id(json_inputs, blob_inputs, mode)
         return CompiledDocument(doc_id)
-
-    def pages(
-        self,
-        *,
-        json_inputs: dict[str, str] | None = None,
-        blob_inputs: dict[str, BlobInput] | None = None,
-        mode: CompilationMode = CompilationMode.PRODUCTION,
-    ) -> list[PageSize]:
-        """Compile the template and return the sizes (in points) of every page.
-
-        Convenient for one-off use. To also export pages, prefer
-        :meth:`compile_document` so the template is compiled only once.
-        """
-        with self.compile_document(
-            json_inputs=json_inputs, blob_inputs=blob_inputs, mode=mode
-        ) as document:
-            return list(document.pages)
 
     def _compile_to_document_id(
         self,
@@ -274,18 +256,18 @@ class Template:
 class CompiledDocument:
     """A compiled document kept in memory so its pages can be exported on demand.
 
-    Obtain one via :meth:`Template.compile_document`. Use it as a context manager
-    (``with template.compile_document() as document: ...``) or call
+    Obtain one via :meth:`Template.compile`. Use it as a context manager
+    (``with template.compile() as document: ...``) or call
     :meth:`close` to release the underlying document.
 
     Example:
-        >>> with template.compile_document(json_inputs={...}) as document:
+        >>> with template.compile(json_inputs={...}) as document:
         ...     for index, _page in enumerate(document.pages):
         ...         png = document.export_page(index, pixels_per_pt=2.0)
     """
 
     def __init__(self, document_id: str) -> None:
-        """Wrap an already-compiled document. Use Template.compile_document()."""
+        """Wrap an already-compiled document. Use Template.compile()."""
         self._document_id: str | None = document_id
         self.pages: list[PageSize] = [
             PageSize(width=page["width"], height=page["height"])

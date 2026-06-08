@@ -103,17 +103,10 @@ public class Template : ITemplate, IDisposable
     }
 
     /// <inheritdoc />
-    public string Pages(IDictionary<string, JsonNode> jsonInputs, IDictionary<string, BlobInput> blobInputs, CompilationOptions compilationOptions)
+    public CompiledDocument Compile(IDictionary<string, JsonNode> jsonInputs, IDictionary<string, BlobInput> blobInputs, CompilationOptions compilationOptions)
     {
         var documentId = OicanaFfi.CompileTemplate(_templateId, jsonInputs, blobInputs, compilationOptions);
-        try
-        {
-            return OicanaFfi.DocumentPages(documentId);
-        }
-        finally
-        {
-            OicanaFfi.RemoveDocument(documentId);
-        }
+        return new CompiledDocument(documentId);
     }
 
     /// <summary>

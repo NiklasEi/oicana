@@ -24,17 +24,18 @@ public interface ITemplate
     Stream Export(IDictionary<string, JsonNode> jsonInputs, IDictionary<string, BlobInput> blobInputs, ExportFormat exportFormat, CompilationOptions compilationOptions, PageRange? pages = null);
 
     /// <summary>
-    /// Compile the template and return the size (in points) of every page.
+    /// Compile the template and return the compiled document.
     ///
-    /// The result is a JSON array of <c>{ "width": number, "height": number }</c> objects in
-    /// document order.
+    /// Unlike <see cref="Export"/>, the document is kept in memory so it can be exported one or
+    /// more times without re-compiling. Dispose
+    /// the returned document (or use a <c>using</c> statement) to free it.
     /// </summary>
     /// <param name="jsonInputs">Json inputs for the compilation (key -> JsonNode).</param>
     /// <param name="blobInputs">Blob inputs for the compilation (key -> BlobInput).</param>
     /// <param name="compilationOptions">Options for the template compilation.</param>
     /// <exception cref="OicanaException">If the template compilation fails.</exception>
-    /// <returns>JSON array describing each page's size in points.</returns>
-    string Pages(IDictionary<string, JsonNode> jsonInputs, IDictionary<string, BlobInput> blobInputs, CompilationOptions compilationOptions);
+    /// <returns>A handle to the compiled document.</returns>
+    CompiledDocument Compile(IDictionary<string, JsonNode> jsonInputs, IDictionary<string, BlobInput> blobInputs, CompilationOptions compilationOptions);
 
     /// <summary>
     /// Enable or disable JSON schema validation for this template.

@@ -22,7 +22,9 @@ namespace Oicana;
  */
 final readonly class PageRange
 {
-    private function __construct(private ?int $start, private ?int $end) {}
+    private function __construct(private ?int $start, private ?int $end)
+    {
+    }
 
     /**
      * A range selecting exactly the given 1-based page.
@@ -56,5 +58,15 @@ final readonly class PageRange
         }
 
         return $config;
+    }
+
+    /**
+     * Serialize this range to the JSON object string the native extension expects.
+     *
+     * @throws \JsonException If encoding fails
+     */
+    public function toNative(): string
+    {
+        return json_encode((object) $this->toArray(), JSON_THROW_ON_ERROR);
     }
 }

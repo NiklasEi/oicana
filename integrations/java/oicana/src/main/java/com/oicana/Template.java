@@ -129,18 +129,39 @@ public class Template implements AutoCloseable {
     }
 
     /**
-     * Compile the template and return the size of every page as a JSON string.
+     * Compile the template in production mode without any inputs.
      *
-     * The result is a JSON array of {@code {"width": <pt>, "height": <pt>}} objects in
-     * document order.
+     * @return a handle to the compiled document
+     */
+    public CompiledDocument compile() {
+        return compile(Map.of(), Map.of(), CompilationMode.PRODUCTION);
+    }
+
+    /**
+     * Compile the template with the given inputs in production mode.
+     *
+     * @param jsonInputs the JSON inputs for the template
+     * @param blobInputs the blob inputs for the template
+     * @return a handle to the compiled document
+     */
+    public CompiledDocument compile(Map<String, String> jsonInputs, Map<String, BlobInput> blobInputs) {
+        return compile(jsonInputs, blobInputs, CompilationMode.PRODUCTION);
+    }
+
+    /**
+     * Compile the template.
+     *
+     * <p>Unlike {@link #export(Map, Map, ExportFormat, CompilationMode)}, the document is kept in
+     * memory so it can be exported one or more times without re-compiling. Use try-with-resources
+     * or call {@link CompiledDocument#close()} to free it.
      *
      * @param jsonInputs the JSON inputs for the template
      * @param blobInputs the blob inputs for the template
      * @param mode       the compilation mode
-     * @return a JSON array describing each page's size in points
+     * @return a handle to the compiled document
      */
-    public String pages(Map<String, String> jsonInputs, Map<String, BlobInput> blobInputs,
-                        CompilationMode mode) {
+    public CompiledDocument compile(Map<String, String> jsonInputs, Map<String, BlobInput> blobInputs,
+                                    CompilationMode mode) {
         ensureNotClosed();
         String documentId = OicanaNative.compileTemplate(
                 this.templateId,
@@ -148,11 +169,7 @@ public class Template implements AutoCloseable {
                 convertBlobInputs(blobInputs),
                 mode.value
         );
-        try {
-            return OicanaNative.documentPages(documentId);
-        } finally {
-            OicanaNative.removeDocument(documentId);
-        }
+        return new CompiledDocument(documentId);
     }
 
     /**

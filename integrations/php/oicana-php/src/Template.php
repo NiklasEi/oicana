@@ -110,7 +110,7 @@ class Template
             $bytes = \OicanaInternal\export_document(
                 $docId,
                 json_encode($formatArray),
-                self::serializePageRange($pages)
+                $pages?->toNative() ?? ''
             );
             return pack('C*', ...$bytes);
         } finally {
@@ -123,22 +123,23 @@ class Template
     }
 
     /**
-     * Compile the template and return the size (in points) of every page.
+     * Compile the template.
      *
-     * Each entry is an array with `width` and `height` keys in typographic
-     * points.
+     * Unlike {@see export()}, the document is kept in memory so it can be
+     * exported one or more times without re-compiling. Call
+     * {@see CompiledDocument::close()} when done to free it.
      *
      * @param array<string, string|array<mixed>> $jsonInputs JSON inputs (key => JSON string or array)
      * @param array<string, BlobInput> $blobInputs Blob inputs
      * @param CompilationMode $mode Compilation mode
-     * @return list<array{width: float, height: float}> Page sizes in points
+     * @return CompiledDocument A handle to the compiled document
      * @throws \Exception If compilation fails
      */
-    public function pages(
+    public function compile(
         array $jsonInputs = [],
         array $blobInputs = [],
         CompilationMode $mode = CompilationMode::Production
-    ): array {
+    ): CompiledDocument {
         $jsonInputs = self::encodeJsonInputs($jsonInputs);
         $nativeBlobs = $this->prepareBlobInputs($blobInputs);
 
@@ -149,12 +150,7 @@ class Template
             $mode->toNative()
         );
 
-        try {
-            $pagesJson = \OicanaInternal\document_pages($docId);
-            return json_decode($pagesJson, true);
-        } finally {
-            \OicanaInternal\remove_document($docId);
-        }
+        return new CompiledDocument($docId);
     }
 
     /**
@@ -188,22 +184,6 @@ class Template
         } finally {
             $template->cleanup();
         }
-    }
-
-    /**
-     * Serialize a page range for the native `export_document` call.
-     *
-     * A null range becomes an empty string, meaning "the whole document".
-     *
-     * @throws \JsonException If encoding fails
-     */
-    private static function serializePageRange(?PageRange $pages): string
-    {
-        if ($pages === null) {
-            return '';
-        }
-
-        return json_encode((object) $pages->toArray(), JSON_THROW_ON_ERROR);
     }
 
     /**
