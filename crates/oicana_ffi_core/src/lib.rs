@@ -23,11 +23,13 @@ pub use oicana_export::pages::PageRange;
 use oicana_export::pdf::export_pdf;
 use oicana_export::png::{export_png, PngExportError};
 use oicana_export::svg::{export_svg, SvgExportError};
+use oicana_export::PdfStandard;
 use oicana_files::packed::PackedTemplate;
 use oicana_files::TemplateFiles;
 use oicana_input::input::blob::{Blob, BlobInput};
 use oicana_input::input::json::JsonInput;
 use oicana_input::{CompilationConfig, TemplateInputs};
+use oicana_world::diagnostics::PlainDiagnostics;
 use oicana_world::manifest::OicanaWorldFiles;
 use oicana_world::world::OicanaWorld;
 
@@ -95,15 +97,6 @@ pub enum FfiError {
     /// The requested document ID is not present in the document cache.
     #[error("Document '{0}' not found")]
     DocumentNotFound(String),
-
-    /// PDF export was requested but the originating template's world is gone.
-    #[error("World '{template_id}' for document '{document_id}' not found")]
-    WorldForDocumentNotFound {
-        /// Template ID that the document was compiled from.
-        template_id: String,
-        /// Document ID that was requested.
-        document_id: String,
-    },
 
     /// The document ID does not match the expected `<uuid>:<template_id>` format.
     #[error("Invalid document ID format: {0}")]
@@ -196,8 +189,15 @@ impl From<SvgExportError> for FfiError {
     }
 }
 
+/// A compiled document together with the PDF standards captured from its
+/// template's manifest at compile time.
+struct CachedDocument {
+    document: PagedDocument,
+    pdf_standards: Vec<PdfStandard>,
+}
+
 static WORLD_CACHE: Lazy<DashMap<String, OicanaWorld<PackedTemplate>>> = Lazy::new(DashMap::new);
-static DOCUMENT_CACHE: Lazy<DashMap<String, PagedDocument>> = Lazy::new(DashMap::new);
+static DOCUMENT_CACHE: Lazy<DashMap<String, CachedDocument>> = Lazy::new(DashMap::new);
 static WARNINGS_CACHE: Lazy<DashMap<String, String>> = Lazy::new(DashMap::new);
 
 /// Cache age threshold for automatic eviction. `usize::MAX` means disabled.
@@ -289,10 +289,17 @@ pub fn register_template(
         .compile()
         .map_err(|error| FfiError::Compilation(error.to_string()))?;
 
+    let pdf_standards = world.manifest().pdf_standards().to_vec();
     let result_id = new_document_id(template_id);
     WORLD_CACHE.insert(template_id.to_owned(), world);
     store_warnings(&result_id, document.warnings);
-    DOCUMENT_CACHE.insert(result_id.clone(), document.document);
+    DOCUMENT_CACHE.insert(
+        result_id.clone(),
+        CachedDocument {
+            document: document.document,
+            pdf_standards,
+        },
+    );
 
     auto_evict();
 
@@ -323,9 +330,16 @@ pub fn compile_template(
         .compile()
         .map_err(|error| FfiError::Compilation(error.to_string()))?;
 
+    let pdf_standards = world.manifest().pdf_standards().to_vec();
     let result_id = new_document_id(template_id);
     store_warnings(&result_id, document.warnings);
-    DOCUMENT_CACHE.insert(result_id.clone(), document.document);
+    DOCUMENT_CACHE.insert(
+        result_id.clone(),
+        CachedDocument {
+            document: document.document,
+            pdf_standards,
+        },
+    );
 
     auto_evict();
 
@@ -379,40 +393,39 @@ pub fn compile_once(
 }
 
 /// Export a previously-compiled document.
-///
-/// PDF export needs access to the originating world (for embedded fonts and
-/// PDF standards configuration), so the world for the document's template
-/// must still be present in the cache.
 pub fn export_document(
     document_id: &str,
     format: ExportFormat,
     pages: Option<PageRange>,
 ) -> Result<Vec<u8>, FfiError> {
-    let Some(document) = DOCUMENT_CACHE.get(document_id) else {
+    let Some(cached) = DOCUMENT_CACHE.get(document_id) else {
         return Err(FfiError::DocumentNotFound(document_id.to_owned()));
     };
 
     Ok(match format {
         ExportFormat::Png { pixels_per_pt } => {
-            export_png(&document, pixels_per_pt, pages.as_ref())?
+            export_png(&cached.document, pixels_per_pt, pages.as_ref())?
         }
         ExportFormat::Pdf => {
             let template_id = template_id_from_document_id(document_id)?;
-            let Some(world) = WORLD_CACHE.get(template_id) else {
-                return Err(FfiError::WorldForDocumentNotFound {
-                    template_id: template_id.to_owned(),
-                    document_id: document_id.to_owned(),
-                });
-            };
-            export_pdf(
-                &document,
-                &*world,
-                world.manifest().pdf_standards(),
-                pages.as_ref(),
-            )
+            // Fall back to plain (span-less) diagnostics when the world is not available.
+            match WORLD_CACHE.get(template_id) {
+                Some(world) => export_pdf(
+                    &cached.document,
+                    &*world,
+                    &cached.pdf_standards,
+                    pages.as_ref(),
+                ),
+                None => export_pdf(
+                    &cached.document,
+                    &PlainDiagnostics,
+                    &cached.pdf_standards,
+                    pages.as_ref(),
+                ),
+            }
             .map_err(pdf_export_error)?
         }
-        ExportFormat::Svg => export_svg(&document, pages.as_ref())?,
+        ExportFormat::Svg => export_svg(&cached.document, pages.as_ref())?,
     })
 }
 
@@ -428,11 +441,12 @@ pub struct PageSize {
 /// Return the sizes (in points) of every page of a previously-compiled document,
 /// serialized as a JSON array of `{ "width": f64, "height": f64 }`.
 pub fn document_pages(document_id: &str) -> Result<String, FfiError> {
-    let Some(document) = DOCUMENT_CACHE.get(document_id) else {
+    let Some(cached) = DOCUMENT_CACHE.get(document_id) else {
         return Err(FfiError::DocumentNotFound(document_id.to_owned()));
     };
 
-    let pages: Vec<PageSize> = document
+    let pages: Vec<PageSize> = cached
+        .document
         .pages
         .iter()
         .map(|page| {
@@ -684,5 +698,32 @@ mod tests {
         let trailing_colon = format!("{}:", Uuid::new_v4());
         let err = template_id_from_document_id(&trailing_colon).unwrap_err();
         assert!(matches!(err, FfiError::InvalidDocumentId(_)));
+    }
+
+    #[test]
+    fn exports_all_formats_after_world_removed() {
+        let files = std::fs::read("../../assets/templates/table-0.1.0.zip")
+            .expect("read test template fixture");
+        let template_id = format!("decouple-test-{}", Uuid::new_v4());
+
+        let doc_id = register_template(
+            &template_id,
+            &files,
+            HashMap::new(),
+            HashMap::new(),
+            CompilationMode::Development,
+        )
+        .expect("register template");
+
+        remove_world(&template_id);
+
+        let pdf = export_document(&doc_id, ExportFormat::Pdf, None)
+            .expect("PDF export after world removal");
+        assert_eq!(&pdf[0..4], b"%PDF");
+
+        assert!(export_document(&doc_id, ExportFormat::Png { pixels_per_pt: 1.0 }, None).is_ok());
+        assert!(export_document(&doc_id, ExportFormat::Svg, None).is_ok());
+
+        remove_document(&doc_id);
     }
 }
