@@ -51,11 +51,18 @@ pub fn export_pdf<Diagnostics: TemplateDiagnostics>(
 ) -> Result<Vec<u8>, String> {
     let typst_standards: Vec<_> = standards.iter().map(|s| to_typst_standard(*s)).collect();
 
+    let page_count = document.pages.len();
+    let selected_count = match pages {
+        Some(range) => range.selected_indices(page_count).len(),
+        None => page_count,
+    };
+    if selected_count == 0 {
+        return Err("the requested page range selected no pages of the document".to_owned());
+    }
+
     // In Typst 0.14 producing a tagged PDF while skipping pages trips an
     // internal assertion. Only disable tagging when pages are actually skipped.
-    let skips_pages = pages.is_some_and(|range| {
-        range.selected_indices(document.pages.len()).len() != document.pages.len()
-    });
+    let skips_pages = selected_count != page_count;
 
     let options = PdfOptions {
         ident: Smart::Auto,
@@ -207,6 +214,20 @@ mod tests {
 
         assert_eq!(&single[0..4], b"%PDF");
         assert!(single.len() < full.len());
+    }
+
+    #[test]
+    fn out_of_bounds_range_is_rejected() {
+        let (document, world) = compile(multipage_template());
+
+        let result = export_pdf(
+            &document,
+            &world,
+            &[oicana_template::PdfStandard::A_3b],
+            Some(&PageRange::single(99)),
+        );
+
+        assert!(result.is_err());
     }
 
     #[test]

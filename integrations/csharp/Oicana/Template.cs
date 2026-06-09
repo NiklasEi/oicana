@@ -97,9 +97,14 @@ public class Template : ITemplate, IDisposable
     public Stream Export(IDictionary<string, JsonNode> jsonInputs, IDictionary<string, BlobInput> blobInputs, ExportFormat exportFormat, CompilationOptions compilationOptions, PageRange? pages = null)
     {
         var documentId = OicanaFfi.CompileTemplate(_templateId, jsonInputs, blobInputs, compilationOptions);
-        var result = OicanaFfi.ExportDocument(documentId, exportFormat, pages);
-        OicanaFfi.RemoveDocument(documentId);
-        return result;
+        try
+        {
+            return OicanaFfi.ExportDocument(documentId, exportFormat, pages);
+        }
+        finally
+        {
+            OicanaFfi.RemoveDocument(documentId);
+        }
     }
 
     /// <inheritdoc />
