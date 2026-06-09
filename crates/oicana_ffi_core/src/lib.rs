@@ -153,6 +153,10 @@ pub enum FfiError {
     #[error("Failed to serialize inputs: {0}")]
     InputsSerialization(String),
 
+    /// Serializing the document's page sizes to JSON failed.
+    #[error("Failed to serialize page sizes: {0}")]
+    PageSizesSerialization(String),
+
     /// The blob metadata for a key was not valid JSON or did not match the metadata schema.
     #[error("Failed to parse blob metadata for '{key}': {error}")]
     BlobMetadata {
@@ -458,7 +462,8 @@ pub fn document_pages(document_id: &str) -> Result<String, FfiError> {
         })
         .collect();
 
-    serde_json::to_string(&pages).map_err(|error| FfiError::InputsSerialization(error.to_string()))
+    serde_json::to_string(&pages)
+        .map_err(|error| FfiError::PageSizesSerialization(error.to_string()))
 }
 
 /// Return the template's input definitions serialized as a JSON string.
@@ -614,7 +619,7 @@ fn prepare_inputs(
 fn pdf_export_error(error: String) -> FfiError {
     FfiError::Export {
         format: "PDF",
-        error: format!("{error:?}"),
+        error: format!("{error}"),
     }
 }
 
