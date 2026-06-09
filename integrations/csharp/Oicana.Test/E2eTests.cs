@@ -6,6 +6,7 @@ using Oicana.Interop;
 using CompilationMode = Oicana.Config.CompilationMode;
 using CompilationOptions = Oicana.Config.CompilationOptions;
 using ExportFormat = Oicana.Config.ExportFormat;
+using PageRange = Oicana.Config.PageRange;
 
 namespace Oicana.Test;
 
@@ -190,5 +191,44 @@ public class E2ETests
         Action act = () => template.File("/nonexistent.png");
 
         act.Should().Throw<OicanaException>();
+    }
+
+    [Fact]
+    public void CompiledDocumentHandleSurvivesTemplateDispose()
+    {
+        var template = new Template(_templateFile);
+
+        var document = template.Compile(
+            new Dictionary<string, JsonNode>(),
+            new Dictionary<string, BlobInput>(),
+            new CompilationOptions(CompilationMode.Development));
+
+        template.Dispose();
+
+        document.PageCount.Should().BeGreaterThan(0);
+        var firstPage = PageRange.Single(0);
+
+        var pdf = ReadBytes(document.ToPdf(firstPage));
+        System.Text.Encoding.ASCII.GetString(pdf, 0, 4).Should().Be("%PDF");
+
+        var png = ReadBytes(document.Export(ExportFormat.Png(1.0f), firstPage));
+        png.Should().HaveCountGreaterThan(4);
+        png[0].Should().Be(0x89);
+        png[1].Should().Be(0x50);
+
+        var svg = ReadBytes(document.Export(ExportFormat.Svg(), firstPage));
+        System.Text.Encoding.UTF8.GetString(svg).Should().Contain("<svg");
+
+        var firstPagePng = ReadBytes(document.ExportPage(0, 1.0f));
+        firstPagePng[0].Should().Be(0x89);
+
+        document.Dispose();
+    }
+
+    private static byte[] ReadBytes(Stream stream)
+    {
+        using var memory = new MemoryStream();
+        stream.CopyTo(memory);
+        return memory.ToArray();
     }
 }

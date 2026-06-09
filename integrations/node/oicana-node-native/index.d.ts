@@ -40,6 +40,12 @@ export declare function compileTemplate(
 export declare function configureAutomaticCacheEviction(maxAge?: number | undefined | null): void
 
 /**
+ * Return the sizes (in points) of every page of a compiled document as a JSON
+ * array of `{ "width": number, "height": number }`.
+ */
+export declare function documentPages(documentId: string): string
+
+/**
  * Manually evict the comemo cache with the given age threshold.
  *
  * This directly calls the underlying eviction with the specified age,
@@ -86,12 +92,6 @@ export declare function getWarnings(documentId: string): string | null
  * identifier.
  */
 export declare function inputs(template: string): string
-
-/**
- * Return the sizes (in points) of every page of a compiled document as a JSON
- * array of `{ "width": number, "height": number }`.
- */
-export declare function documentPages(documentId: string): string
 
 /**
  * Error string when a requested template is not registered yet. Call `[register_template]` before

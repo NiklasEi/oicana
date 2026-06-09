@@ -1,8 +1,9 @@
 import { readFile, writeFile } from 'node:fs/promises';
 import { describe, expect, it } from 'vitest';
 import { CompilationMode } from './CompilationMode.js';
-import { Png } from './ExportFormat.js';
+import { Png, Svg } from './ExportFormat.js';
 import type { BlobWithMetadata } from './inputs/index.js';
+import { PageRange } from './PageRange.js';
 import { Template } from './Template.js';
 
 const asset = (file: string) => {
@@ -138,5 +139,39 @@ describe('e2e test template', () => {
         CompilationMode.Production,
       );
     }).toThrow(/No value for the required input/);
+  });
+
+  it('exports a compiled document handle in every format after disposing the template', async () => {
+    const templateFile = await readFile(
+      '../../../e2e-tests/template/oicana-e2e-test-x.y.z.zip',
+    );
+    const template = new Template(templateFile);
+
+    const document = template.compile(
+      new Map(),
+      new Map(),
+      CompilationMode.Development,
+    );
+
+    template.dispose();
+
+    expect(document.pageCount).toBeGreaterThan(0);
+    const firstPage = PageRange.single(0);
+
+    const pdf = document.toPdf(firstPage);
+    expect(new TextDecoder().decode(pdf.slice(0, 4))).toBe('%PDF');
+
+    const png = document.export(Png(1), firstPage);
+    expect(Array.from(png.slice(0, 4))).toEqual([0x89, 0x50, 0x4e, 0x47]);
+
+    const svg = document.export(Svg, firstPage);
+    expect(new TextDecoder().decode(svg)).toContain('<svg');
+
+    const firstPagePng = document.exportPage(0, 1);
+    expect(Array.from(firstPagePng.slice(0, 4))).toEqual([
+      0x89, 0x50, 0x4e, 0x47,
+    ]);
+
+    document.dispose();
   });
 });

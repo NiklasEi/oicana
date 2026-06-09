@@ -3,6 +3,7 @@ package com.oicana;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
@@ -133,5 +134,35 @@ class E2eTest {
         byte[] bytes = templateFile();
         assertThrows(OicanaException.class, () ->
                 new Template(bytes, Map.of(), Map.of(), CompilationMode.PRODUCTION));
+    }
+
+    @Test
+    void compiledDocumentHandleSurvivesTemplateClose() throws IOException {
+        Template template = new Template(templateFile());
+
+        CompiledDocument document =
+                template.compile(Map.of(), Map.of(), CompilationMode.DEVELOPMENT);
+
+        template.close();
+
+        assertTrue(document.pageCount() > 0);
+        PageRange firstPage = PageRange.single(0);
+
+        byte[] pdf = document.toPdf(firstPage);
+        assertEquals("%PDF", new String(pdf, 0, 4, StandardCharsets.US_ASCII));
+
+        byte[] png = document.export(ExportFormat.png(1.0f), firstPage);
+        assertEquals((byte) 0x89, png[0]);
+        assertEquals((byte) 'P', png[1]);
+        assertEquals((byte) 'N', png[2]);
+        assertEquals((byte) 'G', png[3]);
+
+        byte[] svg = document.export(ExportFormat.svg(), firstPage);
+        assertTrue(new String(svg, StandardCharsets.UTF_8).contains("<svg"));
+
+        byte[] firstPagePng = document.exportPage(0, 1.0f);
+        assertEquals((byte) 0x89, firstPagePng[0]);
+
+        document.close();
     }
 }

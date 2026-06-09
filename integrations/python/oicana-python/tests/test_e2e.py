@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from oicana import BlobInput, CompilationMode, Template
+from oicana import BlobInput, CompilationMode, PageRange, Template
 
 
 def asset(file: str) -> bytes:
@@ -157,3 +157,31 @@ def test_context_manager() -> None:
             mode=CompilationMode.DEVELOPMENT,
         )
         assert len(image) > 0
+
+
+def test_compiled_document_handle_survives_template_cleanup() -> None:
+    """A compiled document handle stays usable for every format and page range
+    after its originating template has been cleaned up."""
+    template_bytes = template_file()
+    template = Template(template_bytes)
+
+    document = template.compile(mode=CompilationMode.DEVELOPMENT)
+
+    template.cleanup()
+
+    assert len(document.pages) > 0
+    first_page = PageRange.single(0)
+
+    pdf = document.to_pdf(pages=first_page)
+    assert pdf[:4] == b"%PDF"
+
+    png = document.export({"format": "png", "pixelsPerPt": 1.0}, pages=first_page)
+    assert png[:4] == b"\x89PNG"
+
+    svg = document.export({"format": "svg"}, pages=first_page)
+    assert b"<svg" in svg
+
+    first_page_png = document.export_page(0, pixels_per_pt=1.0)
+    assert first_page_png[:4] == b"\x89PNG"
+
+    document.close()
