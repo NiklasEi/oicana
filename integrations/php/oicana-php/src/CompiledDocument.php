@@ -67,7 +67,7 @@ final class CompiledDocument
      * restricted to a range of pages.
      *
      * @param ExportFormat|null $exportFormat Export format configuration (defaults to PDF)
-     * @param PageRange|null $pages 1-based, inclusive page range (defaults to the whole document)
+     * @param PageRange|null $pages 0-based, inclusive page range (defaults to the whole document)
      * @return string Document bytes (PDF, PNG, or SVG)
      * @throws \Exception If export fails
      */
@@ -88,7 +88,7 @@ final class CompiledDocument
     /**
      * Export the document to a PDF file, optionally restricted to a range of pages.
      *
-     * @param PageRange|null $pages 1-based, inclusive page range (defaults to the whole document)
+     * @param PageRange|null $pages 0-based, inclusive page range (defaults to the whole document)
      * @return string PDF bytes
      * @throws \Exception If export fails
      */
@@ -109,7 +109,7 @@ final class CompiledDocument
     {
         return $this->export(
             ExportFormat::png($pixelsPerPt),
-            PageRange::single($pageIndex + 1)
+            PageRange::single($pageIndex)
         );
     }
 

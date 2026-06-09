@@ -123,7 +123,7 @@ public class Template : ITemplate, IDisposable
     /// <param name="blobInputs">Blob inputs for the compilation (key -> BlobInput).</param>
     /// <param name="exportFormat">Format configuration for the document export.</param>
     /// <param name="compilationOptions">Options for the template compilation.</param>
-    /// <param name="pages">1-based, inclusive page range to export, or <c>null</c> for the whole document.</param>
+    /// <param name="pages">0-based, inclusive page range to export, or <c>null</c> for the whole document.</param>
     /// <exception cref="OicanaException">If the template compilation fails.</exception>
     public static Stream ExportOnce(byte[] templateFile, IDictionary<string, JsonNode> jsonInputs, IDictionary<string, BlobInput> blobInputs, ExportFormat exportFormat, CompilationOptions compilationOptions, PageRange? pages = null)
     {

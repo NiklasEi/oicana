@@ -217,7 +217,7 @@ manifest_version = 1
         let document = compile(multipage_template());
         assert_eq!(document.pages.len(), 2);
 
-        for page in 1..=document.pages.len() {
+        for page in 0..document.pages.len() {
             let png = export_png(&document, 1.0, Some(&PageRange::single(page))).unwrap();
             assert_eq!(&png[0..8], PNG_SIGNATURE);
         }
@@ -227,7 +227,7 @@ manifest_version = 1
     fn single_page_png_is_smaller_than_merged() {
         let document = compile(multipage_template());
 
-        let page = export_png(&document, 1.0, Some(&PageRange::single(1))).unwrap();
+        let page = export_png(&document, 1.0, Some(&PageRange::single(0))).unwrap();
         let merged = export_png(&document, 1.0, None).unwrap();
 
         assert!(page.len() < merged.len());
@@ -238,7 +238,7 @@ manifest_version = 1
         let document = compile(multipage_template());
 
         assert!(matches!(
-            export_png(&document, 1.0, Some(&PageRange::single(3))),
+            export_png(&document, 1.0, Some(&PageRange::single(2))),
             Err(PngExportError::NoPagesSelected)
         ));
     }

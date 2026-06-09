@@ -81,7 +81,7 @@ class Template
      * @param array<string, BlobInput> $blobInputs Blob inputs
      * @param ExportFormat|null $exportFormat Export format configuration (defaults to PDF)
      * @param CompilationMode $mode Compilation mode
-     * @param PageRange|null $pages 1-based, inclusive page range (defaults to the whole document)
+     * @param PageRange|null $pages 0-based, inclusive page range (defaults to the whole document)
      * @return string Compiled document bytes (PDF, PNG, or SVG)
      * @throws \Exception If compilation or export fails
      */
@@ -165,7 +165,7 @@ class Template
      * @param array<string, BlobInput> $blobInputs Blob inputs
      * @param ExportFormat|null $exportFormat Export format configuration (defaults to PDF)
      * @param CompilationMode $mode Compilation mode
-     * @param PageRange|null $pages 1-based, inclusive page range (defaults to the whole document)
+     * @param PageRange|null $pages 0-based, inclusive page range (defaults to the whole document)
      * @return string Compiled document bytes (PDF, PNG, or SVG)
      * @throws \Exception If compilation or export fails
      */

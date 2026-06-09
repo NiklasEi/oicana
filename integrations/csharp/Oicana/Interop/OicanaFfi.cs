@@ -25,7 +25,7 @@ internal static class OicanaFfi
     /// <param name="blobInputs">Blob inputs for the compilation (key -> BlobInput).</param>
     /// <param name="compilationOptions">Options for the template compilation.</param>
     /// <param name="exportFormat">Format configuration for the document export.</param>
-    /// <param name="pages">1-based, inclusive page range to export, or <c>null</c> for the whole document.</param>
+    /// <param name="pages">0-based, inclusive page range to export, or <c>null</c> for the whole document.</param>
     /// <exception cref="OicanaException">If the template compilation fails.</exception>
     /// <returns>Stream containing the compiled template exported as the given <see cref="ExportTarget"/>.</returns>
     public static Stream ExportTemplateOnce(byte[] templateFile, IDictionary<string, JsonNode> jsonInputs, IDictionary<string, BlobInput> blobInputs, Oicana.Config.CompilationOptions compilationOptions, Oicana.Config.ExportFormat exportFormat, Oicana.Config.PageRange? pages = null)
@@ -100,7 +100,7 @@ internal static class OicanaFfi
     /// </summary>
     /// <param name="documentId">Id of document to export.</param>
     /// <param name="exportFormat">Format configuration for the document export.</param>
-    /// <param name="pages">1-based, inclusive page range to export, or <c>null</c> for the whole document.</param>
+    /// <param name="pages">0-based, inclusive page range to export, or <c>null</c> for the whole document.</param>
     /// <exception cref="OicanaException">If the template compilation fails.</exception>
     /// <returns>Stream containing the compiled template exported as the given <see cref="ExportTarget"/>.</returns>
     public static Stream ExportDocument(string documentId, Oicana.Config.ExportFormat exportFormat, Oicana.Config.PageRange? pages = null)
@@ -311,11 +311,11 @@ internal static class OicanaFfi
 
     internal static Oicana.Interop.FfiPageRange ConvertPageRange(Oicana.Config.PageRange? pages)
     {
-        // A bound of 0 is "open"; { 0, 0 } therefore means "the whole document".
+        // A bound of -1 is "open"; { -1, -1 } therefore means "the whole document".
         return new FfiPageRange()
         {
-            start = pages?.Start ?? 0,
-            end = pages?.End ?? 0,
+            start = pages?.Start ?? -1,
+            end = pages?.End ?? -1,
         };
     }
 

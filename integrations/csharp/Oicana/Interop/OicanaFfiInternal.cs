@@ -284,17 +284,17 @@ namespace Oicana.Interop
         public string key;
     }
 
-    /// A contiguous, 1-based inclusive range of pages to export.
+    /// A contiguous, 0-based inclusive range of pages to export.
     ///
-    /// Each bound uses `0` to mean "open" (the document's first/last page). The
-    /// sentinel `{ start: 0, end: 0 }` therefore selects the whole document.
+    /// Each bound uses `-1` to mean "open" (the document's first/last page). The
+    /// sentinel `{ start: -1, end: -1 }` therefore selects the whole document.
     [Serializable]
     [StructLayout(LayoutKind.Sequential)]
     internal partial struct FfiPageRange
     {
-        /// First page to export (1-based, inclusive). `0` selects from the first page.
+        /// First page index to export (0-based, inclusive). `-1` selects from the first page.
         public long start;
-        /// Last page to export (1-based, inclusive). `0` selects up to the last page.
+        /// Last page index to export (0-based, inclusive). `-1` selects up to the last page.
         public long end;
     }
 
@@ -336,14 +336,13 @@ namespace Oicana.Interop
             get
             {
                 var rval = new FfiBlobInput[len];
-                for (var i = 0; i < (int)len; i++)
-                {
+                for (var i = 0; i < (int) len; i++) {
                     rval[i] = this[i];
                 }
                 return rval;
             }
         }
-        public int Count => (int)len;
+        public int Count => (int) len;
         public IEnumerator<FfiBlobInput> GetEnumerator()
         {
             for (var i = 0; i < (int)len; ++i)
@@ -396,14 +395,13 @@ namespace Oicana.Interop
             get
             {
                 var rval = new FfiJsonInput[len];
-                for (var i = 0; i < (int)len; i++)
-                {
+                for (var i = 0; i < (int) len; i++) {
                     rval[i] = this[i];
                 }
                 return rval;
             }
         }
-        public int Count => (int)len;
+        public int Count => (int) len;
         public IEnumerator<FfiJsonInput> GetEnumerator()
         {
             for (var i = 0; i < (int)len; ++i)
@@ -424,7 +422,7 @@ namespace Oicana.Interop
     {
         public T Error { get; private set; }
 
-        public InteropException(T error) : base($"Something went wrong: {error}")
+        public InteropException(T error): base($"Something went wrong: {error}")
         {
             Error = error;
         }

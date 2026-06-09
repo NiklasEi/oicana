@@ -1,21 +1,22 @@
 package com.oicana;
 
 /**
- * A contiguous, 1-based inclusive range of document pages to export.
+ * A contiguous, 0-based inclusive range of document pages to export.
  *
  * <p>Both bounds are optional ({@code null} leaves a bound open). For example,
- * {@code PageRange.of(2, null)} selects page 2 to the end of the document.
+ * {@code PageRange.of(1, null)} selects the second page to the end of the document.
  *
- * @param start the first page to export (1-based, inclusive), or {@code null} to start at the first
+ * @param start the first page index to export (0-based, inclusive), or {@code null} to start at the
+ *     first page
+ * @param end the last page index to export (0-based, inclusive), or {@code null} to go to the last
  *     page
- * @param end the last page to export (1-based, inclusive), or {@code null} to go to the last page
  */
 public record PageRange(Integer start, Integer end) {
 
     /**
-     * Create a range selecting exactly the given 1-based page.
+     * Create a range selecting exactly the page at the given 0-based index.
      *
-     * @param page the 1-based page to select
+     * @param page the 0-based index of the page to select
      * @return a single-page range
      */
     public static PageRange single(int page) {
@@ -23,10 +24,10 @@ public record PageRange(Integer start, Integer end) {
     }
 
     /**
-     * Create a range with the given (nullable) 1-based, inclusive bounds.
+     * Create a range with the given (nullable) 0-based, inclusive bounds.
      *
-     * @param start the first page to export, or {@code null} to start at the first page
-     * @param end the last page to export, or {@code null} to go to the last page
+     * @param start the first page index to export, or {@code null} to start at the first page
+     * @param end the last page index to export, or {@code null} to go to the last page
      * @return a page range
      */
     public static PageRange of(Integer start, Integer end) {

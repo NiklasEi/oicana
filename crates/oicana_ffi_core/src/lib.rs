@@ -246,7 +246,7 @@ pub fn parse_export_format(json: &str) -> Result<ExportFormat, FfiError> {
 /// Parse an optional [`PageRange`] from its JSON object representation.
 ///
 /// An empty string means "no range" (the whole document). Otherwise the JSON is
-/// a `{ "start"?: number, "end"?: number }` object with 1-based, inclusive
+/// a `{ "start"?: number, "end"?: number }` object with 0-based, inclusive
 /// bounds.
 pub fn parse_page_range(json: &str) -> Result<Option<PageRange>, FfiError> {
     if json.is_empty() {
@@ -367,10 +367,13 @@ pub fn compile_once(
     let document = &document.document;
     Ok(match format {
         ExportFormat::Png { pixels_per_pt } => export_png(document, pixels_per_pt, pages.as_ref())?,
-        ExportFormat::Pdf => {
-            export_pdf(document, &world, world.manifest().pdf_standards(), pages.as_ref())
-                .map_err(pdf_export_error)?
-        }
+        ExportFormat::Pdf => export_pdf(
+            document,
+            &world,
+            world.manifest().pdf_standards(),
+            pages.as_ref(),
+        )
+        .map_err(pdf_export_error)?,
         ExportFormat::Svg => export_svg(document, pages.as_ref())?,
     })
 }
@@ -390,7 +393,9 @@ pub fn export_document(
     };
 
     Ok(match format {
-        ExportFormat::Png { pixels_per_pt } => export_png(&document, pixels_per_pt, pages.as_ref())?,
+        ExportFormat::Png { pixels_per_pt } => {
+            export_png(&document, pixels_per_pt, pages.as_ref())?
+        }
         ExportFormat::Pdf => {
             let template_id = template_id_from_document_id(document_id)?;
             let Some(world) = WORLD_CACHE.get(template_id) else {
@@ -399,8 +404,13 @@ pub fn export_document(
                     document_id: document_id.to_owned(),
                 });
             };
-            export_pdf(&document, &*world, world.manifest().pdf_standards(), pages.as_ref())
-                .map_err(pdf_export_error)?
+            export_pdf(
+                &document,
+                &*world,
+                world.manifest().pdf_standards(),
+                pages.as_ref(),
+            )
+            .map_err(pdf_export_error)?
         }
         ExportFormat::Svg => export_svg(&document, pages.as_ref())?,
     })
@@ -641,10 +651,7 @@ mod tests {
             parse_page_range(r#"{"end":4}"#).unwrap(),
             Some(PageRange::to(4))
         );
-        assert_eq!(
-            parse_page_range("{}").unwrap(),
-            Some(PageRange::default())
-        );
+        assert_eq!(parse_page_range("{}").unwrap(), Some(PageRange::default()));
     }
 
     #[test]

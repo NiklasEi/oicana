@@ -104,7 +104,7 @@ public class Template implements AutoCloseable {
      * @param blobInputs   the blob inputs for the template
      * @param exportFormat the output format
      * @param mode         the compilation mode
-     * @param pages        the 1-based, inclusive page range to export, or {@code null} for the
+     * @param pages        the 0-based, inclusive page range to export, or {@code null} for the
      *                     whole document
      * @return the compiled document as a byte array
      */

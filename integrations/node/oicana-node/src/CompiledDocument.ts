@@ -49,8 +49,8 @@ export class CompiledDocument implements Disposable {
    */
   public exportPage(pageIndex: number, pixelsPerPt: number): Uint8Array {
     return this.export(Png(pixelsPerPt), {
-      start: pageIndex + 1,
-      end: pageIndex + 1,
+      start: pageIndex,
+      end: pageIndex,
     });
   }
 
@@ -58,7 +58,7 @@ export class CompiledDocument implements Disposable {
    * Export the document in the given format (defaults to PDF), optionally
    * restricted to a range of pages.
    * @param format - export format specification
-   * @param pages - 1-based, inclusive page range (defaults to the whole document)
+   * @param pages - 0-based, inclusive page range (defaults to the whole document)
    */
   public export(
     format: ExportFormat = { format: 'pdf' },
@@ -76,7 +76,7 @@ export class CompiledDocument implements Disposable {
 
   /**
    * Export the document to a PDF file, optionally restricted to a range of pages.
-   * @param pages - 1-based, inclusive page range (defaults to the whole document)
+   * @param pages - 0-based, inclusive page range (defaults to the whole document)
    */
   public toPdf(pages?: PageRange): Uint8Array {
     return this.export({ format: 'pdf' }, pages);

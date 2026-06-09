@@ -143,7 +143,7 @@ export class Template implements Disposable {
    * @param blobInputs - Blob inputs for the template (defaults to empty map)
    * @param exportOptions - Export format specification (defaults to PDF)
    * @param compilationOptions - Compilation mode (defaults to Production)
-   * @param pages - 1-based, inclusive page range (defaults to the whole document)
+   * @param pages - 0-based, inclusive page range (defaults to the whole document)
    */
   public export(
     jsonInputs?: Map<string, string>,

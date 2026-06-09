@@ -39,7 +39,7 @@ public sealed class CompiledDocument : IDisposable
     /// Export the document in the given format, optionally restricted to a range of pages.
     /// </summary>
     /// <param name="exportFormat">Format configuration for the document export.</param>
-    /// <param name="pages">1-based, inclusive page range to export, or <c>null</c> for the whole document.</param>
+    /// <param name="pages">0-based, inclusive page range to export, or <c>null</c> for the whole document.</param>
     /// <exception cref="OicanaException">If the export fails.</exception>
     /// <returns>Stream containing the exported document.</returns>
     public Stream Export(ExportFormat exportFormat, PageRange? pages = null)
@@ -51,7 +51,7 @@ public sealed class CompiledDocument : IDisposable
     /// <summary>
     /// Export the document to a PDF file, optionally restricted to a range of pages.
     /// </summary>
-    /// <param name="pages">1-based, inclusive page range to export, or <c>null</c> for the whole document.</param>
+    /// <param name="pages">0-based, inclusive page range to export, or <c>null</c> for the whole document.</param>
     /// <exception cref="OicanaException">If the export fails.</exception>
     /// <returns>Stream containing the exported PDF.</returns>
     public Stream ToPdf(PageRange? pages = null)
@@ -68,7 +68,7 @@ public sealed class CompiledDocument : IDisposable
     /// <returns>Stream containing the exported PNG.</returns>
     public Stream ExportPage(int pageIndex, float pixelsPerPt = 1.0f)
     {
-        return Export(ExportFormat.Png(pixelsPerPt), PageRange.Single(pageIndex + 1));
+        return Export(ExportFormat.Png(pixelsPerPt), PageRange.Single(pageIndex));
     }
 
     /// <summary>

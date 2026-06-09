@@ -122,8 +122,13 @@ mod tests {
     #[test]
     fn exports_simple_document_to_pdf() {
         let (document, world) = compile(simple_template());
-        let pdf = export_pdf(&document, &world, &[oicana_template::PdfStandard::A_3b], None)
-            .expect("PDF export to work");
+        let pdf = export_pdf(
+            &document,
+            &world,
+            &[oicana_template::PdfStandard::A_3b],
+            None,
+        )
+        .expect("PDF export to work");
 
         assert_eq!(&pdf[0..4], b"%PDF");
         let end = String::from_utf8_lossy(&pdf[pdf.len() - 10..]);
@@ -133,8 +138,13 @@ mod tests {
     #[test]
     fn exports_multipage_document_to_pdf() {
         let (document, world) = compile(multipage_template());
-        let pdf =
-            export_pdf(&document, &world, &[oicana_template::PdfStandard::A_3b], None).unwrap();
+        let pdf = export_pdf(
+            &document,
+            &world,
+            &[oicana_template::PdfStandard::A_3b],
+            None,
+        )
+        .unwrap();
 
         assert!(pdf.len() > 500);
         assert_eq!(&pdf[0..4], b"%PDF");
@@ -147,10 +157,8 @@ mod tests {
         let (doc1, world1) = compile(simple_template());
         let (doc2, world2) = compile(simple_template());
 
-        let pdf1 =
-            export_pdf(&doc1, &world1, &[oicana_template::PdfStandard::A_3b], None).unwrap();
-        let pdf2 =
-            export_pdf(&doc2, &world2, &[oicana_template::PdfStandard::A_3b], None).unwrap();
+        let pdf1 = export_pdf(&doc1, &world1, &[oicana_template::PdfStandard::A_3b], None).unwrap();
+        let pdf2 = export_pdf(&doc2, &world2, &[oicana_template::PdfStandard::A_3b], None).unwrap();
 
         assert_eq!(pdf1, pdf2);
     }
@@ -186,7 +194,7 @@ mod tests {
             &document,
             &world,
             &[oicana_template::PdfStandard::A_3b],
-            Some(&PageRange::single(1)),
+            Some(&PageRange::single(0)),
         )
         .unwrap();
         let full = export_pdf(
@@ -204,8 +212,13 @@ mod tests {
     #[test]
     fn exports_with_different_standard() {
         let (document, world) = compile(simple_template());
-        let pdf =
-            export_pdf(&document, &world, &[oicana_template::PdfStandard::A_4], None).unwrap();
+        let pdf = export_pdf(
+            &document,
+            &world,
+            &[oicana_template::PdfStandard::A_4],
+            None,
+        )
+        .unwrap();
 
         assert_eq!(&pdf[0..4], b"%PDF");
         let end = String::from_utf8_lossy(&pdf[pdf.len() - 10..]);

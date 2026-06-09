@@ -121,7 +121,7 @@ class Template:
             blob_inputs: Blob inputs
             export: Export format and configuration (pdf/png/svg)
             mode: Compilation mode
-            pages: 1-based, inclusive page range (defaults to the whole document)
+            pages: 0-based, inclusive page range (defaults to the whole document)
 
         Returns:
             Compiled document bytes
@@ -283,14 +283,14 @@ class CompiledDocument:
         """
         return self.export(
             {"format": "png", "pixelsPerPt": pixels_per_pt},
-            pages=PageRange.single(page_index + 1),
+            pages=PageRange.single(page_index),
         )
 
     def to_pdf(self, pages: PageRange | None = None) -> bytes:
         """Export the document to a PDF file, optionally restricted to a range.
 
         Args:
-            pages: 1-based, inclusive page range (defaults to the whole document)
+            pages: 0-based, inclusive page range (defaults to the whole document)
         """
         return self.export({"format": "pdf"}, pages=pages)
 
@@ -299,7 +299,7 @@ class CompiledDocument:
 
         Args:
             export: Export format and configuration (pdf/png/svg)
-            pages: 1-based, inclusive page range (defaults to the whole document)
+            pages: 0-based, inclusive page range (defaults to the whole document)
         """
         if self._document_id is None:
             raise RuntimeError("CompiledDocument has already been closed")

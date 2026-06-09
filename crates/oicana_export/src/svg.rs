@@ -162,8 +162,7 @@ manifest_version = 1
     fn exports_a_single_page() {
         let document = compile(multipage_template());
 
-        let single = export_svg(&document, Some(&PageRange::single(1)))
-            .unwrap();
+        let single = export_svg(&document, Some(&PageRange::single(0))).unwrap();
         let merged = export_svg(&document, None).unwrap();
         let single_str = String::from_utf8_lossy(&single);
 
@@ -176,7 +175,7 @@ manifest_version = 1
         let document = compile(multipage_template());
 
         assert!(matches!(
-            export_svg(&document, Some(&PageRange::single(3))),
+            export_svg(&document, Some(&PageRange::single(2))),
             Err(SvgExportError::NoPagesSelected)
         ));
     }

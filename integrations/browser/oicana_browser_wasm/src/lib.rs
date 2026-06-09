@@ -187,7 +187,7 @@ pub fn remove_world(template_id: String) -> Result<(), String> {
 
 /// Export the given document
 ///
-/// `page_range` is a `{ start?: number; end?: number }` object with 1-based,
+/// `page_range` is a `{ start?: number; end?: number }` object with 0-based,
 /// inclusive bounds, or `undefined`/`null` to export the whole document.
 ///
 /// Make sure to call `removeDocument` with the documentId afterwards, to free the memory.

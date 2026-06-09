@@ -143,7 +143,7 @@ fn get_file(py: Python<'_>, template: String, file: String) -> PyResult<Bound<'_
 
 /// Export the given document
 ///
-/// `page_range` is a JSON object `{ "start"?: int, "end"?: int }` with 1-based,
+/// `page_range` is a JSON object `{ "start"?: int, "end"?: int }` with 0-based,
 /// inclusive bounds, or an empty string to export the whole document.
 ///
 /// Make sure to call `remove_document` with the document_id afterwards, to free the memory.

@@ -65,7 +65,7 @@ public class CompiledDocument implements AutoCloseable {
     /**
      * Export a range of pages to PDF.
      *
-     * @param pages the 1-based, inclusive page range to export, or {@code null} for the whole
+     * @param pages the 0-based, inclusive page range to export, or {@code null} for the whole
      *     document
      * @return the PDF document as a byte array
      */
@@ -87,7 +87,7 @@ public class CompiledDocument implements AutoCloseable {
      * Export the document in the given format, optionally restricted to a range of pages.
      *
      * @param exportFormat the output format
-     * @param pages the 1-based, inclusive page range to export, or {@code null} for the whole
+     * @param pages the 0-based, inclusive page range to export, or {@code null} for the whole
      *     document
      * @return the exported document as a byte array
      */
@@ -107,7 +107,7 @@ public class CompiledDocument implements AutoCloseable {
      * @return the PNG image as a byte array
      */
     public byte[] exportPage(int pageIndex, float pixelsPerPt) {
-        return export(ExportFormat.png(pixelsPerPt), PageRange.single(pageIndex + 1));
+        return export(ExportFormat.png(pixelsPerPt), PageRange.single(pageIndex));
     }
 
     /** Release the cached document. The instance must not be used after calling close(). */

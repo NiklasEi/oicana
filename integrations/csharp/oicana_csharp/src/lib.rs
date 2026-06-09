@@ -505,28 +505,28 @@ impl From<ExportOptions> for oicana_ffi_core::ExportFormat {
     }
 }
 
-/// A contiguous, 1-based inclusive range of pages to export.
+/// A contiguous, 0-based inclusive range of pages to export.
 ///
-/// Each bound uses `0` to mean "open" (the document's first/last page). The
-/// sentinel `{ start: 0, end: 0 }` therefore selects the whole document.
+/// Each bound uses `-1` to mean "open" (the document's first/last page). The
+/// sentinel `{ start: -1, end: -1 }` therefore selects the whole document.
 #[ffi_type]
 #[repr(C)]
 #[derive(Copy, Clone, Debug)]
 pub struct FfiPageRange {
-    /// First page to export (1-based, inclusive). `0` selects from the first page.
+    /// First page index to export (0-based, inclusive). `-1` selects from the first page.
     pub start: i64,
-    /// Last page to export (1-based, inclusive). `0` selects up to the last page.
+    /// Last page index to export (0-based, inclusive). `-1` selects up to the last page.
     pub end: i64,
 }
 
 impl From<FfiPageRange> for Option<oicana_ffi_core::PageRange> {
     fn from(range: FfiPageRange) -> Self {
-        if range.start == 0 && range.end == 0 {
+        if range.start < 0 && range.end < 0 {
             return None;
         }
         Some(oicana_ffi_core::PageRange {
-            start: (range.start > 0).then_some(range.start as usize),
-            end: (range.end > 0).then_some(range.end as usize),
+            start: (range.start >= 0).then_some(range.start as usize),
+            end: (range.end >= 0).then_some(range.end as usize),
         })
     }
 }
