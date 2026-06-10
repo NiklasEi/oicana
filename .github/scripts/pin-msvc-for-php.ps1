@@ -58,6 +58,23 @@ if (-not $toolset) {
 
 $pin = "$($toolset.Major).$($toolset.Minor)"
 Write-Host "Pinning MSVC toolset $pin (PHP core: $coreVersion)"
+
 cmd /c "`"$vs\VC\Auxiliary\Build\vcvarsall.bat`" x64 -vcvars_ver=$pin >nul && set" |
-    Where-Object { $_ -match '^(PATH|INCLUDE|LIB|LIBPATH)=' } |
-    Add-Content $env:GITHUB_ENV
+    ForEach-Object {
+        $name, $value = $_ -split '=', 2
+        if (-not $name -or $name -match '^(GITHUB_|ACTIONS_|RUNNER_)') { return }
+        if ([Environment]::GetEnvironmentVariable($name) -cne $value) {
+            "$name=$value" | Add-Content $env:GITHUB_ENV
+        }
+    }
+
+$toolsetDir = Get-ChildItem "$vs\VC\Tools\MSVC" -Directory |
+    Where-Object Name -like "$pin.*" |
+    Sort-Object Name -Descending |
+    Select-Object -First 1
+$linker = "$($toolsetDir.FullName)\bin\Hostx64\x64\link.exe"
+if (-not (Test-Path $linker)) {
+    throw "Pinned linker not found at $linker"
+}
+Write-Host "Using linker $linker"
+"CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_LINKER=$linker" | Add-Content $env:GITHUB_ENV
