@@ -520,6 +520,10 @@ jobs:
         env:
           debug: true
       - run: php -v
+      - name: Pin MSVC toolset to the PHP core's linker version
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: ./.github/scripts/pin-msvc-for-php.ps1
       - name: Build PHP extension
         run: cargo build --release --target ${{ matrix.target }} -p oicana_php_native
         env:
