@@ -177,7 +177,7 @@ mod tests {
         let files =
             PackedTemplate::new(Cursor::new(template)).expect("Failed to parse template zip");
         assert!(files
-            .source(FileId::new(None, VirtualPath::new("/template.typ")))
+            .source(FileId::new(None, VirtualPath::new("/main.typ")))
             .is_ok());
     }
 
@@ -208,7 +208,7 @@ mod tests {
 
         assert!(files
             .file(FileId::new(
-                Some("@local/oicana:0.1.0".parse().unwrap()),
+                Some("@preview/oicana:0.1.1".parse().unwrap()),
                 VirtualPath::new("/typst.toml")
             ))
             .is_ok());

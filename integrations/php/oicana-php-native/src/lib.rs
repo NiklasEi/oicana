@@ -166,7 +166,7 @@ pub fn get_file(template: String, file: String) -> PhpResult<Vec<u8>> {
 /// Export the given document
 ///
 /// `page_range` is a JSON object `{ "start"?: int, "end"?: int }` with 0-based,
-/// inclusive bounds, or an empty string to export the whole document.
+/// inclusive bounds. If not set, the whole document is exported.
 ///
 /// Make sure to call `remove_document` with the document_id afterwards, to free the memory.
 #[php_function]
@@ -174,10 +174,11 @@ pub fn get_file(template: String, file: String) -> PhpResult<Vec<u8>> {
 pub fn export_document(
     document_id: String,
     export_format: String,
-    page_range: String,
+    page_range: Option<String>,
 ) -> PhpResult<Vec<u8>> {
     let format = oicana_ffi_core::parse_export_format(&export_format).map_err(into_php_err)?;
-    let page = oicana_ffi_core::parse_page_range(&page_range).map_err(into_php_err)?;
+    let page = oicana_ffi_core::parse_page_range(page_range.as_deref().unwrap_or(""))
+        .map_err(into_php_err)?;
     oicana_ffi_core::export_document(&document_id, format, page).map_err(into_php_err)
 }
 

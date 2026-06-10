@@ -619,7 +619,7 @@ fn prepare_inputs(
 fn pdf_export_error(error: String) -> FfiError {
     FfiError::Export {
         format: "PDF",
-        error: format!("{error}"),
+        error,
     }
 }
 

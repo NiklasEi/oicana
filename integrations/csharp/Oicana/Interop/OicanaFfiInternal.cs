@@ -336,13 +336,14 @@ namespace Oicana.Interop
             get
             {
                 var rval = new FfiBlobInput[len];
-                for (var i = 0; i < (int) len; i++) {
+                for (var i = 0; i < (int)len; i++)
+                {
                     rval[i] = this[i];
                 }
                 return rval;
             }
         }
-        public int Count => (int) len;
+        public int Count => (int)len;
         public IEnumerator<FfiBlobInput> GetEnumerator()
         {
             for (var i = 0; i < (int)len; ++i)
@@ -395,13 +396,14 @@ namespace Oicana.Interop
             get
             {
                 var rval = new FfiJsonInput[len];
-                for (var i = 0; i < (int) len; i++) {
+                for (var i = 0; i < (int)len; i++)
+                {
                     rval[i] = this[i];
                 }
                 return rval;
             }
         }
-        public int Count => (int) len;
+        public int Count => (int)len;
         public IEnumerator<FfiJsonInput> GetEnumerator()
         {
             for (var i = 0; i < (int)len; ++i)
@@ -422,7 +424,7 @@ namespace Oicana.Interop
     {
         public T Error { get; private set; }
 
-        public InteropException(T error): base($"Something went wrong: {error}")
+        public InteropException(T error) : base($"Something went wrong: {error}")
         {
             Error = error;
         }

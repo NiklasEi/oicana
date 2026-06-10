@@ -37,13 +37,13 @@ if TYPE_CHECKING:
     from typing import Any
 
 
-def _serialize_page_range(pages: PageRange | None) -> str:
+def _serialize_page_range(pages: PageRange | None) -> str | None:
     """Serialize a page range for the native ``export_document`` call.
 
-    ``None`` becomes an empty string, meaning "the whole document".
+    ``None`` means "the whole document".
     """
     if pages is None:
-        return ""
+        return None
     payload: dict[str, int] = {}
     if pages.start is not None:
         payload["start"] = pages.start
@@ -180,12 +180,13 @@ class Template:
                 meta_str = json.dumps(blob.metadata) if blob.metadata else "{}"
                 native_blobs[key] = BlobWithMetadata(blob.data, meta_str)
 
-        return compile_template(
+        doc_id: str = compile_template(
             self._template_id,
             native_json,
             native_blobs,
             native_mode,
         )
+        return doc_id
 
     def inputs(self) -> dict[str, Any]:
         """Get input definitions from manifest.

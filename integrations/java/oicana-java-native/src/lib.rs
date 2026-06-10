@@ -174,7 +174,12 @@ pub extern "system" fn Java_com_oicana_OicanaNative_exportDocument<'local>(
         .with_env(|env| -> jni::errors::Result<JByteArray<'_>> {
             let document_id = document_id.try_to_string(env)?;
             let export_format_str = export_format.try_to_string(env)?;
-            let page_range_str = page_range.try_to_string(env)?;
+            // A null page range selects the whole document.
+            let page_range_str = if page_range.is_null() {
+                String::new()
+            } else {
+                page_range.try_to_string(env)?
+            };
 
             let format = oicana_ffi_core::parse_export_format(&export_format_str)
                 .map_err(|e| throw_ffi(env, e))?;

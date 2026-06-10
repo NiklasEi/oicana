@@ -121,7 +121,7 @@ public class Template implements AutoCloseable {
             return OicanaNative.exportDocument(
                     documentId,
                     exportFormat.toJsonString(),
-                    pages == null ? "" : pages.toJsonString()
+                    pages == null ? null : pages.toJsonString()
             );
         } finally {
             OicanaNative.removeDocument(documentId);

@@ -26,6 +26,7 @@ class OicanaNative {
             int compilationMode
     );
 
+    /** {@code pageRange} may be {@code null} to export the whole document. */
     static native byte[] exportDocument(String documentId, String exportFormat, String pageRange);
 
     static native void removeDocument(String documentId);

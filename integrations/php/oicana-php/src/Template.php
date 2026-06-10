@@ -110,7 +110,7 @@ class Template
             $bytes = \OicanaInternal\export_document(
                 $docId,
                 json_encode($formatArray),
-                $pages?->toNative() ?? ''
+                $pages?->toNative()
             );
             return pack('C*', ...$bytes);
         } finally {

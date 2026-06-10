@@ -57,11 +57,15 @@ export declare function evictCache(maxAge: number): void
  * Export the given document
  *
  * `page_range` is a JSON object `{ "start"?: number, "end"?: number }` with
- * 0-based, inclusive bounds, or an empty string to export the whole document.
+ * 0-based, inclusive bounds. If not set, the whole document is exported.
  *
  * Make sure to call `removeDocument` with the documentId afterwards, to free the memory.
  */
-export declare function exportDocument(documentId: string, exportFormat: string, pageRange: string): Buffer
+export declare function exportDocument(
+  documentId: string,
+  exportFormat: string,
+  pageRange?: string | undefined | null,
+): Buffer
 
 /**
  * Load the source of the given file in the template.

@@ -20,11 +20,10 @@ export const PageRange = {
 };
 
 /**
- * Serialize a page range for the native `exportDocument` call. A missing range
- * (`undefined` or `null`) becomes an empty string, meaning "the whole document";
- * the native layer only understands the empty-string sentinel, not `"null"`.
+ * Serialize a page range for the native `exportDocument` call. An unset range
+ * means "the whole document".
  * @internal
  */
-export function serializePageRange(pages?: PageRange | null): string {
-  return pages === undefined || pages === null ? '' : JSON.stringify(pages);
+export function serializePageRange(pages?: PageRange | null): string | undefined {
+  return pages === undefined || pages === null ? undefined : JSON.stringify(pages);
 }

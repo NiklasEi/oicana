@@ -79,7 +79,7 @@ final class CompiledDocument
         $bytes = \OicanaInternal\export_document(
             $this->documentId,
             json_encode($formatArray, JSON_THROW_ON_ERROR),
-            $pages?->toNative() ?? ''
+            $pages?->toNative()
         );
 
         return pack('C*', ...$bytes);
