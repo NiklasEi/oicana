@@ -24,6 +24,10 @@ export const PageRange = {
  * means "the whole document".
  * @internal
  */
-export function serializePageRange(pages?: PageRange | null): string | undefined {
-  return pages === undefined || pages === null ? undefined : JSON.stringify(pages);
+export function serializePageRange(
+  pages?: PageRange | null,
+): string | undefined {
+  return pages === undefined || pages === null
+    ? undefined
+    : JSON.stringify(pages);
 }
