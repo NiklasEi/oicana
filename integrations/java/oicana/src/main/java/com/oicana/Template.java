@@ -166,6 +166,7 @@ public class Template implements AutoCloseable {
     /**
      * Compile the template to PNG without any inputs in production mode, at the default
      * resolution of 1 pixel per point.
+     * Multiple pages are merged into a single, vertically stacked image.
      *
      * @return the PNG image as a byte array
      */
@@ -175,6 +176,7 @@ public class Template implements AutoCloseable {
 
     /**
      * Compile the template to PNG without any inputs in production mode.
+     * Multiple pages are merged into a single, vertically stacked image.
      *
      * @param pixelsPerPt resolution in pixels per point
      * @return the PNG image as a byte array
@@ -186,6 +188,7 @@ public class Template implements AutoCloseable {
     /**
      * Compile the template to PNG with the given inputs in production mode, at the default
      * resolution of 1 pixel per point.
+     * Multiple pages are merged into a single, vertically stacked image.
      *
      * @param jsonInputs the JSON inputs for the template
      * @param blobInputs the blob inputs for the template
@@ -197,6 +200,7 @@ public class Template implements AutoCloseable {
 
     /**
      * Compile the template to PNG with the given inputs in production mode.
+     * Multiple pages are merged into a single, vertically stacked image.
      *
      * @param jsonInputs  the JSON inputs for the template
      * @param blobInputs  the blob inputs for the template
@@ -210,6 +214,7 @@ public class Template implements AutoCloseable {
 
     /**
      * Compile the template and export it to PNG, optionally restricted to a range of pages.
+     * Multiple pages are merged into a single, vertically stacked image.
      *
      * @param jsonInputs  the JSON inputs for the template
      * @param blobInputs  the blob inputs for the template

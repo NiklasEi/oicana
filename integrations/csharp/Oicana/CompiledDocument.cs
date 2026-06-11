@@ -67,6 +67,7 @@ public sealed class CompiledDocument : IDisposable
 
     /// <summary>
     /// Export the document to PNG, optionally restricted to a range of pages.
+    /// Multiple pages are merged into a single, vertically stacked image.
     /// </summary>
     /// <param name="pixelsPerPt">Resolution in pixels per point (defaults to 1.0).</param>
     /// <param name="pages">0-based, inclusive page range to export, or <c>null</c> for the whole document.</param>

@@ -143,6 +143,7 @@ class Template
 
     /**
      * Compile template and export to PNG in a single call.
+     * Multiple pages are merged into a single, vertically stacked image.
      *
      * @param array<string, string|array<mixed>> $jsonInputs JSON inputs (key => JSON string or array)
      * @param array<string, BlobInput> $blobInputs Blob inputs

@@ -73,6 +73,7 @@ export class CompiledDocument implements Disposable {
 
   /**
    * Export the document to PNG, optionally restricted to a range of pages.
+   * Multiple pages are merged into a single, vertically stacked image.
    * @param pixelsPerPt - resolution in pixels per point (defaults to 1.0)
    * @param pages - 0-based, inclusive page range (defaults to the whole document)
    */

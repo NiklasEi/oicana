@@ -109,6 +109,7 @@ final class CompiledDocument
 
     /**
      * Export the document to PNG, optionally restricted to a range of pages.
+     * Multiple pages are merged into a single, vertically stacked image.
      *
      * @param float $pixelsPerPt Resolution in pixels per point (defaults to 1.0)
      * @param PageRange|null $pages 0-based, inclusive page range (defaults to the whole document)

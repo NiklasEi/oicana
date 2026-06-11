@@ -172,6 +172,8 @@ class Template:
     ) -> bytes:
         """Compile the template and export it to PNG in a single call.
 
+        Multiple pages are merged into a single, vertically stacked image.
+
         Args:
             json_inputs: JSON inputs
             blob_inputs: Blob inputs
@@ -379,6 +381,8 @@ class CompiledDocument:
 
     def export_png(self, pixels_per_pt: float = 1.0, pages: PageRange | None = None) -> bytes:
         """Export the document to PNG, optionally restricted to a range.
+
+        Multiple pages are merged into a single, vertically stacked image.
 
         Args:
             pixels_per_pt: Resolution in pixels per point (defaults to 1.0)

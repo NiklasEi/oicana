@@ -35,6 +35,7 @@ public interface ITemplate
 
     /// <summary>
     /// Compile the template with the given inputs and export it to PNG.
+    /// Multiple pages are merged into a single, vertically stacked image.
     /// </summary>
     /// <param name="jsonInputs">Json inputs for the compilation (key -> JsonNode).</param>
     /// <param name="blobInputs">Blob inputs for the compilation (key -> BlobInput).</param>

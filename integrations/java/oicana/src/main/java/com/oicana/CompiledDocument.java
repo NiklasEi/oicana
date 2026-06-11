@@ -113,6 +113,7 @@ public class CompiledDocument implements AutoCloseable {
 
     /**
      * Export the whole document to PNG at the default resolution of 1 pixel per point.
+     * Multiple pages are merged into a single, vertically stacked image.
      *
      * @return the PNG image as a byte array
      */
@@ -122,6 +123,7 @@ public class CompiledDocument implements AutoCloseable {
 
     /**
      * Export the whole document to PNG.
+     * Multiple pages are merged into a single, vertically stacked image.
      *
      * @param pixelsPerPt resolution in pixels per point
      * @return the PNG image as a byte array
@@ -133,6 +135,7 @@ public class CompiledDocument implements AutoCloseable {
     /**
      * Export the document to PNG at the default resolution of 1 pixel per point, optionally
      * restricted to a range of pages.
+     * Multiple pages are merged into a single, vertically stacked image.
      *
      * @param pages the 0-based, inclusive page range to export, or {@code null} for the whole
      *     document
@@ -144,6 +147,7 @@ public class CompiledDocument implements AutoCloseable {
 
     /**
      * Export the document to PNG, optionally restricted to a range of pages.
+     * Multiple pages are merged into a single, vertically stacked image.
      *
      * @param pixelsPerPt resolution in pixels per point
      * @param pages the 0-based, inclusive page range to export, or {@code null} for the whole
