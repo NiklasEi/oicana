@@ -129,7 +129,7 @@ pub extern "system" fn Java_com_oicana_OicanaNative_registerTemplate<'local>(
             )
             .map_err(|e| throw_ffi(env, e))?;
 
-            Ok(JString::from_str(env, &result_id)?)
+            JString::from_str(env, &result_id)
         })
         .resolve::<jni::errors::ThrowRuntimeExAndDefault>()
 }
@@ -157,7 +157,7 @@ pub extern "system" fn Java_com_oicana_OicanaNative_compileTemplate<'local>(
             )
             .map_err(|e| throw_ffi(env, e))?;
 
-            Ok(JString::from_str(env, &result_id)?)
+            JString::from_str(env, &result_id)
         })
         .resolve::<jni::errors::ThrowRuntimeExAndDefault>()
 }
@@ -188,7 +188,7 @@ pub extern "system" fn Java_com_oicana_OicanaNative_exportDocument<'local>(
             let bytes = oicana_ffi_core::export_document(&document_id, format, page)
                 .map_err(|e| throw_ffi(env, e))?;
 
-            Ok(env.byte_array_from_slice(&bytes)?)
+            env.byte_array_from_slice(&bytes)
         })
         .resolve::<jni::errors::ThrowRuntimeExAndDefault>()
 }
@@ -220,7 +220,7 @@ pub extern "system" fn Java_com_oicana_OicanaNative_getWarnings<'local>(
         .with_env(|env| -> jni::errors::Result<JString<'_>> {
             let id = document_id.try_to_string(env)?;
             match oicana_ffi_core::get_warnings(&id) {
-                Some(warnings) => Ok(JString::from_str(env, &warnings)?),
+                Some(warnings) => JString::from_str(env, &warnings),
                 None => Ok(JString::default()),
             }
         })
@@ -252,7 +252,7 @@ pub extern "system" fn Java_com_oicana_OicanaNative_inputs<'local>(
         .with_env(|env| -> jni::errors::Result<JString<'_>> {
             let template_id = template_id.try_to_string(env)?;
             let json = oicana_ffi_core::inputs(&template_id).map_err(|e| throw_ffi(env, e))?;
-            Ok(JString::from_str(env, &json)?)
+            JString::from_str(env, &json)
         })
         .resolve::<jni::errors::ThrowRuntimeExAndDefault>()
 }
@@ -268,7 +268,7 @@ pub extern "system" fn Java_com_oicana_OicanaNative_documentPages<'local>(
             let document_id = document_id.try_to_string(env)?;
             let json =
                 oicana_ffi_core::document_pages(&document_id).map_err(|e| throw_ffi(env, e))?;
-            Ok(JString::from_str(env, &json)?)
+            JString::from_str(env, &json)
         })
         .resolve::<jni::errors::ThrowRuntimeExAndDefault>()
 }
@@ -286,7 +286,7 @@ pub extern "system" fn Java_com_oicana_OicanaNative_getSource<'local>(
             let file_path = file.try_to_string(env)?;
             let source = oicana_ffi_core::get_source(&template_id, &file_path)
                 .map_err(|e| throw_ffi(env, e))?;
-            Ok(JString::from_str(env, &source)?)
+            JString::from_str(env, &source)
         })
         .resolve::<jni::errors::ThrowRuntimeExAndDefault>()
 }
@@ -304,7 +304,7 @@ pub extern "system" fn Java_com_oicana_OicanaNative_getFile<'local>(
             let file_path = file.try_to_string(env)?;
             let bytes = oicana_ffi_core::get_file(&template_id, &file_path)
                 .map_err(|e| throw_ffi(env, e))?;
-            Ok(env.byte_array_from_slice(&bytes)?)
+            env.byte_array_from_slice(&bytes)
         })
         .resolve::<jni::errors::ThrowRuntimeExAndDefault>()
 }

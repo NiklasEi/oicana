@@ -846,6 +846,11 @@ jobs:
             ~/.cargo/git/db/
             target/
       - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+      - name: Run clippy
+        if: matrix.os == 'ubuntu-latest'
+        run: cargo clippy --all-targets --all-features -p oicana_java_native -- -Dwarnings
       - name: Build Java JNI library
         run: cargo build --release --target ${{ matrix.target }} -p oicana_java_native
       - name: Upload Java native library
