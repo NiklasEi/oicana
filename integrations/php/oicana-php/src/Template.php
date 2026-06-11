@@ -124,6 +124,7 @@ class Template
 
     /**
      * Compile template and export to PDF in a single call.
+     * Tagging will be automatically turned off when exporting a subset of pages.
      *
      * @param array<string, string|array<mixed>> $jsonInputs JSON inputs (key => JSON string or array)
      * @param array<string, BlobInput> $blobInputs Blob inputs

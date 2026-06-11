@@ -97,6 +97,7 @@ final class CompiledDocument
 
     /**
      * Export the document to PDF, optionally restricted to a range of pages.
+     * Tagging will be automatically turned off when exporting a subset of pages.
      *
      * @param PageRange|null $pages 0-based, inclusive page range (defaults to the whole document)
      * @return string PDF bytes

@@ -147,6 +147,8 @@ class Template:
     ) -> bytes:
         """Compile the template and export it to PDF in a single call.
 
+        Tagging will be automatically turned off when exporting a subset of pages.
+
         Args:
             json_inputs: JSON inputs
             blob_inputs: Blob inputs
@@ -373,6 +375,8 @@ class CompiledDocument:
 
     def export_pdf(self, pages: PageRange | None = None) -> bytes:
         """Export the document to PDF, optionally restricted to a range.
+
+        Tagging will be automatically turned off when exporting a subset of pages.
 
         Args:
             pages: 0-based, inclusive page range (defaults to the whole document)

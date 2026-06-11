@@ -164,6 +164,7 @@ export class Template implements Disposable {
   /**
    * Compile the template and export it to PDF in a single call, then free the
    * document.
+   * Tagging will be automatically turned off when exporting a subset of pages.
    * @param jsonInputs - JSON inputs for the template (defaults to empty map)
    * @param blobInputs - Blob inputs for the template (defaults to empty map)
    * @param compilationOptions - Compilation mode (defaults to Production)

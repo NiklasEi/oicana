@@ -69,6 +69,7 @@ export class CompiledDocument implements Disposable {
 
   /**
    * Export the document to PDF, optionally restricted to a range of pages.
+   * Tagging will be automatically turned off when exporting a subset of pages.
    * @param pages - 0-based, inclusive page range (defaults to the whole document)
    */
   public exportPdf(pages?: PageRange): Uint8Array {

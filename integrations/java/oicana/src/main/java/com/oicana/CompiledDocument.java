@@ -102,6 +102,7 @@ public class CompiledDocument implements AutoCloseable {
 
     /**
      * Export the document to PDF, optionally restricted to a range of pages.
+     * Tagging will be automatically turned off when exporting a subset of pages.
      *
      * @param pages the 0-based, inclusive page range to export, or {@code null} for the whole
      *     document

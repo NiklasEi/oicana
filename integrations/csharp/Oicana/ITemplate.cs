@@ -25,6 +25,7 @@ public interface ITemplate
 
     /// <summary>
     /// Compile the template with the given inputs and export it to PDF.
+    /// Tagging will be automatically turned off when exporting a subset of pages.
     /// </summary>
     /// <param name="jsonInputs">Json inputs for the compilation (key -> JsonNode).</param>
     /// <param name="blobInputs">Blob inputs for the compilation (key -> BlobInput).</param>

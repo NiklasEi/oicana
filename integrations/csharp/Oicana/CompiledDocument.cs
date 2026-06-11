@@ -56,6 +56,7 @@ public sealed class CompiledDocument : IDisposable
 
     /// <summary>
     /// Export the document to PDF, optionally restricted to a range of pages.
+    /// Tagging will be automatically turned off when exporting a subset of pages.
     /// </summary>
     /// <param name="pages">0-based, inclusive page range to export, or <c>null</c> for the whole document.</param>
     /// <exception cref="OicanaException">If the export fails.</exception>

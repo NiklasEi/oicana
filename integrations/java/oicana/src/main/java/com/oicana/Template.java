@@ -150,6 +150,7 @@ public class Template implements AutoCloseable {
 
     /**
      * Compile the template and export it to PDF, optionally restricted to a range of pages.
+     * Tagging will be automatically turned off when exporting a subset of pages.
      *
      * @param jsonInputs the JSON inputs for the template
      * @param blobInputs the blob inputs for the template
