@@ -108,7 +108,9 @@ pub fn package_data_dir() -> Option<PathBuf> {
 fn downloader() -> impl Downloader {
     let user_agent = concat!("oicana/", env!("CARGO_PKG_VERSION"));
     ProgressDownloader::new(SystemDownloader::new(user_agent), |key: &dyn Any| {
-        let name = key.downcast_ref::<PackageSpec>().map(|spec| spec.to_string());
+        let name = key
+            .downcast_ref::<PackageSpec>()
+            .map(|spec| spec.to_string());
         PrintProgress(name)
     })
 }
@@ -263,10 +265,8 @@ fn find_fonts(project_root: &Path) -> Vec<FileId> {
                     Some("ttf") | Some("ttc") | Some("TTF") | Some("TTC") | Some("otf")
                     | Some("otc") | Some("OTF") | Some("OTC") => {
                         match VirtualPath::virtualize(project_root, &path) {
-                            Ok(vpath) => fonts.push(FileId::new(RootedPath::new(
-                                VirtualRoot::Project,
-                                vpath,
-                            ))),
+                            Ok(vpath) => fonts
+                                .push(FileId::new(RootedPath::new(VirtualRoot::Project, vpath))),
                             Err(error) => {
                                 debug!("Skipping font file {path:?}: {error}")
                             }
