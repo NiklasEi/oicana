@@ -158,12 +158,18 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-cargo-php-${{ matrix.php }}-${{ matrix.ts }}-
             ${{ runner.os }}-cargo-php-
+      - name: Pin MSVC toolset to the PHP core's linker version
+        if: matrix.platform.os == 'windows'
+        shell: pwsh
+        run: ./.github/scripts/pin-msvc-for-php.ps1
       - name: Build PHP extension
         run: cargo build --release --target ${{ matrix.platform.target }} -p oicana_php_native
         env:
           RUSTFLAGS: ${{ matrix.platform.flags }}
-      - run: |
+      - name: Verify PHP extension loads
+        run: |
           php -d extension=./target/${{ matrix.platform.target }}/release/${{ matrix.platform.lib }} -r "print_r(array_filter(get_defined_functions()['internal'], fn(\$f) => str_contains(\$f, 'oicana') || str_contains(\$f, 'register') || str_contains(\$f, 'compile')));"
+          php -d extension=./target/${{ matrix.platform.target }}/release/${{ matrix.platform.lib }} -r "exit(function_exists('OicanaInternal\\inputs') ? 0 : 1);"
         shell: bash
       - name: Rename binary to match installer convention
         run: |

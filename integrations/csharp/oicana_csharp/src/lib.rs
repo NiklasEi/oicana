@@ -108,6 +108,7 @@ pub unsafe extern "C" fn unsafe_export_template_once(
     blob_inputs: FFISlice<FfiBlobInput>,
     compile_options: CompilationOptions,
     export_options: ExportOptions,
+    page_range: FfiPageRange,
 ) -> Buffer {
     let files = unsafe { slice_from_buffer(files) };
     let (json_map, blob_map) = match unsafe { parse_inputs(json_inputs, blob_inputs) } {
@@ -121,6 +122,7 @@ pub unsafe extern "C" fn unsafe_export_template_once(
         blob_map,
         compile_options.mode.into(),
         export_options.into(),
+        page_range.into(),
     ))
 }
 
@@ -173,6 +175,7 @@ pub unsafe extern "C" fn unsafe_compile_template(
 pub unsafe extern "C" fn unsafe_export_document(
     document_id: AsciiPointer,
     export_options: ExportOptions,
+    page_range: FfiPageRange,
 ) -> Buffer {
     let document_id = match document_id.as_str() {
         Ok(document_id) => document_id,
@@ -181,6 +184,7 @@ pub unsafe extern "C" fn unsafe_export_document(
     Buffer::from_bytes_result(oicana_ffi_core::export_document(
         document_id,
         export_options.into(),
+        page_range.into(),
     ))
 }
 
@@ -196,6 +200,20 @@ pub extern "C" fn inputs(template: AsciiPointer) -> Buffer {
         Err(error) => return Buffer::from_error(format!("{error:?}")),
     };
     Buffer::from_string_result(oicana_ffi_core::inputs(template))
+}
+
+/// Return the sizes (in points) of every page of a compiled document as a JSON
+/// array of `{ "width": number, "height": number }`.
+///
+/// This method requires a previous successful call producing the `document_id`.
+#[ffi_function]
+#[no_mangle]
+pub extern "C" fn document_pages(document_id: AsciiPointer) -> Buffer {
+    let document_id = match document_id.as_str() {
+        Ok(document_id) => document_id,
+        Err(error) => return Buffer::from_error(format!("{error:?}")),
+    };
+    Buffer::from_string_result(oicana_ffi_core::document_pages(document_id))
 }
 
 /// Load the source at the given path in the template.
@@ -415,21 +433,21 @@ pub struct FfiBlobInput<'a> {
     pub meta: AsciiPointer<'a>,
 }
 
-/// Formats that an Oicana template can be compiled into.
+/// Formats that an Oicana template can be exported into.
 #[ffi_type]
 #[repr(C)]
 #[derive(Copy, Clone, Debug)]
 pub enum CompilationTarget {
-    /// Render the template to a PDF file.
+    /// Export to a PDF file.
     ///
     /// The exported standard can be configured in the template manifest
     /// via [tool.oicana.export.pdf] section. Defaults to PDF/A-3b.
     Pdf,
-    /// Render the template into a png image.
+    /// Export to a png image.
     ///
     /// The image is not optimized for file size to speed up compilation.
     Png,
-    /// Render the template as SVG file.
+    /// Export to an SVG file.
     Svg,
 }
 
@@ -487,7 +505,33 @@ impl From<ExportOptions> for oicana_ffi_core::ExportFormat {
     }
 }
 
-/// Formats that the compiled documents can be rendered into.
+/// A contiguous, 0-based inclusive range of pages to export.
+///
+/// Each bound uses `-1` to mean "open" (the document's first/last page). The
+/// sentinel `{ start: -1, end: -1 }` therefore selects the whole document.
+#[ffi_type]
+#[repr(C)]
+#[derive(Copy, Clone, Debug)]
+pub struct FfiPageRange {
+    /// First page index to export (0-based, inclusive). `-1` selects from the first page.
+    pub start: i64,
+    /// Last page index to export (0-based, inclusive). `-1` selects up to the last page.
+    pub end: i64,
+}
+
+impl From<FfiPageRange> for Option<oicana_ffi_core::PageRange> {
+    fn from(range: FfiPageRange) -> Self {
+        if range.start < 0 && range.end < 0 {
+            return None;
+        }
+        Some(oicana_ffi_core::PageRange {
+            start: (range.start >= 0).then_some(range.start as usize),
+            end: (range.end >= 0).then_some(range.end as usize),
+        })
+    }
+}
+
+/// Color mode for compilation diagnostics.
 #[ffi_type]
 #[repr(C)]
 #[derive(Copy, Clone, Debug)]
@@ -573,6 +617,7 @@ pub fn my_inventory() -> Inventory {
         .register(function!(unsafe_register_template))
         .register(function!(unsafe_export_document))
         .register(function!(inputs))
+        .register(function!(document_pages))
         .register(function!(get_source))
         .register(function!(get_file))
         .register(function!(unsafe_free_buffer))

@@ -51,7 +51,7 @@ namespace Oicana.Interop
         /// Additionally, the caller must ensure that no inputs are modified
         /// concurrently while this function is executing.
         [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl, EntryPoint = "unsafe_export_template_once")]
-        public static extern Buffer unsafe_export_template_once(Buffer files, SliceFfiJsonInput json_inputs, SliceFfiBlobInput blob_inputs, CompilationOptions compile_options, ExportOptions export_options);
+        public static extern Buffer unsafe_export_template_once(Buffer files, SliceFfiJsonInput json_inputs, SliceFfiBlobInput blob_inputs, CompilationOptions compile_options, ExportOptions export_options, FfiPageRange page_range);
 
         /// Register a template for the given identifier
         ///
@@ -76,7 +76,7 @@ namespace Oicana.Interop
         /// The caller is responsible for ensuring that the provided
         /// `document_id` pointer is valid and non-null
         [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl, EntryPoint = "unsafe_export_document")]
-        public static extern Buffer unsafe_export_document(string document_id, ExportOptions export_options);
+        public static extern Buffer unsafe_export_document(string document_id, ExportOptions export_options, FfiPageRange page_range);
 
         /// Load the inputs of the given template.
         ///
@@ -84,6 +84,13 @@ namespace Oicana.Interop
         /// Check if the returned buffer is an error before interpreting the content.
         [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl, EntryPoint = "inputs")]
         public static extern Buffer inputs(string template);
+
+        /// Return the sizes (in points) of every page of a compiled document as a JSON
+        /// array of `{ "width": number, "height": number }`.
+        ///
+        /// This method requires a previous successful call producing the `document_id`.
+        [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl, EntryPoint = "document_pages")]
+        public static extern Buffer document_pages(string document_id);
 
         /// Load the source at the given path in the template.
         ///
@@ -182,23 +189,23 @@ namespace Oicana.Interop
         Production = 1,
     }
 
-    /// Formats that an Oicana template can be compiled into.
+    /// Formats that an Oicana template can be exported into.
     public enum CompilationTarget
     {
-        /// Render the template to a PDF file.
+        /// Export to a PDF file.
         ///
         /// The exported standard can be configured in the template manifest
         /// via [tool.oicana.export.pdf] section. Defaults to PDF/A-3b.
         Pdf = 0,
-        /// Render the template into a png image.
+        /// Export to a png image.
         ///
         /// The image is not optimized for file size to speed up compilation.
         Png = 1,
-        /// Render the template as SVG file.
+        /// Export to an SVG file.
         Svg = 2,
     }
 
-    /// Formats that the compiled documents can be rendered into.
+    /// Color mode for compilation diagnostics.
     public enum DiagnosticColor
     {
         /// No colors in diagnostic output
@@ -275,6 +282,20 @@ namespace Oicana.Interop
         public string data;
         /// Identifier of the input definition this input value belongs to.
         public string key;
+    }
+
+    /// A contiguous, 0-based inclusive range of pages to export.
+    ///
+    /// Each bound uses `-1` to mean "open" (the document's first/last page). The
+    /// sentinel `{ start: -1, end: -1 }` therefore selects the whole document.
+    [Serializable]
+    [StructLayout(LayoutKind.Sequential)]
+    internal partial struct FfiPageRange
+    {
+        /// First page index to export (0-based, inclusive). `-1` selects from the first page.
+        public long start;
+        /// Last page index to export (0-based, inclusive). `-1` selects up to the last page.
+        public long end;
     }
 
     ///A pointer to an array of data someone else owns which may not be modified.

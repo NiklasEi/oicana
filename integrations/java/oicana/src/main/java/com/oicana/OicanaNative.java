@@ -26,13 +26,19 @@ class OicanaNative {
             int compilationMode
     );
 
-    static native byte[] exportDocument(String documentId, String exportFormat);
+    /** {@code pageRange} may be {@code null} to export the whole document. */
+    static native byte[] exportDocument(String documentId, String exportFormat, String pageRange);
 
     static native void removeDocument(String documentId);
+
+    /** Returns the compilation warnings for the document, or {@code null} if there were none. */
+    static native String getWarnings(String documentId);
 
     static native void removeWorld(String templateId);
 
     static native String inputs(String templateId);
+
+    static native String documentPages(String documentId);
 
     static native String getSource(String templateId, String file);
 

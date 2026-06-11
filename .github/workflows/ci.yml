@@ -520,12 +520,18 @@ jobs:
         env:
           debug: true
       - run: php -v
+      - name: Pin MSVC toolset to the PHP core's linker version
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: ./.github/scripts/pin-msvc-for-php.ps1
       - name: Build PHP extension
         run: cargo build --release --target ${{ matrix.target }} -p oicana_php_native
         env:
           RUSTFLAGS: ${{ matrix.flags }}
-      - run: |
+      - name: Verify PHP extension loads
+        run: |
           php -d extension=./target/${{ matrix.target }}/release/${{ matrix.lib }} -r "print_r(array_filter(get_defined_functions()['internal'], fn(\$f) => str_contains(\$f, 'oicana') || str_contains(\$f, 'register') || str_contains(\$f, 'compile')));"
+          php -d extension=./target/${{ matrix.target }}/release/${{ matrix.lib }} -r "exit(function_exists('OicanaInternal\\inputs') ? 0 : 1);"
         shell: bash
       - name: Upload PHP extension
         uses: actions/upload-artifact@v7
@@ -801,6 +807,8 @@ jobs:
           php -d display_startup_errors=1 -d error_reporting=E_ALL -d extension=php-ext/${{ matrix.lib }} -r "var_dump(extension_loaded('oicana'));" 2>&1
           echo "=== List loaded modules ==="
           php -d extension=php-ext/${{ matrix.lib }} -m 2>&1
+          echo "=== Fail if the extension did not load ==="
+          php -d extension=php-ext/${{ matrix.lib }} -r "exit(function_exists('OicanaInternal\\inputs') ? 0 : 1);"
       - name: Run PHP E2E tests
         if: success() || failure()
         run: php -d extension=${{ github.workspace }}/php-ext/${{ matrix.lib }} vendor/bin/pest tests/E2eTest.php

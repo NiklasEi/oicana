@@ -149,6 +149,37 @@ impl<Files: TemplateFiles> TemplateDiagnostics for OicanaWorld<Files> {
     }
 }
 
+/// A [`TemplateDiagnostics`] implementation that formats messages without
+/// source context.
+pub struct PlainDiagnostics;
+
+impl TemplateDiagnostics for PlainDiagnostics {
+    fn format_diagnostics(&self, diagnostics: EcoVec<SourceDiagnostic>) -> Vec<u8> {
+        let mut buffer = String::new();
+        for diagnostic in &diagnostics {
+            let severity = match diagnostic.severity {
+                Severity::Error => "error",
+                Severity::Warning => "warning",
+            };
+            buffer.push_str(severity);
+            buffer.push_str(": ");
+            buffer.push_str(&diagnostic.message);
+            buffer.push('\n');
+            for hint in &diagnostic.hints {
+                buffer.push_str("hint: ");
+                buffer.push_str(hint);
+                buffer.push('\n');
+            }
+            for point in &diagnostic.trace {
+                buffer.push_str("  ");
+                buffer.push_str(&point.v.to_string());
+                buffer.push('\n');
+            }
+        }
+        buffer.into_bytes()
+    }
+}
+
 /// Color mode for diagnostics
 #[derive(Debug)]
 pub enum DiagnosticColor {

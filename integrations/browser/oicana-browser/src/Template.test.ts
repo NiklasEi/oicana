@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { CompilationMode } from './CompilationMode.js';
 import { Png } from './ExportFormat.js';
 import type { BlobWithMetadata } from './inputs/index.js';
+import { PageRange } from './PageRange.js';
 import { Template } from './Template.js';
 
 const asset = (file: string) => {
@@ -16,7 +17,7 @@ describe('e2e test template', () => {
     );
     const template = new Template(templateFile);
 
-    const image = template.compile(
+    const image = template.export(
       new Map(),
       new Map(),
       Png(1),
@@ -43,7 +44,7 @@ describe('e2e test template', () => {
     const jsonInputs = new Map<string, string>();
     jsonInputs.set('development-json', json.toString());
 
-    const image = template.compile(jsonInputs, blobInputs, Png(1));
+    const image = template.export(jsonInputs, blobInputs, Png(1));
 
     await writeFile('testOutput/production.png', image);
   });
@@ -75,7 +76,7 @@ describe('e2e test template', () => {
     jsonInputs.set('development-json', json.toString());
     jsonInputs.set('both-json', json.toString());
 
-    const image = template.compile(jsonInputs, blobInputs, Png(1));
+    const image = template.export(jsonInputs, blobInputs, Png(1));
 
     await writeFile('testOutput/all-inputs.png', image);
   });
@@ -99,7 +100,7 @@ describe('e2e test template', () => {
       'development-json': json.toString(),
     };
 
-    template.compile(
+    template.export(
       jsonInputs as unknown as Map<string, string>,
       blobInputs as unknown as Map<string, BlobWithMetadata>,
       Png(1),
@@ -112,17 +113,17 @@ describe('e2e test template', () => {
     );
     const template = new Template(templateFile);
 
-    template.compile(new Map(), new Map(), Png(1), CompilationMode.Development);
+    template.export(new Map(), new Map(), Png(1), CompilationMode.Development);
   });
 
-  it('compile defaults to production mode', async () => {
+  it('export defaults to production mode', async () => {
     const templateFile = await readFile(
       '../../../e2e-tests/template/oicana-e2e-test-x.y.z.zip',
     );
     const template = new Template(templateFile);
 
     expect(() => {
-      template.compile(new Map(), new Map(), Png(1));
+      template.export(new Map(), new Map(), Png(1));
     }).toThrow(/No value for the required input/);
   });
 
@@ -138,5 +139,39 @@ describe('e2e test template', () => {
         CompilationMode.Production,
       );
     }).toThrow(/No value for the required input/);
+  });
+
+  it('exports a compiled document handle in every format after disposing the template', async () => {
+    const templateFile = await readFile(
+      '../../../e2e-tests/template/oicana-e2e-test-x.y.z.zip',
+    );
+    const template = new Template(templateFile);
+
+    const document = template.compile(
+      new Map(),
+      new Map(),
+      CompilationMode.Development,
+    );
+
+    template.dispose();
+
+    expect(document.pageCount).toBeGreaterThan(0);
+    const firstPage = PageRange.single(0);
+
+    const pdf = document.exportPdf(firstPage);
+    expect(new TextDecoder().decode(pdf.slice(0, 4))).toBe('%PDF');
+
+    const png = document.export(Png(1), firstPage);
+    expect(Array.from(png.slice(0, 4))).toEqual([0x89, 0x50, 0x4e, 0x47]);
+
+    const svg = document.exportSvg(firstPage);
+    expect(new TextDecoder().decode(svg)).toContain('<svg');
+
+    const firstPagePng = document.exportPng(1, PageRange.single(0));
+    expect(Array.from(firstPagePng.slice(0, 4))).toEqual([
+      0x89, 0x50, 0x4e, 0x47,
+    ]);
+
+    document.dispose();
   });
 });

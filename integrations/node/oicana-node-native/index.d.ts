@@ -40,6 +40,12 @@ export declare function compileTemplate(
 export declare function configureAutomaticCacheEviction(maxAge?: number | undefined | null): void
 
 /**
+ * Return the sizes (in points) of every page of a compiled document as a JSON
+ * array of `{ "width": number, "height": number }`.
+ */
+export declare function documentPages(documentId: string): string
+
+/**
  * Manually evict the comemo cache with the given age threshold.
  *
  * This directly calls the underlying eviction with the specified age,
@@ -50,9 +56,16 @@ export declare function evictCache(maxAge: number): void
 /**
  * Export the given document
  *
+ * `page_range` is a JSON object `{ "start"?: number, "end"?: number }` with
+ * 0-based, inclusive bounds. If not set, the whole document is exported.
+ *
  * Make sure to call `removeDocument` with the documentId afterwards, to free the memory.
  */
-export declare function exportDocument(documentId: string, exportFormat: string): Buffer
+export declare function exportDocument(
+  documentId: string,
+  exportFormat: string,
+  pageRange?: string | undefined | null,
+): Buffer
 
 /**
  * Load the source of the given file in the template.

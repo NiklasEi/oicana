@@ -173,18 +173,18 @@ mod tests {
     #[test]
     fn test_zip() {
         let template =
-            read("../../assets/templates/test-0.1.0.zip").expect("Failed to read template zip");
+            read("../../assets/templates/table-0.1.0.zip").expect("Failed to read template zip");
         let files =
             PackedTemplate::new(Cursor::new(template)).expect("Failed to parse template zip");
         assert!(files
-            .source(FileId::new(None, VirtualPath::new("/template.typ")))
+            .source(FileId::new(None, VirtualPath::new("/main.typ")))
             .is_ok());
     }
 
     #[test]
     fn can_read_manifest() {
         let template =
-            read("../../assets/templates/test-0.1.0.zip").expect("Failed to read template zip");
+            read("../../assets/templates/table-0.1.0.zip").expect("Failed to read template zip");
         let files =
             PackedTemplate::new(Cursor::new(template)).expect("Failed to parse template zip");
         let manifest = files
@@ -202,13 +202,13 @@ mod tests {
     #[test]
     fn can_find_dependency() {
         let template =
-            read("../../assets/templates/test-0.1.0.zip").expect("Failed to read template zip");
+            read("../../assets/templates/table-0.1.0.zip").expect("Failed to read template zip");
         let files =
             PackedTemplate::new(Cursor::new(template)).expect("Failed to parse template zip");
 
         assert!(files
             .file(FileId::new(
-                Some("@local/oicana:0.1.0".parse().unwrap()),
+                Some("@preview/oicana:0.1.1".parse().unwrap()),
                 VirtualPath::new("/typst.toml")
             ))
             .is_ok());
@@ -233,7 +233,7 @@ mod tests {
     #[test]
     fn cannot_access_files_outside_zip() {
         let template =
-            read("../../assets/templates/test-0.1.0.zip").expect("Failed to read template zip");
+            read("../../assets/templates/table-0.1.0.zip").expect("Failed to read template zip");
         let files =
             PackedTemplate::new(Cursor::new(template)).expect("Failed to parse template zip");
 

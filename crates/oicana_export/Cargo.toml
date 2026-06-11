@@ -16,7 +16,7 @@ readme = { workspace = true }
 default = ["pdf", "svg", "png"]
 png = ["dep:typst-render", "dep:png", "dep:thiserror"]
 pdf = ["dep:typst-pdf"]
-svg = ["dep:typst-svg"]
+svg = ["dep:typst-svg", "dep:thiserror"]
 
 [dependencies]
 oicana_world = { workspace = true }
@@ -26,6 +26,8 @@ typst-render = { workspace = true, optional = true }
 typst-pdf = { workspace = true, optional = true }
 typst-svg = { workspace = true, optional = true }
 typst = { workspace = true }
+
+serde = { workspace = true, features = ["derive"] }
 
 png = { workspace = true, optional = true }
 thiserror = { workspace = true, optional = true }

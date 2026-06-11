@@ -3,6 +3,7 @@ package com.oicana;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
@@ -39,7 +40,7 @@ class E2eTest {
     @Test
     void development() throws IOException {
         try (var template = new Template(templateFile())) {
-            byte[] image = template.compile(
+            byte[] image = template.export(
                     Map.of(),
                     Map.of(),
                     ExportFormat.png(1.0f),
@@ -57,7 +58,7 @@ class E2eTest {
         String json = new String(asset("inputs/input.json"));
 
         try (var template = new Template(templateFile())) {
-            byte[] image = template.compile(
+            byte[] image = template.export(
                     Map.of("development-json", json),
                     Map.of("development-blob", new BlobInput(
                             blob,
@@ -78,7 +79,7 @@ class E2eTest {
         String json = new String(asset("inputs/input.json"));
 
         try (var template = new Template(templateFile())) {
-            byte[] image = template.compile(
+            byte[] image = template.export(
                     Map.of(
                             "default-json", json,
                             "development-json", json,
@@ -110,7 +111,7 @@ class E2eTest {
     @Test
     void explicitDevelopmentModeAllowsCompileWithEmptyInputs() throws IOException {
         try (var template = new Template(templateFile())) {
-            byte[] image = template.compile(
+            byte[] image = template.export(
                     Map.of(),
                     Map.of(),
                     ExportFormat.png(1.0f),
@@ -124,7 +125,7 @@ class E2eTest {
     @Test
     void compileDefaultsToProductionMode() throws IOException {
         try (var template = new Template(templateFile())) {
-            assertThrows(OicanaException.class, () -> template.compile());
+            assertThrows(OicanaException.class, () -> template.export());
         }
     }
 
@@ -133,5 +134,35 @@ class E2eTest {
         byte[] bytes = templateFile();
         assertThrows(OicanaException.class, () ->
                 new Template(bytes, Map.of(), Map.of(), CompilationMode.PRODUCTION));
+    }
+
+    @Test
+    void compiledDocumentHandleSurvivesTemplateClose() throws IOException {
+        Template template = new Template(templateFile());
+
+        CompiledDocument document =
+                template.compile(Map.of(), Map.of(), CompilationMode.DEVELOPMENT);
+
+        template.close();
+
+        assertTrue(document.pageCount() > 0);
+        PageRange firstPage = PageRange.single(0);
+
+        byte[] pdf = document.exportPdf(firstPage);
+        assertEquals("%PDF", new String(pdf, 0, 4, StandardCharsets.US_ASCII));
+
+        byte[] png = document.export(ExportFormat.png(1.0f), firstPage);
+        assertEquals((byte) 0x89, png[0]);
+        assertEquals((byte) 'P', png[1]);
+        assertEquals((byte) 'N', png[2]);
+        assertEquals((byte) 'G', png[3]);
+
+        byte[] svg = document.exportSvg(firstPage);
+        assertTrue(new String(svg, StandardCharsets.UTF_8).contains("<svg"));
+
+        byte[] firstPagePng = document.exportPng(1.0f, PageRange.single(0));
+        assertEquals((byte) 0x89, firstPagePng[0]);
+
+        document.close();
     }
 }

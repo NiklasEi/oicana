@@ -36,7 +36,7 @@ import java.util.Map;
 byte[] templateBytes = Files.readAllBytes(Path.of("template.zip"));
 
 try (var template = new Template(templateBytes)) {
-    byte[] pdf = template.compile(
+    byte[] pdf = template.export(
             Map.of("invoice", "{\"number\":\"INV-001\"}"),
             Map.of(),
             ExportFormat.pdf(),

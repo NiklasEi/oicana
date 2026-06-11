@@ -25,9 +25,10 @@ internal static class OicanaFfi
     /// <param name="blobInputs">Blob inputs for the compilation (key -> BlobInput).</param>
     /// <param name="compilationOptions">Options for the template compilation.</param>
     /// <param name="exportFormat">Format configuration for the document export.</param>
+    /// <param name="pages">0-based, inclusive page range to export, or <c>null</c> for the whole document.</param>
     /// <exception cref="OicanaException">If the template compilation fails.</exception>
     /// <returns>Stream containing the compiled template exported as the given <see cref="ExportTarget"/>.</returns>
-    public static Stream ExportTemplateOnce(byte[] templateFile, IDictionary<string, JsonNode> jsonInputs, IDictionary<string, BlobInput> blobInputs, Oicana.Config.CompilationOptions compilationOptions, Oicana.Config.ExportFormat exportFormat)
+    public static Stream ExportTemplateOnce(byte[] templateFile, IDictionary<string, JsonNode> jsonInputs, IDictionary<string, BlobInput> blobInputs, Oicana.Config.CompilationOptions compilationOptions, Oicana.Config.ExportFormat exportFormat, Oicana.Config.PageRange? pages = null)
     {
         GCHandle fileHandle = GCHandle.Alloc(templateFile, GCHandleType.Pinned);
         IntPtr filePointer = fileHandle.AddrOfPinnedObject();
@@ -35,7 +36,7 @@ internal static class OicanaFfi
 
         PreparedInputs preparedInputs = PrepareInputs(jsonInputs, blobInputs);
 
-        var buffer = OicanaFfiInternal.unsafe_export_template_once(fileBuffer, preparedInputs.JsonInputs, preparedInputs.BlobInputs, ConvertCompileOptions(compilationOptions), ConvertExportFormat(exportFormat));
+        var buffer = OicanaFfiInternal.unsafe_export_template_once(fileBuffer, preparedInputs.JsonInputs, preparedInputs.BlobInputs, ConvertCompileOptions(compilationOptions), ConvertExportFormat(exportFormat), ConvertPageRange(pages));
 
         preparedInputs.FreeAll();
         fileHandle.Free();
@@ -91,7 +92,7 @@ internal static class OicanaFfi
 
     /// <summary>
     /// Export the given document
-    /// 
+    ///
     /// This method requires the document to be in the internal cache.
     /// After the export it will not be removed from the cache automatically. It's the callers
     /// responsibility to free the documents memory when no more exports are needed by calling
@@ -99,11 +100,12 @@ internal static class OicanaFfi
     /// </summary>
     /// <param name="documentId">Id of document to export.</param>
     /// <param name="exportFormat">Format configuration for the document export.</param>
+    /// <param name="pages">0-based, inclusive page range to export, or <c>null</c> for the whole document.</param>
     /// <exception cref="OicanaException">If the template compilation fails.</exception>
     /// <returns>Stream containing the compiled template exported as the given <see cref="ExportTarget"/>.</returns>
-    public static Stream ExportDocument(string documentId, Oicana.Config.ExportFormat exportFormat)
+    public static Stream ExportDocument(string documentId, Oicana.Config.ExportFormat exportFormat, Oicana.Config.PageRange? pages = null)
     {
-        var buffer = OicanaFfiInternal.unsafe_export_document(documentId, ConvertExportFormat(exportFormat));
+        var buffer = OicanaFfiInternal.unsafe_export_document(documentId, ConvertExportFormat(exportFormat), ConvertPageRange(pages));
 
         return HandleBuffer(buffer);
     }
@@ -173,6 +175,30 @@ internal static class OicanaFfi
     {
         var buffer = OicanaFfiInternal.inputs(templateId);
         return HandleStringBuffer(buffer);
+    }
+
+    /// <summary>
+    /// Get the sizes (in points) of every page of a compiled document.
+    /// </summary>
+    /// <param name="documentId">Identifier of the compiled document.</param>
+    /// <exception cref="OicanaException">If the document is not found.</exception>
+    /// <returns>JSON array of <c>{ "width": number, "height": number }</c> in points.</returns>
+    public static string DocumentPages(string documentId)
+    {
+        var buffer = OicanaFfiInternal.document_pages(documentId);
+        return HandleStringBuffer(buffer);
+    }
+
+    /// <summary>
+    /// Get the compilation warnings produced for the given document.
+    /// </summary>
+    /// <param name="documentId">Identifier of the compiled document.</param>
+    /// <returns>The warnings text, or <c>null</c> if there were none.</returns>
+    public static string? GetWarnings(string documentId)
+    {
+        var buffer = OicanaFfiInternal.get_warnings(documentId);
+        var warnings = HandleStringBuffer(buffer);
+        return warnings.Length == 0 ? null : warnings;
     }
 
     /// <summary>
@@ -291,7 +317,17 @@ internal static class OicanaFfi
         return new ExportOptions()
         {
             target = ConvertCompileTarget(exportFormat.ExportTarget),
-            px_per_pt = exportFormat.PixelsPerPt ?? 1.0f
+            px_per_pt = exportFormat.PixelsPerPt ?? 1.0f,
+        };
+    }
+
+    internal static Oicana.Interop.FfiPageRange ConvertPageRange(Oicana.Config.PageRange? pages)
+    {
+        // A bound of -1 is "open"; { -1, -1 } therefore means "the whole document".
+        return new FfiPageRange()
+        {
+            start = pages?.Start ?? -1,
+            end = pages?.End ?? -1,
         };
     }
 

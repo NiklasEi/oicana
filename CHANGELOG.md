@@ -2,6 +2,13 @@
 
 ## Upcoming
 
+- previous `compile` methods in all integrations are now called `export`
+- add new `compile` methods that return compiled documents, which can be
+  - exported to any format
+  - exported page by page
+- templates and compiled documents offer `exportPdf`/`exportPng`/`exportSvg` convenience
+  methods in all integrations
+- compiled documents expose the compilation `warnings` in all integrations
 
 
 ## v0.2.0

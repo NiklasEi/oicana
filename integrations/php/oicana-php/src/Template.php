@@ -16,7 +16,7 @@ use Oicana\Inputs\BlobInput;
  * ```php
  * $template = new Template($templateBytes);
  * try {
- *     $pdf = $template->compile(
+ *     $pdf = $template->export(
  *         jsonInputs: ['name' => '{"value": "Alice"}'],
  *         exportFormat: ExportFormat::pdf()
  *     );
@@ -81,14 +81,16 @@ class Template
      * @param array<string, BlobInput> $blobInputs Blob inputs
      * @param ExportFormat|null $exportFormat Export format configuration (defaults to PDF)
      * @param CompilationMode $mode Compilation mode
+     * @param PageRange|null $pages 0-based, inclusive page range (defaults to the whole document)
      * @return string Compiled document bytes (PDF, PNG, or SVG)
      * @throws \Exception If compilation or export fails
      */
-    public function compile(
+    public function export(
         array $jsonInputs = [],
         array $blobInputs = [],
         ?ExportFormat $exportFormat = null,
-        CompilationMode $mode = CompilationMode::Production
+        CompilationMode $mode = CompilationMode::Production,
+        ?PageRange $pages = null
     ): string {
         $formatArray = ($exportFormat ?? ExportFormat::pdf())->toArray();
 
@@ -105,7 +107,11 @@ class Template
         $this->documentIds[] = $docId;
 
         try {
-            $bytes = \OicanaInternal\export_document($docId, json_encode($formatArray));
+            $bytes = \OicanaInternal\export_document(
+                $docId,
+                json_encode($formatArray),
+                $pages?->toNative()
+            );
             return pack('C*', ...$bytes);
         } finally {
             \OicanaInternal\remove_document($docId);
@@ -117,31 +123,125 @@ class Template
     }
 
     /**
+     * Compile template and export to PDF in a single call.
+     * Tagging will be automatically turned off when exporting a subset of pages.
+     *
+     * @param array<string, string|array<mixed>> $jsonInputs JSON inputs (key => JSON string or array)
+     * @param array<string, BlobInput> $blobInputs Blob inputs
+     * @param CompilationMode $mode Compilation mode
+     * @param PageRange|null $pages 0-based, inclusive page range (defaults to the whole document)
+     * @return string PDF bytes
+     * @throws \Exception If compilation or export fails
+     */
+    public function exportPdf(
+        array $jsonInputs = [],
+        array $blobInputs = [],
+        CompilationMode $mode = CompilationMode::Production,
+        ?PageRange $pages = null
+    ): string {
+        return $this->export($jsonInputs, $blobInputs, ExportFormat::pdf(), $mode, $pages);
+    }
+
+    /**
+     * Compile template and export to PNG in a single call.
+     * Multiple pages are merged into a single, vertically stacked image.
+     *
+     * @param array<string, string|array<mixed>> $jsonInputs JSON inputs (key => JSON string or array)
+     * @param array<string, BlobInput> $blobInputs Blob inputs
+     * @param CompilationMode $mode Compilation mode
+     * @param float $pixelsPerPt Resolution in pixels per point (defaults to 1.0)
+     * @param PageRange|null $pages 0-based, inclusive page range (defaults to the whole document)
+     * @return string PNG bytes
+     * @throws \Exception If compilation or export fails
+     */
+    public function exportPng(
+        array $jsonInputs = [],
+        array $blobInputs = [],
+        CompilationMode $mode = CompilationMode::Production,
+        float $pixelsPerPt = 1.0,
+        ?PageRange $pages = null
+    ): string {
+        return $this->export($jsonInputs, $blobInputs, ExportFormat::png($pixelsPerPt), $mode, $pages);
+    }
+
+    /**
+     * Compile template and export to SVG in a single call.
+     *
+     * @param array<string, string|array<mixed>> $jsonInputs JSON inputs (key => JSON string or array)
+     * @param array<string, BlobInput> $blobInputs Blob inputs
+     * @param CompilationMode $mode Compilation mode
+     * @param PageRange|null $pages 0-based, inclusive page range (defaults to the whole document)
+     * @return string SVG bytes
+     * @throws \Exception If compilation or export fails
+     */
+    public function exportSvg(
+        array $jsonInputs = [],
+        array $blobInputs = [],
+        CompilationMode $mode = CompilationMode::Production,
+        ?PageRange $pages = null
+    ): string {
+        return $this->export($jsonInputs, $blobInputs, ExportFormat::svg(), $mode, $pages);
+    }
+
+    /**
+     * Compile the template.
+     *
+     * Unlike {@see export()}, the document is kept in memory so it can be
+     * exported one or more times without re-compiling. Call
+     * {@see CompiledDocument::close()} when done to free it.
+     *
+     * @param array<string, string|array<mixed>> $jsonInputs JSON inputs (key => JSON string or array)
+     * @param array<string, BlobInput> $blobInputs Blob inputs
+     * @param CompilationMode $mode Compilation mode
+     * @return CompiledDocument A handle to the compiled document
+     * @throws \Exception If compilation fails
+     */
+    public function compile(
+        array $jsonInputs = [],
+        array $blobInputs = [],
+        CompilationMode $mode = CompilationMode::Production
+    ): CompiledDocument {
+        $jsonInputs = self::encodeJsonInputs($jsonInputs);
+        $nativeBlobs = $this->prepareBlobInputs($blobInputs);
+
+        $docId = \OicanaInternal\compile_template(
+            $this->templateId,
+            $jsonInputs,
+            $nativeBlobs,
+            $mode->toNative()
+        );
+
+        return new CompiledDocument($docId);
+    }
+
+    /**
      * Compile the given template once without caching.
      *
      * This is a convenience method for one-off compilations where you don't need
      * to reuse the template. For multiple compilations with the same template,
-     * create an instance of Template and use compile() instead.
+     * create an instance of Template and use export() instead.
      *
      * @param string $templateBytes Template zip file bytes
      * @param array<string, string|array<mixed>> $jsonInputs JSON inputs (key => JSON string or array)
      * @param array<string, BlobInput> $blobInputs Blob inputs
      * @param ExportFormat|null $exportFormat Export format configuration (defaults to PDF)
      * @param CompilationMode $mode Compilation mode
+     * @param PageRange|null $pages 0-based, inclusive page range (defaults to the whole document)
      * @return string Compiled document bytes (PDF, PNG, or SVG)
      * @throws \Exception If compilation or export fails
      */
-    public static function compileOnce(
+    public static function exportOnce(
         string $templateBytes,
         array $jsonInputs = [],
         array $blobInputs = [],
         ?ExportFormat $exportFormat = null,
-        CompilationMode $mode = CompilationMode::Production
+        CompilationMode $mode = CompilationMode::Production,
+        ?PageRange $pages = null
     ): string {
         $template = new self($templateBytes, mode: CompilationMode::Development);
 
         try {
-            return $template->compile($jsonInputs, $blobInputs, $exportFormat, $mode);
+            return $template->export($jsonInputs, $blobInputs, $exportFormat, $mode, $pages);
         } finally {
             $template->cleanup();
         }

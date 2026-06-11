@@ -9,9 +9,11 @@ from typing import TYPE_CHECKING
 from oicana_native import (
     BlobWithMetadata,
     compile_template,
+    document_pages,
     export_document,
     get_file,
     get_source,
+    get_warnings,
     inputs,
     register_template,
     remove_document,
@@ -30,10 +32,25 @@ from oicana_native import (
     set_validate_inputs as _set_validate_inputs,
 )
 
-from .types import BlobInput, CompilationMode, ExportFormat
+from .types import BlobInput, CompilationMode, ExportFormat, PageRange, PageSize
 
 if TYPE_CHECKING:
     from typing import Any
+
+
+def _serialize_page_range(pages: PageRange | None) -> str | None:
+    """Serialize a page range for the native ``export_document`` call.
+
+    ``None`` means "the whole document".
+    """
+    if pages is None:
+        return None
+    payload: dict[str, int] = {}
+    if pages.start is not None:
+        payload["start"] = pages.start
+    if pages.end is not None:
+        payload["end"] = pages.end
+    return json.dumps(payload)
 
 
 class Template:
@@ -41,7 +58,7 @@ class Template:
 
     Example:
         >>> with Template(template_bytes) as template:
-        ...     pdf = template.compile(
+        ...     pdf = template.export(
         ...         json_inputs={"name": '{"value": "Alice"}'},
         ...         export={"format": "pdf"}
         ...     )
@@ -89,13 +106,14 @@ class Template:
         )
         remove_document(doc_id)
 
-    def compile(
+    def export(
         self,
         *,
         json_inputs: dict[str, str] | None = None,
         blob_inputs: dict[str, BlobInput] | None = None,
         export: ExportFormat = {"format": "pdf"},  # type: ignore[typeddict-item]
         mode: CompilationMode = CompilationMode.PRODUCTION,
+        pages: PageRange | None = None,
     ) -> bytes:
         """Compile template and export to the given format.
 
@@ -104,10 +122,129 @@ class Template:
             blob_inputs: Blob inputs
             export: Export format and configuration (pdf/png/svg)
             mode: Compilation mode
+            pages: 0-based, inclusive page range (defaults to the whole document)
 
         Returns:
             Compiled document bytes
         """
+        doc_id = self._compile_to_document_id(json_inputs, blob_inputs, mode)
+        self._document_ids.append(doc_id)
+        try:
+            result = export_document(doc_id, json.dumps(export), _serialize_page_range(pages))
+        finally:
+            remove_document(doc_id)
+            self._document_ids.remove(doc_id)
+
+        return bytes(result)
+
+    def export_pdf(
+        self,
+        *,
+        json_inputs: dict[str, str] | None = None,
+        blob_inputs: dict[str, BlobInput] | None = None,
+        mode: CompilationMode = CompilationMode.PRODUCTION,
+        pages: PageRange | None = None,
+    ) -> bytes:
+        """Compile the template and export it to PDF in a single call.
+
+        Tagging will be automatically turned off when exporting a subset of pages.
+
+        Args:
+            json_inputs: JSON inputs
+            blob_inputs: Blob inputs
+            mode: Compilation mode
+            pages: 0-based, inclusive page range (defaults to the whole document)
+        """
+        return self.export(
+            json_inputs=json_inputs,
+            blob_inputs=blob_inputs,
+            export={"format": "pdf"},
+            mode=mode,
+            pages=pages,
+        )
+
+    def export_png(
+        self,
+        *,
+        json_inputs: dict[str, str] | None = None,
+        blob_inputs: dict[str, BlobInput] | None = None,
+        mode: CompilationMode = CompilationMode.PRODUCTION,
+        pixels_per_pt: float = 1.0,
+        pages: PageRange | None = None,
+    ) -> bytes:
+        """Compile the template and export it to PNG in a single call.
+
+        Multiple pages are merged into a single, vertically stacked image.
+
+        Args:
+            json_inputs: JSON inputs
+            blob_inputs: Blob inputs
+            mode: Compilation mode
+            pixels_per_pt: Resolution in pixels per point (defaults to 1.0)
+            pages: 0-based, inclusive page range (defaults to the whole document)
+        """
+        return self.export(
+            json_inputs=json_inputs,
+            blob_inputs=blob_inputs,
+            export={"format": "png", "pixelsPerPt": pixels_per_pt},
+            mode=mode,
+            pages=pages,
+        )
+
+    def export_svg(
+        self,
+        *,
+        json_inputs: dict[str, str] | None = None,
+        blob_inputs: dict[str, BlobInput] | None = None,
+        mode: CompilationMode = CompilationMode.PRODUCTION,
+        pages: PageRange | None = None,
+    ) -> bytes:
+        """Compile the template and export it to SVG in a single call.
+
+        Args:
+            json_inputs: JSON inputs
+            blob_inputs: Blob inputs
+            mode: Compilation mode
+            pages: 0-based, inclusive page range (defaults to the whole document)
+        """
+        return self.export(
+            json_inputs=json_inputs,
+            blob_inputs=blob_inputs,
+            export={"format": "svg"},
+            mode=mode,
+            pages=pages,
+        )
+
+    def compile(
+        self,
+        *,
+        json_inputs: dict[str, str] | None = None,
+        blob_inputs: dict[str, BlobInput] | None = None,
+        mode: CompilationMode = CompilationMode.PRODUCTION,
+    ) -> CompiledDocument:
+        """Compile the template and return a handle to the compiled document.
+
+        Unlike :meth:`export`, the document is kept in memory so it can be
+        exported one or more times without re-compiling. Use the result as
+        a context manager or call ``close()`` to free it.
+
+        Args:
+            json_inputs: JSON inputs
+            blob_inputs: Blob inputs
+            mode: Compilation mode
+
+        Returns:
+            A :class:`CompiledDocument` handle.
+        """
+        doc_id = self._compile_to_document_id(json_inputs, blob_inputs, mode)
+        return CompiledDocument(doc_id)
+
+    def _compile_to_document_id(
+        self,
+        json_inputs: dict[str, str] | None,
+        blob_inputs: dict[str, BlobInput] | None,
+        mode: CompilationMode,
+    ) -> str:
         native_mode = (
             NativeCompilationMode.Production
             if mode == CompilationMode.PRODUCTION
@@ -122,20 +259,13 @@ class Template:
                 meta_str = json.dumps(blob.metadata) if blob.metadata else "{}"
                 native_blobs[key] = BlobWithMetadata(blob.data, meta_str)
 
-        doc_id = compile_template(
+        doc_id: str = compile_template(
             self._template_id,
             native_json,
             native_blobs,
             native_mode,
         )
-        self._document_ids.append(doc_id)
-
-        result = export_document(doc_id, json.dumps(export))
-
-        remove_document(doc_id)
-        self._document_ids.remove(doc_id)
-
-        return bytes(result)
+        return doc_id
 
     def inputs(self) -> dict[str, Any]:
         """Get input definitions from manifest.
@@ -199,6 +329,97 @@ class Template:
         """Destructor cleanup."""
         try:
             self.cleanup()
+        except Exception:
+            pass  # Best effort cleanup
+
+
+class CompiledDocument:
+    """A compiled document kept in memory so its pages can be exported on demand.
+
+    Obtain one via :meth:`Template.compile`. Use it as a context manager
+    (``with template.compile() as document: ...``) or call
+    :meth:`close` to release the underlying document.
+
+    Example:
+        >>> with template.compile(json_inputs={...}) as document:
+        ...     for index, _page in enumerate(document.pages):
+        ...         png = document.export_png(2.0, pages=PageRange.single(index))
+    """
+
+    def __init__(self, document_id: str) -> None:
+        """Wrap an already-compiled document. Use Template.compile()."""
+        self._document_id: str | None = document_id
+        self.pages: list[PageSize] = [
+            PageSize(width=page["width"], height=page["height"])
+            for page in json.loads(document_pages(document_id))
+        ]
+        #: Warnings produced by the compilation of this document, or ``None``.
+        self.warnings: str | None = get_warnings(document_id)
+
+    def export(
+        self,
+        export: ExportFormat = {"format": "pdf"},  # type: ignore[typeddict-item]
+        pages: PageRange | None = None,
+    ) -> bytes:
+        """Export the document in the given format (defaults to PDF).
+
+        Args:
+            export: Export format and configuration (pdf/png/svg)
+            pages: 0-based, inclusive page range (defaults to the whole document)
+        """
+        if self._document_id is None:
+            raise RuntimeError("CompiledDocument has already been closed")
+        return bytes(
+            export_document(self._document_id, json.dumps(export), _serialize_page_range(pages))
+        )
+
+    def export_pdf(self, pages: PageRange | None = None) -> bytes:
+        """Export the document to PDF, optionally restricted to a range.
+
+        Tagging will be automatically turned off when exporting a subset of pages.
+
+        Args:
+            pages: 0-based, inclusive page range (defaults to the whole document)
+        """
+        return self.export({"format": "pdf"}, pages=pages)
+
+    def export_png(self, pixels_per_pt: float = 1.0, pages: PageRange | None = None) -> bytes:
+        """Export the document to PNG, optionally restricted to a range.
+
+        Multiple pages are merged into a single, vertically stacked image.
+
+        Args:
+            pixels_per_pt: Resolution in pixels per point (defaults to 1.0)
+            pages: 0-based, inclusive page range (defaults to the whole document)
+        """
+        return self.export({"format": "png", "pixelsPerPt": pixels_per_pt}, pages=pages)
+
+    def export_svg(self, pages: PageRange | None = None) -> bytes:
+        """Export the document to SVG, optionally restricted to a range.
+
+        Args:
+            pages: 0-based, inclusive page range (defaults to the whole document)
+        """
+        return self.export({"format": "svg"}, pages=pages)
+
+    def close(self) -> None:
+        """Release the cached document. The instance must not be used after."""
+        if self._document_id is not None:
+            remove_document(self._document_id)
+            self._document_id = None
+
+    def __enter__(self) -> CompiledDocument:
+        """Context manager entry."""
+        return self
+
+    def __exit__(self, *args: object) -> None:
+        """Context manager exit; releases the document."""
+        self.close()
+
+    def __del__(self) -> None:
+        """Destructor cleanup."""
+        try:
+            self.close()
         except Exception:
             pass  # Best effort cleanup
 

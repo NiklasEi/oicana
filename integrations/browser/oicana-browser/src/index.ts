@@ -6,8 +6,10 @@ export {
   set_validate_inputs as setValidateInputs,
 } from '@oicana/browser-wasm';
 export * from './CompilationMode.js';
+export * from './CompiledDocument.js';
 export * from './ExportFormat.js';
 export * from './inputs/index.js';
+export * from './PageRange.js';
 export * from './Template.js';
 
 const initialized: Set<string> = new Set();

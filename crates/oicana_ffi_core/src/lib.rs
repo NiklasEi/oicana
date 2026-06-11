@@ -12,21 +12,24 @@ use std::sync::atomic::{AtomicU8, AtomicUsize, Ordering};
 
 use dashmap::DashMap;
 use once_cell::sync::Lazy;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use thiserror::Error;
 use typst::foundations::Bytes;
 use typst::layout::PagedDocument;
 use typst::syntax::{FileId, VirtualPath};
 use uuid::Uuid;
 
-use oicana_export::pdf::export_merged_pdf;
-use oicana_export::png::export_merged_png;
-use oicana_export::svg::export_merged_svg;
+pub use oicana_export::pages::PageRange;
+use oicana_export::pdf::export_pdf;
+use oicana_export::png::{export_png, PngExportError};
+use oicana_export::svg::{export_svg, SvgExportError};
+use oicana_export::PdfStandard;
 use oicana_files::packed::PackedTemplate;
 use oicana_files::TemplateFiles;
 use oicana_input::input::blob::{Blob, BlobInput};
 use oicana_input::input::json::JsonInput;
 use oicana_input::{CompilationConfig, TemplateInputs};
+use oicana_world::diagnostics::PlainDiagnostics;
 use oicana_world::manifest::OicanaWorldFiles;
 use oicana_world::world::OicanaWorld;
 
@@ -95,15 +98,6 @@ pub enum FfiError {
     #[error("Document '{0}' not found")]
     DocumentNotFound(String),
 
-    /// PDF export was requested but the originating template's world is gone.
-    #[error("World '{template_id}' for document '{document_id}' not found")]
-    WorldForDocumentNotFound {
-        /// Template ID that the document was compiled from.
-        template_id: String,
-        /// Document ID that was requested.
-        document_id: String,
-    },
-
     /// The document ID does not match the expected `<uuid>:<template_id>` format.
     #[error("Invalid document ID format: {0}")]
     InvalidDocumentId(String),
@@ -159,6 +153,10 @@ pub enum FfiError {
     #[error("Failed to serialize inputs: {0}")]
     InputsSerialization(String),
 
+    /// Serializing the document's page sizes to JSON failed.
+    #[error("Failed to serialize page sizes: {0}")]
+    PageSizesSerialization(String),
+
     /// The blob metadata for a key was not valid JSON or did not match the metadata schema.
     #[error("Failed to parse blob metadata for '{key}': {error}")]
     BlobMetadata {
@@ -171,10 +169,39 @@ pub enum FfiError {
     /// The `export_format` JSON could not be parsed into an [`ExportFormat`].
     #[error("Failed to parse export format: {0}")]
     ExportFormatParse(String),
+
+    /// The `page_range` JSON could not be parsed into a [`PageRange`].
+    #[error("Failed to parse page range: {0}")]
+    PageRangeParse(String),
+}
+
+impl From<PngExportError> for FfiError {
+    fn from(error: PngExportError) -> Self {
+        FfiError::Export {
+            format: "PNG",
+            error: format!("{error:?}"),
+        }
+    }
+}
+
+impl From<SvgExportError> for FfiError {
+    fn from(error: SvgExportError) -> Self {
+        FfiError::Export {
+            format: "SVG",
+            error: format!("{error:?}"),
+        }
+    }
+}
+
+/// A compiled document together with the PDF standards captured from its
+/// template's manifest at compile time.
+struct CachedDocument {
+    document: PagedDocument,
+    pdf_standards: Vec<PdfStandard>,
 }
 
 static WORLD_CACHE: Lazy<DashMap<String, OicanaWorld<PackedTemplate>>> = Lazy::new(DashMap::new);
-static DOCUMENT_CACHE: Lazy<DashMap<String, PagedDocument>> = Lazy::new(DashMap::new);
+static DOCUMENT_CACHE: Lazy<DashMap<String, CachedDocument>> = Lazy::new(DashMap::new);
 static WARNINGS_CACHE: Lazy<DashMap<String, String>> = Lazy::new(DashMap::new);
 
 /// Cache age threshold for automatic eviction. `usize::MAX` means disabled.
@@ -220,6 +247,20 @@ pub fn parse_export_format(json: &str) -> Result<ExportFormat, FfiError> {
     serde_json::from_str(json).map_err(|error| FfiError::ExportFormatParse(error.to_string()))
 }
 
+/// Parse an optional [`PageRange`] from its JSON object representation.
+///
+/// An empty string means "no range" (the whole document). Otherwise the JSON is
+/// a `{ "start"?: number, "end"?: number }` object with 0-based, inclusive
+/// bounds.
+pub fn parse_page_range(json: &str) -> Result<Option<PageRange>, FfiError> {
+    if json.is_empty() {
+        return Ok(None);
+    }
+    serde_json::from_str(json)
+        .map(Some)
+        .map_err(|error| FfiError::PageRangeParse(error.to_string()))
+}
+
 /// Register a template under the given identifier.
 ///
 /// Reads `files` as a [`PackedTemplate`], builds a Typst world, compiles
@@ -252,10 +293,17 @@ pub fn register_template(
         .compile()
         .map_err(|error| FfiError::Compilation(error.to_string()))?;
 
+    let pdf_standards = world.manifest().pdf_standards().to_vec();
     let result_id = new_document_id(template_id);
     WORLD_CACHE.insert(template_id.to_owned(), world);
     store_warnings(&result_id, document.warnings);
-    DOCUMENT_CACHE.insert(result_id.clone(), document.document);
+    DOCUMENT_CACHE.insert(
+        result_id.clone(),
+        CachedDocument {
+            document: document.document,
+            pdf_standards,
+        },
+    );
 
     auto_evict();
 
@@ -286,9 +334,16 @@ pub fn compile_template(
         .compile()
         .map_err(|error| FfiError::Compilation(error.to_string()))?;
 
+    let pdf_standards = world.manifest().pdf_standards().to_vec();
     let result_id = new_document_id(template_id);
     store_warnings(&result_id, document.warnings);
-    DOCUMENT_CACHE.insert(result_id.clone(), document.document);
+    DOCUMENT_CACHE.insert(
+        result_id.clone(),
+        CachedDocument {
+            document: document.document,
+            pdf_standards,
+        },
+    );
 
     auto_evict();
 
@@ -306,6 +361,7 @@ pub fn compile_once(
     blob_inputs: HashMap<String, BlobWithMetadata>,
     mode: CompilationMode,
     format: ExportFormat,
+    pages: Option<PageRange>,
 ) -> Result<Vec<u8>, FfiError> {
     let packed = PackedTemplate::new(Cursor::new(files))
         .map_err(|error| FfiError::PackedTemplate(error.to_string()))?;
@@ -326,43 +382,88 @@ pub fn compile_once(
 
     auto_evict();
 
-    encode_document(&document.document, &world, format)
+    let document = &document.document;
+    Ok(match format {
+        ExportFormat::Png { pixels_per_pt } => export_png(document, pixels_per_pt, pages.as_ref())?,
+        ExportFormat::Pdf => export_pdf(
+            document,
+            &world,
+            world.manifest().pdf_standards(),
+            pages.as_ref(),
+        )
+        .map_err(pdf_export_error)?,
+        ExportFormat::Svg => export_svg(document, pages.as_ref())?,
+    })
 }
 
 /// Export a previously-compiled document.
-///
-/// PDF export needs access to the originating world (for embedded fonts and
-/// PDF standards configuration), so the world for the document's template
-/// must still be present in the cache.
-pub fn export_document(document_id: &str, format: ExportFormat) -> Result<Vec<u8>, FfiError> {
-    let Some(document) = DOCUMENT_CACHE.get(document_id) else {
+pub fn export_document(
+    document_id: &str,
+    format: ExportFormat,
+    pages: Option<PageRange>,
+) -> Result<Vec<u8>, FfiError> {
+    let Some(cached) = DOCUMENT_CACHE.get(document_id) else {
         return Err(FfiError::DocumentNotFound(document_id.to_owned()));
     };
 
-    match format {
+    Ok(match format {
         ExportFormat::Png { pixels_per_pt } => {
-            export_merged_png(&document, pixels_per_pt).map_err(|error| FfiError::Export {
-                format: "PNG",
-                error: format!("{error:?}"),
-            })
+            export_png(&cached.document, pixels_per_pt, pages.as_ref())?
         }
         ExportFormat::Pdf => {
             let template_id = template_id_from_document_id(document_id)?;
-            let Some(world) = WORLD_CACHE.get(template_id) else {
-                return Err(FfiError::WorldForDocumentNotFound {
-                    template_id: template_id.to_owned(),
-                    document_id: document_id.to_owned(),
-                });
-            };
-            export_merged_pdf(&document, &*world, world.manifest().pdf_standards()).map_err(
-                |error| FfiError::Export {
-                    format: "PDF",
-                    error: format!("{error:?}"),
-                },
-            )
+            // Fall back to plain (span-less) diagnostics when the world is not available.
+            match WORLD_CACHE.get(template_id) {
+                Some(world) => export_pdf(
+                    &cached.document,
+                    &*world,
+                    &cached.pdf_standards,
+                    pages.as_ref(),
+                ),
+                None => export_pdf(
+                    &cached.document,
+                    &PlainDiagnostics,
+                    &cached.pdf_standards,
+                    pages.as_ref(),
+                ),
+            }
+            .map_err(pdf_export_error)?
         }
-        ExportFormat::Svg => Ok(export_merged_svg(&document)),
-    }
+        ExportFormat::Svg => export_svg(&cached.document, pages.as_ref())?,
+    })
+}
+
+/// Size of a single document page, in typographic points (pt).
+#[derive(Debug, Clone, Copy, Serialize)]
+pub struct PageSize {
+    /// Page width in points.
+    pub width: f64,
+    /// Page height in points.
+    pub height: f64,
+}
+
+/// Return the sizes (in points) of every page of a previously-compiled document,
+/// serialized as a JSON array of `{ "width": f64, "height": f64 }`.
+pub fn document_pages(document_id: &str) -> Result<String, FfiError> {
+    let Some(cached) = DOCUMENT_CACHE.get(document_id) else {
+        return Err(FfiError::DocumentNotFound(document_id.to_owned()));
+    };
+
+    let pages: Vec<PageSize> = cached
+        .document
+        .pages
+        .iter()
+        .map(|page| {
+            let size = page.frame.size();
+            PageSize {
+                width: size.x.to_pt(),
+                height: size.y.to_pt(),
+            }
+        })
+        .collect();
+
+    serde_json::to_string(&pages)
+        .map_err(|error| FfiError::PageSizesSerialization(error.to_string()))
 }
 
 /// Return the template's input definitions serialized as a JSON string.
@@ -514,24 +615,11 @@ fn prepare_inputs(
     Ok(inputs)
 }
 
-fn encode_document(
-    document: &PagedDocument,
-    world: &OicanaWorld<PackedTemplate>,
-    format: ExportFormat,
-) -> Result<Vec<u8>, FfiError> {
-    match format {
-        ExportFormat::Png { pixels_per_pt } => {
-            export_merged_png(document, pixels_per_pt).map_err(|error| FfiError::Export {
-                format: "PNG",
-                error: format!("{error:?}"),
-            })
-        }
-        ExportFormat::Pdf => export_merged_pdf(document, world, world.manifest().pdf_standards())
-            .map_err(|error| FfiError::Export {
-                format: "PDF",
-                error: format!("{error:?}"),
-            }),
-        ExportFormat::Svg => Ok(export_merged_svg(document)),
+/// Map the bare `String` error from [`export_pdf`] to an [`FfiError`].
+fn pdf_export_error(error: String) -> FfiError {
+    FfiError::Export {
+        format: "PDF",
+        error,
     }
 }
 
@@ -561,6 +649,37 @@ mod tests {
     }
 
     #[test]
+    fn parses_empty_page_range_as_none() {
+        assert_eq!(parse_page_range("").unwrap(), None);
+    }
+
+    #[test]
+    fn parses_page_range_bounds() {
+        assert_eq!(
+            parse_page_range(r#"{"start":2,"end":3}"#).unwrap(),
+            Some(PageRange {
+                start: Some(2),
+                end: Some(3),
+            })
+        );
+        assert_eq!(
+            parse_page_range(r#"{"start":2}"#).unwrap(),
+            Some(PageRange::from(2))
+        );
+        assert_eq!(
+            parse_page_range(r#"{"end":4}"#).unwrap(),
+            Some(PageRange::to(4))
+        );
+        assert_eq!(parse_page_range("{}").unwrap(), Some(PageRange::default()));
+    }
+
+    #[test]
+    fn rejects_invalid_page_range() {
+        let err = parse_page_range(r#"{"start":"two"}"#).unwrap_err();
+        assert!(matches!(err, FfiError::PageRangeParse(_)));
+    }
+
+    #[test]
     fn template_id_round_trips_through_document_id() {
         let doc_id = new_document_id("some-template");
         assert_eq!(
@@ -584,5 +703,32 @@ mod tests {
         let trailing_colon = format!("{}:", Uuid::new_v4());
         let err = template_id_from_document_id(&trailing_colon).unwrap_err();
         assert!(matches!(err, FfiError::InvalidDocumentId(_)));
+    }
+
+    #[test]
+    fn exports_all_formats_after_world_removed() {
+        let files = std::fs::read("../../assets/templates/table-0.1.0.zip")
+            .expect("read test template fixture");
+        let template_id = format!("decouple-test-{}", Uuid::new_v4());
+
+        let doc_id = register_template(
+            &template_id,
+            &files,
+            HashMap::new(),
+            HashMap::new(),
+            CompilationMode::Development,
+        )
+        .expect("register template");
+
+        remove_world(&template_id);
+
+        let pdf = export_document(&doc_id, ExportFormat::Pdf, None)
+            .expect("PDF export after world removal");
+        assert_eq!(&pdf[0..4], b"%PDF");
+
+        assert!(export_document(&doc_id, ExportFormat::Png { pixels_per_pt: 1.0 }, None).is_ok());
+        assert!(export_document(&doc_id, ExportFormat::Svg, None).is_ok());
+
+        remove_document(&doc_id);
     }
 }

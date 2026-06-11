@@ -5,6 +5,7 @@ declare(strict_types=1);
 use Oicana\CompilationMode;
 use Oicana\ExportFormat;
 use Oicana\Inputs\BlobInput;
+use Oicana\PageRange;
 use Oicana\Template;
 
 beforeEach(function () {
@@ -32,7 +33,7 @@ test('e2e development', function () {
     $template = new Template($templateBytes);
 
     try {
-        $image = $template->compile(
+        $image = $template->export(
             exportFormat: ExportFormat::png(pixelsPerPt: 1.0),
             mode: CompilationMode::Development
         );
@@ -67,7 +68,7 @@ test('e2e production', function () {
     ];
 
     try {
-        $image = $template->compile(
+        $image = $template->export(
             jsonInputs: $jsonInputs,
             blobInputs: $blobInputs,
             exportFormat: ExportFormat::png(pixelsPerPt: 1.0)
@@ -115,7 +116,7 @@ test('e2e all-inputs', function () {
     ];
 
     try {
-        $image = $template->compile(
+        $image = $template->export(
             jsonInputs: $jsonInputs,
             blobInputs: $blobInputs,
             exportFormat: ExportFormat::png(pixelsPerPt: 1.0)
@@ -136,7 +137,7 @@ test('explicit development mode allows compile with empty inputs', function () {
     $template = new Template($templateBytes);
 
     try {
-        $image = $template->compile(
+        $image = $template->export(
             exportFormat: ExportFormat::png(pixelsPerPt: 1.0),
             mode: CompilationMode::Development
         );
@@ -152,7 +153,7 @@ test('compile defaults to production mode', function () {
     $template = new Template($templateBytes, mode: CompilationMode::Development);
 
     try {
-        expect(fn() => $template->compile(exportFormat: ExportFormat::png(pixelsPerPt: 1.0)))
+        expect(fn() => $template->export(exportFormat: ExportFormat::png(pixelsPerPt: 1.0)))
             ->toThrow(Exception::class, 'No value for the required input');
     } finally {
         $template->cleanup();
@@ -164,4 +165,30 @@ test('can control compilation mode when registering', function () {
 
     expect(fn() => new Template($templateBytes, mode: CompilationMode::Production))
         ->toThrow(Exception::class, 'No value for the required input');
+});
+
+test('compiled document handle survives template cleanup', function () {
+    $templateBytes = file_get_contents(e2e_template_path());
+    $template = new Template($templateBytes);
+
+    $document = $template->compile(mode: CompilationMode::Development);
+
+    $template->cleanup();
+
+    expect($document->pageCount())->toBeGreaterThan(0);
+    $firstPage = PageRange::single(0);
+
+    $pdf = $document->exportPdf($firstPage);
+    expect($pdf)->toStartWith('%PDF');
+
+    $png = $document->export(ExportFormat::png(pixelsPerPt: 1.0), $firstPage);
+    expect($png)->toStartWith("\x89PNG");
+
+    $svg = $document->exportSvg($firstPage);
+    expect($svg)->toContain('<svg');
+
+    $firstPagePng = $document->exportPng(1.0, PageRange::single(0));
+    expect($firstPagePng)->toStartWith("\x89PNG");
+
+    $document->close();
 });

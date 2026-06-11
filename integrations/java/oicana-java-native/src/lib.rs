@@ -168,15 +168,24 @@ pub extern "system" fn Java_com_oicana_OicanaNative_exportDocument<'local>(
     _class: JClass<'local>,
     document_id: JString<'local>,
     export_format: JString<'local>,
+    page_range: JString<'local>,
 ) -> JByteArray<'local> {
     unowned_env
         .with_env(|env| -> jni::errors::Result<JByteArray<'_>> {
             let document_id = document_id.try_to_string(env)?;
             let export_format_str = export_format.try_to_string(env)?;
+            // A null page range selects the whole document.
+            let page_range_str = if page_range.is_null() {
+                String::new()
+            } else {
+                page_range.try_to_string(env)?
+            };
 
             let format = oicana_ffi_core::parse_export_format(&export_format_str)
                 .map_err(|e| throw_ffi(env, e))?;
-            let bytes = oicana_ffi_core::export_document(&document_id, format)
+            let page = oicana_ffi_core::parse_page_range(&page_range_str)
+                .map_err(|e| throw_ffi(env, e))?;
+            let bytes = oicana_ffi_core::export_document(&document_id, format, page)
                 .map_err(|e| throw_ffi(env, e))?;
 
             Ok(env.byte_array_from_slice(&bytes)?)
@@ -243,6 +252,22 @@ pub extern "system" fn Java_com_oicana_OicanaNative_inputs<'local>(
         .with_env(|env| -> jni::errors::Result<JString<'_>> {
             let template_id = template_id.try_to_string(env)?;
             let json = oicana_ffi_core::inputs(&template_id).map_err(|e| throw_ffi(env, e))?;
+            Ok(JString::from_str(env, &json)?)
+        })
+        .resolve::<jni::errors::ThrowRuntimeExAndDefault>()
+}
+
+#[unsafe(no_mangle)]
+pub extern "system" fn Java_com_oicana_OicanaNative_documentPages<'local>(
+    mut unowned_env: EnvUnowned<'local>,
+    _class: JClass<'local>,
+    document_id: JString<'local>,
+) -> JString<'local> {
+    unowned_env
+        .with_env(|env| -> jni::errors::Result<JString<'_>> {
+            let document_id = document_id.try_to_string(env)?;
+            let json =
+                oicana_ffi_core::document_pages(&document_id).map_err(|e| throw_ffi(env, e))?;
             Ok(JString::from_str(env, &json)?)
         })
         .resolve::<jni::errors::ThrowRuntimeExAndDefault>()

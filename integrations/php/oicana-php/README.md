@@ -35,7 +35,7 @@ require 'vendor/autoload.php';
 use Oicana\Template;
 
 // One-off compilation
-$pdf = Template::compileOnce(
+$pdf = Template::exportOnce(
     file_get_contents('path/to/template.zip'),
     jsonInputs: [
         'data' => ['foo' => 'bar'],
@@ -53,7 +53,7 @@ use Oicana\Template;
 $template = new Template(file_get_contents('path/to/template.zip'));
 
 try {
-    $pdf = $template->compile(
+    $pdf = $template->export(
         jsonInputs: [
             'title' => ['value' => 'My Document'],
             'date' => ['value' => '2025-01-01'],
@@ -79,17 +79,17 @@ Oicana supports three export formats via the `ExportFormat` class:
 ```php
 use Oicana\ExportFormat;
 
-$pdf = $template->compile(exportFormat: ExportFormat::pdf());
-$png = $template->compile(exportFormat: ExportFormat::png(pixelsPerPt: 3.0));
-$svg = $template->compile(exportFormat: ExportFormat::svg());
+$pdf = $template->export(exportFormat: ExportFormat::pdf());
+$png = $template->export(exportFormat: ExportFormat::png(pixelsPerPt: 3.0));
+$svg = $template->export(exportFormat: ExportFormat::svg());
 ```
 
 ### One-off Compilation
 
-For one-off compilations where you don't need to reuse the template, use `compileOnce()`. It handles template registration and cleanup automatically:
+For one-off compilations where you don't need to reuse the template, use `exportOnce()`. It handles template registration and cleanup automatically:
 
 ```php
-$pdf = Template::compileOnce(
+$pdf = Template::exportOnce(
     file_get_contents('template.zip'),
     jsonInputs: ['inputkey' => ['name' => 'Alice']],
     exportFormat: ExportFormat::pdf()
@@ -104,18 +104,18 @@ The mode can be set separately for template creation (`new Template`) and compil
 
 **Production Mode** — requires all inputs to be explicitly provided. Ensures no missing data in final output.
 
-By default, `new Template()` uses Development mode (so the template can be registered without providing all inputs), while `compile()` uses Production mode by default (so you catch missing inputs at render time). This is the recommended pattern for most use cases:
+By default, `new Template()` uses Development mode (so the template can be registered without providing all inputs), while `export()` uses Production mode by default (so you catch missing inputs at render time). This is the recommended pattern for most use cases:
 
 ```php
 use Oicana\CompilationMode;
 
 // Development for creation, Production for compilation (defaults)
 $template = new Template($bytes);
-$pdf = $template->compile(jsonInputs: ['name' => ['value' => 'Alice']]);
+$pdf = $template->export(jsonInputs: ['name' => ['value' => 'Alice']]);
 
 // Override if needed
 $template = new Template($bytes, mode: CompilationMode::Production);
-$pdf = $template->compile(jsonInputs: $data, mode: CompilationMode::Development);
+$pdf = $template->export(jsonInputs: $data, mode: CompilationMode::Development);
 ```
 
 ### Working with Inputs
@@ -126,7 +126,7 @@ You can pass inputs as arrays (recommended) or as pre-encoded JSON strings:
 
 ```php
 // Arrays are automatically JSON-encoded
-$pdf = $template->compile(
+$pdf = $template->export(
     jsonInputs: [
         'user' => ['name' => 'Alice', 'email' => 'alice@example.com'],
         'items' => [['id' => 1, 'name' => 'Item 1']],
@@ -134,7 +134,7 @@ $pdf = $template->compile(
 );
 
 // Pre-encoded JSON strings also work
-$pdf = $template->compile(
+$pdf = $template->export(
     jsonInputs: [
         'user' => '{"name": "Alice", "email": "alice@example.com"}',
     ]
@@ -148,7 +148,7 @@ use Oicana\Inputs\BlobInput;
 $logoData = file_get_contents('logo.png');
 $logo = new BlobInput($logoData, ['type' => 'image/png']);
 
-$pdf = $template->compile(
+$pdf = $template->export(
     blobInputs: ['logo' => $logo]
 );
 ```

@@ -7,7 +7,7 @@ use std::{
 use image::{GenericImageView, ImageError};
 use log::{debug, error};
 use oicana::{CompileError, Template, TemplateInitializationError};
-use oicana_export::png::{export_merged_png, PngExportError};
+use oicana_export::png::{export_png, PngExportError};
 use oicana_files::native::{package_data_dir, NativeTemplate};
 use oicana_input::{input::json::JsonInput, input_definition::InputDefinition, TemplateInputs};
 use oicana_template::manifest::TemplateManifest;
@@ -154,7 +154,7 @@ impl TestRunner {
             vec![]
         };
 
-        let image = export_merged_png(&document, 1.)?;
+        let image = export_png(&document, 1., None)?;
         match snapshot {
             Snapshot::Missing(path, mode) => match mode {
                 SnapshotMode::Update => {
