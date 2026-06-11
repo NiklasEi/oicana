@@ -208,7 +208,7 @@ public class E2ETests
         document.PageCount.Should().BeGreaterThan(0);
         var firstPage = PageRange.Single(0);
 
-        var pdf = ReadBytes(document.ToPdf(firstPage));
+        var pdf = ReadBytes(document.ExportPdf(firstPage));
         System.Text.Encoding.ASCII.GetString(pdf, 0, 4).Should().Be("%PDF");
 
         var png = ReadBytes(document.Export(ExportFormat.Png(1.0f), firstPage));
@@ -216,10 +216,10 @@ public class E2ETests
         png[0].Should().Be(0x89);
         png[1].Should().Be(0x50);
 
-        var svg = ReadBytes(document.Export(ExportFormat.Svg(), firstPage));
+        var svg = ReadBytes(document.ExportSvg(firstPage));
         System.Text.Encoding.UTF8.GetString(svg).Should().Contain("<svg");
 
-        var firstPagePng = ReadBytes(document.ExportPage(0, 1.0f));
+        var firstPagePng = ReadBytes(document.ExportPng(1.0f, PageRange.Single(0)));
         firstPagePng[0].Should().Be(0x89);
 
         document.Dispose();

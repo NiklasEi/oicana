@@ -31,6 +31,9 @@ class OicanaNative {
 
     static native void removeDocument(String documentId);
 
+    /** Returns the compilation warnings for the document, or {@code null} if there were none. */
+    static native String getWarnings(String documentId);
+
     static native void removeWorld(String templateId);
 
     static native String inputs(String templateId);

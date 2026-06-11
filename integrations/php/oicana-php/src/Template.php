@@ -123,6 +123,65 @@ class Template
     }
 
     /**
+     * Compile template and export to PDF in a single call.
+     *
+     * @param array<string, string|array<mixed>> $jsonInputs JSON inputs (key => JSON string or array)
+     * @param array<string, BlobInput> $blobInputs Blob inputs
+     * @param CompilationMode $mode Compilation mode
+     * @param PageRange|null $pages 0-based, inclusive page range (defaults to the whole document)
+     * @return string PDF bytes
+     * @throws \Exception If compilation or export fails
+     */
+    public function exportPdf(
+        array $jsonInputs = [],
+        array $blobInputs = [],
+        CompilationMode $mode = CompilationMode::Production,
+        ?PageRange $pages = null
+    ): string {
+        return $this->export($jsonInputs, $blobInputs, ExportFormat::pdf(), $mode, $pages);
+    }
+
+    /**
+     * Compile template and export to PNG in a single call.
+     *
+     * @param array<string, string|array<mixed>> $jsonInputs JSON inputs (key => JSON string or array)
+     * @param array<string, BlobInput> $blobInputs Blob inputs
+     * @param CompilationMode $mode Compilation mode
+     * @param float $pixelsPerPt Resolution in pixels per point (defaults to 1.0)
+     * @param PageRange|null $pages 0-based, inclusive page range (defaults to the whole document)
+     * @return string PNG bytes
+     * @throws \Exception If compilation or export fails
+     */
+    public function exportPng(
+        array $jsonInputs = [],
+        array $blobInputs = [],
+        CompilationMode $mode = CompilationMode::Production,
+        float $pixelsPerPt = 1.0,
+        ?PageRange $pages = null
+    ): string {
+        return $this->export($jsonInputs, $blobInputs, ExportFormat::png($pixelsPerPt), $mode, $pages);
+    }
+
+    /**
+     * Compile template and export to SVG in a single call.
+     *
+     * @param array<string, string|array<mixed>> $jsonInputs JSON inputs (key => JSON string or array)
+     * @param array<string, BlobInput> $blobInputs Blob inputs
+     * @param CompilationMode $mode Compilation mode
+     * @param PageRange|null $pages 0-based, inclusive page range (defaults to the whole document)
+     * @return string SVG bytes
+     * @throws \Exception If compilation or export fails
+     */
+    public function exportSvg(
+        array $jsonInputs = [],
+        array $blobInputs = [],
+        CompilationMode $mode = CompilationMode::Production,
+        ?PageRange $pages = null
+    ): string {
+        return $this->export($jsonInputs, $blobInputs, ExportFormat::svg(), $mode, $pages);
+    }
+
+    /**
      * Compile the template.
      *
      * Unlike {@see export()}, the document is kept in memory so it can be

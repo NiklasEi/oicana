@@ -148,7 +148,7 @@ class E2eTest {
         assertTrue(document.pageCount() > 0);
         PageRange firstPage = PageRange.single(0);
 
-        byte[] pdf = document.toPdf(firstPage);
+        byte[] pdf = document.exportPdf(firstPage);
         assertEquals("%PDF", new String(pdf, 0, 4, StandardCharsets.US_ASCII));
 
         byte[] png = document.export(ExportFormat.png(1.0f), firstPage);
@@ -157,10 +157,10 @@ class E2eTest {
         assertEquals((byte) 'N', png[2]);
         assertEquals((byte) 'G', png[3]);
 
-        byte[] svg = document.export(ExportFormat.svg(), firstPage);
+        byte[] svg = document.exportSvg(firstPage);
         assertTrue(new String(svg, StandardCharsets.UTF_8).contains("<svg"));
 
-        byte[] firstPagePng = document.exportPage(0, 1.0f);
+        byte[] firstPagePng = document.exportPng(1.0f, PageRange.single(0));
         assertEquals((byte) 0x89, firstPagePng[0]);
 
         document.close();

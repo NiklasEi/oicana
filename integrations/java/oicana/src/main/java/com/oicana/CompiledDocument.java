@@ -3,6 +3,7 @@ package com.oicana;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -14,8 +15,8 @@ import java.util.regex.Pattern;
  *
  * <pre>{@code
  * try (var document = template.compile(inputs, blobs)) {
- *     byte[] pdf = document.toPdf();
- *     byte[] firstPage = document.exportPage(0, 2.0f);
+ *     byte[] pdf = document.exportPdf();
+ *     byte[] firstPage = document.exportPng(2.0f, PageRange.single(0));
  * }
  * }</pre>
  */
@@ -29,10 +30,12 @@ public class CompiledDocument implements AutoCloseable {
 
     private String documentId;
     private final List<PageSize> pages;
+    private final String warnings;
 
     CompiledDocument(String documentId) {
         this.documentId = documentId;
         this.pages = parsePageSizes(OicanaNative.documentPages(documentId));
+        this.warnings = OicanaNative.getWarnings(documentId);
     }
 
     /**
@@ -54,23 +57,12 @@ public class CompiledDocument implements AutoCloseable {
     }
 
     /**
-     * Export the whole document to PDF.
+     * Warnings produced by the compilation of this document.
      *
-     * @return the PDF document as a byte array
+     * @return the warnings, or an empty Optional if there were none
      */
-    public byte[] toPdf() {
-        return export(ExportFormat.pdf(), null);
-    }
-
-    /**
-     * Export a range of pages to PDF.
-     *
-     * @param pages the 0-based, inclusive page range to export, or {@code null} for the whole
-     *     document
-     * @return the PDF document as a byte array
-     */
-    public byte[] toPdf(PageRange pages) {
-        return export(ExportFormat.pdf(), pages);
+    public Optional<String> warnings() {
+        return Optional.ofNullable(warnings);
     }
 
     /**
@@ -100,14 +92,86 @@ public class CompiledDocument implements AutoCloseable {
     }
 
     /**
-     * Export a single (zero-based) page of the document to PNG.
+     * Export the whole document to PDF.
      *
-     * @param pageIndex zero-based index of the page to export
+     * @return the PDF document as a byte array
+     */
+    public byte[] exportPdf() {
+        return export(ExportFormat.pdf(), null);
+    }
+
+    /**
+     * Export the document to PDF, optionally restricted to a range of pages.
+     *
+     * @param pages the 0-based, inclusive page range to export, or {@code null} for the whole
+     *     document
+     * @return the PDF document as a byte array
+     */
+    public byte[] exportPdf(PageRange pages) {
+        return export(ExportFormat.pdf(), pages);
+    }
+
+    /**
+     * Export the whole document to PNG at the default resolution of 1 pixel per point.
+     *
+     * @return the PNG image as a byte array
+     */
+    public byte[] exportPng() {
+        return exportPng(1.0f, null);
+    }
+
+    /**
+     * Export the whole document to PNG.
+     *
      * @param pixelsPerPt resolution in pixels per point
      * @return the PNG image as a byte array
      */
-    public byte[] exportPage(int pageIndex, float pixelsPerPt) {
-        return export(ExportFormat.png(pixelsPerPt), PageRange.single(pageIndex));
+    public byte[] exportPng(float pixelsPerPt) {
+        return exportPng(pixelsPerPt, null);
+    }
+
+    /**
+     * Export the document to PNG at the default resolution of 1 pixel per point, optionally
+     * restricted to a range of pages.
+     *
+     * @param pages the 0-based, inclusive page range to export, or {@code null} for the whole
+     *     document
+     * @return the PNG image as a byte array
+     */
+    public byte[] exportPng(PageRange pages) {
+        return exportPng(1.0f, pages);
+    }
+
+    /**
+     * Export the document to PNG, optionally restricted to a range of pages.
+     *
+     * @param pixelsPerPt resolution in pixels per point
+     * @param pages the 0-based, inclusive page range to export, or {@code null} for the whole
+     *     document
+     * @return the PNG image as a byte array
+     */
+    public byte[] exportPng(float pixelsPerPt, PageRange pages) {
+        return export(ExportFormat.png(pixelsPerPt), pages);
+    }
+
+    /**
+     * Export the whole document to SVG.
+     *
+     * @return the SVG document as a byte array
+     */
+    public byte[] exportSvg() {
+        return export(ExportFormat.svg(), null);
+    }
+
+    /**
+     * Export the document to SVG, optionally restricted to a range of pages.
+     *
+     * @param pages the 0-based, inclusive page range to export, or {@code null} for the whole
+     *     document
+     * @return the SVG document as a byte array
+     */
+    public byte[] exportSvg(PageRange pages) {
+        return export(ExportFormat.svg(), pages);
     }
 
     /** Release the cached document. The instance must not be used after calling close(). */

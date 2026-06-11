@@ -172,16 +172,16 @@ def test_compiled_document_handle_survives_template_cleanup() -> None:
     assert len(document.pages) > 0
     first_page = PageRange.single(0)
 
-    pdf = document.to_pdf(pages=first_page)
+    pdf = document.export_pdf(pages=first_page)
     assert pdf[:4] == b"%PDF"
 
     png = document.export({"format": "png", "pixelsPerPt": 1.0}, pages=first_page)
     assert png[:4] == b"\x89PNG"
 
-    svg = document.export({"format": "svg"}, pages=first_page)
+    svg = document.export_svg(pages=first_page)
     assert b"<svg" in svg
 
-    first_page_png = document.export_page(0, pixels_per_pt=1.0)
+    first_page_png = document.export_png(1.0, pages=PageRange.single(0))
     assert first_page_png[:4] == b"\x89PNG"
 
     document.close()

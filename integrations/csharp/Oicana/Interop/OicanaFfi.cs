@@ -190,6 +190,18 @@ internal static class OicanaFfi
     }
 
     /// <summary>
+    /// Get the compilation warnings produced for the given document.
+    /// </summary>
+    /// <param name="documentId">Identifier of the compiled document.</param>
+    /// <returns>The warnings text, or <c>null</c> if there were none.</returns>
+    public static string? GetWarnings(string documentId)
+    {
+        var buffer = OicanaFfiInternal.get_warnings(documentId);
+        var warnings = HandleStringBuffer(buffer);
+        return warnings.Length == 0 ? null : warnings;
+    }
+
+    /// <summary>
     /// Get source file content from the template.
     /// </summary>
     /// <param name="templateId">Identifier of the template.</param>

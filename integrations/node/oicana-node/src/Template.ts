@@ -12,7 +12,7 @@ import {
 } from '@oicana/node-native';
 import { CompilationMode } from './CompilationMode.js';
 import { CompiledDocument } from './CompiledDocument.js';
-import type { ExportFormat } from './ExportFormat.js';
+import { type ExportFormat, Pdf, Png, Svg } from './ExportFormat.js';
 import type { BlobWithMetadata } from './inputs/index.js';
 import { type PageRange, serializePageRange } from './PageRange.js';
 
@@ -152,8 +152,93 @@ export class Template implements Disposable {
     compilationOptions?: CompilationMode,
     pages?: PageRange,
   ): Uint8Array {
-    const format: ExportFormat = exportOptions ?? { format: 'pdf' };
+    return this.exportWith(
+      exportOptions ?? Pdf,
+      jsonInputs,
+      blobInputs,
+      compilationOptions,
+      pages,
+    );
+  }
 
+  /**
+   * Compile the template and export it to PDF in a single call, then free the
+   * document.
+   * @param jsonInputs - JSON inputs for the template (defaults to empty map)
+   * @param blobInputs - Blob inputs for the template (defaults to empty map)
+   * @param compilationOptions - Compilation mode (defaults to Production)
+   * @param pages - 0-based, inclusive page range (defaults to the whole document)
+   */
+  public exportPdf(
+    jsonInputs?: Map<string, string>,
+    blobInputs?: Map<string, BlobWithMetadata>,
+    compilationOptions?: CompilationMode,
+    pages?: PageRange,
+  ): Uint8Array {
+    return this.exportWith(
+      Pdf,
+      jsonInputs,
+      blobInputs,
+      compilationOptions,
+      pages,
+    );
+  }
+
+  /**
+   * Compile the template and export it to PNG in a single call, then free the
+   * document.
+   * @param jsonInputs - JSON inputs for the template (defaults to empty map)
+   * @param blobInputs - Blob inputs for the template (defaults to empty map)
+   * @param compilationOptions - Compilation mode (defaults to Production)
+   * @param pixelsPerPt - resolution in pixels per point (defaults to 1.0)
+   * @param pages - 0-based, inclusive page range (defaults to the whole document)
+   */
+  public exportPng(
+    jsonInputs?: Map<string, string>,
+    blobInputs?: Map<string, BlobWithMetadata>,
+    compilationOptions?: CompilationMode,
+    pixelsPerPt = 1.0,
+    pages?: PageRange,
+  ): Uint8Array {
+    return this.exportWith(
+      Png(pixelsPerPt),
+      jsonInputs,
+      blobInputs,
+      compilationOptions,
+      pages,
+    );
+  }
+
+  /**
+   * Compile the template and export it to SVG in a single call, then free the
+   * document.
+   * @param jsonInputs - JSON inputs for the template (defaults to empty map)
+   * @param blobInputs - Blob inputs for the template (defaults to empty map)
+   * @param compilationOptions - Compilation mode (defaults to Production)
+   * @param pages - 0-based, inclusive page range (defaults to the whole document)
+   */
+  public exportSvg(
+    jsonInputs?: Map<string, string>,
+    blobInputs?: Map<string, BlobWithMetadata>,
+    compilationOptions?: CompilationMode,
+    pages?: PageRange,
+  ): Uint8Array {
+    return this.exportWith(
+      Svg,
+      jsonInputs,
+      blobInputs,
+      compilationOptions,
+      pages,
+    );
+  }
+
+  private exportWith(
+    format: ExportFormat,
+    jsonInputs?: Map<string, string>,
+    blobInputs?: Map<string, BlobWithMetadata>,
+    compilationOptions?: CompilationMode,
+    pages?: PageRange,
+  ): Uint8Array {
     const document = this.compileToDocumentId(
       jsonInputs,
       blobInputs,

@@ -21,6 +21,11 @@ public sealed class CompiledDocument : IDisposable
     public IReadOnlyList<PageSize> Pages { get; }
 
     /// <summary>
+    /// Warnings produced by the compilation of this document, or <c>null</c> if there were none.
+    /// </summary>
+    public string? Warnings { get; }
+
+    /// <summary>
     /// Construct a handle around an already-compiled document. Use <see cref="Template.Compile"/>.
     /// </summary>
     /// <param name="documentId">Identifier of the compiled document in the internal cache.</param>
@@ -28,6 +33,7 @@ public sealed class CompiledDocument : IDisposable
     {
         _documentId = documentId;
         Pages = ParsePageSizes(OicanaFfi.DocumentPages(documentId));
+        Warnings = OicanaFfi.GetWarnings(documentId);
     }
 
     /// <summary>
@@ -49,26 +55,37 @@ public sealed class CompiledDocument : IDisposable
     }
 
     /// <summary>
-    /// Export the document to a PDF file, optionally restricted to a range of pages.
+    /// Export the document to PDF, optionally restricted to a range of pages.
     /// </summary>
     /// <param name="pages">0-based, inclusive page range to export, or <c>null</c> for the whole document.</param>
     /// <exception cref="OicanaException">If the export fails.</exception>
     /// <returns>Stream containing the exported PDF.</returns>
-    public Stream ToPdf(PageRange? pages = null)
+    public Stream ExportPdf(PageRange? pages = null)
     {
         return Export(ExportFormat.Pdf(), pages);
     }
 
     /// <summary>
-    /// Export a single (zero-based) page of the document to PNG.
+    /// Export the document to PNG, optionally restricted to a range of pages.
     /// </summary>
-    /// <param name="pageIndex">Zero-based index of the page to export.</param>
-    /// <param name="pixelsPerPt">Resolution in pixels per point.</param>
+    /// <param name="pixelsPerPt">Resolution in pixels per point (defaults to 1.0).</param>
+    /// <param name="pages">0-based, inclusive page range to export, or <c>null</c> for the whole document.</param>
     /// <exception cref="OicanaException">If the export fails.</exception>
     /// <returns>Stream containing the exported PNG.</returns>
-    public Stream ExportPage(int pageIndex, float pixelsPerPt = 1.0f)
+    public Stream ExportPng(float pixelsPerPt = 1.0f, PageRange? pages = null)
     {
-        return Export(ExportFormat.Png(pixelsPerPt), PageRange.Single(pageIndex));
+        return Export(ExportFormat.Png(pixelsPerPt), pages);
+    }
+
+    /// <summary>
+    /// Export the document to SVG, optionally restricted to a range of pages.
+    /// </summary>
+    /// <param name="pages">0-based, inclusive page range to export, or <c>null</c> for the whole document.</param>
+    /// <exception cref="OicanaException">If the export fails.</exception>
+    /// <returns>Stream containing the exported SVG.</returns>
+    public Stream ExportSvg(PageRange? pages = null)
+    {
+        return Export(ExportFormat.Svg(), pages);
     }
 
     /// <summary>

@@ -1,9 +1,10 @@
 import {
   document_pages,
   export_document,
+  get_warnings,
   remove_document,
 } from '@oicana/browser-wasm';
-import { type ExportFormat, Png } from './ExportFormat.js';
+import { type ExportFormat, Pdf, Png, Svg } from './ExportFormat.js';
 import type { PageRange } from './PageRange.js';
 
 /**
@@ -30,11 +31,18 @@ export class CompiledDocument implements Disposable {
   public readonly pages: ReadonlyArray<PageSize>;
 
   /**
+   * Warnings produced by the compilation of this document, or `undefined` if
+   * there were none.
+   */
+  public readonly warnings: string | undefined;
+
+  /**
    * @internal Construct via {@link Template.compile}.
    */
   public constructor(documentId: string) {
     this.documentId = documentId;
     this.pages = JSON.parse(document_pages(documentId)) as PageSize[];
+    this.warnings = get_warnings(documentId);
   }
 
   /** Number of pages in the document. */
@@ -43,27 +51,12 @@ export class CompiledDocument implements Disposable {
   }
 
   /**
-   * Export a single page of the document to PNG.
-   * @param pageIndex - zero-based index of the page to export
-   * @param pixelsPerPt - resolution in pixels per point
-   */
-  public exportPage(pageIndex: number, pixelsPerPt: number): Uint8Array {
-    return this.export(Png(pixelsPerPt), {
-      start: pageIndex,
-      end: pageIndex,
-    });
-  }
-
-  /**
    * Export the document in the given format (defaults to PDF), optionally
    * restricted to a range of pages.
    * @param format - export format specification
    * @param pages - 0-based, inclusive page range (defaults to the whole document)
    */
-  public export(
-    format: ExportFormat = { format: 'pdf' },
-    pages?: PageRange,
-  ): Uint8Array {
+  public export(format: ExportFormat = Pdf, pages?: PageRange): Uint8Array {
     if (this.documentId === undefined) {
       throw new Error('CompiledDocument has already been disposed');
     }
@@ -71,11 +64,28 @@ export class CompiledDocument implements Disposable {
   }
 
   /**
-   * Export the document to a PDF file, optionally restricted to a range of pages.
+   * Export the document to PDF, optionally restricted to a range of pages.
    * @param pages - 0-based, inclusive page range (defaults to the whole document)
    */
-  public toPdf(pages?: PageRange): Uint8Array {
-    return this.export({ format: 'pdf' }, pages);
+  public exportPdf(pages?: PageRange): Uint8Array {
+    return this.export(Pdf, pages);
+  }
+
+  /**
+   * Export the document to PNG, optionally restricted to a range of pages.
+   * @param pixelsPerPt - resolution in pixels per point (defaults to 1.0)
+   * @param pages - 0-based, inclusive page range (defaults to the whole document)
+   */
+  public exportPng(pixelsPerPt = 1.0, pages?: PageRange): Uint8Array {
+    return this.export(Png(pixelsPerPt), pages);
+  }
+
+  /**
+   * Export the document to SVG, optionally restricted to a range of pages.
+   * @param pages - 0-based, inclusive page range (defaults to the whole document)
+   */
+  public exportSvg(pages?: PageRange): Uint8Array {
+    return this.export(Svg, pages);
   }
 
   /**

@@ -1,7 +1,7 @@
 import { readFile, writeFile } from 'node:fs/promises';
 import { describe, expect, it } from 'vitest';
 import { CompilationMode } from './CompilationMode.js';
-import { Png, Svg } from './ExportFormat.js';
+import { Png } from './ExportFormat.js';
 import type { BlobWithMetadata } from './inputs/index.js';
 import { PageRange } from './PageRange.js';
 import { Template } from './Template.js';
@@ -158,16 +158,16 @@ describe('e2e test template', () => {
     expect(document.pageCount).toBeGreaterThan(0);
     const firstPage = PageRange.single(0);
 
-    const pdf = document.toPdf(firstPage);
+    const pdf = document.exportPdf(firstPage);
     expect(new TextDecoder().decode(pdf.slice(0, 4))).toBe('%PDF');
 
     const png = document.export(Png(1), firstPage);
     expect(Array.from(png.slice(0, 4))).toEqual([0x89, 0x50, 0x4e, 0x47]);
 
-    const svg = document.export(Svg, firstPage);
+    const svg = document.exportSvg(firstPage);
     expect(new TextDecoder().decode(svg)).toContain('<svg');
 
-    const firstPagePng = document.exportPage(0, 1);
+    const firstPagePng = document.exportPng(1, PageRange.single(0));
     expect(Array.from(firstPagePng.slice(0, 4))).toEqual([
       0x89, 0x50, 0x4e, 0x47,
     ]);

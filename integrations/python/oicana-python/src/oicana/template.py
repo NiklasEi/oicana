@@ -13,6 +13,7 @@ from oicana_native import (
     export_document,
     get_file,
     get_source,
+    get_warnings,
     inputs,
     register_template,
     remove_document,
@@ -135,6 +136,80 @@ class Template:
             self._document_ids.remove(doc_id)
 
         return bytes(result)
+
+    def export_pdf(
+        self,
+        *,
+        json_inputs: dict[str, str] | None = None,
+        blob_inputs: dict[str, BlobInput] | None = None,
+        mode: CompilationMode = CompilationMode.PRODUCTION,
+        pages: PageRange | None = None,
+    ) -> bytes:
+        """Compile the template and export it to PDF in a single call.
+
+        Args:
+            json_inputs: JSON inputs
+            blob_inputs: Blob inputs
+            mode: Compilation mode
+            pages: 0-based, inclusive page range (defaults to the whole document)
+        """
+        return self.export(
+            json_inputs=json_inputs,
+            blob_inputs=blob_inputs,
+            export={"format": "pdf"},
+            mode=mode,
+            pages=pages,
+        )
+
+    def export_png(
+        self,
+        *,
+        json_inputs: dict[str, str] | None = None,
+        blob_inputs: dict[str, BlobInput] | None = None,
+        mode: CompilationMode = CompilationMode.PRODUCTION,
+        pixels_per_pt: float = 1.0,
+        pages: PageRange | None = None,
+    ) -> bytes:
+        """Compile the template and export it to PNG in a single call.
+
+        Args:
+            json_inputs: JSON inputs
+            blob_inputs: Blob inputs
+            mode: Compilation mode
+            pixels_per_pt: Resolution in pixels per point (defaults to 1.0)
+            pages: 0-based, inclusive page range (defaults to the whole document)
+        """
+        return self.export(
+            json_inputs=json_inputs,
+            blob_inputs=blob_inputs,
+            export={"format": "png", "pixelsPerPt": pixels_per_pt},
+            mode=mode,
+            pages=pages,
+        )
+
+    def export_svg(
+        self,
+        *,
+        json_inputs: dict[str, str] | None = None,
+        blob_inputs: dict[str, BlobInput] | None = None,
+        mode: CompilationMode = CompilationMode.PRODUCTION,
+        pages: PageRange | None = None,
+    ) -> bytes:
+        """Compile the template and export it to SVG in a single call.
+
+        Args:
+            json_inputs: JSON inputs
+            blob_inputs: Blob inputs
+            mode: Compilation mode
+            pages: 0-based, inclusive page range (defaults to the whole document)
+        """
+        return self.export(
+            json_inputs=json_inputs,
+            blob_inputs=blob_inputs,
+            export={"format": "svg"},
+            mode=mode,
+            pages=pages,
+        )
 
     def compile(
         self,
@@ -264,7 +339,7 @@ class CompiledDocument:
     Example:
         >>> with template.compile(json_inputs={...}) as document:
         ...     for index, _page in enumerate(document.pages):
-        ...         png = document.export_page(index, pixels_per_pt=2.0)
+        ...         png = document.export_png(2.0, pages=PageRange.single(index))
     """
 
     def __init__(self, document_id: str) -> None:
@@ -274,29 +349,15 @@ class CompiledDocument:
             PageSize(width=page["width"], height=page["height"])
             for page in json.loads(document_pages(document_id))
         ]
+        #: Warnings produced by the compilation of this document, or ``None``.
+        self.warnings: str | None = get_warnings(document_id)
 
-    def export_page(self, page_index: int, pixels_per_pt: float) -> bytes:
-        """Export a single (zero-based) page of the document to PNG.
-
-        Args:
-            page_index: Zero-based index of the page to export
-            pixels_per_pt: Resolution in pixels per point
-        """
-        return self.export(
-            {"format": "png", "pixelsPerPt": pixels_per_pt},
-            pages=PageRange.single(page_index),
-        )
-
-    def to_pdf(self, pages: PageRange | None = None) -> bytes:
-        """Export the document to a PDF file, optionally restricted to a range.
-
-        Args:
-            pages: 0-based, inclusive page range (defaults to the whole document)
-        """
-        return self.export({"format": "pdf"}, pages=pages)
-
-    def export(self, export: ExportFormat, pages: PageRange | None = None) -> bytes:
-        """Export the document in the given format.
+    def export(
+        self,
+        export: ExportFormat = {"format": "pdf"},  # type: ignore[typeddict-item]
+        pages: PageRange | None = None,
+    ) -> bytes:
+        """Export the document in the given format (defaults to PDF).
 
         Args:
             export: Export format and configuration (pdf/png/svg)
@@ -307,6 +368,31 @@ class CompiledDocument:
         return bytes(
             export_document(self._document_id, json.dumps(export), _serialize_page_range(pages))
         )
+
+    def export_pdf(self, pages: PageRange | None = None) -> bytes:
+        """Export the document to PDF, optionally restricted to a range.
+
+        Args:
+            pages: 0-based, inclusive page range (defaults to the whole document)
+        """
+        return self.export({"format": "pdf"}, pages=pages)
+
+    def export_png(self, pixels_per_pt: float = 1.0, pages: PageRange | None = None) -> bytes:
+        """Export the document to PNG, optionally restricted to a range.
+
+        Args:
+            pixels_per_pt: Resolution in pixels per point (defaults to 1.0)
+            pages: 0-based, inclusive page range (defaults to the whole document)
+        """
+        return self.export({"format": "png", "pixelsPerPt": pixels_per_pt}, pages=pages)
+
+    def export_svg(self, pages: PageRange | None = None) -> bytes:
+        """Export the document to SVG, optionally restricted to a range.
+
+        Args:
+            pages: 0-based, inclusive page range (defaults to the whole document)
+        """
+        return self.export({"format": "svg"}, pages=pages)
 
     def close(self) -> None:
         """Release the cached document. The instance must not be used after."""

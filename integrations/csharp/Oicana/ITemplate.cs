@@ -24,6 +24,37 @@ public interface ITemplate
     Stream Export(IDictionary<string, JsonNode> jsonInputs, IDictionary<string, BlobInput> blobInputs, ExportFormat exportFormat, CompilationOptions compilationOptions, PageRange? pages = null);
 
     /// <summary>
+    /// Compile the template with the given inputs and export it to PDF.
+    /// </summary>
+    /// <param name="jsonInputs">Json inputs for the compilation (key -> JsonNode).</param>
+    /// <param name="blobInputs">Blob inputs for the compilation (key -> BlobInput).</param>
+    /// <param name="compilationOptions">Options for the template compilation.</param>
+    /// <param name="pages">0-based, inclusive page range to export, or <c>null</c> for the whole document.</param>
+    /// <exception cref="OicanaException">If the template compilation fails.</exception>
+    Stream ExportPdf(IDictionary<string, JsonNode> jsonInputs, IDictionary<string, BlobInput> blobInputs, CompilationOptions compilationOptions, PageRange? pages = null);
+
+    /// <summary>
+    /// Compile the template with the given inputs and export it to PNG.
+    /// </summary>
+    /// <param name="jsonInputs">Json inputs for the compilation (key -> JsonNode).</param>
+    /// <param name="blobInputs">Blob inputs for the compilation (key -> BlobInput).</param>
+    /// <param name="compilationOptions">Options for the template compilation.</param>
+    /// <param name="pixelsPerPt">Resolution in pixels per point (defaults to 1.0).</param>
+    /// <param name="pages">0-based, inclusive page range to export, or <c>null</c> for the whole document.</param>
+    /// <exception cref="OicanaException">If the template compilation fails.</exception>
+    Stream ExportPng(IDictionary<string, JsonNode> jsonInputs, IDictionary<string, BlobInput> blobInputs, CompilationOptions compilationOptions, float pixelsPerPt = 1.0f, PageRange? pages = null);
+
+    /// <summary>
+    /// Compile the template with the given inputs and export it to SVG.
+    /// </summary>
+    /// <param name="jsonInputs">Json inputs for the compilation (key -> JsonNode).</param>
+    /// <param name="blobInputs">Blob inputs for the compilation (key -> BlobInput).</param>
+    /// <param name="compilationOptions">Options for the template compilation.</param>
+    /// <param name="pages">0-based, inclusive page range to export, or <c>null</c> for the whole document.</param>
+    /// <exception cref="OicanaException">If the template compilation fails.</exception>
+    Stream ExportSvg(IDictionary<string, JsonNode> jsonInputs, IDictionary<string, BlobInput> blobInputs, CompilationOptions compilationOptions, PageRange? pages = null);
+
+    /// <summary>
     /// Compile the template and return the compiled document.
     ///
     /// Unlike <see cref="Export"/>, the document is kept in memory so it can be exported one or

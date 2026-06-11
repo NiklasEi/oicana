@@ -178,16 +178,16 @@ test('compiled document handle survives template cleanup', function () {
     expect($document->pageCount())->toBeGreaterThan(0);
     $firstPage = PageRange::single(0);
 
-    $pdf = $document->toPdf($firstPage);
+    $pdf = $document->exportPdf($firstPage);
     expect($pdf)->toStartWith('%PDF');
 
     $png = $document->export(ExportFormat::png(pixelsPerPt: 1.0), $firstPage);
     expect($png)->toStartWith("\x89PNG");
 
-    $svg = $document->export(ExportFormat::svg(), $firstPage);
+    $svg = $document->exportSvg($firstPage);
     expect($svg)->toContain('<svg');
 
-    $firstPagePng = $document->exportPage(0, 1.0);
+    $firstPagePng = $document->exportPng(1.0, PageRange::single(0));
     expect($firstPagePng)->toStartWith("\x89PNG");
 
     $document->close();

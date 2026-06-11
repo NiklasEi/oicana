@@ -108,6 +108,24 @@ public class Template : ITemplate, IDisposable
     }
 
     /// <inheritdoc />
+    public Stream ExportPdf(IDictionary<string, JsonNode> jsonInputs, IDictionary<string, BlobInput> blobInputs, CompilationOptions compilationOptions, PageRange? pages = null)
+    {
+        return Export(jsonInputs, blobInputs, ExportFormat.Pdf(), compilationOptions, pages);
+    }
+
+    /// <inheritdoc />
+    public Stream ExportPng(IDictionary<string, JsonNode> jsonInputs, IDictionary<string, BlobInput> blobInputs, CompilationOptions compilationOptions, float pixelsPerPt = 1.0f, PageRange? pages = null)
+    {
+        return Export(jsonInputs, blobInputs, ExportFormat.Png(pixelsPerPt), compilationOptions, pages);
+    }
+
+    /// <inheritdoc />
+    public Stream ExportSvg(IDictionary<string, JsonNode> jsonInputs, IDictionary<string, BlobInput> blobInputs, CompilationOptions compilationOptions, PageRange? pages = null)
+    {
+        return Export(jsonInputs, blobInputs, ExportFormat.Svg(), compilationOptions, pages);
+    }
+
+    /// <inheritdoc />
     public CompiledDocument Compile(IDictionary<string, JsonNode> jsonInputs, IDictionary<string, BlobInput> blobInputs, CompilationOptions compilationOptions)
     {
         var documentId = OicanaFfi.CompileTemplate(_templateId, jsonInputs, blobInputs, compilationOptions);
