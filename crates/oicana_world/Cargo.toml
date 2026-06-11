@@ -18,6 +18,7 @@ oicana_input = { workspace = true }
 oicana_template = { workspace = true }
 
 typst = { workspace = true }
+typst-layout = { workspace = true }
 typst-assets = { workspace = true, features = ["fonts"] }
 
 comemo = { workspace = true }

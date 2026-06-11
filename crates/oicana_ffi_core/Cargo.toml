@@ -20,6 +20,7 @@ oicana_input = { workspace = true }
 oicana_world = { workspace = true }
 
 typst = { workspace = true }
+typst-layout = { workspace = true }
 
 dashmap = { workspace = true }
 once_cell = { workspace = true }

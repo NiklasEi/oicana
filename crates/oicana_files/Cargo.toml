@@ -16,25 +16,20 @@ readme = { workspace = true }
 default = ["packed", "preloaded"]
 packed = ["dep:zip"]
 preloaded = []
-native = ["dep:typst-kit", "dep:termcolor", "dep:dirs", "dep:flate2", "dep:once_cell", "dep:codespan-reporting", "dep:tar", "dep:native-tls"]
+native = ["dep:typst-kit", "dep:termcolor", "dep:dirs", "dep:codespan-reporting"]
 
 [dependencies]
 typst = { workspace = true }
-typst-kit = { workspace = true, optional = true }
+typst-kit = { workspace = true, optional = true, features = ["system-packages", "system-downloader"] }
 typst-utils = { workspace = true }
 
 zip = { workspace = true, default-features = false, features = ["zstd"], optional = true }
 thiserror = { workspace = true }
 
 dirs = { workspace = true, optional = true }
-flate2 = { workspace = true, optional = true }
-once_cell = { workspace = true, optional = true }
 codespan-reporting = { workspace = true, optional = true }
 termcolor = { workspace = true, optional = true }
-tar = { workspace = true, optional = true }
 log = { workspace = true }
-
-native-tls = { workspace = true, optional = true }
 
 [dev-dependencies]
 toml = { workspace = true }

@@ -60,7 +60,7 @@ impl FontCollection {
                 Ok(data) => self.load_fonts_from_bytes(data),
                 Err(error) => warn!(
                     "Skipping font file {}: {error}",
-                    file_id.vpath().as_rooted_path().display()
+                    file_id.vpath().get_with_slash()
                 ),
             }
         }
@@ -89,7 +89,7 @@ impl FontCollection {
 mod tests {
     use super::*;
     use typst::diag::{FileError, FileResult};
-    use typst::syntax::{FileId, Source, VirtualPath};
+    use typst::syntax::{FileId, RootedPath, Source, VirtualPath, VirtualRoot};
 
     struct UnreadableFontTemplate {
         fonts: Vec<FileId>,
@@ -97,15 +97,11 @@ mod tests {
 
     impl TemplateFiles for UnreadableFontTemplate {
         fn source(&self, id: FileId) -> FileResult<Source> {
-            Err(FileError::NotFound(
-                id.vpath().as_rooted_path().to_path_buf(),
-            ))
+            Err(FileError::NotFound(id.vpath().get_with_slash().into()))
         }
 
         fn file(&self, id: FileId) -> FileResult<Bytes> {
-            Err(FileError::NotFound(
-                id.vpath().as_rooted_path().to_path_buf(),
-            ))
+            Err(FileError::NotFound(id.vpath().get_with_slash().into()))
         }
 
         fn font_files(&self) -> &Vec<FileId> {
@@ -116,7 +112,10 @@ mod tests {
     #[test]
     fn unreadable_template_font_is_skipped() {
         let template = UnreadableFontTemplate {
-            fonts: vec![FileId::new(None, VirtualPath::new("fonts/missing.ttf"))],
+            fonts: vec![FileId::new(RootedPath::new(
+                VirtualRoot::Project,
+                VirtualPath::new("fonts/missing.ttf").unwrap(),
+            ))],
         };
 
         let mut collection = FontCollection::new();

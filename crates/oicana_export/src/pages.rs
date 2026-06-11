@@ -2,8 +2,9 @@ use std::borrow::Cow;
 use std::num::NonZeroUsize;
 
 use serde::{Deserialize, Serialize};
-use typst::introspection::Introspector;
-use typst::layout::{PageRanges, PagedDocument};
+use typst::layout::PageRanges;
+use typst::model::Document;
+use typst_layout::PagedDocument;
 
 /// A contiguous, 0-based inclusive range of document pages.
 ///
@@ -78,7 +79,7 @@ impl From<&PageRange> for PageRanges {
 }
 
 /// Borrow the whole `document` when `page` is `None`, otherwise build a new
-/// document containing only the selected pages (cloned) plus a default
+/// document containing only the selected pages (cloned) with a freshly built
 /// introspector.
 pub fn select_pages<'a>(
     document: &'a PagedDocument,
@@ -88,15 +89,11 @@ pub fn select_pages<'a>(
         None => Cow::Borrowed(document),
         Some(range) => {
             let pages = range
-                .selected_indices(document.pages.len())
+                .selected_indices(document.pages().len())
                 .into_iter()
-                .map(|index| document.pages[index].clone())
+                .map(|index| document.pages()[index].clone())
                 .collect();
-            Cow::Owned(PagedDocument {
-                pages,
-                info: document.info.clone(),
-                introspector: Introspector::default(),
-            })
+            Cow::Owned(PagedDocument::new(pages, document.info().clone()))
         }
     }
 }

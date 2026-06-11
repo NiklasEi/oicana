@@ -60,13 +60,14 @@ oicana_template = { version = "0.2.0", path = "crates/oicana_template" }
 oicana_testing = { version = "0.2.0", path = "crates/oicana_testing" }
 oicana = { version = "0.2.0", path = "integrations/rust/oicana" }
 
-typst = { version = "0.14.1" }
-typst-pdf = { version = "0.14.1" }
-typst-render = { version = "0.14.1" }
-typst-svg = { version = "0.14.1" }
-typst-utils = { version = "0.14.1" }
-typst-kit = { version = "0.14.1" }
-typst-assets = { version = "0.14.1" }
+typst = { version = "0.15.0-rc.1" }
+typst-layout = { version = "0.15.0-rc.1" }
+typst-pdf = { version = "0.15.0-rc.1" }
+typst-render = { version = "0.15.0-rc.1" }
+typst-svg = { version = "0.15.0-rc.1" }
+typst-utils = { version = "0.15.0-rc.1" }
+typst-kit = { version = "0.15.0-rc.1" }
+typst-assets = { version = "0.15.0-rc.1" }
 
 comemo = { version = "0.5.0" }
 
@@ -106,7 +107,7 @@ walkdir = "2.5.0"
 ignore = "0.4.25"
 tempfile = "3.13.0"
 color-print = "0.3.7"
-png = "0.17.16" # from typst-render
+png = "0.18" # from typst-render
 indicatif = "0.18.0"
 console = { version = "0.16", default-features = false, features = ["ansi-parsing", "std"] }
 openssl = "0.10.72"

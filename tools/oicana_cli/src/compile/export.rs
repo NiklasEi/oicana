@@ -8,7 +8,7 @@ use oicana::template::PdfStandard;
 use oicana::Template;
 use std::fs;
 use std::path::Path;
-use typst::layout::PagedDocument;
+use typst_layout::PagedDocument;
 
 pub fn export_pdf(
     document: &PagedDocument,

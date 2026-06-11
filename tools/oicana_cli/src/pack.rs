@@ -15,7 +15,7 @@ use typst::syntax::ast::ModuleImport;
 
 static PACKAGE: Emoji<'_, '_> = Emoji("📦", "");
 use typst::syntax::package::PackageSpec;
-use typst::syntax::{ast, FileId, VirtualPath};
+use typst::syntax::{ast, FileId, RootedPath, VirtualPath, VirtualRoot};
 
 #[derive(Debug, Args)]
 pub struct PackArgs {
@@ -128,13 +128,9 @@ fn scan_imports_in_dir(
             scan_imports_in_dir(root, &path, files, collected, result)?;
         }
         if path.extension().and_then(|ext| ext.to_str()) == Some("typ") {
-            let fid =
-                FileId::new(
-                    None,
-                    VirtualPath::new(path.strip_prefix(root).context(
-                        "Prefix stripping failed even though `path` is built from `root`",
-                    )?),
-                );
+            let vpath = VirtualPath::virtualize(root, &path)
+                .context("Path virtualization failed even though `path` is built from `root`")?;
+            let fid = FileId::new(RootedPath::new(VirtualRoot::Project, vpath));
             let source = files.source(fid).context("Can't read source file")?;
             let imports = source
                 .root()
@@ -191,8 +187,12 @@ fn scan_imports_in_package(
             continue;
         }
 
-        let relative = path.strip_prefix(package_dir).unwrap();
-        let fid = FileId::new(Some(package_spec.clone()), VirtualPath::new(relative));
+        let vpath = VirtualPath::virtualize(package_dir, path)
+            .context("Path virtualization failed even though `path` is inside `package_dir`")?;
+        let fid = FileId::new(RootedPath::new(
+            VirtualRoot::Package(package_spec.clone()),
+            vpath,
+        ));
         let source = files
             .source(fid)
             .context("Can't read source file in package")?;

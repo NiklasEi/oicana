@@ -15,8 +15,8 @@ use std::fmt;
 use std::sync::OnceLock;
 use thiserror::Error;
 use typst::diag::{FileError, FileResult, Warned};
-use typst::foundations::{Bytes, Datetime};
-use typst::syntax::{FileId, Source, VirtualPath};
+use typst::foundations::{Bytes, Datetime, Duration};
+use typst::syntax::{FileId, PathError, RootedPath, Source, VirtualPath, VirtualRoot};
 use typst::text::{Font, FontBook};
 use typst::utils::LazyHash;
 use typst::{Library, LibraryExt, World};
@@ -74,7 +74,12 @@ fn build_validators<F: TemplateFiles>(
             continue;
         }
 
-        let file_id = FileId::new(None, VirtualPath::new(schema_path));
+        let vpath =
+            VirtualPath::new(schema_path).map_err(|error| WorldCreationError::SchemaError {
+                key: json_def.key.clone(),
+                message: format!("Invalid schema path '{schema_path}': {error}"),
+            })?;
+        let file_id = FileId::new(RootedPath::new(VirtualRoot::Project, vpath));
         let schema_bytes = files
             .file(file_id)
             .map_err(|e| WorldCreationError::SchemaError {
@@ -118,8 +123,8 @@ impl<Files: TemplateFiles> OicanaWorld<Files> {
     ) -> Result<Self, WorldCreationError> {
         let library = Library::builder().with_inputs(inputs.to_dict()).build();
 
-        let main_path = VirtualPath::new(manifest.package.entrypoint.as_str());
-        let main = FileId::new(None, main_path);
+        let main_path = VirtualPath::new(manifest.package.entrypoint.as_str())?;
+        let main = FileId::new(RootedPath::new(VirtualRoot::Project, main_path));
         files.source(main)?;
 
         let mut searcher = FontCollection::new();
@@ -242,6 +247,9 @@ pub enum WorldCreationError {
         /// Description of what went wrong
         message: String,
     },
+    /// The entrypoint configured in the manifest is not a valid path
+    #[error("The entrypoint configured in the manifest is not a valid path: {0}")]
+    InvalidEntrypoint(#[from] PathError),
 }
 
 /// A JSON input did not match its schema
@@ -295,14 +303,22 @@ impl<Files: TemplateFiles> World for OicanaWorld<Files> {
         self.fonts[index].get()
     }
 
-    fn today(&self, offset: Option<i64>) -> Option<Datetime> {
+    fn today(&self, offset: Option<Duration>) -> Option<Datetime> {
         let now = self.now.get_or_init(Local::now);
 
         let naive = match offset {
             None => now.naive_local(),
-            Some(o) => now
-                .naive_utc()
-                .checked_add_signed(chrono::Duration::try_hours(o)?)?,
+            Some(offset) => {
+                let seconds = offset.seconds().trunc();
+                if !seconds.is_finite()
+                    || seconds < f64::from(i32::MIN)
+                    || seconds > f64::from(i32::MAX)
+                {
+                    return None;
+                }
+                now.naive_utc()
+                    .checked_add_signed(chrono::Duration::seconds(seconds as i64))?
+            }
         };
 
         Datetime::from_ymd(
@@ -355,6 +371,7 @@ mod tests {
     use std::collections::HashMap;
     use std::path::PathBuf;
     use typst::diag::FileError;
+    use typst::foundations::Duration;
 
     #[test]
     fn can_build_world_with_minimal_template() {
@@ -484,7 +501,7 @@ mod tests {
         assert!(result.is_ok());
         let compiled = result.unwrap();
         assert!(compiled.warnings.is_none());
-        assert_eq!(compiled.document.pages.len(), 1);
+        assert_eq!(compiled.document.pages().len(), 1);
     }
 
     #[test]
@@ -495,7 +512,7 @@ mod tests {
 
         let compiled = world.compile().unwrap();
 
-        assert_eq!(compiled.document.pages.len(), 3);
+        assert_eq!(compiled.document.pages().len(), 3);
     }
 
     #[test]
@@ -517,7 +534,7 @@ mod tests {
 
         let compiled = world.compile().unwrap();
 
-        assert_eq!(compiled.document.pages.len(), 1);
+        assert_eq!(compiled.document.pages().len(), 1);
     }
 
     #[test]
@@ -954,13 +971,15 @@ mod tests {
         let manifest = files.manifest().unwrap();
         let world = OicanaWorld::new(files, TemplateInputs::new(), manifest).unwrap();
 
-        // An offset large enough to push the date out of range must not panic.
-        assert!(world.today(Some(100_000_000_000)).is_none());
-        assert!(world.today(Some(-100_000_000_000)).is_none());
-        assert!(world.today(Some(i64::MAX)).is_none());
-        assert!(world.today(Some(i64::MIN)).is_none());
+        let seconds = |seconds| Duration::construct(seconds, 0, 0, 0, 0);
 
-        assert!(world.today(Some(0)).is_some());
+        // An offset large enough to push the date out of range must not panic.
+        assert!(world.today(Some(seconds(100_000_000_000))).is_none());
+        assert!(world.today(Some(seconds(-100_000_000_000))).is_none());
+        assert!(world.today(Some(seconds(i64::MAX))).is_none());
+        assert!(world.today(Some(seconds(i64::MIN))).is_none());
+
+        assert!(world.today(Some(seconds(0))).is_some());
         assert!(world.today(None).is_some());
     }
 }

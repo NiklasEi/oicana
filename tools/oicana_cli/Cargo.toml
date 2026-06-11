@@ -24,6 +24,7 @@ oicana_testing = { workspace = true }
 oicana = { workspace = true, features = ["native", "pdf", "png", "svg"] }
 
 typst = { workspace = true }
+typst-layout = { workspace = true }
 
 log = { workspace = true }
 env_logger = { workspace = true }

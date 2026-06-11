@@ -1,8 +1,6 @@
 use oicana_world::diagnostics::TemplateDiagnostics;
-use typst::{
-    foundations::Smart,
-    layout::{PageRanges, PagedDocument},
-};
+use typst::{foundations::Smart, layout::PageRanges};
+use typst_layout::PagedDocument;
 use typst_pdf::{PdfOptions, PdfStandards};
 
 use crate::pages::PageRange;
@@ -36,7 +34,7 @@ pub fn validate_pdf_standards(standards: &[oicana_template::PdfStandard]) -> Res
     let typst_standards: Vec<_> = standards.iter().map(|s| to_typst_standard(*s)).collect();
     PdfStandards::new(&typst_standards)
         .map(|_| ())
-        .map_err(|e| format!("Invalid combination of PDF standards: {}", e))
+        .map_err(|e| format!("Invalid combination of PDF standards: {}", e.message()))
 }
 
 /// Export the document to PDF.
@@ -51,7 +49,7 @@ pub fn export_pdf<Diagnostics: TemplateDiagnostics>(
 ) -> Result<Vec<u8>, String> {
     let typst_standards: Vec<_> = standards.iter().map(|s| to_typst_standard(*s)).collect();
 
-    let page_count = document.pages.len();
+    let page_count = document.pages().len();
     let selected_count = match pages {
         Some(range) => range.selected_indices(page_count).len(),
         None => page_count,
@@ -60,17 +58,23 @@ pub fn export_pdf<Diagnostics: TemplateDiagnostics>(
         return Err("the requested page range selected no pages of the document".to_owned());
     }
 
-    // In Typst 0.14 producing a tagged PDF while skipping pages trips an
-    // internal assertion. Only disable tagging when pages are actually skipped.
+    // Typst refuses to produce a tagged PDF when a page range is set. Only
+    // pass the range and disable tagging when pages are actually skipped.
     let skips_pages = selected_count != page_count;
 
     let options = PdfOptions {
         ident: Smart::Auto,
+        creator: Smart::Auto,
         timestamp: None,
-        page_ranges: pages.map(PageRanges::from),
+        page_ranges: if skips_pages {
+            pages.map(PageRanges::from)
+        } else {
+            None
+        },
         tagged: !skips_pages,
         standards: PdfStandards::new(&typst_standards)
-            .map_err(|e| format!("Invalid combination of PDF standards: {}", e))?,
+            .map_err(|e| format!("Invalid combination of PDF standards: {}", e.message()))?,
+        pretty: false,
     };
 
     typst_pdf::pdf(document, &options).map_err(|source_error| {
