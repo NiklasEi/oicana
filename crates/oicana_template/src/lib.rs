@@ -169,12 +169,18 @@ pub struct PdfExportConfig {
     /// Defaults to `["a-3b"]` (PDF/A-3b) if not specified.
     #[serde(default = "default_pdf_standards")]
     pub standards: Vec<PdfStandard>,
+    /// Whether to produce a tagged (accessible) PDF.
+    ///
+    /// Defaults to `true`.
+    #[serde(default = "default_true")]
+    pub tagged: bool,
 }
 
 impl Default for PdfExportConfig {
     fn default() -> Self {
         Self {
             standards: default_pdf_standards(),
+            tagged: default_true(),
         }
     }
 }
@@ -260,6 +266,63 @@ mod tests {
             config.export.pdf.standards,
             vec![PdfStandard::V_2_0, PdfStandard::A_4]
         );
+    }
+
+    #[test]
+    fn parses_pdf_tagged_false() {
+        let template = tempdir().unwrap();
+        {
+            let path = template.path().join("typst.toml");
+            let mut file = File::create(&path).unwrap();
+            write!(
+                &mut file,
+                r#"
+                [package]
+                name = "invoice"
+                version = "0.1.0"
+                entrypoint = "main.typ"
+
+                [tool.oicana]
+                manifest_version = 1
+
+                [tool.oicana.export.pdf]
+                tagged = false
+                "#
+            )
+            .unwrap();
+        }
+
+        let result = validate_native_template(template.path());
+        let config = result.unwrap().tool.oicana;
+
+        assert!(!config.export.pdf.tagged);
+    }
+
+    #[test]
+    fn defaults_pdf_tagged_to_true() {
+        let template = tempdir().unwrap();
+        {
+            let path = template.path().join("typst.toml");
+            let mut file = File::create(&path).unwrap();
+            write!(
+                &mut file,
+                r#"
+                [package]
+                name = "invoice"
+                version = "0.1.0"
+                entrypoint = "main.typ"
+
+                [tool.oicana]
+                manifest_version = 1
+                "#
+            )
+            .unwrap();
+        }
+
+        let result = validate_native_template(template.path());
+        let config = result.unwrap().tool.oicana;
+
+        assert!(config.export.pdf.tagged);
     }
 
     #[test]

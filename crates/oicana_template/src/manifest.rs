@@ -97,6 +97,11 @@ impl TemplateManifest {
     pub fn pdf_standards(&self) -> &[PdfStandard] {
         &self.tool.oicana.export.pdf.standards
     }
+
+    /// Whether this template's PDF export should be tagged.
+    pub fn pdf_tagged(&self) -> bool {
+        self.tool.oicana.export.pdf.tagged
+    }
 }
 
 /// Tool section of a Typst package manifest.
