@@ -24,7 +24,7 @@ function Get-PeLinkerVersion([string] $Path) {
 # The loader compares an extension against the core DLL the running PHP actually
 # uses, which differs by thread safety: php8ts.dll for ZTS, php8.dll for NTS.
 $phpDir = Split-Path (Get-Command php).Source
-$zts = [bool](& php -i | Select-String -Quiet -Pattern 'Thread Safety => enabled')
+$zts = [bool]((& php -v) -match 'ZTS')
 $corePattern = if ($zts) { '^php\d+ts\.dll$' } else { '^php\d+\.dll$' }
 $coreDll = Get-ChildItem "$phpDir/php*.dll" |
     Where-Object Name -match $corePattern |

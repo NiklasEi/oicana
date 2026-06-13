@@ -151,8 +151,9 @@ jobs:
         shell: bash
         run: |
           echo "php binary: $(command -v php)"
-          php -v | head -n1
-          if php -i | grep -qi 'Thread Safety => enabled'; then ACTUAL=zts; else ACTUAL=nts; fi
+          ver="$(php -v)"
+          echo "${ver}" | head -n1
+          case "${ver}" in *ZTS*) ACTUAL=zts ;; *) ACTUAL=nts ;; esac
           echo "active PHP thread safety: ${ACTUAL} (matrix ts=${{ matrix.ts }})"
           if [ "${ACTUAL}" != "${{ matrix.ts }}" ]; then
             echo "::error::matrix wants ${{ matrix.ts }} PHP but the active PHP is ${ACTUAL}"
