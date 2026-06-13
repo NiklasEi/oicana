@@ -137,6 +137,18 @@ jobs:
           targets: ${{ matrix.platform.target }}
           components: rustfmt
       - run: rustup show
+      - name: Remove preinstalled macOS PHP so setup-php installs the requested build
+        # macOS runners preinstall NTS PHP (Homebrew `php`/`php@X.Y`). setup-php
+        # detects an existing PHP via the Homebrew Cellar keg, and when the
+        # requested version matches it "switches to it" and ignores `phpts` (even
+        # with `update: true`, since the preinstalled is already the latest
+        # patch), so ZTS cells silently get NTS.
+        if: matrix.platform.os == 'macos'
+        run: |
+          for f in $(brew list --formula 2>/dev/null | grep -E '^php($|@)'); do
+            echo "Uninstalling preinstalled $f"
+            brew uninstall --ignore-dependencies --force "$f" || true
+          done
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
