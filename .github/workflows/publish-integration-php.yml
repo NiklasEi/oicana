@@ -146,6 +146,17 @@ jobs:
           debug: true
           phpts: ${{ matrix.ts }}
       - run: php -v
+      - name: Verify active PHP matches the matrix cell
+        shell: bash
+        run: |
+          echo "php binary: $(command -v php)"
+          php-config --version 2>/dev/null || echo "php-config: not on PATH"
+          ACTUAL_ZTS=$(php -r 'echo PHP_ZTS;')
+          echo "PHP_ZTS=${ACTUAL_ZTS} (matrix ts=${{ matrix.ts }})"
+          case "${{ matrix.ts }}" in
+            zts) [ "$ACTUAL_ZTS" = "1" ] || { echo "::error::matrix wants ZTS but active PHP is NTS"; exit 1; } ;;
+            nts) [ "$ACTUAL_ZTS" = "0" ] || { echo "::error::matrix wants NTS but active PHP is ZTS"; exit 1; } ;;
+          esac
       - name: Cache Cargo
         uses: actions/cache@v5
         with:
@@ -154,10 +165,9 @@ jobs:
             ~/.cargo/registry/cache
             ~/.cargo/git/db
             target
-          key: ${{ runner.os }}-cargo-php-${{ matrix.php }}-${{ matrix.ts }}-${{ hashFiles('**/Cargo.lock', 'integrations/php/**/*.rs') }}
+          key: ${{ matrix.platform.target }}-cargo-php-${{ matrix.php }}-${{ matrix.ts }}-${{ hashFiles('**/Cargo.lock', 'integrations/php/**/*.rs') }}
           restore-keys: |
-            ${{ runner.os }}-cargo-php-${{ matrix.php }}-${{ matrix.ts }}-
-            ${{ runner.os }}-cargo-php-
+            ${{ matrix.platform.target }}-cargo-php-${{ matrix.php }}-${{ matrix.ts }}-
       - name: Pin MSVC toolset to the PHP core's linker version
         if: matrix.platform.os == 'windows'
         shell: pwsh
