@@ -193,11 +193,12 @@ impl From<SvgExportError> for FfiError {
     }
 }
 
-/// A compiled document together with the PDF standards captured from its
+/// A compiled document together with the PDF export settings captured from its
 /// template's manifest at compile time.
 struct CachedDocument {
     document: PagedDocument,
     pdf_standards: Vec<PdfStandard>,
+    pdf_tagged: bool,
 }
 
 static WORLD_CACHE: Lazy<DashMap<String, OicanaWorld<PackedTemplate>>> = Lazy::new(DashMap::new);
@@ -294,6 +295,7 @@ pub fn register_template(
         .map_err(|error| FfiError::Compilation(error.to_string()))?;
 
     let pdf_standards = world.manifest().pdf_standards().to_vec();
+    let pdf_tagged = world.manifest().pdf_tagged();
     let result_id = new_document_id(template_id);
     WORLD_CACHE.insert(template_id.to_owned(), world);
     store_warnings(&result_id, document.warnings);
@@ -302,6 +304,7 @@ pub fn register_template(
         CachedDocument {
             document: document.document,
             pdf_standards,
+            pdf_tagged,
         },
     );
 
@@ -335,6 +338,7 @@ pub fn compile_template(
         .map_err(|error| FfiError::Compilation(error.to_string()))?;
 
     let pdf_standards = world.manifest().pdf_standards().to_vec();
+    let pdf_tagged = world.manifest().pdf_tagged();
     let result_id = new_document_id(template_id);
     store_warnings(&result_id, document.warnings);
     DOCUMENT_CACHE.insert(
@@ -342,6 +346,7 @@ pub fn compile_template(
         CachedDocument {
             document: document.document,
             pdf_standards,
+            pdf_tagged,
         },
     );
 
@@ -389,6 +394,7 @@ pub fn compile_once(
             document,
             &world,
             world.manifest().pdf_standards(),
+            world.manifest().pdf_tagged(),
             pages.as_ref(),
         )
         .map_err(pdf_export_error)?,
@@ -418,12 +424,14 @@ pub fn export_document(
                     &cached.document,
                     &*world,
                     &cached.pdf_standards,
+                    cached.pdf_tagged,
                     pages.as_ref(),
                 ),
                 None => export_pdf(
                     &cached.document,
                     &PlainDiagnostics,
                     &cached.pdf_standards,
+                    cached.pdf_tagged,
                     pages.as_ref(),
                 ),
             }

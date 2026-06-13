@@ -41,10 +41,14 @@ pub fn validate_pdf_standards(standards: &[oicana_template::PdfStandard]) -> Res
 ///
 /// When `pages` is `None` the whole document is exported; otherwise only the
 /// pages in the range are exported.
+///
+/// `tagged` requests an accessible, tagged PDF. Tagging is always disabled when
+/// exporting a subset of the pages, because Typst cannot tag partial exports.
 pub fn export_pdf<Diagnostics: TemplateDiagnostics>(
     document: &PagedDocument,
     diagnostics: &Diagnostics,
     standards: &[oicana_template::PdfStandard],
+    tagged: bool,
     pages: Option<&PageRange>,
 ) -> Result<Vec<u8>, String> {
     let typst_standards: Vec<_> = standards.iter().map(|s| to_typst_standard(*s)).collect();
@@ -71,7 +75,7 @@ pub fn export_pdf<Diagnostics: TemplateDiagnostics>(
         } else {
             None
         },
-        tagged: !skips_pages,
+        tagged: tagged && !skips_pages,
         standards: PdfStandards::new(&typst_standards)
             .map_err(|e| format!("Invalid combination of PDF standards: {}", e.message()))?,
         pretty: false,
@@ -137,6 +141,7 @@ mod tests {
             &document,
             &world,
             &[oicana_template::PdfStandard::A_3b],
+            true,
             None,
         )
         .expect("PDF export to work");
@@ -153,6 +158,7 @@ mod tests {
             &document,
             &world,
             &[oicana_template::PdfStandard::A_3b],
+            true,
             None,
         )
         .unwrap();
@@ -168,8 +174,22 @@ mod tests {
         let (doc1, world1) = compile(simple_template());
         let (doc2, world2) = compile(simple_template());
 
-        let pdf1 = export_pdf(&doc1, &world1, &[oicana_template::PdfStandard::A_3b], None).unwrap();
-        let pdf2 = export_pdf(&doc2, &world2, &[oicana_template::PdfStandard::A_3b], None).unwrap();
+        let pdf1 = export_pdf(
+            &doc1,
+            &world1,
+            &[oicana_template::PdfStandard::A_3b],
+            true,
+            None,
+        )
+        .unwrap();
+        let pdf2 = export_pdf(
+            &doc2,
+            &world2,
+            &[oicana_template::PdfStandard::A_3b],
+            true,
+            None,
+        )
+        .unwrap();
 
         assert_eq!(pdf1, pdf2);
     }
@@ -183,6 +203,7 @@ mod tests {
             &single_doc,
             &single_world,
             &[oicana_template::PdfStandard::A_3b],
+            true,
             None,
         )
         .unwrap();
@@ -190,6 +211,7 @@ mod tests {
             &multi_doc,
             &multi_world,
             &[oicana_template::PdfStandard::A_3b],
+            true,
             None,
         )
         .unwrap();
@@ -205,6 +227,7 @@ mod tests {
             &document,
             &world,
             &[oicana_template::PdfStandard::A_3b],
+            true,
             Some(&PageRange::single(0)),
         )
         .unwrap();
@@ -212,6 +235,7 @@ mod tests {
             &document,
             &world,
             &[oicana_template::PdfStandard::A_3b],
+            true,
             None,
         )
         .unwrap();
@@ -228,6 +252,7 @@ mod tests {
             &document,
             &world,
             &[oicana_template::PdfStandard::A_3b],
+            true,
             Some(&PageRange::single(99)),
         );
 
@@ -241,9 +266,27 @@ mod tests {
             &document,
             &world,
             &[oicana_template::PdfStandard::A_4],
+            true,
             None,
         )
         .unwrap();
+
+        assert_eq!(&pdf[0..4], b"%PDF");
+        let end = String::from_utf8_lossy(&pdf[pdf.len() - 10..]);
+        assert!(end.contains("%%EOF"));
+    }
+
+    #[test]
+    fn exports_untagged_document_to_pdf() {
+        let (document, world) = compile(simple_template());
+        let pdf = export_pdf(
+            &document,
+            &world,
+            &[oicana_template::PdfStandard::A_3b],
+            false,
+            None,
+        )
+        .expect("untagged PDF export to work");
 
         assert_eq!(&pdf[0..4], b"%PDF");
         let end = String::from_utf8_lossy(&pdf[pdf.len() - 10..]);
@@ -260,6 +303,7 @@ mod tests {
                 oicana_template::PdfStandard::A_4,
                 oicana_template::PdfStandard::Ua_1,
             ],
+            true,
             None,
         );
 

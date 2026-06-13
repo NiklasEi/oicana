@@ -22,7 +22,9 @@ pub fn export_pdf(
         world.manifest().pdf_standards().to_vec()
     };
 
-    let pdf_buffer = match pdf::export_pdf(document, world, &standards, None) {
+    let tagged = world.manifest().pdf_tagged();
+
+    let pdf_buffer = match pdf::export_pdf(document, world, &standards, tagged, None) {
         Ok(pdf_buffer) => pdf_buffer,
         Err(diagnostics) => {
             bail!("Failed to compile PDF\n{diagnostics}");
