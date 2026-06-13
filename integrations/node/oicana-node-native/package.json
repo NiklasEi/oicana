@@ -1,6 +1,6 @@
 {
   "name": "@oicana/node-native",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Template project for writing node package with napi-rs",
   "main": "index.js",
   "repository": {
