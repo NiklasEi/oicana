@@ -145,18 +145,19 @@ jobs:
         env:
           debug: true
           phpts: ${{ matrix.ts }}
+          update: true
       - run: php -v
       - name: Verify active PHP matches the matrix cell
         shell: bash
         run: |
           echo "php binary: $(command -v php)"
-          php-config --version 2>/dev/null || echo "php-config: not on PATH"
-          ACTUAL_ZTS=$(php -r 'echo PHP_ZTS;')
-          echo "PHP_ZTS=${ACTUAL_ZTS} (matrix ts=${{ matrix.ts }})"
-          case "${{ matrix.ts }}" in
-            zts) [ "$ACTUAL_ZTS" = "1" ] || { echo "::error::matrix wants ZTS but active PHP is NTS"; exit 1; } ;;
-            nts) [ "$ACTUAL_ZTS" = "0" ] || { echo "::error::matrix wants NTS but active PHP is ZTS"; exit 1; } ;;
-          esac
+          php -v | head -n1
+          if php -i | grep -qi 'Thread Safety => enabled'; then ACTUAL=zts; else ACTUAL=nts; fi
+          echo "active PHP thread safety: ${ACTUAL} (matrix ts=${{ matrix.ts }})"
+          if [ "${ACTUAL}" != "${{ matrix.ts }}" ]; then
+            echo "::error::matrix wants ${{ matrix.ts }} PHP but the active PHP is ${ACTUAL}"
+            exit 1
+          fi
       - name: Cache Cargo
         uses: actions/cache@v5
         with:
