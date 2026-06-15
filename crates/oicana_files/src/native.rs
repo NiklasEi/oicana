@@ -293,7 +293,6 @@ fn find_fonts(project_root: &Path) -> Vec<FileId> {
 
 /// Decode UTF-8 with an optional BOM.
 fn decode_utf8(buf: &[u8]) -> Result<&str, FileError> {
-    // Remove UTF-8 BOM.
     Ok(std::str::from_utf8(
         buf.strip_prefix(b"\xef\xbb\xbf").unwrap_or(buf),
     )?)
@@ -312,7 +311,7 @@ fn system_path(id: FileId, files: &NativeTemplate) -> Result<PathBuf, FileError>
     // Escaping the root via `..` is already prevented when constructing a
     // `VirtualPath`. Note: It can still escape via symlinks, but native
     // templates are only used during development, not at runtime.
-    Ok(id.vpath().realize(&root))
+    Ok(id.vpath().realize(&root)?)
 }
 
 #[cfg(test)]

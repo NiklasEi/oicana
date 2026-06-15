@@ -60,14 +60,14 @@ oicana_template = { version = "0.3.0", path = "crates/oicana_template" }
 oicana_testing = { version = "0.3.0", path = "crates/oicana_testing" }
 oicana = { version = "0.3.0", path = "integrations/rust/oicana" }
 
-typst = { version = "0.15.0-rc.1" }
-typst-layout = { version = "0.15.0-rc.1" }
-typst-pdf = { version = "0.15.0-rc.1" }
-typst-render = { version = "0.15.0-rc.1" }
-typst-svg = { version = "0.15.0-rc.1" }
-typst-utils = { version = "0.15.0-rc.1" }
-typst-kit = { version = "0.15.0-rc.1" }
-typst-assets = { version = "0.15.0-rc.1" }
+typst = { version = "0.15.0" }
+typst-layout = { version = "0.15.0" }
+typst-pdf = { version = "0.15.0" }
+typst-render = { version = "0.15.0" }
+typst-svg = { version = "0.15.0" }
+typst-utils = { version = "0.15.0" }
+typst-kit = { version = "0.15.0" }
+typst-assets = { version = "0.15.0" }
 
 comemo = { version = "0.5.0" }
 
