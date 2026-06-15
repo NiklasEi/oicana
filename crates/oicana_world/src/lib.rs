@@ -3,7 +3,7 @@
 use std::fmt::Display;
 
 use thiserror::Error;
-use typst::layout::PagedDocument;
+use typst_layout::PagedDocument;
 
 /// Diagnostics for the Typst World with codespan-reporting
 pub mod diagnostics;

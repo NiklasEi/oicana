@@ -15,8 +15,8 @@ use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 use typst::foundations::Bytes;
-use typst::layout::PagedDocument;
-use typst::syntax::{FileId, VirtualPath};
+use typst::syntax::{FileId, RootedPath, VirtualPath, VirtualRoot};
+use typst_layout::PagedDocument;
 use uuid::Uuid;
 
 pub use oicana_export::pages::PageRange;
@@ -459,7 +459,7 @@ pub fn document_pages(document_id: &str) -> Result<String, FfiError> {
 
     let pages: Vec<PageSize> = cached
         .document
-        .pages
+        .pages()
         .iter()
         .map(|page| {
             let size = page.frame.size();
@@ -488,9 +488,13 @@ pub fn get_source(template_id: &str, path: &str) -> Result<String, FfiError> {
     let Some(world) = WORLD_CACHE.get(template_id) else {
         return Err(FfiError::TemplateNotRegistered(template_id.to_owned()));
     };
+    let vpath = VirtualPath::new(path).map_err(|error| FfiError::SourceLoad {
+        path: path.to_owned(),
+        error: error.to_string(),
+    })?;
     world
         .files
-        .source(FileId::new(None, VirtualPath::new(path)))
+        .source(FileId::new(RootedPath::new(VirtualRoot::Project, vpath)))
         .map(|source| source.text().to_string())
         .map_err(|error| FfiError::SourceLoad {
             path: path.to_owned(),
@@ -503,9 +507,13 @@ pub fn get_file(template_id: &str, path: &str) -> Result<Vec<u8>, FfiError> {
     let Some(world) = WORLD_CACHE.get(template_id) else {
         return Err(FfiError::TemplateNotRegistered(template_id.to_owned()));
     };
+    let vpath = VirtualPath::new(path).map_err(|error| FfiError::FileLoad {
+        path: path.to_owned(),
+        error: error.to_string(),
+    })?;
     world
         .files
-        .file(FileId::new(None, VirtualPath::new(path)))
+        .file(FileId::new(RootedPath::new(VirtualRoot::Project, vpath)))
         .map(|bytes| bytes.to_vec())
         .map_err(|error| FfiError::FileLoad {
             path: path.to_owned(),

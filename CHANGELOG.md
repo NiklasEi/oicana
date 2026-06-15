@@ -1,7 +1,10 @@
 # Changelog
 
-## v0.3.0
+## Upcoming
+- Update to Typst 0.15
 
+
+## v0.3.0
 - previous `compile` methods in all integrations are now called `export`
 - add new `compile` methods that return compiled documents, which can be
   - exported to any format

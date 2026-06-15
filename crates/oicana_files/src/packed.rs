@@ -9,7 +9,7 @@ use thiserror::Error;
 use typst::diag::{FileError, FileResult};
 use typst::foundations::Bytes;
 use typst::syntax::package::{PackageSpec, PackageVersion};
-use typst::syntax::{FileId, Source, VirtualPath};
+use typst::syntax::{FileId, RootedPath, Source, VirtualPath, VirtualRoot};
 use zip::read::ZipFile;
 use zip::ZipArchive;
 
@@ -75,14 +75,21 @@ impl PackedTemplate {
                             continue;
                         }
                     };
-                    let id = FileId::new(
-                        Some(PackageSpec {
+                    let vpath = match VirtualPath::new(path) {
+                        Ok(vpath) => vpath,
+                        Err(error) => {
+                            warn!("Skipping package file with invalid path {path}: {error}");
+                            continue;
+                        }
+                    };
+                    let id = FileId::new(RootedPath::new(
+                        VirtualRoot::Package(PackageSpec {
                             version,
                             name: package.into(),
                             namespace: namespace.into(),
                         }),
-                        VirtualPath::new(path),
-                    );
+                        vpath,
+                    ));
                     if is_font(path) {
                         fonts.push(id);
                     }
@@ -91,7 +98,14 @@ impl PackedTemplate {
                 }
             };
 
-            let id = FileId::new(None, VirtualPath::new(path));
+            let vpath = match VirtualPath::new(path) {
+                Ok(vpath) => vpath,
+                Err(error) => {
+                    warn!("Skipping file with invalid path {path}: {error}");
+                    continue;
+                }
+            };
+            let id = FileId::new(RootedPath::new(VirtualRoot::Project, vpath));
             if is_font(path) {
                 fonts.push(id);
             }
@@ -116,7 +130,7 @@ fn read_zip_file_content<R: Read + Seek>(
     if let Err(error) = content.read_to_end(&mut buffer) {
         warn!(
             "Failed to read zip file content for {}: {error}",
-            id.vpath().as_rooted_path().display()
+            id.vpath().get_with_slash()
         );
         return;
     }
@@ -139,9 +153,7 @@ impl TemplateFiles for PackedTemplate {
         let mut map = self.source.lock().unwrap();
         Ok(map
             .get_mut(&id)
-            .ok_or(FileError::NotFound(
-                id.vpath().as_rooted_path().to_path_buf(),
-            ))?
+            .ok_or(FileError::NotFound(id.vpath().get_with_slash().into()))?
             .clone())
     }
 
@@ -149,9 +161,7 @@ impl TemplateFiles for PackedTemplate {
         let mut map = self.bytes.lock().unwrap();
         Ok(map
             .get_mut(&id)
-            .ok_or(FileError::NotFound(
-                id.vpath().as_rooted_path().to_path_buf(),
-            ))?
+            .ok_or(FileError::NotFound(id.vpath().get_with_slash().into()))?
             .clone())
     }
 
@@ -167,8 +177,22 @@ mod tests {
     use std::fs::read;
     use std::io::Cursor;
     use typst::diag::EcoString;
-    use typst::syntax::package::PackageManifest;
-    use typst::syntax::{FileId, VirtualPath};
+    use typst::syntax::package::{PackageManifest, PackageSpec};
+    use typst::syntax::{FileId, RootedPath, VirtualPath, VirtualRoot};
+
+    fn project_file(path: &str) -> FileId {
+        FileId::new(RootedPath::new(
+            VirtualRoot::Project,
+            VirtualPath::new(path).unwrap(),
+        ))
+    }
+
+    fn package_file(spec: PackageSpec, path: &str) -> FileId {
+        FileId::new(RootedPath::new(
+            VirtualRoot::Package(spec),
+            VirtualPath::new(path).unwrap(),
+        ))
+    }
 
     #[test]
     fn test_zip() {
@@ -176,9 +200,7 @@ mod tests {
             read("../../assets/templates/table-0.1.0.zip").expect("Failed to read template zip");
         let files =
             PackedTemplate::new(Cursor::new(template)).expect("Failed to parse template zip");
-        assert!(files
-            .source(FileId::new(None, VirtualPath::new("/main.typ")))
-            .is_ok());
+        assert!(files.source(project_file("/main.typ")).is_ok());
     }
 
     #[test]
@@ -188,7 +210,7 @@ mod tests {
         let files =
             PackedTemplate::new(Cursor::new(template)).expect("Failed to parse template zip");
         let manifest = files
-            .source(FileId::new(None, VirtualPath::new("/typst.toml")))
+            .source(project_file("/typst.toml"))
             .expect("Failed to find typst.toml");
 
         let manifest: PackageManifest =
@@ -207,9 +229,9 @@ mod tests {
             PackedTemplate::new(Cursor::new(template)).expect("Failed to parse template zip");
 
         assert!(files
-            .file(FileId::new(
-                Some("@preview/oicana:0.1.1".parse().unwrap()),
-                VirtualPath::new("/typst.toml")
+            .file(package_file(
+                "@preview/oicana:0.1.1".parse().unwrap(),
+                "/typst.toml"
             ))
             .is_ok());
     }
@@ -224,8 +246,8 @@ mod tests {
         assert_eq!(
             files.fonts.iter().map(|id| id.vpath()).collect::<Vec<_>>(),
             vec![
-                &VirtualPath::new("/fonts/NotoSansArabic-VariableFont_wdth,wght.ttf"),
-                &VirtualPath::new("/fonts/InriaSerif-Regular.ttf")
+                &VirtualPath::new("/fonts/NotoSansArabic-VariableFont_wdth,wght.ttf").unwrap(),
+                &VirtualPath::new("/fonts/InriaSerif-Regular.ttf").unwrap()
             ]
         )
     }
@@ -237,12 +259,9 @@ mod tests {
         let files =
             PackedTemplate::new(Cursor::new(template)).expect("Failed to parse template zip");
 
+        // Paths escaping the root cannot even be constructed
+        assert!(VirtualPath::new("/../../etc/passwd").is_err());
         // Attempting to access a path that doesn't exist in the zip returns NotFound
-        assert!(files
-            .file(FileId::new(None, VirtualPath::new("/../../etc/passwd")))
-            .is_err());
-        assert!(files
-            .source(FileId::new(None, VirtualPath::new("/nonexistent.typ")))
-            .is_err());
+        assert!(files.source(project_file("/nonexistent.typ")).is_err());
     }
 }

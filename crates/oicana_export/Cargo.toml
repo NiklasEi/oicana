@@ -26,6 +26,7 @@ typst-render = { workspace = true, optional = true }
 typst-pdf = { workspace = true, optional = true }
 typst-svg = { workspace = true, optional = true }
 typst = { workspace = true }
+typst-layout = { workspace = true }
 
 serde = { workspace = true, features = ["derive"] }
 

@@ -1,5 +1,7 @@
 use thiserror::Error;
-use typst::layout::{Abs, PagedDocument};
+use typst::layout::Abs;
+use typst_layout::PagedDocument;
+use typst_svg::SvgOptions;
 
 use crate::pages::{select_pages, PageRange};
 
@@ -20,10 +22,10 @@ pub fn export_svg(
     pages: Option<&PageRange>,
 ) -> Result<Vec<u8>, SvgExportError> {
     let selected = select_pages(document, pages);
-    if selected.pages.is_empty() {
+    if selected.pages().is_empty() {
         return Err(SvgExportError::NoPagesSelected);
     }
-    Ok(typst_svg::svg_merged(&selected, Abs::pt(15.)).into_bytes())
+    Ok(typst_svg::svg_merged(&selected, &SvgOptions::default(), Abs::pt(15.)).into_bytes())
 }
 
 #[cfg(test)]

@@ -1,5 +1,8 @@
 use thiserror::Error;
-use typst::layout::{Abs, PagedDocument};
+use typst::layout::Abs;
+use typst::utils::Scalar;
+use typst_layout::PagedDocument;
+use typst_render::RenderOptions;
 
 pub use png::EncodingError;
 
@@ -32,10 +35,14 @@ pub fn export_png(
         return Err(PngExportError::InvalidScale(pixels_per_pt));
     }
     let selected = select_pages(document, pages);
-    if selected.pages.is_empty() {
+    if selected.pages().is_empty() {
         return Err(PngExportError::NoPagesSelected);
     }
-    Ok(typst_render::render_merged(&selected, pixels_per_pt, Abs::pt(15.), None).encode_png()?)
+    let options = RenderOptions {
+        pixel_per_pt: Scalar::new(pixels_per_pt as f64),
+        render_bleed: false,
+    };
+    Ok(typst_render::render_merged(&selected, &options, Abs::pt(15.), None).encode_png()?)
 }
 
 #[cfg(test)]
@@ -215,9 +222,9 @@ manifest_version = 1
     #[test]
     fn exports_individual_pages_to_png() {
         let document = compile(multipage_template());
-        assert_eq!(document.pages.len(), 2);
+        assert_eq!(document.pages().len(), 2);
 
-        for page in 0..document.pages.len() {
+        for page in 0..document.pages().len() {
             let png = export_png(&document, 1.0, Some(&PageRange::single(page))).unwrap();
             assert_eq!(&png[0..8], PNG_SIGNATURE);
         }

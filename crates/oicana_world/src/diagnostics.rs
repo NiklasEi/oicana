@@ -10,7 +10,7 @@ use ecow::EcoVec;
 use oicana_files::TemplateFiles;
 use typst::{
     diag::{Severity, SourceDiagnostic},
-    syntax::{FileId, Source, Span},
+    syntax::{DiagSpan, FileId, Source, VirtualRoot},
     WorldExt,
 };
 
@@ -22,16 +22,10 @@ impl<'a, Files: TemplateFiles> CodespanFiles<'a> for OicanaWorld<Files> {
     type Source = Source;
 
     fn name(&'a self, id: FileId) -> Result<Self::Name, CodespanError> {
-        let vpath = id.vpath();
-        let rooted = vpath
-            .as_rooted_path()
-            .display()
-            .to_string()
-            .replace('\\', "/");
-        Ok(if let Some(package) = id.package() {
-            format!("{package}{rooted}")
-        } else {
-            rooted
+        let rooted = id.vpath().get_with_slash();
+        Ok(match id.root() {
+            VirtualRoot::Project => rooted.to_string(),
+            VirtualRoot::Package(package) => format!("{package}{rooted}"),
         })
     }
 
@@ -98,7 +92,8 @@ pub trait TemplateDiagnostics {
 
 impl<Files: TemplateFiles> OicanaWorld<Files> {
     /// Create a label for a span.
-    fn label(&self, span: Span) -> Option<Label<FileId>> {
+    fn label(&self, span: impl Into<DiagSpan>) -> Option<Label<FileId>> {
+        let span = span.into();
         Some(Label::primary(span.id()?, self.range(span)?))
     }
 }
@@ -125,10 +120,20 @@ impl<Files: TemplateFiles> TemplateDiagnostics for OicanaWorld<Files> {
                 diagnostic
                     .hints
                     .iter()
-                    .map(|e| format!("hint: {e}"))
+                    .filter(|hint| hint.span.is_detached())
+                    .map(|hint| format!("hint: {}", hint.v))
                     .collect(),
             )
-            .with_labels(self.label(diagnostic.span).into_iter().collect());
+            .with_labels(
+                self.label(diagnostic.span)
+                    .into_iter()
+                    .chain(diagnostic.hints.iter().filter_map(|hint| {
+                        let id = hint.span.id()?;
+                        let range = self.range(hint.span)?;
+                        Some(Label::secondary(id, range).with_message(&hint.v))
+                    }))
+                    .collect(),
+            );
 
             term::emit_to_write_style(errors, &config, self, &diag)
                 .expect("Failed to format diagnostics");
@@ -167,7 +172,7 @@ impl TemplateDiagnostics for PlainDiagnostics {
             buffer.push('\n');
             for hint in &diagnostic.hints {
                 buffer.push_str("hint: ");
-                buffer.push_str(hint);
+                buffer.push_str(&hint.v);
                 buffer.push('\n');
             }
             for point in &diagnostic.trace {

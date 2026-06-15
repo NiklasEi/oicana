@@ -1,8 +1,9 @@
 /// Part of this code and the submodules is from the Typst CLI implementation
 /// for file access in a Typst World. Used under its MIT License.
 use crate::TemplateFiles;
-use download::PrintDownload;
+use download::PrintProgress;
 use log::debug;
+use std::any::Any;
 use std::collections::HashMap;
 use std::fs::ReadDir;
 use std::path::{Path, PathBuf};
@@ -11,9 +12,9 @@ use std::{fs, mem};
 use typst::diag::{FileError, FileResult, PackageError};
 use typst::foundations::Bytes;
 use typst::syntax::package::PackageSpec;
-use typst::syntax::{FileId, Source, VirtualPath};
-use typst_kit::download::Downloader;
-use typst_kit::package::{PackageStorage, DEFAULT_NAMESPACE};
+use typst::syntax::{FileId, RootedPath, Source, VirtualPath, VirtualRoot};
+use typst_kit::downloader::{Downloader, ProgressDownloader, SystemDownloader};
+use typst_kit::packages::{FsPackages, SystemPackages, UniversePackages};
 
 mod download;
 mod terminal;
@@ -27,7 +28,7 @@ pub struct NativeTemplate {
     pub slots: Mutex<HashMap<FileId, FileSlot>>,
     root: PathBuf,
     fonts: Vec<FileId>,
-    package_storage: PackageStorage,
+    package_storage: SystemPackages,
     packages: PathBuf,
 }
 
@@ -40,10 +41,10 @@ impl NativeTemplate {
             root: Path::new(root).to_owned(),
             slots: Mutex::new(HashMap::new()),
             fonts: find_fonts(root),
-            package_storage: PackageStorage::new(
-                Some(packages.clone()),
-                Some(packages.clone()),
-                downloader(),
+            package_storage: SystemPackages::from_parts(
+                Some(FsPackages::new(packages.clone())),
+                Some(FsPackages::new(packages.clone())),
+                UniversePackages::new(downloader()),
             ),
             packages,
         }
@@ -69,9 +70,10 @@ impl NativeTemplate {
     /// For `@preview` packages, this uses the global Typst package cache (downloading if needed).
     /// For local packages, this resolves from the local package registry.
     pub fn package_dir(&self, spec: &PackageSpec) -> Result<PathBuf, FileError> {
-        if spec.namespace == DEFAULT_NAMESPACE {
+        if spec.namespace == UniversePackages::NAMESPACE {
             self.package_storage
-                .prepare_package(spec, &mut PrintDownload(&spec))
+                .obtain(spec)
+                .map(|root| root.path().to_owned())
                 .map_err(FileError::Package)
         } else {
             let local_package = self
@@ -102,10 +104,15 @@ pub fn package_data_dir() -> Option<PathBuf> {
     dirs::data_dir().map(|data| data.join("typst").join("packages"))
 }
 
-/// Returns a new downloader.
-fn downloader() -> Downloader {
+/// Returns a new downloader that prints download progress for packages.
+fn downloader() -> impl Downloader {
     let user_agent = concat!("oicana/", env!("CARGO_PKG_VERSION"));
-    Downloader::new(user_agent)
+    ProgressDownloader::new(SystemDownloader::new(user_agent), |key: &dyn Any| {
+        let name = key
+            .downcast_ref::<PackageSpec>()
+            .map(|spec| spec.to_string());
+        PrintProgress(name)
+    })
 }
 
 impl TemplateFiles for NativeTemplate {
@@ -256,10 +263,15 @@ fn find_fonts(project_root: &Path) -> Vec<FileId> {
             if path.is_file() {
                 match path.extension().and_then(|e| e.to_str()) {
                     Some("ttf") | Some("ttc") | Some("TTF") | Some("TTC") | Some("otf")
-                    | Some("otc") | Some("OTF") | Some("OTC") => fonts.push(FileId::new(
-                        None,
-                        VirtualPath::new(path.strip_prefix(project_root).unwrap()),
-                    )),
+                    | Some("otc") | Some("OTF") | Some("OTC") => {
+                        match VirtualPath::virtualize(project_root, &path) {
+                            Ok(vpath) => fonts
+                                .push(FileId::new(RootedPath::new(VirtualRoot::Project, vpath))),
+                            Err(error) => {
+                                debug!("Skipping font file {path:?}: {error}")
+                            }
+                        }
+                    }
                     _ => {}
                 }
             } else if path.is_dir() {
@@ -281,7 +293,6 @@ fn find_fonts(project_root: &Path) -> Vec<FileId> {
 
 /// Decode UTF-8 with an optional BOM.
 fn decode_utf8(buf: &[u8]) -> Result<&str, FileError> {
-    // Remove UTF-8 BOM.
     Ok(std::str::from_utf8(
         buf.strip_prefix(b"\xef\xbb\xbf").unwrap_or(buf),
     )?)
@@ -292,15 +303,15 @@ fn decode_utf8(buf: &[u8]) -> Result<&str, FileError> {
 fn system_path(id: FileId, files: &NativeTemplate) -> Result<PathBuf, FileError> {
     // Determine the root path relative to which the file path
     // will be resolved.
-    let mut root = files.root.to_owned();
-    if let Some(spec) = id.package() {
-        root = files.package_dir(spec)?;
-    }
+    let root = match id.root() {
+        VirtualRoot::Project => files.root.to_owned(),
+        VirtualRoot::Package(spec) => files.package_dir(spec)?,
+    };
 
-    // Join the path to the root. If it tries to escape, deny
-    // access. Note: It can still escape via symlinks, but native
+    // Escaping the root via `..` is already prevented when constructing a
+    // `VirtualPath`. Note: It can still escape via symlinks, but native
     // templates are only used during development, not at runtime.
-    id.vpath().resolve(&root).ok_or(FileError::AccessDenied)
+    Ok(id.vpath().realize(&root)?)
 }
 
 #[cfg(test)]
@@ -310,6 +321,13 @@ mod tests {
 
     fn template(root: &Path) -> NativeTemplate {
         NativeTemplate::new(root, root.join(".packages"))
+    }
+
+    fn project_file(path: &str) -> FileId {
+        FileId::new(RootedPath::new(
+            VirtualRoot::Project,
+            VirtualPath::new(path).unwrap(),
+        ))
     }
 
     fn symlink_file(src: &Path, dst: &Path) {
@@ -325,7 +343,7 @@ mod tests {
         fs::write(dir.path().join("main.typ"), "Hello").unwrap();
         let files = template(dir.path());
 
-        let id = FileId::new(None, VirtualPath::new("main.typ"));
+        let id = project_file("main.typ");
         assert_eq!(files.source(id).unwrap().text(), "Hello");
         assert_eq!(files.file(id).unwrap().as_slice(), b"Hello");
     }
@@ -335,7 +353,7 @@ mod tests {
         let dir = TempDir::new().unwrap();
         let files = template(dir.path());
 
-        let id = FileId::new(None, VirtualPath::new("missing.typ"));
+        let id = project_file("missing.typ");
         assert!(matches!(files.file(id), Err(FileError::NotFound(_))));
         assert!(matches!(files.source(id), Err(FileError::NotFound(_))));
     }
@@ -348,7 +366,7 @@ mod tests {
         symlink_file(&target, &dir.path().join("link.typ"));
         let files = template(dir.path());
 
-        let id = FileId::new(None, VirtualPath::new("link.typ"));
+        let id = project_file("link.typ");
         assert_eq!(files.source(id).unwrap().text(), "from target");
         assert_eq!(files.file(id).unwrap().as_slice(), b"from target");
     }
@@ -359,17 +377,14 @@ mod tests {
         fs::create_dir(dir.path().join("sub")).unwrap();
         let files = template(dir.path());
 
-        let id = FileId::new(None, VirtualPath::new("sub"));
+        let id = project_file("sub");
         assert!(matches!(files.file(id), Err(FileError::IsDirectory)));
     }
 
     #[test]
     fn path_escaping_the_root_is_denied() {
-        let dir = TempDir::new().unwrap();
-        let files = template(dir.path());
-
-        let id = FileId::new(None, VirtualPath::new("../../etc/passwd"));
-        assert!(matches!(files.file(id), Err(FileError::AccessDenied)));
+        // Since Typst 0.15, paths escaping the root cannot even be constructed.
+        assert!(VirtualPath::new("../../etc/passwd").is_err());
     }
 
     #[test]

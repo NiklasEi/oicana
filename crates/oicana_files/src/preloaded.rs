@@ -1,8 +1,9 @@
 use crate::TemplateFiles;
+use log::warn;
 use std::collections::HashMap;
 use typst::diag::{FileError, FileResult};
 use typst::foundations::Bytes;
-use typst::syntax::{FileId, Source, VirtualPath};
+use typst::syntax::{FileId, RootedPath, Source, VirtualPath, VirtualRoot};
 
 /// A preloaded template.
 ///
@@ -20,7 +21,14 @@ impl PreloadedTemplate {
     pub fn new(files: HashMap<String, String>) -> Self {
         let mut slots = HashMap::new();
         for (path, content) in files {
-            let id = FileId::new(None, VirtualPath::new(path));
+            let vpath = match VirtualPath::new(&path) {
+                Ok(vpath) => vpath,
+                Err(error) => {
+                    warn!("Skipping file with invalid path {path}: {error}");
+                    continue;
+                }
+            };
+            let id = FileId::new(RootedPath::new(VirtualRoot::Project, vpath));
             slots.insert(
                 id,
                 (
@@ -42,9 +50,7 @@ impl TemplateFiles for PreloadedTemplate {
         Ok(self
             .slots
             .get(&id)
-            .ok_or(FileError::NotFound(
-                id.vpath().as_rooted_path().to_path_buf(),
-            ))?
+            .ok_or(FileError::NotFound(id.vpath().get_with_slash().into()))?
             .0
             .clone())
     }
@@ -53,9 +59,7 @@ impl TemplateFiles for PreloadedTemplate {
         Ok(self
             .slots
             .get(&id)
-            .ok_or(FileError::NotFound(
-                id.vpath().as_rooted_path().to_path_buf(),
-            ))?
+            .ok_or(FileError::NotFound(id.vpath().get_with_slash().into()))?
             .1
             .clone())
     }
@@ -69,6 +73,13 @@ impl TemplateFiles for PreloadedTemplate {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn project_file(path: &str) -> FileId {
+        FileId::new(RootedPath::new(
+            VirtualRoot::Project,
+            VirtualPath::new(path).unwrap(),
+        ))
+    }
 
     #[test]
     fn creates_template_from_files() {
@@ -86,7 +97,7 @@ mod tests {
         files.insert("test.typ".to_owned(), "content".to_owned());
         let template = PreloadedTemplate::new(files);
 
-        let id = FileId::new(None, VirtualPath::new("test.typ"));
+        let id = project_file("test.typ");
         let source = template.source(id).unwrap();
 
         assert_eq!(source.text(), "content");
@@ -98,7 +109,7 @@ mod tests {
         files.insert("test.typ".to_owned(), "content".to_owned());
         let template = PreloadedTemplate::new(files);
 
-        let id = FileId::new(None, VirtualPath::new("test.typ"));
+        let id = project_file("test.typ");
         let bytes = template.file(id).unwrap();
 
         assert_eq!(bytes.as_slice(), b"content");
@@ -107,7 +118,7 @@ mod tests {
     #[test]
     fn source_fails_for_nonexistent_file() {
         let template = PreloadedTemplate::new(HashMap::new());
-        let id = FileId::new(None, VirtualPath::new("missing.typ"));
+        let id = project_file("missing.typ");
 
         let result = template.source(id);
 
@@ -117,7 +128,7 @@ mod tests {
     #[test]
     fn file_fails_for_nonexistent_file() {
         let template = PreloadedTemplate::new(HashMap::new());
-        let id = FileId::new(None, VirtualPath::new("missing.typ"));
+        let id = project_file("missing.typ");
 
         let result = template.file(id);
 
@@ -131,8 +142,8 @@ mod tests {
         files.insert("file2.typ".to_owned(), "content2".to_owned());
         let template = PreloadedTemplate::new(files);
 
-        let id1 = FileId::new(None, VirtualPath::new("file1.typ"));
-        let id2 = FileId::new(None, VirtualPath::new("file2.typ"));
+        let id1 = project_file("file1.typ");
+        let id2 = project_file("file2.typ");
 
         assert_eq!(template.source(id1).unwrap().text(), "content1");
         assert_eq!(template.source(id2).unwrap().text(), "content2");

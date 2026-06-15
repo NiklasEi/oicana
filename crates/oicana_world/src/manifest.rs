@@ -2,7 +2,7 @@ use oicana_files::TemplateFiles;
 use oicana_template::manifest::TemplateManifest;
 use thiserror::Error;
 use typst::diag::FileError;
-use typst::syntax::{FileId, VirtualPath};
+use typst::syntax::{FileId, RootedPath, VirtualPath, VirtualRoot};
 
 /// Files that represent an Oicana World
 pub trait OicanaWorldFiles<Files: TemplateFiles> {
@@ -12,7 +12,11 @@ pub trait OicanaWorldFiles<Files: TemplateFiles> {
 
 impl<Files: TemplateFiles> OicanaWorldFiles<Files> for Files {
     fn manifest(&self) -> Result<TemplateManifest, OicanaWorldManifestError> {
-        let manifest = self.source(FileId::new(None, VirtualPath::new("/typst.toml")))?;
+        let manifest_path = VirtualPath::new("/typst.toml").expect("static path is valid");
+        let manifest = self.source(FileId::new(RootedPath::new(
+            VirtualRoot::Project,
+            manifest_path,
+        )))?;
         TemplateManifest::from_toml(manifest.text()).map_err(Into::into)
     }
 }
