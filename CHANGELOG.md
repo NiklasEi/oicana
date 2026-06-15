@@ -1,9 +1,10 @@
 # Changelog
 
 ## Upcoming
-
 - Update to Typst 0.15
-- PDF tagging can be toggled via `tagged` in `[tool.oicana.export.pdf]` (defaults to `true`)
+
+
+## v0.3.0
 - previous `compile` methods in all integrations are now called `export`
 - add new `compile` methods that return compiled documents, which can be
   - exported to any format
@@ -11,6 +12,7 @@
 - templates and compiled documents offer `exportPdf`/`exportPng`/`exportSvg` convenience
   methods in all integrations
 - compiled documents expose the compilation `warnings` in all integrations
+- PDF tagging can be toggled via `tagged` in `[tool.oicana.export.pdf]` (defaults to `true`)
 
 
 ## v0.2.0

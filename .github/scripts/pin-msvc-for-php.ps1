@@ -21,13 +21,16 @@ function Get-PeLinkerVersion([string] $Path) {
     [version]::new($bytes[$optionalHeader + 2], $bytes[$optionalHeader + 3])
 }
 
-# The loader compares extensions against the core DLL (php8.dll / php8ts.dll).
+# The loader compares an extension against the core DLL the running PHP actually
+# uses, which differs by thread safety: php8ts.dll for ZTS, php8.dll for NTS.
 $phpDir = Split-Path (Get-Command php).Source
+$zts = [bool]((& php -v) -match 'ZTS')
+$corePattern = if ($zts) { '^php\d+ts\.dll$' } else { '^php\d+\.dll$' }
 $coreDll = Get-ChildItem "$phpDir/php*.dll" |
-    Where-Object Name -match '^php\d+(ts)?\.dll$' |
+    Where-Object Name -match $corePattern |
     Select-Object -First 1
 if (-not $coreDll) {
-    throw "No PHP core DLL found in $phpDir"
+    throw "No PHP core DLL matching '$corePattern' found in $phpDir"
 }
 $coreVersion = Get-PeLinkerVersion $coreDll.FullName
 Write-Host "PHP core $($coreDll.Name) is linked with $coreVersion"

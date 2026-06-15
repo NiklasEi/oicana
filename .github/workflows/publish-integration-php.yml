@@ -137,15 +137,46 @@ jobs:
           targets: ${{ matrix.platform.target }}
           components: rustfmt
       - run: rustup show
+      - name: Remove preinstalled macOS PHP so setup-php installs the requested build
+        # macOS runners preinstall NTS PHP (Homebrew `php`/`php@X.Y`). setup-php
+        # detects an existing PHP via the Homebrew Cellar keg, and when the
+        # requested version matches it "switches to it" and ignores `phpts` (even
+        # with `update: true`, since the preinstalled is already the latest
+        # patch), so ZTS cells silently get NTS.
+        if: matrix.platform.os == 'macos'
+        run: |
+          for f in $(brew list --formula 2>/dev/null | grep -E '^php($|@)'); do
+            echo "Uninstalling preinstalled $f"
+            brew uninstall --ignore-dependencies --force "$f" || true
+          done
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ matrix.php }}
           extensions: mbstring
         env:
-          debug: true
           phpts: ${{ matrix.ts }}
+          update: true
       - run: php -v
+      - name: Verify active PHP matches the matrix cell
+        shell: bash
+        run: |
+          echo "php binary: $(command -v php)"
+          ver="$(php -v)"
+          echo "${ver}" | head -n1
+          case "${ver}" in *ZTS*) ACTUAL=zts ;; *) ACTUAL=nts ;; esac
+          echo "active PHP thread safety: ${ACTUAL} (matrix ts=${{ matrix.ts }})"
+          if [ "${ACTUAL}" != "${{ matrix.ts }}" ]; then
+            echo "::error::matrix wants ${{ matrix.ts }} PHP but the active PHP is ${ACTUAL}"
+            exit 1
+          fi
+      - name: Compute PHP ABI for the cache key
+        id: php_abi
+        shell: bash
+        run: |
+          abi="$(php -i | sed -n 's/^PHP Extension Build => //p' | tr -d ' ' | tr ',' '-')"
+          echo "abi=${abi}" >> "$GITHUB_OUTPUT"
+          echo "PHP ABI: ${abi}"
       - name: Cache Cargo
         uses: actions/cache@v5
         with:
@@ -154,10 +185,9 @@ jobs:
             ~/.cargo/registry/cache
             ~/.cargo/git/db
             target
-          key: ${{ runner.os }}-cargo-php-${{ matrix.php }}-${{ matrix.ts }}-${{ hashFiles('**/Cargo.lock', 'integrations/php/**/*.rs') }}
+          key: ${{ matrix.platform.target }}-cargo-php-${{ steps.php_abi.outputs.abi }}-${{ hashFiles('**/Cargo.lock', 'integrations/php/**/*.rs') }}
           restore-keys: |
-            ${{ runner.os }}-cargo-php-${{ matrix.php }}-${{ matrix.ts }}-
-            ${{ runner.os }}-cargo-php-
+            ${{ matrix.platform.target }}-cargo-php-${{ steps.php_abi.outputs.abi }}-
       - name: Pin MSVC toolset to the PHP core's linker version
         if: matrix.platform.os == 'windows'
         shell: pwsh
