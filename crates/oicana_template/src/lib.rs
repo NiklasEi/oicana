@@ -96,7 +96,9 @@ pub struct ExportConfig {
 
 /// A PDF standard that Typst can enforce conformance with.
 ///
-/// Note: Typst currently only supports one PDF substandard at a time.
+/// Several standards can be combined as long as the combination is compatible:
+/// at most one base PDF version, at most one PDF/A standard and at most one
+/// PDF/UA standard, with overlapping PDF versions.
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Copy)]
 #[allow(non_camel_case_types)]
 #[serde(rename_all = "kebab-case")]
@@ -159,8 +161,9 @@ pub enum PdfStandard {
 pub struct PdfExportConfig {
     /// The PDF standards to enforce during export.
     ///
-    /// Note: Typst currently only supports one PDF substandard at a time.
-    /// You can specify a base PDF version or a substandard.
+    /// Several standards can be combined as long as the combination is
+    /// compatible: at most one base PDF version, at most one PDF/A standard
+    /// and at most one PDF/UA standard, with overlapping PDF versions.
     ///
     /// PDF/A standards are geared towards archival use and maximum compatibility
     /// with current and future PDF tooling. PDF/UA standards ensure universal

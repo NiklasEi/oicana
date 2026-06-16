@@ -2,7 +2,7 @@
 
 ## Upcoming
 - Update to Typst 0.15
-
+  - It's now possible to export a combination of PDF standards
 
 ## v0.3.0
 - previous `compile` methods in all integrations are now called `export`

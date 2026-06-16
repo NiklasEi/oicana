@@ -76,7 +76,7 @@ pub enum ExportFormat {
         #[serde(rename = "pixelsPerPt")]
         pixels_per_pt: f32,
     },
-    /// PDF export. The exact PDF standard is taken from the template manifest.
+    /// PDF export. The PDF standards are taken from the template manifest.
     #[serde(alias = "pdf")]
     Pdf,
     /// SVG export.
