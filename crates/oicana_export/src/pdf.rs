@@ -28,8 +28,8 @@ fn to_typst_standard(standard: oicana_template::PdfStandard) -> typst_pdf::PdfSt
 }
 
 /// Check whether the given list of Oicana PDF standards forms a combination
-/// Typst can produce (at most one version, at most one validator, and a
-/// version+validator pair must be compatible).
+/// Typst can produce (at most one base version, at most one PDF/A standard
+/// and at most one PDF/UA standard, all sharing overlapping PDF versions).
 pub fn validate_pdf_standards(standards: &[oicana_template::PdfStandard]) -> Result<(), String> {
     let typst_standards: Vec<_> = standards.iter().map(|s| to_typst_standard(*s)).collect();
     PdfStandards::new(&typst_standards)
