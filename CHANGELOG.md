@@ -6,6 +6,7 @@
 
 ### Python integration
 - Lower the minimum supported Python version from 3.11 to 3.9
+- Publish `musllinux` wheels (x86_64 and aarch64)
 
 
 ## v0.3.0
