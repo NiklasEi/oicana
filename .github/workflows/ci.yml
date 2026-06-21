@@ -437,38 +437,34 @@ jobs:
           if-no-files-found: error
 
   build-python-native:
+    name: Build oicana-native (${{ matrix.platform.target }})
+    runs-on: ${{ matrix.platform.os }}
     strategy:
+      fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
-    runs-on: ${{ matrix.os }}
+        platform:
+          - { os: ubuntu-latest, target: x86_64-unknown-linux-gnu, manylinux: auto, artifact: python_native_ubuntu-latest }
+          - { os: ubuntu-latest, target: x86_64-unknown-linux-musl, manylinux: musllinux_1_2, artifact: python_native_musl }
+          - { os: macos-latest, target: aarch64-apple-darwin, manylinux: auto, artifact: python_native_macos-latest }
+          - { os: windows-latest, target: x86_64-pc-windows-msvc, manylinux: auto, artifact: python_native_windows-latest }
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-python@v6
         with:
           python-version: '3.11'
-      - uses: actions/cache@v5
-        with:
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.toml') }}
-          restore-keys: |
-            ${{ runner.os }}-cargo-
-          path: |
-            ~/.cargo/bin/
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-            target/
-      - uses: dtolnay/rust-toolchain@stable
-      - name: Install uv
-        uses: astral-sh/setup-uv@v7
-      - name: Install maturin
-        run: uv tool install maturin
       - name: Build abi3 wheel
-        run: maturin build --release --out dist
-        working-directory: integrations/python/oicana-python-native
+        uses: PyO3/maturin-action@v1
+        with:
+          target: ${{ matrix.platform.target }}
+          command: build
+          args: --release --out dist --find-interpreter
+          working-directory: integrations/python/oicana-python-native
+          manylinux: ${{ matrix.platform.manylinux }}
+          sccache: 'true'
       - name: Upload wheel
         uses: actions/upload-artifact@v7
         with:
-          name: python_native_${{ matrix.os }}
+          name: ${{ matrix.platform.artifact }}
           path: integrations/python/oicana-python-native/dist/*.whl
           if-no-files-found: error
 
@@ -688,10 +684,18 @@ jobs:
         run: test-compare e2e-tests/template integrations/csharp/Oicana.Test/bin/Debug/net8.0/e2e/
 
   e2e-test-python-integration:
+    name: Python E2E (${{ matrix.libc }} / ${{ matrix.os }}${{ matrix.python-version && format(' / py{0}', matrix.python-version) || '' }})
     strategy:
+      fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
-        python-version: ['3.9', '3.14']  # Test min and max supported versions
+        include:
+          - { os: ubuntu-latest, python-version: '3.9', libc: gnu }
+          - { os: ubuntu-latest, python-version: '3.14', libc: gnu }
+          - { os: macos-latest, python-version: '3.9', libc: gnu }
+          - { os: macos-latest, python-version: '3.14', libc: gnu }
+          - { os: windows-latest, python-version: '3.9', libc: gnu }
+          - { os: windows-latest, python-version: '3.14', libc: gnu }
+          - { os: ubuntu-latest, libc: musl }
     runs-on: ${{ matrix.os }}
     needs:
       - build-tools
@@ -699,6 +703,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-python@v6
+        if: matrix.libc == 'gnu'
         with:
           python-version: ${{ matrix.python-version }}
       - uses: dtolnay/rust-toolchain@stable
@@ -722,23 +727,47 @@ jobs:
         run: oicana pack -n '{template}-x.y.z.zip'
         working-directory: ./e2e-tests/template
       - name: Download wheel
+        if: matrix.libc == 'gnu'
         uses: actions/download-artifact@v8
         with:
           name: python_native_${{ matrix.os }}
           path: ./dist
       - name: Install uv
+        if: matrix.libc == 'gnu'
         uses: astral-sh/setup-uv@v7
       - name: Install native wheel
+        if: matrix.libc == 'gnu'
         shell: bash
         run: uv pip install --system dist/*.whl
       - name: Install wrapper package
+        if: matrix.libc == 'gnu'
         run: |
           uv pip install --system --no-deps .
           uv pip install --system pytest
         working-directory: ./integrations/python/oicana-python
       - name: Run Python E2E tests
+        if: matrix.libc == 'gnu'
         run: pytest tests/test_e2e.py -v
         working-directory: ./integrations/python/oicana-python
+      - name: Download musllinux wheel
+        if: matrix.libc == 'musl'
+        uses: actions/download-artifact@v8
+        with:
+          name: python_native_musl
+          path: ./dist-musl
+      - name: Run Python E2E tests in Alpine (musl)
+        if: matrix.libc == 'musl'
+        run: |
+          docker run --rm -v "$PWD:/io" -w /io alpine:3.20 sh -ec '
+            apk add --no-cache python3 py3-pip
+            python3 -m venv /venv
+            . /venv/bin/activate
+            pip install --quiet /io/dist-musl/*.whl
+            pip install --quiet --no-deps /io/integrations/python/oicana-python
+            pip install --quiet pytest
+            cd /io/integrations/python/oicana-python
+            pytest tests/test_e2e.py -v
+          '
       - name: compare test output
         run: test-compare e2e-tests/template integrations/python/oicana-python/tests/testOutput/
 
