@@ -691,7 +691,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        python-version: ['3.11', '3.14']  # Test min and max supported versions
+        python-version: ['3.9', '3.14']  # Test min and max supported versions
     runs-on: ${{ matrix.os }}
     needs:
       - build-tools
