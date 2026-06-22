@@ -4,6 +4,11 @@
 - Update to Typst 0.15
   - It's now possible to export a combination of PDF standards
 
+### Python integration
+- Lower the minimum supported Python version from 3.11 to 3.9
+- Publish `musllinux` wheels (x86_64 and aarch64)
+
+
 ## v0.3.0
 - previous `compile` methods in all integrations are now called `export`
 - add new `compile` methods that return compiled documents, which can be

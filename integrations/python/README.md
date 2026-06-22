@@ -36,6 +36,6 @@ Workspace auto-links local package. Published version uses PyPI dependencies.
 ## Publishing
 
 ```bash
-cd oicana-python-native && maturin publish      # 3 abi3 wheels (one per OS)
+cd oicana-python-native && maturin publish      # abi3 wheel for the local host
 cd ../oicana-python && uv build && uv publish   # Python package
 ```
