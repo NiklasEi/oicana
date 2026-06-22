@@ -13,7 +13,7 @@ authors = [
     { name = "Oicana", email = "hello@oicana.com" }
 ]
 dependencies = [
-    "oicana-native>=0.3.0",
+    "oicana-native==0.4.0rc1",
 ]
 keywords = ["oicana", "typst", "typesetting", "pdf"]
 classifiers = [
