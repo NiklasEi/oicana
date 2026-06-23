@@ -1,6 +1,6 @@
 [package]
 name = "oicana-browser-wasm"
-version = "0.3.0"
+version = "0.4.0-rc.1"
 description = "Oicana integration for WASM in the browser."
 publish = false
 keywords = { workspace = true }
