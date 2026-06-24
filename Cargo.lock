@@ -2922,53 +2922,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "krilla"
-version = "0.8.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "27da593198b20eeba65caeb73c2bbeec3e53ab08fa549898312ce81c4fce5e33"
-dependencies = [
- "base64 0.22.1",
- "bumpalo",
- "comemo",
- "flate2",
- "float-cmp",
- "gif",
- "hayro-write",
- "image-webp",
- "imagesize",
- "indexmap",
- "pdf-writer",
- "png",
- "rayon",
- "rustc-hash",
- "rustybuzz",
- "siphasher",
- "skrifa",
- "smallvec",
- "subsetter",
- "tiny-skia-path",
- "xmp-writer",
- "yoke",
- "zune-jpeg",
-]
-
-[[package]]
-name = "krilla-svg"
-version = "0.8.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1237d7c37b16ca9fbc2e72dde13a10d321f9a44aceee35c062bc0a43bfc7ce16"
-dependencies = [
- "flate2",
- "fontdb",
- "krilla",
- "resvg",
- "skrifa",
- "smallvec",
- "tiny-skia",
- "usvg",
-]
-
-[[package]]
 name = "kurbo"
 version = "0.13.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3525,7 +3478,7 @@ dependencies = [
 
 [[package]]
 name = "oicana"
-version = "0.4.0-rc.1"
+version = "0.4.0-rc.2"
 dependencies = [
  "oicana_export",
  "oicana_files",
@@ -3533,12 +3486,12 @@ dependencies = [
  "oicana_template",
  "oicana_world",
  "thiserror 2.0.18",
- "typst",
+ "tmp-typst-custom-metadata",
 ]
 
 [[package]]
 name = "oicana-browser-wasm"
-version = "0.4.0-rc.1"
+version = "0.4.0-rc.2"
 dependencies = [
  "console_error_panic_hook",
  "console_log",
@@ -3555,7 +3508,7 @@ dependencies = [
 
 [[package]]
 name = "oicana-python-native"
-version = "0.4.0-rc.1"
+version = "0.4.0-rc.2"
 dependencies = [
  "oicana_ffi_core",
  "pyo3",
@@ -3564,7 +3517,7 @@ dependencies = [
 
 [[package]]
 name = "oicana_cli"
-version = "0.4.0-rc.1"
+version = "0.4.0-rc.2"
 dependencies = [
  "anyhow",
  "axoupdater",
@@ -3587,14 +3540,14 @@ dependencies = [
  "serde_json",
  "tempfile",
  "thiserror 2.0.18",
- "typst",
- "typst-layout",
+ "tmp-typst-custom-metadata",
+ "tmp-typst-layout-custom-metadata",
  "walkdir",
 ]
 
 [[package]]
 name = "oicana_csharp"
-version = "0.4.0-rc.1"
+version = "0.4.0-rc.2"
 dependencies = [
  "interoptopus",
  "interoptopus_backend_csharp",
@@ -3603,7 +3556,7 @@ dependencies = [
 
 [[package]]
 name = "oicana_export"
-version = "0.4.0-rc.1"
+version = "0.4.0-rc.2"
 dependencies = [
  "oicana_files",
  "oicana_input",
@@ -3612,16 +3565,16 @@ dependencies = [
  "png",
  "serde",
  "thiserror 2.0.18",
- "typst",
- "typst-layout",
- "typst-pdf",
- "typst-render",
- "typst-svg",
+ "tmp-typst-custom-metadata",
+ "tmp-typst-layout-custom-metadata",
+ "tmp-typst-pdf-custom-metadata",
+ "tmp-typst-render-custom-metadata",
+ "tmp-typst-svg-custom-metadata",
 ]
 
 [[package]]
 name = "oicana_ffi_core"
-version = "0.4.0-rc.1"
+version = "0.4.0-rc.2"
 dependencies = [
  "dashmap",
  "oicana_export",
@@ -3632,14 +3585,14 @@ dependencies = [
  "serde",
  "serde_json",
  "thiserror 2.0.18",
- "typst",
- "typst-layout",
+ "tmp-typst-custom-metadata",
+ "tmp-typst-layout-custom-metadata",
  "uuid",
 ]
 
 [[package]]
 name = "oicana_files"
-version = "0.4.0-rc.1"
+version = "0.4.0-rc.2"
 dependencies = [
  "codespan-reporting",
  "dirs",
@@ -3647,26 +3600,26 @@ dependencies = [
  "tempfile",
  "termcolor",
  "thiserror 2.0.18",
+ "tmp-typst-custom-metadata",
+ "tmp-typst-kit-custom-metadata",
+ "tmp-typst-utils-custom-metadata",
  "toml 0.9.12+spec-1.1.0",
- "typst",
- "typst-kit",
- "typst-utils",
  "zip 6.0.0",
 ]
 
 [[package]]
 name = "oicana_input"
-version = "0.4.0-rc.1"
+version = "0.4.0-rc.2"
 dependencies = [
  "log",
  "serde",
+ "tmp-typst-custom-metadata",
  "toml 0.9.12+spec-1.1.0",
- "typst",
 ]
 
 [[package]]
 name = "oicana_java_native"
-version = "0.4.0-rc.1"
+version = "0.4.0-rc.2"
 dependencies = [
  "jni 0.22.4",
  "oicana_ffi_core",
@@ -3674,7 +3627,7 @@ dependencies = [
 
 [[package]]
 name = "oicana_node_native"
-version = "0.4.0-rc.1"
+version = "0.4.0-rc.2"
 dependencies = [
  "napi",
  "napi-build",
@@ -3684,7 +3637,7 @@ dependencies = [
 
 [[package]]
 name = "oicana_php_native"
-version = "0.4.0-rc.1"
+version = "0.4.0-rc.2"
 dependencies = [
  "ext-php-rs",
  "oicana_ffi_core",
@@ -3692,7 +3645,7 @@ dependencies = [
 
 [[package]]
 name = "oicana_template"
-version = "0.4.0-rc.1"
+version = "0.4.0-rc.2"
 dependencies = [
  "chrono",
  "ignore",
@@ -3701,8 +3654,8 @@ dependencies = [
  "serde",
  "tempfile",
  "thiserror 2.0.18",
+ "tmp-typst-custom-metadata",
  "toml 0.9.12+spec-1.1.0",
- "typst",
  "unicode-ident",
  "walkdir",
  "zip 6.0.0",
@@ -3710,7 +3663,7 @@ dependencies = [
 
 [[package]]
 name = "oicana_testing"
-version = "0.4.0-rc.1"
+version = "0.4.0-rc.2"
 dependencies = [
  "image",
  "json_schema_ast",
@@ -3728,14 +3681,14 @@ dependencies = [
  "serde_json",
  "tempfile",
  "thiserror 2.0.18",
+ "tmp-typst-custom-metadata",
  "toml 0.9.12+spec-1.1.0",
- "typst",
  "walkdir",
 ]
 
 [[package]]
 name = "oicana_world"
-version = "0.4.0-rc.1"
+version = "0.4.0-rc.2"
 dependencies = [
  "anyhow",
  "chrono",
@@ -3751,11 +3704,11 @@ dependencies = [
  "serde",
  "serde_json",
  "thiserror 2.0.18",
+ "tmp-typst-custom-metadata",
+ "tmp-typst-layout-custom-metadata",
+ "tmp-typst-pdf-custom-metadata",
  "toml 0.9.12+spec-1.1.0",
- "typst",
  "typst-assets",
- "typst-layout",
- "typst-pdf",
 ]
 
 [[package]]
@@ -5386,7 +5339,7 @@ dependencies = [
 
 [[package]]
 name = "test_compare"
-version = "0.4.0-rc.1"
+version = "0.4.0-rc.2"
 dependencies = [
  "anyhow",
  "clap",
@@ -5541,6 +5494,405 @@ name = "tinyvec_macros"
 version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1f3ccbac311fea05f86f61904b462b55fb3df8837a366dfc601a0161d0532f20"
+
+[[package]]
+name = "tmp-krilla-custom-metadata"
+version = "0.9.0-rc.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6a8386c72d5b448ce15af1e66b9dd5c10878138570b71c0a4d0e3c9e636cb43c"
+dependencies = [
+ "base64 0.22.1",
+ "bumpalo",
+ "comemo",
+ "flate2",
+ "float-cmp",
+ "gif",
+ "hayro-write",
+ "image-webp",
+ "imagesize",
+ "indexmap",
+ "pdf-writer",
+ "png",
+ "rayon",
+ "rustc-hash",
+ "rustybuzz",
+ "siphasher",
+ "skrifa",
+ "smallvec",
+ "subsetter",
+ "tiny-skia-path",
+ "xmp-writer",
+ "yoke",
+ "zune-jpeg",
+]
+
+[[package]]
+name = "tmp-krilla-svg-custom-metadata"
+version = "0.9.0-rc.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4320f457a1b2f6737c0686b82c57cc86068e51db8bc22b74e233df32ed796582"
+dependencies = [
+ "flate2",
+ "fontdb",
+ "resvg",
+ "skrifa",
+ "smallvec",
+ "tiny-skia",
+ "tmp-krilla-custom-metadata",
+ "usvg",
+]
+
+[[package]]
+name = "tmp-typst-custom-metadata"
+version = "0.16.0-rc.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1f8f909a980dda337aba51bf776f6d35b9fc37f299cbd8f4d0d2472b9485b4f2"
+dependencies = [
+ "arrayvec",
+ "comemo",
+ "ecow",
+ "rustc-hash",
+ "tmp-typst-eval-custom-metadata",
+ "tmp-typst-html-custom-metadata",
+ "tmp-typst-layout-custom-metadata",
+ "tmp-typst-library-custom-metadata",
+ "tmp-typst-macros-custom-metadata",
+ "tmp-typst-realize-custom-metadata",
+ "tmp-typst-syntax-custom-metadata",
+ "tmp-typst-timing-custom-metadata",
+ "tmp-typst-utils-custom-metadata",
+]
+
+[[package]]
+name = "tmp-typst-eval-custom-metadata"
+version = "0.16.0-rc.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7daaf5a3f63e3c0b4e408e5c8f33c88f00c04f40b9abaa21ae592777855b87ce"
+dependencies = [
+ "comemo",
+ "ecow",
+ "indexmap",
+ "rustc-hash",
+ "stacker",
+ "tmp-typst-library-custom-metadata",
+ "tmp-typst-macros-custom-metadata",
+ "tmp-typst-syntax-custom-metadata",
+ "tmp-typst-timing-custom-metadata",
+ "tmp-typst-utils-custom-metadata",
+ "toml 0.8.23",
+ "unicode-segmentation",
+]
+
+[[package]]
+name = "tmp-typst-html-custom-metadata"
+version = "0.16.0-rc.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0c06ec88c8aaab330b47ce2e47bea967614593790a15016d602779ddf43049c2"
+dependencies = [
+ "az",
+ "bumpalo",
+ "comemo",
+ "ecow",
+ "palette",
+ "rustc-hash",
+ "time",
+ "tmp-typst-library-custom-metadata",
+ "tmp-typst-macros-custom-metadata",
+ "tmp-typst-svg-custom-metadata",
+ "tmp-typst-syntax-custom-metadata",
+ "tmp-typst-timing-custom-metadata",
+ "tmp-typst-utils-custom-metadata",
+ "typst-assets",
+ "unicode-math-class",
+]
+
+[[package]]
+name = "tmp-typst-kit-custom-metadata"
+version = "0.16.0-rc.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0f3560ba0d3f03e1c1102395368feb9297bc25b6308e5d11700b3f152bee671d"
+dependencies = [
+ "dirs",
+ "ecow",
+ "env_proxy",
+ "fastrand",
+ "flate2",
+ "native-tls",
+ "once_cell",
+ "openssl",
+ "parking_lot",
+ "rustc-hash",
+ "serde",
+ "serde_json",
+ "tar",
+ "tmp-typst-library-custom-metadata",
+ "tmp-typst-syntax-custom-metadata",
+ "tmp-typst-timing-custom-metadata",
+ "tmp-typst-utils-custom-metadata",
+ "ureq 2.12.1",
+ "url",
+]
+
+[[package]]
+name = "tmp-typst-layout-custom-metadata"
+version = "0.16.0-rc.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4af88994c45f9107756e86204cc8bd5e7f44efebc25c886fc55bb1317f690eeb"
+dependencies = [
+ "az",
+ "bumpalo",
+ "codex",
+ "comemo",
+ "ecow",
+ "either",
+ "hypher",
+ "icu_properties",
+ "icu_provider",
+ "icu_provider_blob",
+ "icu_segmenter",
+ "kurbo",
+ "libm",
+ "memchr",
+ "rustc-hash",
+ "rustybuzz",
+ "smallvec",
+ "tmp-typst-library-custom-metadata",
+ "tmp-typst-macros-custom-metadata",
+ "tmp-typst-syntax-custom-metadata",
+ "tmp-typst-timing-custom-metadata",
+ "tmp-typst-utils-custom-metadata",
+ "ttf-parser",
+ "typst-assets",
+ "unicode-bidi",
+ "unicode-math-class",
+ "unicode-script",
+ "unicode-segmentation",
+]
+
+[[package]]
+name = "tmp-typst-library-custom-metadata"
+version = "0.16.0-rc.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "74550d272c3767d38716603d7c2b263c42b8a706166274e5478117bcddc608e4"
+dependencies = [
+ "arrayvec",
+ "az",
+ "bitflags 2.11.1",
+ "bumpalo",
+ "ciborium",
+ "codex",
+ "comemo",
+ "csv",
+ "ecow",
+ "either",
+ "flate2",
+ "fontdb",
+ "glidesort",
+ "hayagriva",
+ "hayro-syntax",
+ "icu_properties",
+ "image",
+ "indexmap",
+ "kamadak-exif",
+ "kurbo",
+ "libm",
+ "lipsum",
+ "memchr",
+ "moxcms",
+ "palette",
+ "percent-encoding",
+ "phf",
+ "png",
+ "rayon",
+ "regex",
+ "regex-syntax",
+ "roxmltree 0.21.1",
+ "rust_decimal",
+ "rustc-hash",
+ "rustybuzz",
+ "serde",
+ "serde_json",
+ "serde_yaml",
+ "siphasher",
+ "smallvec",
+ "syntect",
+ "time",
+ "tmp-typst-macros-custom-metadata",
+ "tmp-typst-syntax-custom-metadata",
+ "tmp-typst-timing-custom-metadata",
+ "tmp-typst-utils-custom-metadata",
+ "toml 0.8.23",
+ "ttf-parser",
+ "two-face",
+ "typed-arena",
+ "typst-assets",
+ "unicode-math-class",
+ "unicode-normalization",
+ "unicode-segmentation",
+ "unscanny",
+ "usvg",
+ "utf8_iter",
+ "wasmi",
+ "xmlwriter",
+]
+
+[[package]]
+name = "tmp-typst-macros-custom-metadata"
+version = "0.16.0-rc.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d92a87eb0fbf7258b63552b125408d9f7833d32ce57365cb29f983a379a01487"
+dependencies = [
+ "heck 0.5.0",
+ "proc-macro2",
+ "quote",
+ "syn 2.0.117",
+]
+
+[[package]]
+name = "tmp-typst-pdf-custom-metadata"
+version = "0.16.0-rc.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "950c5fef4c40a5576c540b3889cfb9db95c979842c35cae5d5e8bc5f2956abe6"
+dependencies = [
+ "az",
+ "bytemuck",
+ "codex",
+ "comemo",
+ "ecow",
+ "flate2",
+ "image",
+ "indexmap",
+ "infer",
+ "rustc-hash",
+ "serde",
+ "smallvec",
+ "tmp-krilla-custom-metadata",
+ "tmp-krilla-svg-custom-metadata",
+ "tmp-typst-layout-custom-metadata",
+ "tmp-typst-library-custom-metadata",
+ "tmp-typst-macros-custom-metadata",
+ "tmp-typst-syntax-custom-metadata",
+ "tmp-typst-timing-custom-metadata",
+ "tmp-typst-utils-custom-metadata",
+ "typst-assets",
+]
+
+[[package]]
+name = "tmp-typst-realize-custom-metadata"
+version = "0.16.0-rc.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5cb89ab1ff070480b7d52985e21e574d2cd96a415a48f5d891274730b68d9945"
+dependencies = [
+ "arrayvec",
+ "bumpalo",
+ "comemo",
+ "ecow",
+ "regex",
+ "tmp-typst-html-custom-metadata",
+ "tmp-typst-library-custom-metadata",
+ "tmp-typst-macros-custom-metadata",
+ "tmp-typst-syntax-custom-metadata",
+ "tmp-typst-timing-custom-metadata",
+ "tmp-typst-utils-custom-metadata",
+]
+
+[[package]]
+name = "tmp-typst-render-custom-metadata"
+version = "0.16.0-rc.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8dfadbb18f3e338b0dea14f44eb6f1ca666945e0e6b82b603a877f2ebbfcfeed"
+dependencies = [
+ "bytemuck",
+ "comemo",
+ "hayro",
+ "image",
+ "libm",
+ "pixglyph",
+ "resvg",
+ "tiny-skia",
+ "tmp-typst-layout-custom-metadata",
+ "tmp-typst-library-custom-metadata",
+ "tmp-typst-macros-custom-metadata",
+ "tmp-typst-timing-custom-metadata",
+ "tmp-typst-utils-custom-metadata",
+ "ttf-parser",
+ "typst-assets",
+]
+
+[[package]]
+name = "tmp-typst-svg-custom-metadata"
+version = "0.16.0-rc.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a668107f2c7af5c5ef811b26a094377d85bad79fc9ad286362583c64f0a8e81f"
+dependencies = [
+ "base64 0.22.1",
+ "comemo",
+ "ecow",
+ "flate2",
+ "hayro",
+ "hayro-svg",
+ "image",
+ "indexmap",
+ "itoa",
+ "rustc-hash",
+ "ryu",
+ "tmp-typst-layout-custom-metadata",
+ "tmp-typst-library-custom-metadata",
+ "tmp-typst-macros-custom-metadata",
+ "tmp-typst-timing-custom-metadata",
+ "tmp-typst-utils-custom-metadata",
+ "ttf-parser",
+ "typst-assets",
+ "xmlwriter",
+]
+
+[[package]]
+name = "tmp-typst-syntax-custom-metadata"
+version = "0.16.0-rc.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6dd1837bcfa959e4cc73e76866029e1eafee37ac1082d2d243ff24913e9a2304"
+dependencies = [
+ "ecow",
+ "rustc-hash",
+ "serde",
+ "tmp-typst-timing-custom-metadata",
+ "tmp-typst-utils-custom-metadata",
+ "toml 0.8.23",
+ "unicode-ident",
+ "unicode-math-class",
+ "unicode-script",
+ "unicode-segmentation",
+ "unscanny",
+]
+
+[[package]]
+name = "tmp-typst-timing-custom-metadata"
+version = "0.16.0-rc.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f24195863ddb40b9c212f7ae5499d21706a8711ff77210cb4d67f151a7a9b082"
+dependencies = [
+ "parking_lot",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "tmp-typst-utils-custom-metadata"
+version = "0.16.0-rc.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "46ca24c602e92af1f01f6d6d695fd45273a4aee9cdb58bdd84dd43e05e236706"
+dependencies = [
+ "libm",
+ "once_cell",
+ "portable-atomic",
+ "rayon",
+ "rustc-hash",
+ "semver",
+ "siphasher",
+ "smallvec",
+ "thin-vec",
+ "unicode-math-class",
+]
 
 [[package]]
 name = "tokio"
@@ -5781,364 +6133,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "40ce102ab67701b8526c123c1bab5cbe42d7040ccfd0f64af1a385808d2f43de"
 
 [[package]]
-name = "typst"
-version = "0.15.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3c8bf2a5a9d58cc542764a88dd43c8a679b683db4ae23e36267219339ab36b01"
-dependencies = [
- "arrayvec",
- "comemo",
- "ecow",
- "rustc-hash",
- "typst-eval",
- "typst-html",
- "typst-layout",
- "typst-library",
- "typst-macros",
- "typst-realize",
- "typst-syntax",
- "typst-timing",
- "typst-utils",
-]
-
-[[package]]
 name = "typst-assets"
 version = "0.15.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "da9b236d339dce0ec443dc44afe4ba4c6d76b8917bd4b1ae80158d2111f6637b"
 dependencies = [
  "bitflags 2.11.1",
-]
-
-[[package]]
-name = "typst-eval"
-version = "0.15.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4d064876305073ab75d5af039ae5e8dcb32c4cac4aa9f43d0f5aae347baef7c3"
-dependencies = [
- "comemo",
- "ecow",
- "indexmap",
- "rustc-hash",
- "stacker",
- "toml 0.8.23",
- "typst-library",
- "typst-macros",
- "typst-syntax",
- "typst-timing",
- "typst-utils",
- "unicode-segmentation",
-]
-
-[[package]]
-name = "typst-html"
-version = "0.15.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d442f92bae44087735efc8b83508b259c573bbccf027e098ac68c8f4ca879f76"
-dependencies = [
- "az",
- "bumpalo",
- "comemo",
- "ecow",
- "palette",
- "rustc-hash",
- "time",
- "typst-assets",
- "typst-library",
- "typst-macros",
- "typst-svg",
- "typst-syntax",
- "typst-timing",
- "typst-utils",
- "unicode-math-class",
-]
-
-[[package]]
-name = "typst-kit"
-version = "0.15.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "55a24650fc436d32deb55b49fd63f7bcad3a864c96f52587b9934c85e0092d6f"
-dependencies = [
- "dirs",
- "ecow",
- "env_proxy",
- "fastrand",
- "flate2",
- "native-tls",
- "once_cell",
- "openssl",
- "parking_lot",
- "rustc-hash",
- "serde",
- "serde_json",
- "tar",
- "typst-library",
- "typst-syntax",
- "typst-timing",
- "typst-utils",
- "ureq 2.12.1",
- "url",
-]
-
-[[package]]
-name = "typst-layout"
-version = "0.15.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ae5af3949efc6d02e3d55e79430c9096415fcf68166414c3a0e5fed1c3325d5f"
-dependencies = [
- "az",
- "bumpalo",
- "codex",
- "comemo",
- "ecow",
- "either",
- "hypher",
- "icu_properties",
- "icu_provider",
- "icu_provider_blob",
- "icu_segmenter",
- "kurbo",
- "libm",
- "memchr",
- "rustc-hash",
- "rustybuzz",
- "smallvec",
- "ttf-parser",
- "typst-assets",
- "typst-library",
- "typst-macros",
- "typst-syntax",
- "typst-timing",
- "typst-utils",
- "unicode-bidi",
- "unicode-math-class",
- "unicode-script",
- "unicode-segmentation",
-]
-
-[[package]]
-name = "typst-library"
-version = "0.15.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9550a33d0f4e1965fd7d69abcf10135e965a4ad3a3aee24573b52dda9234e491"
-dependencies = [
- "arrayvec",
- "az",
- "bitflags 2.11.1",
- "bumpalo",
- "ciborium",
- "codex",
- "comemo",
- "csv",
- "ecow",
- "either",
- "flate2",
- "fontdb",
- "glidesort",
- "hayagriva",
- "hayro-syntax",
- "icu_properties",
- "image",
- "indexmap",
- "kamadak-exif",
- "kurbo",
- "libm",
- "lipsum",
- "memchr",
- "moxcms",
- "palette",
- "percent-encoding",
- "phf",
- "png",
- "rayon",
- "regex",
- "regex-syntax",
- "roxmltree 0.21.1",
- "rust_decimal",
- "rustc-hash",
- "rustybuzz",
- "serde",
- "serde_json",
- "serde_yaml",
- "siphasher",
- "smallvec",
- "syntect",
- "time",
- "toml 0.8.23",
- "ttf-parser",
- "two-face",
- "typed-arena",
- "typst-assets",
- "typst-macros",
- "typst-syntax",
- "typst-timing",
- "typst-utils",
- "unicode-math-class",
- "unicode-normalization",
- "unicode-segmentation",
- "unscanny",
- "usvg",
- "utf8_iter",
- "wasmi",
- "xmlwriter",
-]
-
-[[package]]
-name = "typst-macros"
-version = "0.15.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "500e2873a544ca161f98183eea7ddb00030d16f4585b5ffa9e9c8e24f53148e1"
-dependencies = [
- "heck 0.5.0",
- "proc-macro2",
- "quote",
- "syn 2.0.117",
-]
-
-[[package]]
-name = "typst-pdf"
-version = "0.15.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cd7b33bcabc3357480768f6c78dda99a838d621c71b4738b25e09ac30ac063c9"
-dependencies = [
- "az",
- "bytemuck",
- "codex",
- "comemo",
- "ecow",
- "flate2",
- "image",
- "indexmap",
- "infer",
- "krilla",
- "krilla-svg",
- "rustc-hash",
- "serde",
- "smallvec",
- "typst-assets",
- "typst-layout",
- "typst-library",
- "typst-macros",
- "typst-syntax",
- "typst-timing",
- "typst-utils",
-]
-
-[[package]]
-name = "typst-realize"
-version = "0.15.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "917e09614771258b13409b9a8d4f3915b2a2f7f28ca987701695f82fc6a7c0b9"
-dependencies = [
- "arrayvec",
- "bumpalo",
- "comemo",
- "ecow",
- "regex",
- "typst-html",
- "typst-library",
- "typst-macros",
- "typst-syntax",
- "typst-timing",
- "typst-utils",
-]
-
-[[package]]
-name = "typst-render"
-version = "0.15.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "040ab6e56e91099963ef69dd9f0d284adda66c066b742f1866a20b8295ebb2e3"
-dependencies = [
- "bytemuck",
- "comemo",
- "hayro",
- "image",
- "libm",
- "pixglyph",
- "resvg",
- "tiny-skia",
- "ttf-parser",
- "typst-assets",
- "typst-layout",
- "typst-library",
- "typst-macros",
- "typst-timing",
- "typst-utils",
-]
-
-[[package]]
-name = "typst-svg"
-version = "0.15.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "878b6e1293c2bea77a8be50670d1cbca4e676af96480313a105cba539da51d1c"
-dependencies = [
- "base64 0.22.1",
- "comemo",
- "ecow",
- "flate2",
- "hayro",
- "hayro-svg",
- "image",
- "indexmap",
- "itoa",
- "rustc-hash",
- "ryu",
- "ttf-parser",
- "typst-assets",
- "typst-layout",
- "typst-library",
- "typst-macros",
- "typst-timing",
- "typst-utils",
- "xmlwriter",
-]
-
-[[package]]
-name = "typst-syntax"
-version = "0.15.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "22bf7f87450e5841debd4986b0f912b0f7a2251e600c08aca406305ff52c67b4"
-dependencies = [
- "ecow",
- "rustc-hash",
- "serde",
- "toml 0.8.23",
- "typst-timing",
- "typst-utils",
- "unicode-ident",
- "unicode-math-class",
- "unicode-script",
- "unicode-segmentation",
- "unscanny",
-]
-
-[[package]]
-name = "typst-timing"
-version = "0.15.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6cc0c78ece2ade6ef73d00a13f9c474e02efc3bcfdb770e16d7c4d24e7492773"
-dependencies = [
- "parking_lot",
- "serde",
- "serde_json",
-]
-
-[[package]]
-name = "typst-utils"
-version = "0.15.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "40215eb2541102ecfb4cf3bef29da53033a82e22dbc2308c43bdb855701bf8d2"
-dependencies = [
- "libm",
- "once_cell",
- "portable-atomic",
- "rayon",
- "rustc-hash",
- "semver",
- "siphasher",
- "smallvec",
- "thin-vec",
- "unicode-math-class",
 ]
 
 [[package]]

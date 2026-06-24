@@ -38,7 +38,7 @@ resolver = "2"
 
 
 [workspace.package]
-version = "0.4.0-rc.1"
+version = "0.4.0-rc.2"
 # also change in ci.yml
 rust-version = "1.88"
 authors = ["Oicana <hello@oicana.com>"]
@@ -51,27 +51,28 @@ keywords = ["oicana", "typst", "typesetting", "pdf"]
 categories = ["template-engine"]
 
 [workspace.dependencies]
-oicana_world = { version = "0.4.0-rc.1", path = "crates/oicana_world" }
-oicana_files = { version = "0.4.0-rc.1", path = "crates/oicana_files", default-features = false }
-oicana_input = { version = "0.4.0-rc.1", path = "crates/oicana_input" }
-oicana_export = { version = "0.4.0-rc.1", path = "crates/oicana_export", default-features = false }
-oicana_ffi_core = { version = "0.4.0-rc.1", path = "crates/oicana_ffi_core" }
-oicana_template = { version = "0.4.0-rc.1", path = "crates/oicana_template" }
-oicana_testing = { version = "0.4.0-rc.1", path = "crates/oicana_testing" }
-oicana = { version = "0.4.0-rc.1", path = "integrations/rust/oicana" }
+oicana_world = { version = "0.4.0-rc.2", path = "crates/oicana_world" }
+oicana_files = { version = "0.4.0-rc.2", path = "crates/oicana_files", default-features = false }
+oicana_input = { version = "0.4.0-rc.2", path = "crates/oicana_input" }
+oicana_export = { version = "0.4.0-rc.2", path = "crates/oicana_export", default-features = false }
+oicana_ffi_core = { version = "0.4.0-rc.2", path = "crates/oicana_ffi_core" }
+oicana_template = { version = "0.4.0-rc.2", path = "crates/oicana_template" }
+oicana_testing = { version = "0.4.0-rc.2", path = "crates/oicana_testing" }
+oicana = { version = "0.4.0-rc.2", path = "integrations/rust/oicana" }
 
-typst = { version = "0.15.0" }
-typst-layout = { version = "0.15.0" }
-typst-pdf = { version = "0.15.0" }
-typst-render = { version = "0.15.0" }
-typst-svg = { version = "0.15.0" }
-typst-utils = { version = "0.15.0" }
-typst-kit = { version = "0.15.0" }
+# Using a temporary fork to get support for custom PDF metadata
+typst = { version = "0.16.0-rc.1", package = "tmp-typst-custom-metadata" }
+typst-layout = { version = "0.16.0-rc.1", package = "tmp-typst-layout-custom-metadata" }
+typst-pdf = { version = "0.16.0-rc.1", package = "tmp-typst-pdf-custom-metadata" }
+typst-render = { version = "0.16.0-rc.1", package = "tmp-typst-render-custom-metadata" }
+typst-svg = { version = "0.16.0-rc.1", package = "tmp-typst-svg-custom-metadata" }
+typst-utils = { version = "0.16.0-rc.1", package = "tmp-typst-utils-custom-metadata" }
+typst-kit = { version = "0.16.0-rc.1", package = "tmp-typst-kit-custom-metadata" }
 typst-assets = { version = "0.15.0" }
 
 comemo = { version = "0.5.0" }
 
-wasm-bindgen = { version = "0.2.101" }
+wasm-bindgen = { version = "0.2.118" }
 serde-wasm-bindgen = { version = "0.6.5" }
 console_error_panic_hook = "0.1.7"
 toml = "0.9.8"

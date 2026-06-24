@@ -1,7 +1,7 @@
 {
   "name": "@oicana/browser",
   "author": "Oicana <hello@oicana.com>",
-  "version": "0.4.0-rc.1",
+  "version": "0.4.0-rc.2",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "readme": "README.md",
@@ -22,7 +22,7 @@
     "lint": "biome ci"
   },
   "dependencies": {
-    "@oicana/browser-wasm": "0.4.0-rc.1"
+    "@oicana/browser-wasm": "0.4.0-rc.2"
   },
   "devDependencies": {
     "@biomejs/biome": "2.2.4",

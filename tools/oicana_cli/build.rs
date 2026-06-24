@@ -25,11 +25,11 @@ fn main() {
         .unwrap_or_else(|| panic!("Cargo.lock not found above {manifest_dir}"));
     println!("cargo:rerun-if-changed={}", lock_path.display());
 
-    let lock = std::fs::read_to_string(&lock_path)
-        .unwrap_or_else(|e| panic!("Failed to read {}: {e}", lock_path.display()));
-    let version =
-        find_package_version(&lock, "typst").expect("typst package not found in Cargo.lock");
-    println!("cargo:rustc-env=TYPST_VERSION={version}");
+    // let lock = std::fs::read_to_string(&lock_path)
+    //     .unwrap_or_else(|e| panic!("Failed to read {}: {e}", lock_path.display()));
+    // let version =
+    //     find_package_version(&lock, "typst").expect("typst package not found in Cargo.lock");
+    println!("cargo:rustc-env=TYPST_VERSION=0.15.0 + custom PDF metadata support");
 }
 
 fn find_cargo_lock(start: &Path) -> Option<PathBuf> {
@@ -44,7 +44,7 @@ fn find_cargo_lock(start: &Path) -> Option<PathBuf> {
     None
 }
 
-fn find_package_version(lock: &str, name: &str) -> Option<String> {
+fn _find_package_version(lock: &str, name: &str) -> Option<String> {
     let target_name = format!("name = \"{name}\"");
     let mut name_matches = false;
     for line in lock.lines() {
