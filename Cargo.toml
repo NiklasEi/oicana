@@ -61,13 +61,13 @@ oicana_testing = { version = "0.4.0-rc.2", path = "crates/oicana_testing" }
 oicana = { version = "0.4.0-rc.2", path = "integrations/rust/oicana" }
 
 # Using a temporary fork to get support for custom PDF metadata
-typst = { version = "0.16.0-rc.1", package = "tmp-typst-custom-metadata", path = "../typst/crates/typst" }
-typst-layout = { version = "0.16.0-rc.1", package = "tmp-typst-layout-custom-metadata", path = "../typst/crates/typst-layout" }
-typst-pdf = { version = "0.16.0-rc.1", package = "tmp-typst-pdf-custom-metadata", path = "../typst/crates/typst-pdf" }
-typst-render = { version = "0.16.0-rc.1", package = "tmp-typst-render-custom-metadata", path = "../typst/crates/typst-render" }
-typst-svg = { version = "0.16.0-rc.1", package = "tmp-typst-svg-custom-metadata", path = "../typst/crates/typst-svg" }
-typst-utils = { version = "0.16.0-rc.1", package = "tmp-typst-utils-custom-metadata", path = "../typst/crates/typst-utils" }
-typst-kit = { version = "0.16.0-rc.1", package = "tmp-typst-kit-custom-metadata", path = "../typst/crates/typst-kit" }
+typst = { version = "0.16.0-rc.1", package = "tmp-typst-custom-metadata" }
+typst-layout = { version = "0.16.0-rc.1", package = "tmp-typst-layout-custom-metadata" }
+typst-pdf = { version = "0.16.0-rc.1", package = "tmp-typst-pdf-custom-metadata" }
+typst-render = { version = "0.16.0-rc.1", package = "tmp-typst-render-custom-metadata" }
+typst-svg = { version = "0.16.0-rc.1", package = "tmp-typst-svg-custom-metadata" }
+typst-utils = { version = "0.16.0-rc.1", package = "tmp-typst-utils-custom-metadata" }
+typst-kit = { version = "0.16.0-rc.1", package = "tmp-typst-kit-custom-metadata" }
 typst-assets = { version = "0.15.0" }
 
 comemo = { version = "0.5.0" }

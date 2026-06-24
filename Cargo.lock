@@ -5545,6 +5545,8 @@ dependencies = [
 [[package]]
 name = "tmp-typst-custom-metadata"
 version = "0.16.0-rc.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1f8f909a980dda337aba51bf776f6d35b9fc37f299cbd8f4d0d2472b9485b4f2"
 dependencies = [
  "arrayvec",
  "comemo",
@@ -5564,6 +5566,8 @@ dependencies = [
 [[package]]
 name = "tmp-typst-eval-custom-metadata"
 version = "0.16.0-rc.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7daaf5a3f63e3c0b4e408e5c8f33c88f00c04f40b9abaa21ae592777855b87ce"
 dependencies = [
  "comemo",
  "ecow",
@@ -5582,6 +5586,8 @@ dependencies = [
 [[package]]
 name = "tmp-typst-html-custom-metadata"
 version = "0.16.0-rc.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0c06ec88c8aaab330b47ce2e47bea967614593790a15016d602779ddf43049c2"
 dependencies = [
  "az",
  "bumpalo",
@@ -5603,6 +5609,8 @@ dependencies = [
 [[package]]
 name = "tmp-typst-kit-custom-metadata"
 version = "0.16.0-rc.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0f3560ba0d3f03e1c1102395368feb9297bc25b6308e5d11700b3f152bee671d"
 dependencies = [
  "dirs",
  "ecow",
@@ -5628,6 +5636,8 @@ dependencies = [
 [[package]]
 name = "tmp-typst-layout-custom-metadata"
 version = "0.16.0-rc.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4af88994c45f9107756e86204cc8bd5e7f44efebc25c886fc55bb1317f690eeb"
 dependencies = [
  "az",
  "bumpalo",
@@ -5662,6 +5672,8 @@ dependencies = [
 [[package]]
 name = "tmp-typst-library-custom-metadata"
 version = "0.16.0-rc.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "74550d272c3767d38716603d7c2b263c42b8a706166274e5478117bcddc608e4"
 dependencies = [
  "arrayvec",
  "az",
@@ -5727,6 +5739,8 @@ dependencies = [
 [[package]]
 name = "tmp-typst-macros-custom-metadata"
 version = "0.16.0-rc.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d92a87eb0fbf7258b63552b125408d9f7833d32ce57365cb29f983a379a01487"
 dependencies = [
  "heck 0.5.0",
  "proc-macro2",
@@ -5737,6 +5751,8 @@ dependencies = [
 [[package]]
 name = "tmp-typst-pdf-custom-metadata"
 version = "0.16.0-rc.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "950c5fef4c40a5576c540b3889cfb9db95c979842c35cae5d5e8bc5f2956abe6"
 dependencies = [
  "az",
  "bytemuck",
@@ -5764,6 +5780,8 @@ dependencies = [
 [[package]]
 name = "tmp-typst-realize-custom-metadata"
 version = "0.16.0-rc.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5cb89ab1ff070480b7d52985e21e574d2cd96a415a48f5d891274730b68d9945"
 dependencies = [
  "arrayvec",
  "bumpalo",
@@ -5781,6 +5799,8 @@ dependencies = [
 [[package]]
 name = "tmp-typst-render-custom-metadata"
 version = "0.16.0-rc.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8dfadbb18f3e338b0dea14f44eb6f1ca666945e0e6b82b603a877f2ebbfcfeed"
 dependencies = [
  "bytemuck",
  "comemo",
@@ -5802,6 +5822,8 @@ dependencies = [
 [[package]]
 name = "tmp-typst-svg-custom-metadata"
 version = "0.16.0-rc.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a668107f2c7af5c5ef811b26a094377d85bad79fc9ad286362583c64f0a8e81f"
 dependencies = [
  "base64 0.22.1",
  "comemo",
@@ -5827,6 +5849,8 @@ dependencies = [
 [[package]]
 name = "tmp-typst-syntax-custom-metadata"
 version = "0.16.0-rc.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6dd1837bcfa959e4cc73e76866029e1eafee37ac1082d2d243ff24913e9a2304"
 dependencies = [
  "ecow",
  "rustc-hash",
@@ -5844,6 +5868,8 @@ dependencies = [
 [[package]]
 name = "tmp-typst-timing-custom-metadata"
 version = "0.16.0-rc.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f24195863ddb40b9c212f7ae5499d21706a8711ff77210cb4d67f151a7a9b082"
 dependencies = [
  "parking_lot",
  "serde",
@@ -5853,6 +5879,8 @@ dependencies = [
 [[package]]
 name = "tmp-typst-utils-custom-metadata"
 version = "0.16.0-rc.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "46ca24c602e92af1f01f6d6d695fd45273a4aee9cdb58bdd84dd43e05e236706"
 dependencies = [
  "libm",
  "once_cell",
