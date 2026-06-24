@@ -1,8 +1,10 @@
 # Changelog
 
-## Upcoming
+## v0.4.0
 - Update to Typst 0.15
   - It's now possible to export a combination of PDF standards
+- Patched used Typst to support custom XMP metadata
+  - This enables use-cases like e-invoices with factur-x/ZUGFeRD standards
 
 ### Python integration
 - Lower the minimum supported Python version from 3.11 to 3.9
