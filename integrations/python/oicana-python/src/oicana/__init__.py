@@ -19,7 +19,7 @@ from .types import (
     PageSize,
 )
 
-__version__ = "0.4.0rc2"
+__version__ = "0.4.0"
 
 __all__ = [
     "Template",
