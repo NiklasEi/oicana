@@ -14,10 +14,10 @@ public class ErrorHandlingTests
     }
 
     [Fact]
-    public void ReadSimpleEscapes()
+    public void ReadBackslashSequencesVerbatim()
     {
         var stream = new MemoryStream("{ \\\"test\\\"\\n"u8.ToArray());
         var error = OicanaFfi.GetMessageFromStream(stream);
-        error.Should().Be("{ \"test\"\n");
+        error.Should().Be("{ \\\"test\\\"\\n");
     }
 }

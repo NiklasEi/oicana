@@ -1,7 +1,6 @@
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Json.Nodes;
-using System.Text.RegularExpressions;
 using Oicana.Config;
 using Oicana.Inputs;
 
@@ -463,8 +462,7 @@ internal static class OicanaFfi
             stream.Seek(0, SeekOrigin.Begin);
             byte[] buffer = new byte[stream.Length];
             stream.ReadExactly(buffer, 0, (int)stream.Length);
-            var rawString = Encoding.UTF8.GetString(buffer);
-            return Regex.Unescape(rawString);
+            return Encoding.UTF8.GetString(buffer);
         }
         catch (Exception ex)
         {
