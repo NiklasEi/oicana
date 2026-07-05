@@ -150,6 +150,12 @@ impl<Files: TemplateFiles> TemplateDiagnostics for OicanaWorld<Files> {
             }
         }
 
+        // codespan-reporting appends trailing blank lines after each diagnostic;
+        // drop them so the serialized message ends cleanly.
+        while buffer.last().is_some_and(u8::is_ascii_whitespace) {
+            buffer.pop();
+        }
+
         buffer
     }
 }
@@ -181,6 +187,7 @@ impl TemplateDiagnostics for PlainDiagnostics {
                 buffer.push('\n');
             }
         }
+        buffer.truncate(buffer.trim_end().len());
         buffer.into_bytes()
     }
 }
