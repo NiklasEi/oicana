@@ -4,6 +4,8 @@ use interoptopus::util::NamespaceMappings;
 use interoptopus::{Error, Interop};
 use interoptopus_backend_csharp::CSharpVisibility;
 
+const OUTPUT_FILE: &str = "./integrations/csharp/Oicana/Interop/OicanaFfiInternal.cs";
+
 fn main() -> Result<(), Error> {
     use interoptopus_backend_csharp::{Config, Generator};
 
@@ -20,7 +22,46 @@ fn main() -> Result<(), Error> {
         },
         oicana_csharp::my_inventory(),
     )
-    .write_file("./integrations/csharp/Oicana/Interop/OicanaFfiInternal.cs")?;
+    .write_file(OUTPUT_FILE)?;
+
+    patch_utf8_marshaling(OUTPUT_FILE)?;
+
+    Ok(())
+}
+
+/// Interoptopus renders every `AsciiPointer` as a plain C# `string`, which the
+/// default (`CharSet.Ansi`) marshaler converts through the system ANSI code page
+/// on Windows. That corrupts any non-ASCII template id, input key, or JSON payload
+/// crossing the FFI boundary.
+/// Todo: migrate to interoptopus 0.16 and use the new ffi::String
+fn patch_utf8_marshaling(path: &str) -> Result<(), Error> {
+    const ATTR: &str = "[MarshalAs(UnmanagedType.LPUTF8Str)]";
+
+    let content = std::fs::read_to_string(path)?;
+    let mut out = String::with_capacity(content.len() + 4096);
+
+    for line in content.lines() {
+        let trimmed = line.trim_start();
+        let indent = &line[..line.len() - trimmed.len()];
+
+        if trimmed.starts_with("public string ") {
+            // Struct string field, e.g. `public string key;`.
+            out.push_str(indent);
+            out.push_str(ATTR);
+            out.push('\n');
+            out.push_str(line);
+        } else if trimmed.contains("static extern") && line.contains("string ") {
+            // P/Invoke declaration: annotate every `string` parameter in place.
+            // On these lines the token `string ` only ever introduces a parameter
+            // type (the return type is `Buffer` and no identifier contains it).
+            out.push_str(&line.replace("string ", &format!("{ATTR} string ")));
+        } else {
+            out.push_str(line);
+        }
+        out.push('\n');
+    }
+
+    std::fs::write(path, out)?;
 
     Ok(())
 }
