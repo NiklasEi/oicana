@@ -11,6 +11,17 @@
 use std::collections::HashMap;
 
 use ext_php_rs::prelude::*;
+use oicana_ffi_core::panic_message;
+
+/// Run `body`, converting any panic into a [`PhpException`].
+fn catch_panic<T>(body: impl FnOnce() -> PhpResult<T>) -> PhpResult<T> {
+    std::panic::catch_unwind(std::panic::AssertUnwindSafe(body)).unwrap_or_else(|payload| {
+        Err(PhpException::default(format!(
+            "internal panic: {}",
+            panic_message(payload.as_ref())
+        )))
+    })
+}
 
 /// Compilation mode constant for production mode.
 ///
@@ -65,9 +76,12 @@ impl BlobWithMetadata {
 ///   - `n` - Keeps entries used within the last n evictions
 #[php_function]
 #[php(name = "OicanaInternal\\configure_automatic_cache_eviction")]
-pub fn configure_automatic_cache_eviction(max_age: Option<i64>) {
-    let max_age = max_age.and_then(|age| usize::try_from(age).ok());
-    oicana_ffi_core::configure_automatic_cache_eviction(max_age);
+pub fn configure_automatic_cache_eviction(max_age: Option<i64>) -> PhpResult<()> {
+    catch_panic(|| {
+        let max_age = max_age.and_then(|age| usize::try_from(age).ok());
+        oicana_ffi_core::configure_automatic_cache_eviction(max_age);
+        Ok(())
+    })
 }
 
 /// Manually evict the comemo cache with the given age threshold.
@@ -76,10 +90,13 @@ pub fn configure_automatic_cache_eviction(max_age: Option<i64>) {
 /// regardless of the configured default age.
 #[php_function]
 #[php(name = "OicanaInternal\\evict_cache")]
-pub fn evict_cache(max_age: i64) {
-    if let Ok(max_age) = usize::try_from(max_age) {
-        oicana_ffi_core::evict_cache(max_age);
-    }
+pub fn evict_cache(max_age: i64) -> PhpResult<()> {
+    catch_panic(|| {
+        if let Ok(max_age) = usize::try_from(max_age) {
+            oicana_ffi_core::evict_cache(max_age);
+        }
+        Ok(())
+    })
 }
 
 /// Register the given template. This will read the template files as a PackedTemplate and
@@ -94,14 +111,16 @@ pub fn register_template(
     blob_inputs: HashMap<String, &BlobWithMetadata>,
     compilation_mode: i64,
 ) -> PhpResult<String> {
-    oicana_ffi_core::register_template(
-        &template,
-        &files,
-        json_inputs,
-        into_core_blobs(blob_inputs),
-        compilation_mode_from_i64(compilation_mode),
-    )
-    .map_err(into_php_err)
+    catch_panic(|| {
+        oicana_ffi_core::register_template(
+            &template,
+            &files,
+            json_inputs,
+            into_core_blobs(blob_inputs),
+            compilation_mode_from_i64(compilation_mode),
+        )
+        .map_err(into_php_err)
+    })
 }
 
 /// Compile the identified template with the given inputs.
@@ -116,13 +135,15 @@ pub fn compile_template(
     blob_inputs: HashMap<String, &BlobWithMetadata>,
     compilation_mode: i64,
 ) -> PhpResult<String> {
-    oicana_ffi_core::compile_template(
-        &template,
-        json_inputs,
-        into_core_blobs(blob_inputs),
-        compilation_mode_from_i64(compilation_mode),
-    )
-    .map_err(into_php_err)
+    catch_panic(|| {
+        oicana_ffi_core::compile_template(
+            &template,
+            json_inputs,
+            into_core_blobs(blob_inputs),
+            compilation_mode_from_i64(compilation_mode),
+        )
+        .map_err(into_php_err)
+    })
 }
 
 /// Load all input definitions for the given template.
@@ -132,7 +153,7 @@ pub fn compile_template(
 #[php_function]
 #[php(name = "OicanaInternal\\inputs")]
 pub fn inputs(template: String) -> PhpResult<String> {
-    oicana_ffi_core::inputs(&template).map_err(into_php_err)
+    catch_panic(|| oicana_ffi_core::inputs(&template).map_err(into_php_err))
 }
 
 /// Return the sizes (in points) of every page of a compiled document as a JSON
@@ -140,7 +161,7 @@ pub fn inputs(template: String) -> PhpResult<String> {
 #[php_function]
 #[php(name = "OicanaInternal\\document_pages")]
 pub fn document_pages(document_id: String) -> PhpResult<String> {
-    oicana_ffi_core::document_pages(&document_id).map_err(into_php_err)
+    catch_panic(|| oicana_ffi_core::document_pages(&document_id).map_err(into_php_err))
 }
 
 /// Load the source of the given file in the template.
@@ -150,7 +171,7 @@ pub fn document_pages(document_id: String) -> PhpResult<String> {
 #[php_function]
 #[php(name = "OicanaInternal\\get_source")]
 pub fn get_source(template: String, file: String) -> PhpResult<String> {
-    oicana_ffi_core::get_source(&template, &file).map_err(into_php_err)
+    catch_panic(|| oicana_ffi_core::get_source(&template, &file).map_err(into_php_err))
 }
 
 /// Load the binary file content from the template.
@@ -160,7 +181,7 @@ pub fn get_source(template: String, file: String) -> PhpResult<String> {
 #[php_function]
 #[php(name = "OicanaInternal\\get_file")]
 pub fn get_file(template: String, file: String) -> PhpResult<Vec<u8>> {
-    oicana_ffi_core::get_file(&template, &file).map_err(into_php_err)
+    catch_panic(|| oicana_ffi_core::get_file(&template, &file).map_err(into_php_err))
 }
 
 /// Export the given document
@@ -176,26 +197,30 @@ pub fn export_document(
     export_format: String,
     page_range: Option<String>,
 ) -> PhpResult<Vec<u8>> {
-    let format = oicana_ffi_core::parse_export_format(&export_format).map_err(into_php_err)?;
-    let page = oicana_ffi_core::parse_page_range(page_range.as_deref().unwrap_or(""))
-        .map_err(into_php_err)?;
-    oicana_ffi_core::export_document(&document_id, format, page).map_err(into_php_err)
+    catch_panic(|| {
+        let format = oicana_ffi_core::parse_export_format(&export_format).map_err(into_php_err)?;
+        let page = oicana_ffi_core::parse_page_range(page_range.as_deref().unwrap_or(""))
+            .map_err(into_php_err)?;
+        oicana_ffi_core::export_document(&document_id, format, page).map_err(into_php_err)
+    })
 }
 
 /// Remove the document from the cache.
 #[php_function]
 #[php(name = "OicanaInternal\\remove_document")]
 pub fn remove_document(document_id: String) -> PhpResult<()> {
-    oicana_ffi_core::remove_document(&document_id);
-    Ok(())
+    catch_panic(|| {
+        oicana_ffi_core::remove_document(&document_id);
+        Ok(())
+    })
 }
 
 /// Return any compilation warnings produced for the given document, or `null`
 /// if there were none. Warnings are cleared when the document is removed.
 #[php_function]
 #[php(name = "OicanaInternal\\get_warnings")]
-pub fn get_warnings(document_id: String) -> Option<String> {
-    oicana_ffi_core::get_warnings(&document_id)
+pub fn get_warnings(document_id: String) -> PhpResult<Option<String>> {
+    catch_panic(|| Ok(oicana_ffi_core::get_warnings(&document_id)))
 }
 
 /// Enable or disable JSON schema validation for the given template.
@@ -205,7 +230,7 @@ pub fn get_warnings(document_id: String) -> Option<String> {
 #[php_function]
 #[php(name = "OicanaInternal\\set_validate_inputs")]
 pub fn set_validate_inputs(template: String, validate: bool) -> PhpResult<()> {
-    oicana_ffi_core::set_validate_inputs(&template, validate).map_err(into_php_err)
+    catch_panic(|| oicana_ffi_core::set_validate_inputs(&template, validate).map_err(into_php_err))
 }
 
 /// Remove the world from the cache.
@@ -214,8 +239,10 @@ pub fn set_validate_inputs(template: String, validate: bool) -> PhpResult<()> {
 #[php_function]
 #[php(name = "OicanaInternal\\remove_world")]
 pub fn remove_world(template_id: String) -> PhpResult<()> {
-    oicana_ffi_core::remove_world(&template_id);
-    Ok(())
+    catch_panic(|| {
+        oicana_ffi_core::remove_world(&template_id);
+        Ok(())
+    })
 }
 
 fn into_core_blobs(

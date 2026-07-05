@@ -6,6 +6,7 @@ use std::slice;
 use interoptopus::patterns::slice::FFISlice;
 use interoptopus::patterns::string::AsciiPointer;
 use interoptopus::{ffi_function, ffi_type, function, Inventory, InventoryBuilder};
+use oicana_ffi_core::{panic_message, swallow_panic};
 
 /// Configure automatic cache eviction after each compilation.
 ///
@@ -19,12 +20,14 @@ use interoptopus::{ffi_function, ffi_type, function, Inventory, InventoryBuilder
 #[ffi_function]
 #[no_mangle]
 pub extern "C" fn configure_automatic_cache_eviction(max_age: i64) {
-    let max_age = if max_age < 0 {
-        None
-    } else {
-        Some(max_age as usize)
-    };
-    oicana_ffi_core::configure_automatic_cache_eviction(max_age);
+    swallow_panic(|| {
+        let max_age = if max_age < 0 {
+            None
+        } else {
+            Some(max_age as usize)
+        };
+        oicana_ffi_core::configure_automatic_cache_eviction(max_age);
+    });
 }
 
 /// Manually evict the comemo cache with the given age threshold.
@@ -40,9 +43,11 @@ pub extern "C" fn configure_automatic_cache_eviction(max_age: i64) {
 #[ffi_function]
 #[no_mangle]
 pub extern "C" fn evict_cache(max_age: i64) {
-    if max_age >= 0 {
-        oicana_ffi_core::evict_cache(max_age as usize);
-    }
+    swallow_panic(|| {
+        if max_age >= 0 {
+            oicana_ffi_core::evict_cache(max_age as usize);
+        }
+    });
 }
 
 /// Register a template for the given identifier
@@ -67,23 +72,25 @@ pub unsafe extern "C" fn unsafe_register_template(
     blob_inputs: FFISlice<FfiBlobInput>,
     compilation_options: CompilationOptions,
 ) -> Buffer {
-    let template = match template.as_str() {
-        Ok(template) => template,
-        Err(error) => return Buffer::from_error(format!("Invalid template ID: {error:?}")),
-    };
-    let files = unsafe { slice_from_buffer(files) };
-    let (json_map, blob_map) = match unsafe { parse_inputs(json_inputs, blob_inputs) } {
-        Ok(parsed) => parsed,
-        Err(error) => return error,
-    };
+    catch_panic(|| {
+        let template = match template.as_str() {
+            Ok(template) => template,
+            Err(error) => return Buffer::from_error(format!("Invalid template ID: {error:?}")),
+        };
+        let files = unsafe { slice_from_buffer(files) };
+        let (json_map, blob_map) = match unsafe { parse_inputs(json_inputs, blob_inputs) } {
+            Ok(parsed) => parsed,
+            Err(error) => return error,
+        };
 
-    Buffer::from_string_result(oicana_ffi_core::register_template(
-        template,
-        files,
-        json_map,
-        blob_map,
-        compilation_options.mode.into(),
-    ))
+        Buffer::from_string_result(oicana_ffi_core::register_template(
+            template,
+            files,
+            json_map,
+            blob_map,
+            compilation_options.mode.into(),
+        ))
+    })
 }
 
 /// Compile the given template once.
@@ -110,20 +117,22 @@ pub unsafe extern "C" fn unsafe_export_template_once(
     export_options: ExportOptions,
     page_range: FfiPageRange,
 ) -> Buffer {
-    let files = unsafe { slice_from_buffer(files) };
-    let (json_map, blob_map) = match unsafe { parse_inputs(json_inputs, blob_inputs) } {
-        Ok(parsed) => parsed,
-        Err(error) => return error,
-    };
+    catch_panic(|| {
+        let files = unsafe { slice_from_buffer(files) };
+        let (json_map, blob_map) = match unsafe { parse_inputs(json_inputs, blob_inputs) } {
+            Ok(parsed) => parsed,
+            Err(error) => return error,
+        };
 
-    Buffer::from_bytes_result(oicana_ffi_core::compile_once(
-        files,
-        json_map,
-        blob_map,
-        compile_options.mode.into(),
-        export_options.into(),
-        page_range.into(),
-    ))
+        Buffer::from_bytes_result(oicana_ffi_core::compile_once(
+            files,
+            json_map,
+            blob_map,
+            compile_options.mode.into(),
+            export_options.into(),
+            page_range.into(),
+        ))
+    })
 }
 
 /// Compile the template with the given identifier
@@ -147,21 +156,23 @@ pub unsafe extern "C" fn unsafe_compile_template(
     blob_inputs: FFISlice<FfiBlobInput>,
     compilation_options: CompilationOptions,
 ) -> Buffer {
-    let template = match template.as_str() {
-        Ok(template) => template,
-        Err(error) => return Buffer::from_error(format!("Invalid template ID: {error:?}")),
-    };
-    let (json_map, blob_map) = match unsafe { parse_inputs(json_inputs, blob_inputs) } {
-        Ok(parsed) => parsed,
-        Err(error) => return error,
-    };
+    catch_panic(|| {
+        let template = match template.as_str() {
+            Ok(template) => template,
+            Err(error) => return Buffer::from_error(format!("Invalid template ID: {error:?}")),
+        };
+        let (json_map, blob_map) = match unsafe { parse_inputs(json_inputs, blob_inputs) } {
+            Ok(parsed) => parsed,
+            Err(error) => return error,
+        };
 
-    Buffer::from_string_result(oicana_ffi_core::compile_template(
-        template,
-        json_map,
-        blob_map,
-        compilation_options.mode.into(),
-    ))
+        Buffer::from_string_result(oicana_ffi_core::compile_template(
+            template,
+            json_map,
+            blob_map,
+            compilation_options.mode.into(),
+        ))
+    })
 }
 
 /// Export the given document
@@ -177,15 +188,17 @@ pub unsafe extern "C" fn unsafe_export_document(
     export_options: ExportOptions,
     page_range: FfiPageRange,
 ) -> Buffer {
-    let document_id = match document_id.as_str() {
-        Ok(document_id) => document_id,
-        Err(error) => return Buffer::from_error(format!("Invalid document ID: {error:?}")),
-    };
-    Buffer::from_bytes_result(oicana_ffi_core::export_document(
-        document_id,
-        export_options.into(),
-        page_range.into(),
-    ))
+    catch_panic(|| {
+        let document_id = match document_id.as_str() {
+            Ok(document_id) => document_id,
+            Err(error) => return Buffer::from_error(format!("Invalid document ID: {error:?}")),
+        };
+        Buffer::from_bytes_result(oicana_ffi_core::export_document(
+            document_id,
+            export_options.into(),
+            page_range.into(),
+        ))
+    })
 }
 
 /// Load the inputs of the given template.
@@ -195,11 +208,13 @@ pub unsafe extern "C" fn unsafe_export_document(
 #[ffi_function]
 #[no_mangle]
 pub extern "C" fn inputs(template: AsciiPointer) -> Buffer {
-    let template = match template.as_str() {
-        Ok(template) => template,
-        Err(error) => return Buffer::from_error(format!("{error:?}")),
-    };
-    Buffer::from_string_result(oicana_ffi_core::inputs(template))
+    catch_panic(|| {
+        let template = match template.as_str() {
+            Ok(template) => template,
+            Err(error) => return Buffer::from_error(format!("{error:?}")),
+        };
+        Buffer::from_string_result(oicana_ffi_core::inputs(template))
+    })
 }
 
 /// Return the sizes (in points) of every page of a compiled document as a JSON
@@ -209,11 +224,13 @@ pub extern "C" fn inputs(template: AsciiPointer) -> Buffer {
 #[ffi_function]
 #[no_mangle]
 pub extern "C" fn document_pages(document_id: AsciiPointer) -> Buffer {
-    let document_id = match document_id.as_str() {
-        Ok(document_id) => document_id,
-        Err(error) => return Buffer::from_error(format!("{error:?}")),
-    };
-    Buffer::from_string_result(oicana_ffi_core::document_pages(document_id))
+    catch_panic(|| {
+        let document_id = match document_id.as_str() {
+            Ok(document_id) => document_id,
+            Err(error) => return Buffer::from_error(format!("{error:?}")),
+        };
+        Buffer::from_string_result(oicana_ffi_core::document_pages(document_id))
+    })
 }
 
 /// Load the source at the given path in the template.
@@ -223,15 +240,17 @@ pub extern "C" fn document_pages(document_id: AsciiPointer) -> Buffer {
 #[ffi_function]
 #[no_mangle]
 pub extern "C" fn get_source(template: AsciiPointer, path: AsciiPointer) -> Buffer {
-    let template = match template.as_str() {
-        Ok(template) => template,
-        Err(error) => return Buffer::from_error(format!("Invalid template ID: {error:?}")),
-    };
-    let path = match path.as_str() {
-        Ok(path) => path,
-        Err(error) => return Buffer::from_error(format!("Invalid path: {error:?}")),
-    };
-    Buffer::from_string_result(oicana_ffi_core::get_source(template, path))
+    catch_panic(|| {
+        let template = match template.as_str() {
+            Ok(template) => template,
+            Err(error) => return Buffer::from_error(format!("Invalid template ID: {error:?}")),
+        };
+        let path = match path.as_str() {
+            Ok(path) => path,
+            Err(error) => return Buffer::from_error(format!("Invalid path: {error:?}")),
+        };
+        Buffer::from_string_result(oicana_ffi_core::get_source(template, path))
+    })
 }
 
 /// Load the file at the given path in the template.
@@ -241,15 +260,17 @@ pub extern "C" fn get_source(template: AsciiPointer, path: AsciiPointer) -> Buff
 #[ffi_function]
 #[no_mangle]
 pub extern "C" fn get_file(template: AsciiPointer, path: AsciiPointer) -> Buffer {
-    let template = match template.as_str() {
-        Ok(template) => template,
-        Err(error) => return Buffer::from_error(format!("Invalid template ID: {error:?}")),
-    };
-    let path = match path.as_str() {
-        Ok(path) => path,
-        Err(error) => return Buffer::from_error(format!("Invalid path: {error:?}")),
-    };
-    Buffer::from_bytes_result(oicana_ffi_core::get_file(template, path))
+    catch_panic(|| {
+        let template = match template.as_str() {
+            Ok(template) => template,
+            Err(error) => return Buffer::from_error(format!("Invalid template ID: {error:?}")),
+        };
+        let path = match path.as_str() {
+            Ok(path) => path,
+            Err(error) => return Buffer::from_error(format!("Invalid path: {error:?}")),
+        };
+        Buffer::from_bytes_result(oicana_ffi_core::get_file(template, path))
+    })
 }
 
 /// Frees a buffer allocated by `compile_template`.
@@ -258,8 +279,8 @@ pub extern "C" fn get_file(template: AsciiPointer, path: AsciiPointer) -> Buffer
 ///
 /// This function is unsafe because it assumes the following:
 ///
-/// 1. The [`Buffer::data`] pointer must be non-null and valid. It must point to memory allocated by
-///    Rust which was not previously freed.
+/// 1. If [`Buffer::data`] is non-null, it must point to memory allocated by
+///    Rust which was not previously freed. Null buffers are ignored.
 ///
 /// 2. No other pointers to the memory should be used after this function has been called.
 ///
@@ -268,10 +289,9 @@ pub extern "C" fn get_file(template: AsciiPointer, path: AsciiPointer) -> Buffer
 #[ffi_function]
 #[no_mangle]
 pub unsafe extern "C" fn unsafe_free_buffer(buffer: Buffer) {
-    assert!(
-        !buffer.data.is_null(),
-        "Buffer::data is null while trying to free the memory"
-    );
+    if buffer.data.is_null() {
+        return;
+    }
     unsafe {
         let _boxed_data = Box::from_raw(std::ptr::slice_from_raw_parts_mut(
             buffer.data,
@@ -287,31 +307,37 @@ pub unsafe extern "C" fn unsafe_free_buffer(buffer: Buffer) {
 #[ffi_function]
 #[no_mangle]
 pub extern "C" fn set_validate_inputs(template: AsciiPointer, validate: bool) -> Buffer {
-    let template = match template.as_str() {
-        Ok(template) => template,
-        Err(error) => return Buffer::from_error(format!("{error:?}")),
-    };
-    Buffer::from_unit_result(oicana_ffi_core::set_validate_inputs(template, validate))
+    catch_panic(|| {
+        let template = match template.as_str() {
+            Ok(template) => template,
+            Err(error) => return Buffer::from_error(format!("{error:?}")),
+        };
+        Buffer::from_unit_result(oicana_ffi_core::set_validate_inputs(template, validate))
+    })
 }
 
 /// Configure Oicana.
 #[ffi_function]
 #[no_mangle]
 pub extern "C" fn configure(config: Config) -> Buffer {
-    oicana_ffi_core::configure_diagnostic_color(config.color.into());
-    Buffer::from_ok(Vec::new())
+    catch_panic(|| {
+        oicana_ffi_core::configure_diagnostic_color(config.color.into());
+        Buffer::from_ok(Vec::new())
+    })
 }
 
 /// Remove the document from the cache.
 #[ffi_function]
 #[no_mangle]
 pub extern "C" fn remove_document(document_id: AsciiPointer) -> Buffer {
-    let document_id = match document_id.as_str() {
-        Ok(document_id) => document_id,
-        Err(error) => return Buffer::from_error(format!("{error:?}")),
-    };
-    oicana_ffi_core::remove_document(document_id);
-    Buffer::from_ok(Vec::new())
+    catch_panic(|| {
+        let document_id = match document_id.as_str() {
+            Ok(document_id) => document_id,
+            Err(error) => return Buffer::from_error(format!("{error:?}")),
+        };
+        oicana_ffi_core::remove_document(document_id);
+        Buffer::from_ok(Vec::new())
+    })
 }
 
 /// Return any compilation warnings produced for the given document.
@@ -322,14 +348,16 @@ pub extern "C" fn remove_document(document_id: AsciiPointer) -> Buffer {
 #[ffi_function]
 #[no_mangle]
 pub extern "C" fn get_warnings(document_id: AsciiPointer) -> Buffer {
-    let document_id = match document_id.as_str() {
-        Ok(document_id) => document_id,
-        Err(error) => return Buffer::from_error(format!("{error:?}")),
-    };
-    match oicana_ffi_core::get_warnings(document_id) {
-        Some(warnings) => Buffer::from_ok_string(warnings),
-        None => Buffer::from_ok(Vec::new()),
-    }
+    catch_panic(|| {
+        let document_id = match document_id.as_str() {
+            Ok(document_id) => document_id,
+            Err(error) => return Buffer::from_error(format!("{error:?}")),
+        };
+        match oicana_ffi_core::get_warnings(document_id) {
+            Some(warnings) => Buffer::from_ok_string(warnings),
+            None => Buffer::from_ok(Vec::new()),
+        }
+    })
 }
 
 /// Clear the specified template from the internal cache.
@@ -339,12 +367,14 @@ pub extern "C" fn get_warnings(document_id: AsciiPointer) -> Buffer {
 #[ffi_function]
 #[no_mangle]
 pub extern "C" fn remove_world(template_id: AsciiPointer) -> Buffer {
-    let template_id = match template_id.as_str() {
-        Ok(template_id) => template_id,
-        Err(error) => return Buffer::from_error(format!("{error:?}")),
-    };
-    oicana_ffi_core::remove_world(template_id);
-    Buffer::from_ok(Vec::new())
+    catch_panic(|| {
+        let template_id = match template_id.as_str() {
+            Ok(template_id) => template_id,
+            Err(error) => return Buffer::from_error(format!("{error:?}")),
+        };
+        oicana_ffi_core::remove_world(template_id);
+        Buffer::from_ok(Vec::new())
+    })
 }
 
 /// Access to a piece of Rust memory.
@@ -629,4 +659,44 @@ pub fn my_inventory() -> Inventory {
         .register(function!(configure_automatic_cache_eviction))
         .register(function!(evict_cache))
         .inventory()
+}
+
+/// Run `body`, converting any panic into an error [`Buffer`].
+///
+/// Every `extern "C"` function must go through this (or [`swallow_panic`]):
+/// unwinding across the C ABI boundary aborts the host .NET process.
+fn catch_panic(body: impl FnOnce() -> Buffer) -> Buffer {
+    std::panic::catch_unwind(std::panic::AssertUnwindSafe(body)).unwrap_or_else(|payload| {
+        Buffer::from_error(format!(
+            "internal panic: {}",
+            panic_message(payload.as_ref())
+        ))
+    })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn panic_becomes_error_buffer() {
+        let buffer = catch_panic(|| panic!("something went wrong: {}", 42));
+        assert!(buffer.error);
+        let message = unsafe { std::str::from_utf8(slice_from_buffer(buffer)) }
+            .unwrap()
+            .to_owned();
+        unsafe { unsafe_free_buffer(buffer) };
+        assert_eq!(message, "internal panic: something went wrong: 42");
+    }
+
+    #[test]
+    fn free_buffer_ignores_null_data() {
+        unsafe {
+            unsafe_free_buffer(Buffer {
+                data: std::ptr::null_mut(),
+                error: false,
+                len: 0,
+            })
+        };
+    }
 }

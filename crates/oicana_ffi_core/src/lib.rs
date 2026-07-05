@@ -594,6 +594,28 @@ pub fn evict_cache(max_age: usize) {
     oicana_world::evict_cache(max_age);
 }
 
+/// Extract a human-readable message from a panic payload as returned by
+/// [`std::panic::catch_unwind`].
+///
+/// Integrations must not let panics unwind across their language boundary.
+/// Catch them at every entry point and use this
+/// to turn the payload into a message for the language-native error channel.
+pub fn panic_message(payload: &(dyn std::any::Any + Send)) -> &str {
+    if let Some(message) = payload.downcast_ref::<&str>() {
+        message
+    } else if let Some(message) = payload.downcast_ref::<String>() {
+        message
+    } else {
+        "unknown cause"
+    }
+}
+
+/// Run `body`, discarding any panic. For FFI entry points that have no
+/// error channel to report through.
+pub fn swallow_panic(body: impl FnOnce()) {
+    let _ = std::panic::catch_unwind(std::panic::AssertUnwindSafe(body));
+}
+
 fn auto_evict() {
     let cache_age = CACHE_EVICTION_AGE.load(Ordering::Relaxed);
     if cache_age != usize::MAX {
@@ -815,5 +837,29 @@ mod tests {
         assert!(export_document(&doc_id, ExportFormat::Svg, None).is_ok());
 
         remove_document(&doc_id);
+    }
+
+    #[test]
+    fn panic_message_extracts_static_str_payload() {
+        let payload = std::panic::catch_unwind(|| panic!("static message")).unwrap_err();
+        assert_eq!(panic_message(payload.as_ref()), "static message");
+    }
+
+    #[test]
+    fn panic_message_extracts_formatted_string_payload() {
+        let payload =
+            std::panic::catch_unwind(|| panic!("something went wrong: {}", 42)).unwrap_err();
+        assert_eq!(panic_message(payload.as_ref()), "something went wrong: 42");
+    }
+
+    #[test]
+    fn panic_message_falls_back_for_non_string_payload() {
+        let payload = std::panic::catch_unwind(|| std::panic::panic_any(42)).unwrap_err();
+        assert_eq!(panic_message(payload.as_ref()), "unknown cause");
+    }
+
+    #[test]
+    fn swallow_panic_does_not_unwind() {
+        swallow_panic(|| panic!("ignored"));
     }
 }

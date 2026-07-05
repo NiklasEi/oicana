@@ -4,6 +4,12 @@
 
 - Fix potential ABBA deadlock when doing template compilation in parallel to document exports
 
+### PHP integration
+- prevent panics across FFI border
+
+### C# integration
+- prevent panics across FFI border
+
 
 ## v0.4.0
 - Update to Typst 0.15
