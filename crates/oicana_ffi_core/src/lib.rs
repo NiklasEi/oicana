@@ -201,6 +201,9 @@ struct CachedDocument {
     pdf_tagged: bool,
 }
 
+// Lock order: `WORLD_CACHE` -> `DOCUMENT_CACHE` -> `WARNINGS_CACHE`, at most
+// one guard per map at a time. Violations can deadlock integrations that call
+// in from multiple threads.
 static WORLD_CACHE: Lazy<DashMap<String, OicanaWorld<PackedTemplate>>> = Lazy::new(DashMap::new);
 static DOCUMENT_CACHE: Lazy<DashMap<String, CachedDocument>> = Lazy::new(DashMap::new);
 static WARNINGS_CACHE: Lazy<DashMap<String, String>> = Lazy::new(DashMap::new);
@@ -339,6 +342,9 @@ pub fn compile_template(
 
     let pdf_standards = world.manifest().pdf_standards().to_vec();
     let pdf_tagged = world.manifest().pdf_tagged();
+    // We can free the lock on the world early.
+    drop(world);
+
     let result_id = new_document_id(template_id);
     store_warnings(&result_id, document.warnings);
     DOCUMENT_CACHE.insert(
@@ -408,6 +414,15 @@ pub fn export_document(
     format: ExportFormat,
     pages: Option<PageRange>,
 ) -> Result<Vec<u8>, FfiError> {
+    // Lock order: acquire the world (used for PDF
+    // diagnostics) before the document guard.
+    let world = if matches!(format, ExportFormat::Pdf) {
+        let template_id = template_id_from_document_id(document_id)?;
+        WORLD_CACHE.get(template_id)
+    } else {
+        None
+    };
+
     let Some(cached) = DOCUMENT_CACHE.get(document_id) else {
         return Err(FfiError::DocumentNotFound(document_id.to_owned()));
     };
@@ -417,12 +432,11 @@ pub fn export_document(
             export_png(&cached.document, pixels_per_pt, pages.as_ref())?
         }
         ExportFormat::Pdf => {
-            let template_id = template_id_from_document_id(document_id)?;
             // Fall back to plain (span-less) diagnostics when the world is not available.
-            match WORLD_CACHE.get(template_id) {
+            match world.as_deref() {
                 Some(world) => export_pdf(
                     &cached.document,
-                    &*world,
+                    world,
                     &cached.pdf_standards,
                     cached.pdf_tagged,
                     pages.as_ref(),
@@ -719,6 +733,61 @@ mod tests {
         let trailing_colon = format!("{}:", Uuid::new_v4());
         let err = template_id_from_document_id(&trailing_colon).unwrap_err();
         assert!(matches!(err, FfiError::InvalidDocumentId(_)));
+    }
+
+    #[test]
+    fn concurrent_compile_and_export_do_not_deadlock() {
+        use std::sync::mpsc;
+        use std::thread;
+        use std::time::Duration;
+
+        let files = std::fs::read("../../assets/templates/table-0.1.0.zip")
+            .expect("read test template fixture");
+        let template_id = format!("concurrency-test-{}", Uuid::new_v4());
+
+        let exported_doc = register_template(
+            &template_id,
+            &files,
+            HashMap::new(),
+            HashMap::new(),
+            CompilationMode::Development,
+        )
+        .expect("register template");
+
+        let (done_tx, done_rx) = mpsc::channel();
+
+        let compile_done = done_tx.clone();
+        let compile_template_id = template_id.clone();
+        thread::spawn(move || {
+            for _ in 0..150 {
+                let doc_id = compile_template(
+                    &compile_template_id,
+                    HashMap::new(),
+                    HashMap::new(),
+                    CompilationMode::Development,
+                )
+                .expect("compile template");
+                remove_document(&doc_id);
+            }
+            compile_done.send(()).unwrap();
+        });
+
+        let export_doc_id = exported_doc.clone();
+        thread::spawn(move || {
+            for _ in 0..150 {
+                export_document(&export_doc_id, ExportFormat::Pdf, None).expect("export PDF");
+            }
+            done_tx.send(()).unwrap();
+        });
+
+        for _ in 0..2 {
+            done_rx
+                .recv_timeout(Duration::from_secs(60))
+                .expect("concurrent compile/export deadlocked");
+        }
+
+        remove_document(&exported_doc);
+        remove_world(&template_id);
     }
 
     #[test]

@@ -1,5 +1,10 @@
 # Changelog
 
+## Upcoming
+
+- Fix potential ABBA deadlock when doing template compilation in parallel to document exports
+
+
 ## v0.4.0
 - Update to Typst 0.15
   - It's now possible to export a combination of PDF standards
