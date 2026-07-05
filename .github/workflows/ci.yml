@@ -33,6 +33,18 @@ jobs:
       - name: run clippy
         run: cargo clippy --all-targets --all-features -- -Dwarnings
 
+  audit-crates:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-audit
+      - name: audit dependencies
+        # ignore list for advisories we cannot act on lives in .cargo/audit.toml
+        run: cargo audit
+
   check-crates:
     strategy:
       matrix:

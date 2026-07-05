@@ -9,7 +9,7 @@ use pyo3::prelude::*;
 use pyo3::types::{PyBytes, PyDict};
 
 /// Compilation mode enum
-#[pyclass(eq, eq_int)]
+#[pyclass(eq, eq_int, from_py_object)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum CompilationMode {
     Production,
