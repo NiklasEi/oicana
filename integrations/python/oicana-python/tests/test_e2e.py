@@ -1,4 +1,7 @@
 """E2E tests for Oicana Python integration."""
+
+import threading
+import time
 from pathlib import Path
 
 import pytest
@@ -185,3 +188,37 @@ def test_compiled_document_handle_survives_template_cleanup() -> None:
     assert first_page_png[:4] == b"\x89PNG"
 
     document.close()
+
+
+def test_native_calls_release_the_gil() -> None:
+    template_bytes = template_file()
+
+    with Template(template_bytes) as template:
+        document = template.compile(mode=CompilationMode.DEVELOPMENT)
+        window = {}
+
+        def export() -> None:
+            window["start"] = time.monotonic()
+            # A single native call, made slow via a high raster resolution.
+            _ = document.export_png(pixels_per_pt=8.0)
+            window["end"] = time.monotonic()
+
+        thread = threading.Thread(target=export)
+        thread.start()
+        ticks = []
+        while thread.is_alive():
+            ticks.append(time.monotonic())
+            time.sleep(0.001)
+        thread.join()
+        document.close()
+
+        # Ignore ticks near the edges: before the fix the background thread
+        # could still be preempted between recording the timestamps and
+        # entering/leaving the native call.
+        duration = window["end"] - window["start"]
+        margin = duration / 4
+        mid_ticks = [t for t in ticks if window["start"] + margin < t < window["end"] - margin]
+        assert mid_ticks, (
+            "main thread never ran while export_document was in flight;"
+            "the native call does not release the GIL"
+        )

@@ -4,6 +4,9 @@
 
 - Fix potential ABBA deadlock when doing template compilation in parallel to document exports
 
+### Python integration
+- release GIL where possible to allow parallelization
+
 ### PHP integration
 - prevent panics across FFI border
 
