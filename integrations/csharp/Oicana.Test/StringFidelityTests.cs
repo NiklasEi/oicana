@@ -20,12 +20,12 @@ public class StringFidelityTests
         manifest_version = 1
         """;
 
-    private static byte[] PackTemplate(string manifest, string mainTyp)
+    private static byte[] PackTemplate(string manifest, string mainTypst)
     {
         using var stream = new MemoryStream();
         using (var zip = new ZipArchive(stream, ZipArchiveMode.Create, leaveOpen: true))
         {
-            foreach (var (name, content) in new[] { ("typst.toml", manifest), ("main.typ", mainTyp) })
+            foreach (var (name, content) in new[] { ("typst.toml", manifest), ("main.typ", mainTypst) })
             {
                 var entry = zip.CreateEntry(name, CompressionLevel.NoCompression);
                 using var entryStream = entry.Open();
@@ -74,12 +74,12 @@ public class StringFidelityTests
     [Fact]
     public void SourceRoundTripsBackslashSequencesVerbatim()
     {
-        var mainTyp = "// literal escapes: \\n \\t \\\\ end\nHello";
-        using var template = new Template(PackTemplate(MinimalManifest, mainTyp));
+        var mainTypst = "// literal escapes: \\n \\t \\\\ end\nHello";
+        using var template = new Template(PackTemplate(MinimalManifest, mainTypst));
 
         var source = template.Source("main.typ");
 
-        source.Should().Be(mainTyp, "template sources must round-trip byte-for-byte");
+        source.Should().Be(mainTypst, "template sources must round-trip byte-for-byte");
     }
 
     [Fact]
@@ -103,8 +103,8 @@ public class StringFidelityTests
     [Fact]
     public void WarningsArriveVerbatim()
     {
-        var mainTyp = "#set text(font: \"NonexistentFontFidelity\")\nContent";
-        var template = PackTemplate(MinimalManifest, mainTyp);
+        var mainTypst = "#set text(font: \"NonexistentFontFidelity\")\nContent";
+        var template = PackTemplate(MinimalManifest, mainTypst);
 
         using var registered = new Template(template);
         using var document = registered.Compile(

@@ -39,12 +39,12 @@ public class NonAsciiMarshalingTests
         Warm-up content
         """;
 
-    private static byte[] PackTemplate(string manifest, string mainTyp)
+    private static byte[] PackTemplate(string manifest, string mainTypst)
     {
         using var stream = new MemoryStream();
         using (var zip = new ZipArchive(stream, ZipArchiveMode.Create, leaveOpen: true))
         {
-            foreach (var (name, content) in new[] { ("typst.toml", manifest), ("main.typ", mainTyp) })
+            foreach (var (name, content) in new[] { ("typst.toml", manifest), ("main.typ", mainTypst) })
             {
                 var entry = zip.CreateEntry(name, CompressionLevel.NoCompression);
                 using var entryStream = entry.Open();
