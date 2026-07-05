@@ -269,19 +269,33 @@ internal static class OicanaFfi
         });
     }
 
-    private record PreparedInputs(IntPtr JsonInputsPtr, SliceFfiJsonInput JsonInputs, IntPtr BlobsInputsPtr, SliceFfiBlobInput BlobInputs, List<GCHandle> BlobHandles)
+    private record PreparedInputs(IntPtr JsonInputsPtr, int JsonInputCount, SliceFfiJsonInput JsonInputs, IntPtr BlobsInputsPtr, int BlobInputCount, SliceFfiBlobInput BlobInputs, List<GCHandle> BlobHandles)
     {
         internal readonly IntPtr JsonInputsPtr = JsonInputsPtr;
+        internal readonly int JsonInputCount = JsonInputCount;
         internal readonly SliceFfiJsonInput JsonInputs = JsonInputs;
 
         internal readonly IntPtr BlobsInputsPtr = BlobsInputsPtr;
+        internal readonly int BlobInputCount = BlobInputCount;
         internal readonly SliceFfiBlobInput BlobInputs = BlobInputs;
         internal readonly List<GCHandle> BlobHandles = BlobHandles;
 
         internal void FreeAll()
         {
+            var jsonInputSize = Marshal.SizeOf<FfiJsonInput>();
+            for (int i = 0; i < JsonInputCount; i++)
+            {
+                Marshal.DestroyStructure<FfiJsonInput>(JsonInputsPtr + i * jsonInputSize);
+            }
             Marshal.FreeHGlobal(JsonInputsPtr);
+
+            var blobInputSize = Marshal.SizeOf<FfiBlobInput>();
+            for (int i = 0; i < BlobInputCount; i++)
+            {
+                Marshal.DestroyStructure<FfiBlobInput>(BlobsInputsPtr + i * blobInputSize);
+            }
             Marshal.FreeHGlobal(BlobsInputsPtr);
+
             foreach (var handle in BlobHandles)
             {
                 handle.Free();
@@ -353,13 +367,13 @@ internal static class OicanaFfi
         IntPtr inputsPtr = PrepareJsonInputs(jsonInputs);
         var inputs = new SliceFfiJsonInput(inputsPtr, (ulong)jsonInputs.Count);
 
-        return new PreparedInputs(inputsPtr, inputs, blobsInputsPtr, blobs, blobHandles);
+        return new PreparedInputs(inputsPtr, jsonInputs.Count, inputs, blobsInputsPtr, blobInputs.Count, blobs, blobHandles);
     }
 
     private static IntPtr PrepareBlobInputs(IDictionary<string, BlobInput> blobs, out List<GCHandle> blobHandles)
     {
         blobHandles = new List<GCHandle>();
-        var blobsInputsPtr = Marshal.AllocHGlobal(blobs.Count * Marshal.SizeOf(typeof(FfiBlobInput)));
+        var blobsInputsPtr = Marshal.AllocHGlobal(blobs.Count * Marshal.SizeOf<FfiBlobInput>());
         int i = 0;
         foreach (var (key, blob) in blobs)
         {
@@ -368,7 +382,7 @@ internal static class OicanaFfi
             blobHandles.Add(blobHandle);
 
             var blobInput = new FfiBlobInput() { key = key, data = new Buffer() { data = dataPtr, error = false, len = (uint)blob.Data.Length }, meta = blob.Meta?.ToString() ?? "{}" };
-            Marshal.StructureToPtr(blobInput, blobsInputsPtr + i * Marshal.SizeOf(typeof(FfiBlobInput)), false);
+            Marshal.StructureToPtr(blobInput, blobsInputsPtr + i * Marshal.SizeOf<FfiBlobInput>(), false);
             i++;
         }
 
@@ -377,12 +391,12 @@ internal static class OicanaFfi
 
     private static IntPtr PrepareJsonInputs(IDictionary<string, JsonNode> inputs)
     {
-        var inputsPtr = Marshal.AllocHGlobal(inputs.Count * Marshal.SizeOf(typeof(FfiJsonInput)));
+        var inputsPtr = Marshal.AllocHGlobal(inputs.Count * Marshal.SizeOf<FfiJsonInput>());
         int i = 0;
         foreach (var (key, value) in inputs)
         {
             FfiJsonInput jsonInput = new FfiJsonInput { data = value.ToString(), key = key };
-            Marshal.StructureToPtr(jsonInput, inputsPtr + i * Marshal.SizeOf(typeof(FfiJsonInput)), false);
+            Marshal.StructureToPtr(jsonInput, inputsPtr + i * Marshal.SizeOf<FfiJsonInput>(), false);
             i++;
         }
 
