@@ -112,8 +112,8 @@ namespace Oicana.Interop
         ///
         /// This function is unsafe because it assumes the following:
         ///
-        /// 1. The [`Buffer::data`] pointer must be non-null and valid. It must point to memory allocated by
-        ///    Rust which was not previously freed.
+        /// 1. If [`Buffer::data`] is non-null, it must point to memory allocated by
+        ///    Rust which was not previously freed. Null buffers are ignored.
         ///
         /// 2. No other pointers to the memory should be used after this function has been called.
         ///

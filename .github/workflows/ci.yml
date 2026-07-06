@@ -205,7 +205,7 @@ jobs:
         run: |
           if [ -n "$(git status --porcelain './integrations/csharp/')" ]; then
             echo "::error::Generated C# bindings are out of date! Update them and check in any changes."
-            git --no-pager diff --color=always './generated/'
+            git --no-pager diff --color=always './integrations/csharp/'
             exit 1
           fi
 
