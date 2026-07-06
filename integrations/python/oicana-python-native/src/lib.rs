@@ -9,7 +9,7 @@ use pyo3::prelude::*;
 use pyo3::types::{PyBytes, PyDict};
 
 /// Compilation mode enum
-#[pyclass(eq, eq_int)]
+#[pyclass(eq, eq_int, from_py_object)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum CompilationMode {
     Production,
@@ -62,8 +62,8 @@ fn configure_automatic_cache_eviction(max_age: Option<usize>) {
 /// This directly calls the underlying eviction with the specified age,
 /// regardless of the configured default age.
 #[pyfunction]
-fn evict_cache(max_age: usize) {
-    oicana_ffi_core::evict_cache(max_age);
+fn evict_cache(py: Python<'_>, max_age: usize) {
+    py.detach(|| oicana_ffi_core::evict_cache(max_age));
 }
 
 /// Register the given template. This will read the template files as a PackedTemplate and
@@ -79,13 +79,16 @@ fn register_template(
     compilation_mode: CompilationMode,
 ) -> PyResult<String> {
     let blobs = into_core_blobs(py, blob_inputs)?;
-    oicana_ffi_core::register_template(
-        &template,
-        files.as_bytes(),
-        json_inputs,
-        blobs,
-        compilation_mode.into(),
-    )
+    let files = files.as_bytes();
+    py.detach(|| {
+        oicana_ffi_core::register_template(
+            &template,
+            files,
+            json_inputs,
+            blobs,
+            compilation_mode.into(),
+        )
+    })
     .map_err(into_py_err)
 }
 
@@ -102,8 +105,10 @@ fn compile_template(
     compilation_mode: CompilationMode,
 ) -> PyResult<String> {
     let blobs = into_core_blobs(py, blob_inputs)?;
-    oicana_ffi_core::compile_template(&template, json_inputs, blobs, compilation_mode.into())
-        .map_err(into_py_err)
+    py.detach(|| {
+        oicana_ffi_core::compile_template(&template, json_inputs, blobs, compilation_mode.into())
+    })
+    .map_err(into_py_err)
 }
 
 /// Load all input definitions for the given template.
@@ -111,15 +116,17 @@ fn compile_template(
 /// Calling this method requires a previous call to `register_template` with the same template
 /// identifier.
 #[pyfunction]
-fn inputs(template: String) -> PyResult<String> {
-    oicana_ffi_core::inputs(&template).map_err(into_py_err)
+fn inputs(py: Python<'_>, template: String) -> PyResult<String> {
+    py.detach(|| oicana_ffi_core::inputs(&template))
+        .map_err(into_py_err)
 }
 
 /// Return the sizes (in points) of every page of a compiled document as a JSON
 /// array of `{ "width": float, "height": float }`.
 #[pyfunction]
-fn document_pages(document_id: String) -> PyResult<String> {
-    oicana_ffi_core::document_pages(&document_id).map_err(into_py_err)
+fn document_pages(py: Python<'_>, document_id: String) -> PyResult<String> {
+    py.detach(|| oicana_ffi_core::document_pages(&document_id))
+        .map_err(into_py_err)
 }
 
 /// Load the source of the given file in the template.
@@ -127,8 +134,9 @@ fn document_pages(document_id: String) -> PyResult<String> {
 /// Calling this method requires a previous call to `register_template` with the same template
 /// identifier.
 #[pyfunction]
-fn get_source(template: String, file: String) -> PyResult<String> {
-    oicana_ffi_core::get_source(&template, &file).map_err(into_py_err)
+fn get_source(py: Python<'_>, template: String, file: String) -> PyResult<String> {
+    py.detach(|| oicana_ffi_core::get_source(&template, &file))
+        .map_err(into_py_err)
 }
 
 /// Load the binary file content from the template.
@@ -137,7 +145,9 @@ fn get_source(template: String, file: String) -> PyResult<String> {
 /// identifier.
 #[pyfunction]
 fn get_file(py: Python<'_>, template: String, file: String) -> PyResult<Bound<'_, PyBytes>> {
-    let bytes = oicana_ffi_core::get_file(&template, &file).map_err(into_py_err)?;
+    let bytes = py
+        .detach(|| oicana_ffi_core::get_file(&template, &file))
+        .map_err(into_py_err)?;
     Ok(PyBytes::new(py, &bytes))
 }
 
@@ -158,23 +168,24 @@ fn export_document(
     let format = oicana_ffi_core::parse_export_format(&export_format).map_err(into_py_err)?;
     let page = oicana_ffi_core::parse_page_range(page_range.as_deref().unwrap_or(""))
         .map_err(into_py_err)?;
-    let bytes =
-        oicana_ffi_core::export_document(&document_id, format, page).map_err(into_py_err)?;
+    let bytes = py
+        .detach(|| oicana_ffi_core::export_document(&document_id, format, page))
+        .map_err(into_py_err)?;
     Ok(PyBytes::new(py, &bytes))
 }
 
 /// Remove the document from the cache.
 #[pyfunction]
-fn remove_document(document_id: String) -> PyResult<()> {
-    oicana_ffi_core::remove_document(&document_id);
+fn remove_document(py: Python<'_>, document_id: String) -> PyResult<()> {
+    py.detach(|| oicana_ffi_core::remove_document(&document_id));
     Ok(())
 }
 
 /// Return any compilation warnings produced for the given document, or `None`
 /// if there were none. Warnings are cleared when the document is removed.
 #[pyfunction]
-fn get_warnings(document_id: String) -> Option<String> {
-    oicana_ffi_core::get_warnings(&document_id)
+fn get_warnings(py: Python<'_>, document_id: String) -> Option<String> {
+    py.detach(|| oicana_ffi_core::get_warnings(&document_id))
 }
 
 /// Enable or disable JSON schema validation for the given template.
@@ -185,16 +196,17 @@ fn get_warnings(document_id: String) -> Option<String> {
 /// Calling this method requires a previous call to `register_template` with the same template
 /// identifier.
 #[pyfunction]
-fn set_validate_inputs(template: String, validate: bool) -> PyResult<()> {
-    oicana_ffi_core::set_validate_inputs(&template, validate).map_err(into_py_err)
+fn set_validate_inputs(py: Python<'_>, template: String, validate: bool) -> PyResult<()> {
+    py.detach(|| oicana_ffi_core::set_validate_inputs(&template, validate))
+        .map_err(into_py_err)
 }
 
 /// Remove the world from the cache.
 ///
 /// The template will have to be registered again before it can be compiled again.
 #[pyfunction]
-fn remove_world(template_id: String) -> PyResult<()> {
-    oicana_ffi_core::remove_world(&template_id);
+fn remove_world(py: Python<'_>, template_id: String) -> PyResult<()> {
+    py.detach(|| oicana_ffi_core::remove_world(&template_id));
     Ok(())
 }
 

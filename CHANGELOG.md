@@ -1,5 +1,23 @@
 # Changelog
 
+## Upcoming
+
+- Fix potential ABBA deadlock when doing template compilation in parallel to document exports
+- Performance improvement: more finegrained internal locking to unlock more parallelization
+- Bumped some dependencies to resolve security advisories
+
+### Python integration
+- release GIL where possible to allow parallelization
+
+### PHP integration
+- prevent panics across FFI border
+
+### C# integration
+- prevent panics across FFI border
+- Fix non-ASCII string handling on Windows
+- Fixed memory leak in input handing
+
+
 ## v0.4.0
 - Update to Typst 0.15
   - It's now possible to export a combination of PDF standards

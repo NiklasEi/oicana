@@ -1,0 +1,7 @@
+[advisories]
+ignore = [
+    # quick-xml < 0.41 DoS advisories (memory exhaustion / quadratic parsing).
+    # The dependency comes in through typst.
+    "RUSTSEC-2026-0194",
+    "RUSTSEC-2026-0195",
+]

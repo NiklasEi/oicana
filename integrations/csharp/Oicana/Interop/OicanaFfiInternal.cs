@@ -34,7 +34,7 @@ namespace Oicana.Interop
         /// Additionally, the caller must ensure that the blob input buffers are not modified
         /// concurrently while this function is executing.
         [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl, EntryPoint = "unsafe_compile_template")]
-        public static extern Buffer unsafe_compile_template(string template, SliceFfiJsonInput json_inputs, SliceFfiBlobInput blob_inputs, CompilationOptions compilation_options);
+        public static extern Buffer unsafe_compile_template([MarshalAs(UnmanagedType.LPUTF8Str)] string template, SliceFfiJsonInput json_inputs, SliceFfiBlobInput blob_inputs, CompilationOptions compilation_options);
 
         /// Compile the given template once.
         ///
@@ -67,7 +67,7 @@ namespace Oicana.Interop
         /// Additionally, the caller must ensure that no inputs are modified
         /// concurrently while this function is executing.
         [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl, EntryPoint = "unsafe_register_template")]
-        public static extern Buffer unsafe_register_template(string template, Buffer files, SliceFfiJsonInput json_inputs, SliceFfiBlobInput blob_inputs, CompilationOptions compilation_options);
+        public static extern Buffer unsafe_register_template([MarshalAs(UnmanagedType.LPUTF8Str)] string template, Buffer files, SliceFfiJsonInput json_inputs, SliceFfiBlobInput blob_inputs, CompilationOptions compilation_options);
 
         /// Export the given document
         ///
@@ -76,35 +76,35 @@ namespace Oicana.Interop
         /// The caller is responsible for ensuring that the provided
         /// `document_id` pointer is valid and non-null
         [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl, EntryPoint = "unsafe_export_document")]
-        public static extern Buffer unsafe_export_document(string document_id, ExportOptions export_options, FfiPageRange page_range);
+        public static extern Buffer unsafe_export_document([MarshalAs(UnmanagedType.LPUTF8Str)] string document_id, ExportOptions export_options, FfiPageRange page_range);
 
         /// Load the inputs of the given template.
         ///
         /// This method requires a previous successful call to [`unsafe_register_template`].
         /// Check if the returned buffer is an error before interpreting the content.
         [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl, EntryPoint = "inputs")]
-        public static extern Buffer inputs(string template);
+        public static extern Buffer inputs([MarshalAs(UnmanagedType.LPUTF8Str)] string template);
 
         /// Return the sizes (in points) of every page of a compiled document as a JSON
         /// array of `{ "width": number, "height": number }`.
         ///
         /// This method requires a previous successful call producing the `document_id`.
         [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl, EntryPoint = "document_pages")]
-        public static extern Buffer document_pages(string document_id);
+        public static extern Buffer document_pages([MarshalAs(UnmanagedType.LPUTF8Str)] string document_id);
 
         /// Load the source at the given path in the template.
         ///
         /// This method requires a previous successful call to [`unsafe_register_template`].
         /// Check if the returned buffer is an error before interpreting the content.
         [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl, EntryPoint = "get_source")]
-        public static extern Buffer get_source(string template, string path);
+        public static extern Buffer get_source([MarshalAs(UnmanagedType.LPUTF8Str)] string template, [MarshalAs(UnmanagedType.LPUTF8Str)] string path);
 
         /// Load the file at the given path in the template.
         ///
         /// This method requires a previous successful call to [`unsafe_register_template`].
         /// Check if the returned buffer is an error before interpreting the content.
         [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl, EntryPoint = "get_file")]
-        public static extern Buffer get_file(string template, string path);
+        public static extern Buffer get_file([MarshalAs(UnmanagedType.LPUTF8Str)] string template, [MarshalAs(UnmanagedType.LPUTF8Str)] string path);
 
         /// Frees a buffer allocated by `compile_template`.
         ///
@@ -112,8 +112,8 @@ namespace Oicana.Interop
         ///
         /// This function is unsafe because it assumes the following:
         ///
-        /// 1. The [`Buffer::data`] pointer must be non-null and valid. It must point to memory allocated by
-        ///    Rust which was not previously freed.
+        /// 1. If [`Buffer::data`] is non-null, it must point to memory allocated by
+        ///    Rust which was not previously freed. Null buffers are ignored.
         ///
         /// 2. No other pointers to the memory should be used after this function has been called.
         ///
@@ -127,11 +127,11 @@ namespace Oicana.Interop
         /// This method requires a previous successful call to [`unsafe_register_template`].
         /// Check if the returned buffer is an error before interpreting the content.
         [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl, EntryPoint = "remove_world")]
-        public static extern Buffer remove_world(string template_id);
+        public static extern Buffer remove_world([MarshalAs(UnmanagedType.LPUTF8Str)] string template_id);
 
         /// Remove the document from the cache.
         [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl, EntryPoint = "remove_document")]
-        public static extern Buffer remove_document(string document_id);
+        public static extern Buffer remove_document([MarshalAs(UnmanagedType.LPUTF8Str)] string document_id);
 
         /// Return any compilation warnings produced for the given document.
         ///
@@ -139,7 +139,7 @@ namespace Oicana.Interop
         /// empty when there were no warnings. Warnings are cleared together with
         /// the document by [`remove_document`].
         [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl, EntryPoint = "get_warnings")]
-        public static extern Buffer get_warnings(string document_id);
+        public static extern Buffer get_warnings([MarshalAs(UnmanagedType.LPUTF8Str)] string document_id);
 
         /// Configure Oicana.
         [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl, EntryPoint = "configure")]
@@ -150,7 +150,7 @@ namespace Oicana.Interop
         /// When enabled (the default), JSON inputs are validated against their schemas
         /// before compilation.
         [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl, EntryPoint = "set_validate_inputs")]
-        public static extern Buffer set_validate_inputs(string template, bool validate);
+        public static extern Buffer set_validate_inputs([MarshalAs(UnmanagedType.LPUTF8Str)] string template, bool validate);
 
         /// Configure automatic cache eviction after each compilation.
         ///
@@ -268,8 +268,10 @@ namespace Oicana.Interop
         /// Buffer containing the main data of the blob input.
         public Buffer data;
         /// Identifier of the input definition this input value belongs to.
+        [MarshalAs(UnmanagedType.LPUTF8Str)]
         public string key;
         /// Metadata of the blob input as json.
+        [MarshalAs(UnmanagedType.LPUTF8Str)]
         public string meta;
     }
 
@@ -279,8 +281,10 @@ namespace Oicana.Interop
     internal partial struct FfiJsonInput
     {
         /// String containing the json payload of this input.
+        [MarshalAs(UnmanagedType.LPUTF8Str)]
         public string data;
         /// Identifier of the input definition this input value belongs to.
+        [MarshalAs(UnmanagedType.LPUTF8Str)]
         public string key;
     }
 
