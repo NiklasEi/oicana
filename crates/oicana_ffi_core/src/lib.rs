@@ -9,6 +9,7 @@ use std::collections::HashMap;
 use std::io::Cursor;
 use std::str::FromStr;
 use std::sync::atomic::{AtomicU8, AtomicUsize, Ordering};
+use std::sync::{Arc, PoisonError, RwLock, RwLockReadGuard, RwLockWriteGuard, TryLockError};
 
 use dashmap::DashMap;
 use once_cell::sync::Lazy;
@@ -201,12 +202,46 @@ struct CachedDocument {
     pdf_tagged: bool,
 }
 
-// Lock order: `WORLD_CACHE` -> `DOCUMENT_CACHE` -> `WARNINGS_CACHE`, at most
-// one guard per map at a time. Violations can deadlock integrations that call
-// in from multiple threads.
-static WORLD_CACHE: Lazy<DashMap<String, OicanaWorld<PackedTemplate>>> = Lazy::new(DashMap::new);
+/// A registered world behind its own per-template lock.
+type SharedWorld = Arc<RwLock<OicanaWorld<PackedTemplate>>>;
+
+// `WORLD_CACHE` shard guards are held only long enough to clone the `Arc`
+// out. Blocking lock order for everything else:
+// world `RwLock` -> `DOCUMENT_CACHE` -> `WARNINGS_CACHE`, at most one guard
+// per map at a time. Violations can deadlock integrations that call in
+// from multiple threads.
+static WORLD_CACHE: Lazy<DashMap<String, SharedWorld>> = Lazy::new(DashMap::new);
 static DOCUMENT_CACHE: Lazy<DashMap<String, CachedDocument>> = Lazy::new(DashMap::new);
 static WARNINGS_CACHE: Lazy<DashMap<String, String>> = Lazy::new(DashMap::new);
+
+fn get_world(template_id: &str) -> Result<SharedWorld, FfiError> {
+    WORLD_CACHE
+        .get(template_id)
+        .map(|entry| Arc::clone(entry.value()))
+        .ok_or_else(|| FfiError::TemplateNotRegistered(template_id.to_owned()))
+}
+
+fn read_world(
+    world: &RwLock<OicanaWorld<PackedTemplate>>,
+) -> RwLockReadGuard<'_, OicanaWorld<PackedTemplate>> {
+    world.read().unwrap_or_else(PoisonError::into_inner)
+}
+
+fn write_world(
+    world: &RwLock<OicanaWorld<PackedTemplate>>,
+) -> RwLockWriteGuard<'_, OicanaWorld<PackedTemplate>> {
+    world.write().unwrap_or_else(PoisonError::into_inner)
+}
+
+fn try_read_world(
+    world: &RwLock<OicanaWorld<PackedTemplate>>,
+) -> Option<RwLockReadGuard<'_, OicanaWorld<PackedTemplate>>> {
+    match world.try_read() {
+        Ok(guard) => Some(guard),
+        Err(TryLockError::Poisoned(poisoned)) => Some(poisoned.into_inner()),
+        Err(TryLockError::WouldBlock) => None,
+    }
+}
 
 /// Cache age threshold for automatic eviction. `usize::MAX` means disabled.
 /// Default keeps entries used within the last 10 evictions.
@@ -236,8 +271,14 @@ pub fn configure_diagnostic_color(color: DiagnosticColor) {
         },
         Ordering::Relaxed,
     );
-    for mut world in WORLD_CACHE.iter_mut() {
-        world.color = current_diagnostic_color();
+    // Collect the `Arc`s first so no shard guard is held while waiting on a
+    // world that is mid-compilation.
+    let worlds: Vec<SharedWorld> = WORLD_CACHE
+        .iter()
+        .map(|entry| Arc::clone(entry.value()))
+        .collect();
+    for world in worlds {
+        write_world(&world).color = current_diagnostic_color();
     }
 }
 
@@ -300,7 +341,7 @@ pub fn register_template(
     let pdf_standards = world.manifest().pdf_standards().to_vec();
     let pdf_tagged = world.manifest().pdf_tagged();
     let result_id = new_document_id(template_id);
-    WORLD_CACHE.insert(template_id.to_owned(), world);
+    WORLD_CACHE.insert(template_id.to_owned(), Arc::new(RwLock::new(world)));
     store_warnings(&result_id, document.warnings);
     DOCUMENT_CACHE.insert(
         result_id.clone(),
@@ -326,12 +367,12 @@ pub fn compile_template(
     blob_inputs: HashMap<String, BlobWithMetadata>,
     mode: CompilationMode,
 ) -> Result<String, FfiError> {
-    let Some(mut world) = WORLD_CACHE.get_mut(template_id) else {
-        return Err(FfiError::TemplateNotRegistered(template_id.to_owned()));
-    };
+    let shared = get_world(template_id)?;
 
     let mut inputs = prepare_inputs(json_inputs, blob_inputs)?;
     inputs.with_config(mode.into());
+
+    let mut world = write_world(&shared);
     world
         .update_inputs(inputs)
         .map_err(|error| FfiError::InputValidation(error.to_string()))?;
@@ -414,14 +455,15 @@ pub fn export_document(
     format: ExportFormat,
     pages: Option<PageRange>,
 ) -> Result<Vec<u8>, FfiError> {
-    // Lock order: acquire the world (used for PDF
-    // diagnostics) before the document guard.
-    let world = if matches!(format, ExportFormat::Pdf) {
+    let shared = if matches!(format, ExportFormat::Pdf) {
         let template_id = template_id_from_document_id(document_id)?;
-        WORLD_CACHE.get(template_id)
+        WORLD_CACHE
+            .get(template_id)
+            .map(|entry| Arc::clone(entry.value()))
     } else {
         None
     };
+    let world = shared.as_ref().and_then(|world| try_read_world(world));
 
     let Some(cached) = DOCUMENT_CACHE.get(document_id) else {
         return Err(FfiError::DocumentNotFound(document_id.to_owned()));
@@ -490,18 +532,16 @@ pub fn document_pages(document_id: &str) -> Result<String, FfiError> {
 
 /// Return the template's input definitions serialized as a JSON string.
 pub fn inputs(template_id: &str) -> Result<String, FfiError> {
-    let Some(world) = WORLD_CACHE.get(template_id) else {
-        return Err(FfiError::TemplateNotRegistered(template_id.to_owned()));
-    };
+    let shared = get_world(template_id)?;
+    let world = read_world(&shared);
     serde_json::to_string(&world.manifest().tool.oicana)
         .map_err(|error| FfiError::InputsSerialization(error.to_string()))
 }
 
 /// Return the source text of a file inside the template.
 pub fn get_source(template_id: &str, path: &str) -> Result<String, FfiError> {
-    let Some(world) = WORLD_CACHE.get(template_id) else {
-        return Err(FfiError::TemplateNotRegistered(template_id.to_owned()));
-    };
+    let shared = get_world(template_id)?;
+    let world = read_world(&shared);
     let vpath = VirtualPath::new(path).map_err(|error| FfiError::SourceLoad {
         path: path.to_owned(),
         error: error.to_string(),
@@ -518,9 +558,8 @@ pub fn get_source(template_id: &str, path: &str) -> Result<String, FfiError> {
 
 /// Return the raw bytes of a file inside the template.
 pub fn get_file(template_id: &str, path: &str) -> Result<Vec<u8>, FfiError> {
-    let Some(world) = WORLD_CACHE.get(template_id) else {
-        return Err(FfiError::TemplateNotRegistered(template_id.to_owned()));
-    };
+    let shared = get_world(template_id)?;
+    let world = read_world(&shared);
     let vpath = VirtualPath::new(path).map_err(|error| FfiError::FileLoad {
         path: path.to_owned(),
         error: error.to_string(),
@@ -540,10 +579,8 @@ pub fn get_file(template_id: &str, path: &str) -> Result<Vec<u8>, FfiError> {
 /// When enabled (the default), JSON inputs are validated against their schemas
 /// before compilation.
 pub fn set_validate_inputs(template_id: &str, validate: bool) -> Result<(), FfiError> {
-    let Some(mut world) = WORLD_CACHE.get_mut(template_id) else {
-        return Err(FfiError::TemplateNotRegistered(template_id.to_owned()));
-    };
-    world.validate_inputs = validate;
+    let shared = get_world(template_id)?;
+    write_world(&shared).validate_inputs = validate;
     Ok(())
 }
 
@@ -810,6 +847,59 @@ mod tests {
 
         remove_document(&exported_doc);
         remove_world(&template_id);
+    }
+
+    #[test]
+    fn compile_of_one_template_does_not_block_others() {
+        use std::sync::mpsc;
+        use std::thread;
+        use std::time::Duration;
+
+        let files = std::fs::read("../../assets/templates/table-0.1.0.zip")
+            .expect("read test template fixture");
+        let template_a = format!("blocking-test-a-{}", Uuid::new_v4());
+        let template_b = format!("blocking-test-b-{}", Uuid::new_v4());
+
+        for template_id in [&template_a, &template_b] {
+            let doc_id = register_template(
+                template_id,
+                &files,
+                HashMap::new(),
+                HashMap::new(),
+                CompilationMode::Development,
+            )
+            .expect("register template");
+            remove_document(&doc_id);
+        }
+
+        let shared_a = get_world(&template_a).expect("world for template A");
+        // take and hold a lock on template a
+        let in_flight_compile_of_a = write_world(&shared_a);
+
+        let (done_tx, done_rx) = mpsc::channel();
+        let other_template = template_b.clone();
+        thread::spawn(move || {
+            let doc_id = compile_template(
+                &other_template,
+                HashMap::new(),
+                HashMap::new(),
+                CompilationMode::Development,
+            )
+            .expect("compile template");
+            inputs(&other_template).expect("inputs");
+            let pdf = export_document(&doc_id, ExportFormat::Pdf, None).expect("export PDF");
+            assert!(!pdf.is_empty());
+            remove_document(&doc_id);
+            done_tx.send(()).unwrap();
+        });
+
+        done_rx
+            .recv_timeout(Duration::from_secs(60))
+            .expect("operations on template B blocked behind template A's in-flight compile");
+
+        drop(in_flight_compile_of_a);
+        remove_world(&template_a);
+        remove_world(&template_b);
     }
 
     #[test]
