@@ -9,8 +9,8 @@ extern crate napi_derive;
 
 use std::collections::HashMap;
 
-use napi::bindgen_prelude::{Buffer, Result, Uint8Array};
-use napi::Error;
+use napi::bindgen_prelude::{AsyncTask, Buffer, Result, Uint8Array};
+use napi::{Env, Error, Task};
 
 /// Error string when a requested template is not registered yet. Call `[register_template]` before
 /// trying to use the template through a different method.
@@ -81,6 +81,55 @@ pub fn compile_template(
   .map_err(into_napi_err)
 }
 
+/// Background task compiling a template on the libuv thread pool.
+pub struct CompileTemplateTask {
+  template: String,
+  json_inputs: HashMap<String, String>,
+  blob_inputs: HashMap<String, oicana_ffi_core::BlobWithMetadata>,
+  compilation_mode: oicana_ffi_core::CompilationMode,
+}
+
+impl Task for CompileTemplateTask {
+  type Output = String;
+  type JsValue = String;
+
+  fn compute(&mut self) -> Result<Self::Output> {
+    oicana_ffi_core::compile_template(
+      &self.template,
+      std::mem::take(&mut self.json_inputs),
+      std::mem::take(&mut self.blob_inputs),
+      self.compilation_mode,
+    )
+    .map_err(into_napi_err)
+  }
+
+  fn resolve(&mut self, _env: Env, output: Self::Output) -> Result<Self::JsValue> {
+    Ok(output)
+  }
+}
+
+/// Compile the identified template with the given inputs on a background thread.
+///
+/// The returned promise resolves to the document id. Unlike [`compile_template`],
+/// this does not block the Node.js event loop while the compilation runs.
+///
+/// Calling this method requires a previous call to [`register_template`] with the same template
+/// identifier.
+#[napi(ts_return_type = "Promise<string>")]
+pub fn compile_template_async(
+  template: String,
+  json_inputs: HashMap<String, String>,
+  blob_inputs: HashMap<String, BlobWithMetadata>,
+  compilation_mode: CompilationMode,
+) -> AsyncTask<CompileTemplateTask> {
+  AsyncTask::new(CompileTemplateTask {
+    template,
+    json_inputs,
+    blob_inputs: into_core_blobs(blob_inputs),
+    compilation_mode: compilation_mode.into(),
+  })
+}
+
 /// Load all input definitions for the given template.
 ///
 /// Calling this method requires a previous call to [`register_template`] with the same template
@@ -135,6 +184,52 @@ pub fn export_document(
   oicana_ffi_core::export_document(&document_id, format, page)
     .map(Into::into)
     .map_err(into_napi_err)
+}
+
+/// Background task exporting a compiled document on the libuv thread pool.
+pub struct ExportDocumentTask {
+  document_id: String,
+  export_format: String,
+  page_range: Option<String>,
+}
+
+impl Task for ExportDocumentTask {
+  type Output = Vec<u8>;
+  type JsValue = Buffer;
+
+  fn compute(&mut self) -> Result<Self::Output> {
+    let format =
+      oicana_ffi_core::parse_export_format(&self.export_format).map_err(into_napi_err)?;
+    let pages = oicana_ffi_core::parse_page_range(self.page_range.as_deref().unwrap_or(""))
+      .map_err(into_napi_err)?;
+    oicana_ffi_core::export_document(&self.document_id, format, pages).map_err(into_napi_err)
+  }
+
+  fn resolve(&mut self, _env: Env, output: Self::Output) -> Result<Self::JsValue> {
+    Ok(output.into())
+  }
+}
+
+/// Export the given document on a background thread.
+///
+/// The returned promise resolves to the exported bytes. Unlike [`export_document`],
+/// this does not block the Node.js event loop while the export runs.
+///
+/// `page_range` is a JSON object `{ "start"?: number, "end"?: number }` with
+/// 0-based, inclusive bounds. If not set, the whole document is exported.
+///
+/// Make sure to call `removeDocument` with the documentId afterwards, to free the memory.
+#[napi(ts_return_type = "Promise<Buffer>")]
+pub fn export_document_async(
+  document_id: String,
+  export_format: String,
+  page_range: Option<String>,
+) -> AsyncTask<ExportDocumentTask> {
+  AsyncTask::new(ExportDocumentTask {
+    document_id,
+    export_format,
+    page_range,
+  })
 }
 
 /// Remove the document from the cache.

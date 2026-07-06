@@ -559,10 +559,12 @@ if (!nativeBinding) {
 module.exports = nativeBinding
 module.exports.CompilationMode = nativeBinding.CompilationMode
 module.exports.compileTemplate = nativeBinding.compileTemplate
+module.exports.compileTemplateAsync = nativeBinding.compileTemplateAsync
 module.exports.configureAutomaticCacheEviction = nativeBinding.configureAutomaticCacheEviction
 module.exports.documentPages = nativeBinding.documentPages
 module.exports.evictCache = nativeBinding.evictCache
 module.exports.exportDocument = nativeBinding.exportDocument
+module.exports.exportDocumentAsync = nativeBinding.exportDocumentAsync
 module.exports.getFile = nativeBinding.getFile
 module.exports.getSource = nativeBinding.getSource
 module.exports.getWarnings = nativeBinding.getWarnings
