@@ -20,16 +20,16 @@ pub enum PackedTemplateError {
     /// The zip archive could not be read.
     #[error("Failed to read archive: {0}")]
     InvalidArchive(#[from] zip::result::ZipError),
-    /// The archive contains more entries than allowed by [`ZipLimits`].
-    #[error("Archive has {count} entries, exceeding the limit of {limit}")]
+    /// The template archive contains more entries than allowed by [`ZipLimits`].
+    #[error("Template archive has {count} entries, exceeding the limit of {limit}")]
     TooManyEntries {
         /// The number of entries in the archive.
         count: usize,
         /// The configured entry limit.
         limit: usize,
     },
-    /// The decompressed archive content exceeds the size allowed by [`ZipLimits`].
-    #[error("Decompressed archive content exceeds the limit of {limit} bytes")]
+    /// The decompressed template archive content exceeds the size allowed by [`ZipLimits`].
+    #[error("Decompressed template archive content exceeds the limit of {limit} bytes")]
     TooLarge {
         /// The configured limit for the total decompressed size in bytes.
         limit: u64,
@@ -51,6 +51,32 @@ impl Default for ZipLimits {
             max_entries: 10_000,
             max_total_decompressed_bytes: 512 * 1024 * 1024,
         }
+    }
+}
+
+impl ZipLimits {
+    /// Check the sizes declared in an archive's central directory against these limits.
+    pub fn check_declared<R: Read + Seek>(&self, reader: R) -> Result<(), PackedTemplateError> {
+        let mut archive = ZipArchive::new(reader).map_err(PackedTemplateError::InvalidArchive)?;
+        if archive.len() > self.max_entries {
+            return Err(PackedTemplateError::TooManyEntries {
+                count: archive.len(),
+                limit: self.max_entries,
+            });
+        }
+        let mut total_bytes: u64 = 0;
+        for index in 0..archive.len() {
+            let entry = archive
+                .by_index_raw(index)
+                .map_err(PackedTemplateError::InvalidArchive)?;
+            total_bytes = total_bytes.saturating_add(entry.size());
+        }
+        if total_bytes > self.max_total_decompressed_bytes {
+            return Err(PackedTemplateError::TooLarge {
+                limit: self.max_total_decompressed_bytes,
+            });
+        }
+        Ok(())
     }
 }
 
@@ -141,7 +167,14 @@ impl PackedTemplate {
                     if is_font(path) {
                         fonts.push(id);
                     }
-                    read_zip_file_content(&mut source, &mut bytes, content, id, &mut remaining_bytes, &limits)?;
+                    read_zip_file_content(
+                        &mut source,
+                        &mut bytes,
+                        content,
+                        id,
+                        &mut remaining_bytes,
+                        &limits,
+                    )?;
                     continue;
                 }
             };
@@ -157,7 +190,14 @@ impl PackedTemplate {
             if is_font(path) {
                 fonts.push(id);
             }
-            read_zip_file_content(&mut source, &mut bytes, content, id, &mut remaining_bytes, &limits)?;
+            read_zip_file_content(
+                &mut source,
+                &mut bytes,
+                content,
+                id,
+                &mut remaining_bytes,
+                &limits,
+            )?;
         }
 
         Ok(PackedTemplate {
@@ -368,10 +408,8 @@ mod tests {
     #[test]
     fn size_limit_applies_to_the_sum_of_all_entries() {
         let content = vec![b' '; 40 * 1024];
-        let archive = zip_with_entries(&[
-            ("a.typ", content.as_slice()),
-            ("b.typ", content.as_slice()),
-        ]);
+        let archive =
+            zip_with_entries(&[("a.typ", content.as_slice()), ("b.typ", content.as_slice())]);
 
         let result = PackedTemplate::new_with_limits(
             Cursor::new(archive),
@@ -387,10 +425,8 @@ mod tests {
     #[test]
     fn reads_archive_that_exactly_fits_the_limits() {
         let content = vec![b' '; 32 * 1024];
-        let archive = zip_with_entries(&[
-            ("a.typ", content.as_slice()),
-            ("b.typ", content.as_slice()),
-        ]);
+        let archive =
+            zip_with_entries(&[("a.typ", content.as_slice()), ("b.typ", content.as_slice())]);
 
         let files = PackedTemplate::new_with_limits(
             Cursor::new(archive),
@@ -403,6 +439,54 @@ mod tests {
 
         assert!(files.source(project_file("/a.typ")).is_ok());
         assert!(files.source(project_file("/b.typ")).is_ok());
+    }
+
+    #[test]
+    fn check_declared_rejects_too_many_entries() {
+        let archive = zip_with_entries(&[
+            ("a.typ", b"a".as_slice()),
+            ("b.typ", b"b".as_slice()),
+            ("c.typ", b"c".as_slice()),
+        ]);
+
+        let result = ZipLimits {
+            max_entries: 2,
+            ..ZipLimits::default()
+        }
+        .check_declared(Cursor::new(archive));
+
+        assert!(matches!(
+            result,
+            Err(PackedTemplateError::TooManyEntries { count: 3, limit: 2 })
+        ));
+    }
+
+    #[test]
+    fn check_declared_rejects_oversized_content() {
+        let content = vec![b' '; 40 * 1024];
+        let archive =
+            zip_with_entries(&[("a.typ", content.as_slice()), ("b.typ", content.as_slice())]);
+
+        let result = ZipLimits {
+            max_total_decompressed_bytes: 64 * 1024,
+            ..ZipLimits::default()
+        }
+        .check_declared(Cursor::new(archive));
+
+        assert!(matches!(
+            result,
+            Err(PackedTemplateError::TooLarge { limit }) if limit == 64 * 1024
+        ));
+    }
+
+    #[test]
+    fn check_declared_accepts_archive_within_limits() {
+        let template =
+            read("../../assets/templates/table-0.1.0.zip").expect("Failed to read template zip");
+
+        assert!(ZipLimits::default()
+            .check_declared(Cursor::new(template))
+            .is_ok());
     }
 
     #[test]

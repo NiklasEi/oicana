@@ -8,6 +8,9 @@
 - Limit packed template archives to protect against zip bombs
   - Default limits: 10,000 entries and 512 MiB of decompressed content 
 
+### CLI
+- `pack` warns if the packed template exceeds the default archive limits
+
 ### Python integration
 - release GIL where possible to allow parallelization
 
