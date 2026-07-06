@@ -5,6 +5,8 @@
 - Fix potential ABBA deadlock when doing template compilation in parallel to document exports
 - Performance improvement: more finegrained internal locking to unlock more parallelization
 - Bumped some dependencies to resolve security advisories
+- Limit packed template archives to protect against zip bombs
+  - Default limits: 10,000 entries and 512 MiB of decompressed content 
 
 ### Python integration
 - release GIL where possible to allow parallelization
