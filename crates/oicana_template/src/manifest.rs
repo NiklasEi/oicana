@@ -2,6 +2,7 @@ use crate::{OicanaConfig, PdfStandard};
 use ignore::gitignore::{Gitignore, GitignoreBuilder};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
+use std::path::{Component, Path};
 use thiserror::Error;
 use typst::diag::EcoString;
 use typst::syntax::package::{PackageInfo, TemplateInfo, UnknownFields};
@@ -36,6 +37,8 @@ impl TemplateManifest {
     /// validate the Typst package part of the manifest.
     ///
     /// This follows Typst's own package validation and checks Oicana specific rules on top.
+    /// Never touches the filesystem. Use [`Self::validate_at`]
+    /// when the template root is available for more checks.
     pub fn validate(&self) -> Result<(), ManifestValidationError> {
         let mut unknown_keys: Vec<_> = self.unknown_fields.keys().map(String::from).collect();
         unknown_keys.extend(
@@ -54,11 +57,27 @@ impl TemplateManifest {
             return Err(ManifestValidationError::InvalidTemplateName);
         }
 
-        let oicana_config = &self.tool.oicana;
-
-        if oicana_config.tests.is_absolute()
-            || (oicana_config.tests.exists() && !oicana_config.tests.is_dir())
+        let tests = &self.tool.oicana.tests;
+        if tests.is_absolute()
+            || tests
+                .components()
+                .any(|component| matches!(component, Component::ParentDir))
         {
+            return Err(ManifestValidationError::InvalidTestsPath);
+        }
+
+        Ok(())
+    }
+
+    /// Validate the manifest including filesystem checks against the template root.
+    ///
+    /// On top of [`Self::validate`], this checks that the `tests` path does not point
+    /// to an existing non-directory inside the template.
+    pub fn validate_at(&self, template_root: &Path) -> Result<(), ManifestValidationError> {
+        self.validate()?;
+
+        let tests = template_root.join(&self.tool.oicana.tests);
+        if tests.exists() && !tests.is_dir() {
             return Err(ManifestValidationError::InvalidTestsPath);
         }
 
@@ -303,22 +322,57 @@ mod tests {
         assert!(is_excluded(&manifest, "output", true));
     }
 
-    #[test]
-    fn validates_that_tests_dir_is_relative() {
-        let manifest = TemplateManifest::new(
+    fn manifest_with_tests_path(tests: PathBuf) -> TemplateManifest {
+        TemplateManifest::new(
             default_package_info(),
             OicanaConfig {
                 manifest_version: 1,
                 inputs: vec![],
                 validate_json_inputs_by_default: true,
-                tests: PathBuf::from(".").canonicalize().unwrap(),
+                tests,
                 export: ExportConfig::default(),
             },
-        );
+        )
+    }
+
+    #[test]
+    fn validates_that_tests_dir_is_relative() {
+        let manifest = manifest_with_tests_path(PathBuf::from(".").canonicalize().unwrap());
 
         assert_eq!(
             manifest.validate(),
             Err(ManifestValidationError::InvalidTestsPath)
         );
+    }
+
+    #[test]
+    fn validates_that_tests_dir_does_not_leave_the_template_root() {
+        let manifest = manifest_with_tests_path(PathBuf::from("../outside"));
+
+        assert_eq!(
+            manifest.validate(),
+            Err(ManifestValidationError::InvalidTestsPath)
+        );
+    }
+
+    #[test]
+    fn validate_at_resolves_tests_against_the_given_root() {
+        let manifest = manifest_with_tests_path(PathBuf::from("tests"));
+
+        // A file named `tests` in the template root is invalid...
+        let root_with_file = tempfile::tempdir().unwrap();
+        std::fs::File::create(root_with_file.path().join("tests")).unwrap();
+        assert_eq!(
+            manifest.validate_at(root_with_file.path()),
+            Err(ManifestValidationError::InvalidTestsPath)
+        );
+
+        // ...a directory or no entry at all is fine.
+        let root_with_dir = tempfile::tempdir().unwrap();
+        std::fs::create_dir(root_with_dir.path().join("tests")).unwrap();
+        assert_eq!(manifest.validate_at(root_with_dir.path()), Ok(()));
+
+        let empty_root = tempfile::tempdir().unwrap();
+        assert_eq!(manifest.validate_at(empty_root.path()), Ok(()));
     }
 }

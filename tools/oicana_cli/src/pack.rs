@@ -48,7 +48,7 @@ pub fn pack(args: PackArgs) -> anyhow::Result<()> {
 
     for template in templates {
         info!("Packing template '{}'.", template.manifest.package.name);
-        template.manifest.validate()?;
+        template.manifest.validate_at(&template.path)?;
 
         let files = NativeTemplate::new(&template.path, packages.clone());
 

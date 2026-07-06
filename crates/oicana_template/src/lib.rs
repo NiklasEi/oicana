@@ -30,7 +30,7 @@ pub fn validate_native_template(
     }
     let template_meta = path.join("typst.toml");
     let manifest = TemplateManifest::from_toml(&read_to_string(template_meta)?)?;
-    manifest.validate()?;
+    manifest.validate_at(&path)?;
 
     Ok(manifest)
 }
@@ -236,6 +236,38 @@ mod tests {
             export: ExportConfig::default(),
         };
         assert_eq!(result.unwrap().tool.oicana, expected);
+    }
+
+    #[test]
+    fn rejects_template_where_tests_path_is_a_file() {
+        let template = tempdir().unwrap();
+        {
+            let path = template.path().join("typst.toml");
+            let mut file = File::create(&path).unwrap();
+            write!(
+                &mut file,
+                r#"
+                [package]
+                name = "invoice"
+                version = "0.1.0"
+                entrypoint = "main.typ"
+
+                [tool.oicana]
+                manifest_version = 1
+                "#
+            )
+            .unwrap();
+        }
+        File::create(template.path().join("tests")).unwrap();
+
+        let result = validate_native_template(template.path());
+
+        assert!(matches!(
+            result,
+            Err(TemplateError::ManifestValidationError(
+                crate::manifest::ManifestValidationError::InvalidTestsPath
+            ))
+        ));
     }
 
     #[test]
