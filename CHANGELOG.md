@@ -26,6 +26,10 @@
 - Fix non-ASCII string handling on Windows
 - Fixed memory leak in input handing
 
+### Node integration
+- prevent panics across FFI border
+- Offer async methods to offload compilation and document export to the libuv thread pool
+
 
 ## v0.4.0
 - Update to Typst 0.15
