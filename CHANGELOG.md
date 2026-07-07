@@ -7,6 +7,9 @@
 - Bumped some dependencies to resolve security advisories
 - Limit packed template archives to protect against zip bombs
   - Default limits: 10,000 entries and 512 MiB of decompressed content 
+- Limit pixels on png exports to keep the memory usage of the export in an acceptable range
+  - Default limit: 256 million pixels or ~1Gb of memory
+  - corresponds to roughly 14 A4 pages at 300 DPI or one A4 page at 800 DPI
 
 ### CLI
 - `pack` warns if the packed template exceeds the default archive limits
