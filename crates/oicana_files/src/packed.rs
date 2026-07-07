@@ -3,7 +3,7 @@ use log::warn;
 use std::collections::HashMap;
 use std::io::{Read, Seek};
 use std::str::FromStr;
-use std::sync::Mutex;
+use std::sync::{Mutex, PoisonError};
 use std::{str, vec};
 use thiserror::Error;
 use typst::diag::{FileError, FileResult};
@@ -248,7 +248,9 @@ fn is_font(path: &str) -> bool {
 
 impl TemplateFiles for PackedTemplate {
     fn source(&self, id: FileId) -> FileResult<Source> {
-        let mut map = self.source.lock().unwrap();
+        // The maps are never structurally modified after construction, so a
+        // poisoned lock cannot mean inconsistent data.
+        let mut map = self.source.lock().unwrap_or_else(PoisonError::into_inner);
         Ok(map
             .get_mut(&id)
             .ok_or(FileError::NotFound(id.vpath().get_with_slash().into()))?
@@ -256,7 +258,7 @@ impl TemplateFiles for PackedTemplate {
     }
 
     fn file(&self, id: FileId) -> FileResult<Bytes> {
-        let mut map = self.bytes.lock().unwrap();
+        let mut map = self.bytes.lock().unwrap_or_else(PoisonError::into_inner);
         Ok(map
             .get_mut(&id)
             .ok_or(FileError::NotFound(id.vpath().get_with_slash().into()))?
@@ -301,6 +303,30 @@ mod tests {
         let files =
             PackedTemplate::new(Cursor::new(template)).expect("Failed to parse template zip");
         assert!(files.source(project_file("/main.typ")).is_ok());
+    }
+
+    #[test]
+    fn recovers_from_poisoned_file_maps() {
+        let template =
+            read("../../assets/templates/table-0.1.0.zip").expect("Failed to read template zip");
+        let files =
+            PackedTemplate::new(Cursor::new(template)).expect("Failed to parse template zip");
+
+        let _ = std::panic::catch_unwind(|| {
+            let _source = files.source.lock().unwrap();
+            let _bytes = files.bytes.lock().unwrap();
+            panic!("poison the file maps");
+        });
+        assert!(files.source.is_poisoned());
+        assert!(files.bytes.is_poisoned());
+
+        assert!(files.source(project_file("/main.typ")).is_ok());
+        assert!(files
+            .file(package_file(
+                "@preview/oicana:0.1.1".parse().unwrap(),
+                "/typst.toml"
+            ))
+            .is_ok());
     }
 
     #[test]
