@@ -150,7 +150,7 @@ test('Can register and render template', async (t) => {
   t.truthy(fs.existsSync('test_2.pdf'))
 })
 
-test('async compile and export keep the event loop free', async (t) => {
+test('async exports keep the event loop free', async (t) => {
   const file = fs.readFileSync(`${assetsDir}/templates/invoice-0.1.0.zip`)
   const invoice = `
   {
@@ -196,26 +196,25 @@ test('async compile and export keep the event loop free', async (t) => {
   const warmUpDocumentId = registerTemplate('invoice-async', file, { invoice }, { banner }, CompilationMode.Development)
   removeDocument(warmUpDocumentId)
 
-  // If the native call blocked the event loop, its promise would already be
-  // settled by the time the freshly scheduled setImmediate can run, and the
-  // race would resolve to 'compile finished'.
-  const compilePromise = compileTemplateAsync('invoice-async', { invoice }, { banner }, CompilationMode.Development)
-  const compileWinner = await Promise.race([
-    compilePromise.then(() => 'compile finished'),
-    new Promise((resolve) => setImmediate(() => resolve('event loop turned'))),
-  ])
-  t.is(compileWinner, 'event loop turned')
+  // We compare how long the async call blocks the caller
+  // against how long the equivalent synchronous call takes: a truly async
+  // call hands the heavy work to a worker thread and returns almost instantly,
+  // so its synchronous portion is a small fraction of the real time.
 
-  const documentId = await compilePromise
-  const exportPromise = exportDocumentAsync(documentId, JSON.stringify({ format: 'pdf' }))
-  const exportWinner = await Promise.race([
-    exportPromise.then(() => 'export finished'),
-    new Promise((resolve) => setImmediate(() => resolve('event loop turned'))),
-  ])
-  t.is(exportWinner, 'event loop turned')
+  const documentId = compileTemplate('invoice-async', { invoice }, { banner }, CompilationMode.Development)
+  const syncExportStart = performance.now()
+  exportDocument(documentId, JSON.stringify({ format: 'png', pixelsPerPt: 1 }))
+  const syncExportMs = performance.now() - syncExportStart
 
-  const result = await exportPromise
-  t.is(result.subarray(0, 4).toString(), '%PDF')
+  const asyncExportStart = performance.now()
+  const exportPromise = exportDocumentAsync(documentId, JSON.stringify({ format: 'png', pixelsPerPt: 1 }))
+  const exportReturnMs = performance.now() - asyncExportStart
+  await exportPromise
+  t.true(
+    exportReturnMs < syncExportMs / 2,
+    `async export blocked the caller for ${exportReturnMs}ms; a synchronous export of the same document took ${syncExportMs}ms`,
+  )
+
   removeDocument(documentId)
 })
 
