@@ -1,6 +1,6 @@
 # Changelog
 
-## Upcoming
+## v0.5.0
 
 - Fix potential ABBA deadlock when doing template compilation in parallel to document exports
 - Performance improvement: more finegrained internal locking to unlock more parallelization
