@@ -4,6 +4,7 @@ use clap::Args;
 use console::{style, Emoji};
 use log::info;
 use oicana::files::native::{package_data_dir, NativeTemplate};
+use oicana::files::packed::ZipLimits;
 use oicana::files::TemplateFiles;
 use oicana::template::package::package_with_dependencies;
 use std::collections::HashSet;
@@ -48,7 +49,7 @@ pub fn pack(args: PackArgs) -> anyhow::Result<()> {
 
     for template in templates {
         info!("Packing template '{}'.", template.manifest.package.name);
-        template.manifest.validate()?;
+        template.manifest.validate_at(&template.path)?;
 
         let files = NativeTemplate::new(&template.path, packages.clone());
 
@@ -86,9 +87,26 @@ pub fn pack(args: PackArgs) -> anyhow::Result<()> {
             style(&template.manifest.package.name).bold(),
             style(out_file_path.display()).cyan(),
         );
+
+        warn_if_template_exceeds_default_limits(&out_file_path);
     }
 
     Ok(())
+}
+
+/// Warn if the packed template exceeds the default archive limits of the integrations.
+///
+/// Registering such a template will fail unless Oicana is configured
+/// with higher archive limits.
+fn warn_if_template_exceeds_default_limits(out_file_path: &Path) {
+    let Ok(packed) = File::open(out_file_path) else {
+        return;
+    };
+    if let Err(error) = ZipLimits::default().check_declared(packed) {
+        let warning = style("Warning").yellow();
+        println!("{warning}: {error}.");
+        println!("   Oicana integrations with default limits will reject this template.");
+    }
 }
 
 /// Collect all package dependencies by scanning imports in template `.typ` files.

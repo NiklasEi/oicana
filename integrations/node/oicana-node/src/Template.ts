@@ -2,7 +2,9 @@ import { randomUUID } from 'node:crypto';
 import {
   type BlobWithMetadata as BlobWithMetadataNative,
   compileTemplate,
+  compileTemplateAsync,
   exportDocument,
+  exportDocumentAsync,
   getWarnings,
   CompilationMode as NativeCompilationMode,
   registerTemplate,
@@ -162,6 +164,34 @@ export class Template implements Disposable {
   }
 
   /**
+   * Compile the template and export it in a single call on a background thread,
+   * then free the document.
+   *
+   * Unlike {@link export}, this does not block the Node.js event loop while the
+   * compilation and export run.
+   * @param jsonInputs - JSON inputs for the template (defaults to empty map)
+   * @param blobInputs - Blob inputs for the template (defaults to empty map)
+   * @param exportOptions - Export format specification (defaults to PDF)
+   * @param compilationOptions - Compilation mode (defaults to Production)
+   * @param pages - 0-based, inclusive page range (defaults to the whole document)
+   */
+  public exportAsync(
+    jsonInputs?: Map<string, string>,
+    blobInputs?: Map<string, BlobWithMetadata>,
+    exportOptions?: ExportFormat,
+    compilationOptions?: CompilationMode,
+    pages?: PageRange,
+  ): Promise<Uint8Array> {
+    return this.exportWithAsync(
+      exportOptions ?? Pdf,
+      jsonInputs,
+      blobInputs,
+      compilationOptions,
+      pages,
+    );
+  }
+
+  /**
    * Compile the template and export it to PDF in a single call, then free the
    * document.
    * Tagging will be automatically turned off when exporting a subset of pages.
@@ -177,6 +207,31 @@ export class Template implements Disposable {
     pages?: PageRange,
   ): Uint8Array {
     return this.exportWith(
+      Pdf,
+      jsonInputs,
+      blobInputs,
+      compilationOptions,
+      pages,
+    );
+  }
+
+  /**
+   * Compile the template and export it to PDF in a single call on a background
+   * thread, then free the document. The Node.js event loop stays free while the
+   * work runs.
+   * Tagging will be automatically turned off when exporting a subset of pages.
+   * @param jsonInputs - JSON inputs for the template (defaults to empty map)
+   * @param blobInputs - Blob inputs for the template (defaults to empty map)
+   * @param compilationOptions - Compilation mode (defaults to Production)
+   * @param pages - 0-based, inclusive page range (defaults to the whole document)
+   */
+  public exportPdfAsync(
+    jsonInputs?: Map<string, string>,
+    blobInputs?: Map<string, BlobWithMetadata>,
+    compilationOptions?: CompilationMode,
+    pages?: PageRange,
+  ): Promise<Uint8Array> {
+    return this.exportWithAsync(
       Pdf,
       jsonInputs,
       blobInputs,
@@ -212,6 +267,33 @@ export class Template implements Disposable {
   }
 
   /**
+   * Compile the template and export it to PNG in a single call on a background
+   * thread, then free the document. The Node.js event loop stays free while the
+   * work runs.
+   * Multiple pages are merged into a single, vertically stacked image.
+   * @param jsonInputs - JSON inputs for the template (defaults to empty map)
+   * @param blobInputs - Blob inputs for the template (defaults to empty map)
+   * @param compilationOptions - Compilation mode (defaults to Production)
+   * @param pixelsPerPt - resolution in pixels per point (defaults to 1.0)
+   * @param pages - 0-based, inclusive page range (defaults to the whole document)
+   */
+  public exportPngAsync(
+    jsonInputs?: Map<string, string>,
+    blobInputs?: Map<string, BlobWithMetadata>,
+    compilationOptions?: CompilationMode,
+    pixelsPerPt = 1.0,
+    pages?: PageRange,
+  ): Promise<Uint8Array> {
+    return this.exportWithAsync(
+      Png(pixelsPerPt),
+      jsonInputs,
+      blobInputs,
+      compilationOptions,
+      pages,
+    );
+  }
+
+  /**
    * Compile the template and export it to SVG in a single call, then free the
    * document.
    * @param jsonInputs - JSON inputs for the template (defaults to empty map)
@@ -234,6 +316,30 @@ export class Template implements Disposable {
     );
   }
 
+  /**
+   * Compile the template and export it to SVG in a single call on a background
+   * thread, then free the document. The Node.js event loop stays free while the
+   * work runs.
+   * @param jsonInputs - JSON inputs for the template (defaults to empty map)
+   * @param blobInputs - Blob inputs for the template (defaults to empty map)
+   * @param compilationOptions - Compilation mode (defaults to Production)
+   * @param pages - 0-based, inclusive page range (defaults to the whole document)
+   */
+  public exportSvgAsync(
+    jsonInputs?: Map<string, string>,
+    blobInputs?: Map<string, BlobWithMetadata>,
+    compilationOptions?: CompilationMode,
+    pages?: PageRange,
+  ): Promise<Uint8Array> {
+    return this.exportWithAsync(
+      Svg,
+      jsonInputs,
+      blobInputs,
+      compilationOptions,
+      pages,
+    );
+  }
+
   private exportWith(
     format: ExportFormat,
     jsonInputs?: Map<string, string>,
@@ -248,6 +354,29 @@ export class Template implements Disposable {
     );
     try {
       return exportDocument(
+        document,
+        JSON.stringify(format),
+        serializePageRange(pages),
+      );
+    } finally {
+      removeDocument(document);
+    }
+  }
+
+  private async exportWithAsync(
+    format: ExportFormat,
+    jsonInputs?: Map<string, string>,
+    blobInputs?: Map<string, BlobWithMetadata>,
+    compilationOptions?: CompilationMode,
+    pages?: PageRange,
+  ): Promise<Uint8Array> {
+    const document = await this.compileToDocumentIdAsync(
+      jsonInputs,
+      blobInputs,
+      compilationOptions,
+    );
+    try {
+      return await exportDocumentAsync(
         document,
         JSON.stringify(format),
         serializePageRange(pages),
@@ -281,12 +410,54 @@ export class Template implements Disposable {
     return new CompiledDocument(documentId);
   }
 
+  /**
+   * Compile the template on a background thread and return a handle to the
+   * compiled document.
+   *
+   * Unlike {@link compile}, this does not block the Node.js event loop while
+   * the compilation runs. Call `dispose()` on the returned document (or use
+   * `using`) to free it. For a single one-shot export, prefer
+   * {@link exportAsync}.
+   * @param jsonInputs - JSON inputs for the template (defaults to empty map)
+   * @param blobInputs - Blob inputs for the template (defaults to empty map)
+   * @param compilationOptions - Compilation mode (defaults to Production)
+   */
+  public async compileAsync(
+    jsonInputs?: Map<string, string>,
+    blobInputs?: Map<string, BlobWithMetadata>,
+    compilationOptions?: CompilationMode,
+  ): Promise<CompiledDocument> {
+    const documentId = await this.compileToDocumentIdAsync(
+      jsonInputs,
+      blobInputs,
+      compilationOptions,
+    );
+    return new CompiledDocument(documentId);
+  }
+
   private compileToDocumentId(
     jsonInputs?: Map<string, string>,
     blobInputs?: Map<string, BlobWithMetadata>,
     compilationOptions?: CompilationMode,
   ): string {
     const documentId = compileTemplate(
+      this.template,
+      Object.fromEntries(jsonInputs ?? new Map<string, string>()),
+      this.convertBlobWithMetadata(
+        blobInputs ?? new Map<string, BlobWithMetadata>(),
+      ),
+      this.mapCompilationMode(compilationOptions ?? CompilationMode.Production),
+    );
+    this.lastWarnings = getWarnings(documentId) ?? undefined;
+    return documentId;
+  }
+
+  private async compileToDocumentIdAsync(
+    jsonInputs?: Map<string, string>,
+    blobInputs?: Map<string, BlobWithMetadata>,
+    compilationOptions?: CompilationMode,
+  ): Promise<string> {
+    const documentId = await compileTemplateAsync(
       this.template,
       Object.fromEntries(jsonInputs ?? new Map<string, string>()),
       this.convertBlobWithMetadata(

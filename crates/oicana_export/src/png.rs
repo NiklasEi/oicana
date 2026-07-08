@@ -17,10 +17,38 @@ pub enum PngExportError {
     /// The requested page range selected none of the document's pages.
     #[error("the requested page range selected no pages of the document")]
     NoPagesSelected,
+    /// Rendering the selected pages at the requested scale would exceed [`PngLimits`].
+    #[error("rendering would allocate {required} pixels, exceeding the limit of {limit}")]
+    TooLarge {
+        /// The number of pixels rendering would allocate.
+        required: u64,
+        /// The configured limit for the total number of pixels.
+        limit: u64,
+    },
     /// Encoding the rendered pixmap to PNG failed.
     #[error(transparent)]
     Encoding(#[from] EncodingError),
 }
+
+/// Limits applied while rendering a document to PNG.
+#[derive(Debug, Clone, Copy)]
+pub struct PngLimits {
+    /// Maximum total number of pixels allocated while rendering.
+    pub max_total_pixels: u64,
+}
+
+impl Default for PngLimits {
+    fn default() -> Self {
+        PngLimits {
+            // ~1 GiB of RGBA pixel buffers; roughly half of it for the merged
+            // canvas, e.g. 14 A4 pages at 300 DPI or one A4 page at 800 DPI.
+            max_total_pixels: 256_000_000,
+        }
+    }
+}
+
+/// Vertical gap between pages in the merged PNG, in points.
+const PAGE_GAP_PT: f64 = 15.0;
 
 /// Export the document to a single, vertically stacked PNG.
 ///
@@ -31,6 +59,19 @@ pub fn export_png(
     pixels_per_pt: f32,
     pages: Option<&PageRange>,
 ) -> Result<Vec<u8>, PngExportError> {
+    export_png_with_limits(document, pixels_per_pt, pages, PngLimits::default())
+}
+
+/// Export the document to a single, vertically stacked PNG, enforcing the given limits.
+///
+/// When `pages` is `None` the whole document is exported; otherwise only the
+/// pages in the range are exported.
+pub fn export_png_with_limits(
+    document: &PagedDocument,
+    pixels_per_pt: f32,
+    pages: Option<&PageRange>,
+    limits: PngLimits,
+) -> Result<Vec<u8>, PngExportError> {
     if !pixels_per_pt.is_finite() || pixels_per_pt <= 0.0 {
         return Err(PngExportError::InvalidScale(pixels_per_pt));
     }
@@ -38,11 +79,41 @@ pub fn export_png(
     if selected.pages().is_empty() {
         return Err(PngExportError::NoPagesSelected);
     }
+    let required = required_pixels(&selected, pixels_per_pt);
+    if required > limits.max_total_pixels as f64 {
+        return Err(PngExportError::TooLarge {
+            required: required as u64,
+            limit: limits.max_total_pixels,
+        });
+    }
     let options = RenderOptions {
         pixel_per_pt: Scalar::new(pixels_per_pt as f64),
         render_bleed: false,
     };
-    Ok(typst_render::render_merged(&selected, &options, Abs::pt(15.), None).encode_png()?)
+    Ok(
+        typst_render::render_merged(&selected, &options, Abs::pt(PAGE_GAP_PT), None)
+            .encode_png()?,
+    )
+}
+
+/// Predict the total number of pixels [`typst_render::render_merged`] will
+/// allocate for the document.
+fn required_pixels(document: &PagedDocument, pixels_per_pt: f32) -> f64 {
+    let scale = pixels_per_pt as f64;
+    let mut page_pixels = 0.0;
+    let mut max_width = 0.0f64;
+    let mut total_height = 0.0;
+    for page in document.pages() {
+        let size = page.frame.size();
+        let width = (scale * size.x.to_pt()).round().max(1.0);
+        let height = (scale * size.y.to_pt()).round().max(1.0);
+        page_pixels += width * height;
+        max_width = max_width.max(width);
+        total_height += height;
+    }
+    let gap = (scale * PAGE_GAP_PT).round();
+    total_height += gap * document.pages().len().saturating_sub(1) as f64;
+    page_pixels + max_width * total_height
 }
 
 #[cfg(test)]
@@ -206,6 +277,58 @@ manifest_version = 1
 
         assert!(export_png(&document, f32::MIN_POSITIVE, None).is_ok());
         assert!(export_png(&document, 0.1, None).is_ok());
+    }
+
+    #[test]
+    fn excessive_scale_is_rejected() {
+        let document = compile(simple_template());
+
+        assert!(matches!(
+            export_png(&document, 100_000.0, None),
+            Err(PngExportError::TooLarge { .. })
+        ));
+    }
+
+    #[test]
+    fn custom_pixel_limit_is_enforced() {
+        let document = compile(simple_template());
+
+        let limits = PngLimits {
+            max_total_pixels: 40_000,
+        };
+        assert!(export_png_with_limits(&document, 1.0, None, limits).is_ok());
+
+        let limits = PngLimits {
+            max_total_pixels: 39_999,
+        };
+        assert!(matches!(
+            export_png_with_limits(&document, 1.0, None, limits),
+            Err(PngExportError::TooLarge {
+                required: 40_000,
+                limit: 39_999,
+            })
+        ));
+    }
+
+    #[test]
+    fn pixel_limit_accounts_for_page_gaps() {
+        let document = compile(multipage_template());
+
+        let limits = PngLimits {
+            max_total_pixels: 83_000,
+        };
+        assert!(export_png_with_limits(&document, 1.0, None, limits).is_ok());
+
+        let limits = PngLimits {
+            max_total_pixels: 82_999,
+        };
+        assert!(matches!(
+            export_png_with_limits(&document, 1.0, None, limits),
+            Err(PngExportError::TooLarge {
+                required: 83_000,
+                limit: 82_999,
+            })
+        ));
     }
 
     #[test]

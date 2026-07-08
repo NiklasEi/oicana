@@ -1,6 +1,7 @@
 import {
   documentPages,
   exportDocument,
+  exportDocumentAsync,
   getWarnings,
   removeDocument,
 } from '@oicana/node-native';
@@ -68,12 +69,48 @@ export class CompiledDocument implements Disposable {
   }
 
   /**
+   * Export the document in the given format (defaults to PDF) on a background
+   * thread, optionally restricted to a range of pages.
+   *
+   * Unlike {@link export}, this does not block the Node.js event loop while
+   * the export runs.
+   * @param format - export format specification
+   * @param pages - 0-based, inclusive page range (defaults to the whole document)
+   */
+  public exportAsync(
+    format: ExportFormat = Pdf,
+    pages?: PageRange,
+  ): Promise<Uint8Array> {
+    if (this.documentId === undefined) {
+      return Promise.reject(
+        new Error('CompiledDocument has already been disposed'),
+      );
+    }
+    return exportDocumentAsync(
+      this.documentId,
+      JSON.stringify(format),
+      serializePageRange(pages),
+    );
+  }
+
+  /**
    * Export the document to PDF, optionally restricted to a range of pages.
    * Tagging will be automatically turned off when exporting a subset of pages.
    * @param pages - 0-based, inclusive page range (defaults to the whole document)
    */
   public exportPdf(pages?: PageRange): Uint8Array {
     return this.export(Pdf, pages);
+  }
+
+  /**
+   * Export the document to PDF on a background thread, optionally restricted
+   * to a range of pages. The Node.js event loop stays free while the export
+   * runs.
+   * Tagging will be automatically turned off when exporting a subset of pages.
+   * @param pages - 0-based, inclusive page range (defaults to the whole document)
+   */
+  public exportPdfAsync(pages?: PageRange): Promise<Uint8Array> {
+    return this.exportAsync(Pdf, pages);
   }
 
   /**
@@ -87,11 +124,36 @@ export class CompiledDocument implements Disposable {
   }
 
   /**
+   * Export the document to PNG on a background thread, optionally restricted
+   * to a range of pages. The Node.js event loop stays free while the export
+   * runs.
+   * Multiple pages are merged into a single, vertically stacked image.
+   * @param pixelsPerPt - resolution in pixels per point (defaults to 1.0)
+   * @param pages - 0-based, inclusive page range (defaults to the whole document)
+   */
+  public exportPngAsync(
+    pixelsPerPt = 1.0,
+    pages?: PageRange,
+  ): Promise<Uint8Array> {
+    return this.exportAsync(Png(pixelsPerPt), pages);
+  }
+
+  /**
    * Export the document to SVG, optionally restricted to a range of pages.
    * @param pages - 0-based, inclusive page range (defaults to the whole document)
    */
   public exportSvg(pages?: PageRange): Uint8Array {
     return this.export(Svg, pages);
+  }
+
+  /**
+   * Export the document to SVG on a background thread, optionally restricted
+   * to a range of pages. The Node.js event loop stays free while the export
+   * runs.
+   * @param pages - 0-based, inclusive page range (defaults to the whole document)
+   */
+  public exportSvgAsync(pages?: PageRange): Promise<Uint8Array> {
+    return this.exportAsync(Svg, pages);
   }
 
   /**

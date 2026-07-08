@@ -5,6 +5,15 @@
 - Fix potential ABBA deadlock when doing template compilation in parallel to document exports
 - Performance improvement: more finegrained internal locking to unlock more parallelization
 - Bumped some dependencies to resolve security advisories
+- Limit packed template archives to protect against zip bombs
+  - Default limits: 10,000 entries and 512 MiB of decompressed content 
+- Limit pixels on png exports to keep the memory usage of the export in an acceptable range
+  - Default limit: 256 million pixels or ~1Gb of memory
+  - corresponds to roughly 14 A4 pages at 300 DPI or one A4 page at 800 DPI
+- Fix: Recover from poisoned file map locks in packed templates
+
+### CLI
+- `pack` warns if the packed template exceeds the default archive limits
 
 ### Python integration
 - release GIL where possible to allow parallelization
@@ -16,6 +25,10 @@
 - prevent panics across FFI border
 - Fix non-ASCII string handling on Windows
 - Fixed memory leak in input handing
+
+### Node integration
+- prevent panics across FFI border
+- Offer async methods to offload compilation and document export to the libuv thread pool
 
 
 ## v0.4.0

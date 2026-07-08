@@ -1062,6 +1062,7 @@ jobs:
     needs:
       [
         lint-crates,
+        audit-crates,
         check-crates,
         test-crates,
         check-node-native-integration,
@@ -1092,7 +1093,7 @@ jobs:
     steps:
       - name: Check Workflow Status
         run: |
-          allowed_failures="validate-links"
+          allowed_failures="validate-links audit-crates"
           failed=""
           cancelled=""
           names='${{ toJson(needs) }}'

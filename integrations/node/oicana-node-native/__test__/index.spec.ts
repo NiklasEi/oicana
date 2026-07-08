@@ -1,7 +1,15 @@
 import test from 'ava'
 import fs from 'node:fs'
 
-import { registerTemplate, compileTemplate, CompilationMode, exportDocument } from '../index.js'
+import {
+  registerTemplate,
+  compileTemplate,
+  compileTemplateAsync,
+  CompilationMode,
+  exportDocument,
+  exportDocumentAsync,
+  removeDocument,
+} from '../index.js'
 
 const assetsDir = '../../../assets'
 
@@ -140,4 +148,78 @@ test('Can register and render template', async (t) => {
   console.timeEnd('document export')
   fs.writeFileSync('test_2.pdf', secondResult)
   t.truthy(fs.existsSync('test_2.pdf'))
+})
+
+test('async exports keep the event loop free', async (t) => {
+  const file = fs.readFileSync(`${assetsDir}/templates/invoice-0.1.0.zip`)
+  const invoice = `
+  {
+    "$schema": "invoice.schema.json",
+  "id": "2026-07-06t120000",
+  "issuingDate": "2026-07-06",
+  "deliveryDate": "2026-07-01",
+  "dueDate": "2026-08-06",
+  "biller": {
+    "name": "Gyro Gearloose",
+    "title": "Inventor",
+    "company": "dsadsa Inventions Ltd.",
+    "vat-id": "DL1234567",
+    "iban": "DE89370400440532013000",
+    "address": {
+      "country": "Disneyland",
+      "city": "Duckburg",
+      "postal-code": "123456",
+      "street": "Inventor Drive 23"
+    }
+  },
+  "recipient": {
+    "name": "Scrooge McDuck",
+    "title": "Treasure Hunter",
+    "vat-id": "DL7654321",
+    "address": {
+      "country": "Disneyland",
+      "city": "Duckburg",
+      "postal-code": "123456",
+      "street": "Killmotor Hill 1"
+    }
+  },
+  "items": [
+    {
+      "date": "2026-07-01",
+      "description": "Async task",
+      "quantity": 1,
+      "price": 130
+    }
+    ]
+}`
+  const banner = { bytes: fs.readFileSync(`${assetsDir}/logo/oicana_full_background_1024.png`), meta: '{}' }
+  const warmUpDocumentId = registerTemplate('invoice-async', file, { invoice }, { banner }, CompilationMode.Development)
+  removeDocument(warmUpDocumentId)
+
+  // We compare how long the async call blocks the caller
+  // against how long the equivalent synchronous call takes: a truly async
+  // call hands the heavy work to a worker thread and returns almost instantly,
+  // so its synchronous portion is a small fraction of the real time.
+
+  const documentId = compileTemplate('invoice-async', { invoice }, { banner }, CompilationMode.Development)
+  const syncExportStart = performance.now()
+  exportDocument(documentId, JSON.stringify({ format: 'png', pixelsPerPt: 1 }))
+  const syncExportMs = performance.now() - syncExportStart
+
+  const asyncExportStart = performance.now()
+  const exportPromise = exportDocumentAsync(documentId, JSON.stringify({ format: 'png', pixelsPerPt: 1 }))
+  const exportReturnMs = performance.now() - asyncExportStart
+  await exportPromise
+  t.true(
+    exportReturnMs < syncExportMs / 2,
+    `async export blocked the caller for ${exportReturnMs}ms; a synchronous export of the same document took ${syncExportMs}ms`,
+  )
+
+  removeDocument(documentId)
+})
+
+test('async compile rejects for unknown templates', async (t) => {
+  await t.throwsAsync(compileTemplateAsync('never-registered', {}, {}, CompilationMode.Development), {
+    message: /not registered/i,
+  })
 })

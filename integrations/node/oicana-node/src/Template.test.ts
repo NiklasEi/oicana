@@ -148,4 +148,55 @@ describe('e2e test template', () => {
 
     document.dispose();
   });
+
+  it('compiles and exports asynchronously', async () => {
+    const templateFile = await readFile(
+      '../../../e2e-tests/template/oicana-e2e-test-x.y.z.zip',
+    );
+    const template = new Template(templateFile);
+
+    const document = await template.compileAsync(
+      new Map(),
+      new Map(),
+      CompilationMode.Development,
+    );
+    expect(document.pageCount).toBeGreaterThan(0);
+
+    const pdf = await document.exportPdfAsync();
+    expect(new TextDecoder().decode(pdf.slice(0, 4))).toBe('%PDF');
+
+    const png = await document.exportPngAsync(1);
+    expect(Array.from(png.slice(0, 4))).toEqual([0x89, 0x50, 0x4e, 0x47]);
+
+    const svg = await document.exportSvgAsync();
+    expect(new TextDecoder().decode(svg)).toContain('<svg');
+
+    document.dispose();
+    await expect(document.exportAsync()).rejects.toThrow(
+      /already been disposed/,
+    );
+
+    const image = await template.exportPngAsync(
+      new Map(),
+      new Map(),
+      CompilationMode.Development,
+      1,
+    );
+    expect(Array.from(image.slice(0, 4))).toEqual([0x89, 0x50, 0x4e, 0x47]);
+
+    template.dispose();
+  });
+
+  it('async export rejects with compilation errors', async () => {
+    const templateFile = await readFile(
+      '../../../e2e-tests/template/oicana-e2e-test-x.y.z.zip',
+    );
+    const template = new Template(templateFile);
+
+    await expect(
+      template.exportAsync(new Map(), new Map(), Png(1)),
+    ).rejects.toThrow(/No value for the required input/);
+
+    template.dispose();
+  });
 });

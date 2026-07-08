@@ -27,6 +27,22 @@ export declare function compileTemplate(
 ): string
 
 /**
+ * Compile the identified template with the given inputs on a background thread.
+ *
+ * The returned promise resolves to the document id. Unlike [`compile_template`],
+ * this does not block the Node.js event loop while the compilation runs.
+ *
+ * Calling this method requires a previous call to [`register_template`] with the same template
+ * identifier.
+ */
+export declare function compileTemplateAsync(
+  template: string,
+  jsonInputs: Record<string, string>,
+  blobInputs: Record<string, BlobWithMetadata>,
+  compilationMode: CompilationMode,
+): Promise<string>
+
+/**
  * Configure automatic cache eviction after each compilation.
  *
  * # Parameters
@@ -66,6 +82,23 @@ export declare function exportDocument(
   exportFormat: string,
   pageRange?: string | undefined | null,
 ): Buffer
+
+/**
+ * Export the given document on a background thread.
+ *
+ * The returned promise resolves to the exported bytes. Unlike [`export_document`],
+ * this does not block the Node.js event loop while the export runs.
+ *
+ * `page_range` is a JSON object `{ "start"?: number, "end"?: number }` with
+ * 0-based, inclusive bounds. If not set, the whole document is exported.
+ *
+ * Make sure to call `removeDocument` with the documentId afterwards, to free the memory.
+ */
+export declare function exportDocumentAsync(
+  documentId: string,
+  exportFormat: string,
+  pageRange?: string | undefined | null,
+): Promise<Buffer>
 
 /**
  * Load the source of the given file in the template.

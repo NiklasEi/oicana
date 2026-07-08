@@ -405,8 +405,14 @@ impl Buffer {
     }
 
     fn from_ok(value: Vec<u8>) -> Self {
+        let Ok(len) = u32::try_from(value.len()) else {
+            return Buffer::from_error(format!(
+                "output of {} bytes exceeds the {} byte limit of the FFI buffer",
+                value.len(),
+                u32::MAX
+            ));
+        };
         let mut buf = value.into_boxed_slice();
-        let len = buf.len() as u32;
         let data = buf.as_mut_ptr();
         std::mem::forget(buf);
 
@@ -591,6 +597,9 @@ pub struct Config {
 }
 
 unsafe fn slice_from_buffer<'a>(buffer: Buffer) -> &'a [u8] {
+    if buffer.data.is_null() || buffer.len == 0 {
+        return &[];
+    }
     unsafe { slice::from_raw_parts::<u8>(buffer.data, buffer.len as usize) }
 }
 
@@ -698,5 +707,41 @@ mod tests {
                 len: 0,
             })
         };
+    }
+
+    #[test]
+    fn slice_from_null_buffer_is_empty() {
+        let slice = unsafe {
+            slice_from_buffer(Buffer {
+                data: std::ptr::null_mut(),
+                error: false,
+                len: 42,
+            })
+        };
+        assert!(slice.is_empty());
+    }
+
+    #[test]
+    fn slice_from_zero_length_buffer_ignores_the_pointer() {
+        let slice = unsafe {
+            slice_from_buffer(Buffer {
+                data: 0xdead_beef_usize as *mut u8,
+                error: false,
+                len: 0,
+            })
+        };
+        assert!(slice.is_empty());
+    }
+
+    #[cfg(all(unix, target_pointer_width = "64"))]
+    #[test]
+    fn oversized_output_becomes_error_buffer() {
+        let buffer = Buffer::from_ok(vec![0_u8; u32::MAX as usize + 1]);
+        assert!(buffer.error);
+        let message = unsafe { std::str::from_utf8(slice_from_buffer(buffer)) }
+            .unwrap()
+            .to_owned();
+        unsafe { unsafe_free_buffer(buffer) };
+        assert!(message.contains("exceeds"), "unexpected message: {message}");
     }
 }
