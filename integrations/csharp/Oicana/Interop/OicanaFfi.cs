@@ -30,17 +30,26 @@ internal static class OicanaFfi
     public static Stream ExportTemplateOnce(byte[] templateFile, IDictionary<string, JsonNode> jsonInputs, IDictionary<string, BlobInput> blobInputs, Oicana.Config.CompilationOptions compilationOptions, Oicana.Config.ExportFormat exportFormat, Oicana.Config.PageRange? pages = null)
     {
         GCHandle fileHandle = GCHandle.Alloc(templateFile, GCHandleType.Pinned);
-        IntPtr filePointer = fileHandle.AddrOfPinnedObject();
-        var fileBuffer = new Buffer() { data = filePointer, error = false, len = (uint)templateFile.Length };
+        try
+        {
+            IntPtr filePointer = fileHandle.AddrOfPinnedObject();
+            var fileBuffer = new Buffer() { data = filePointer, error = false, len = (uint)templateFile.Length };
 
-        PreparedInputs preparedInputs = PrepareInputs(jsonInputs, blobInputs);
-
-        var buffer = OicanaFfiInternal.unsafe_export_template_once(fileBuffer, preparedInputs.JsonInputs, preparedInputs.BlobInputs, ConvertCompileOptions(compilationOptions), ConvertExportFormat(exportFormat), ConvertPageRange(pages));
-
-        preparedInputs.FreeAll();
-        fileHandle.Free();
-
-        return HandleBuffer(buffer);
+            PreparedInputs preparedInputs = PrepareInputs(jsonInputs, blobInputs);
+            try
+            {
+                var buffer = OicanaFfiInternal.unsafe_export_template_once(fileBuffer, preparedInputs.JsonInputs, preparedInputs.BlobInputs, ConvertCompileOptions(compilationOptions), ConvertExportFormat(exportFormat), ConvertPageRange(pages));
+                return HandleBuffer(buffer);
+            }
+            finally
+            {
+                preparedInputs.FreeAll();
+            }
+        }
+        finally
+        {
+            fileHandle.Free();
+        }
     }
 
     /// <summary>
@@ -55,12 +64,15 @@ internal static class OicanaFfi
     public static String CompileTemplate(string templateId, IDictionary<string, JsonNode> jsonInputs, IDictionary<string, BlobInput> blobInputs, Oicana.Config.CompilationOptions compilationOptions)
     {
         PreparedInputs preparedInputs = PrepareInputs(jsonInputs, blobInputs);
-
-        var buffer = OicanaFfiInternal.unsafe_compile_template(templateId, preparedInputs.JsonInputs, preparedInputs.BlobInputs, ConvertCompileOptions(compilationOptions));
-
-        preparedInputs.FreeAll();
-
-        return HandleStringBuffer(buffer);
+        try
+        {
+            var buffer = OicanaFfiInternal.unsafe_compile_template(templateId, preparedInputs.JsonInputs, preparedInputs.BlobInputs, ConvertCompileOptions(compilationOptions));
+            return HandleStringBuffer(buffer);
+        }
+        finally
+        {
+            preparedInputs.FreeAll();
+        }
     }
 
     /// <summary>
@@ -76,17 +88,26 @@ internal static class OicanaFfi
     public static Stream RegisterTemplate(string templateId, byte[] templateFile, IDictionary<string, JsonNode> jsonInputs, IDictionary<string, BlobInput> blobInputs, Oicana.Config.CompilationOptions compilationOptions)
     {
         GCHandle fileHandle = GCHandle.Alloc(templateFile, GCHandleType.Pinned);
-        IntPtr filePointer = fileHandle.AddrOfPinnedObject();
-        var fileBuffer = new Buffer() { data = filePointer, error = false, len = (uint)templateFile.Length };
+        try
+        {
+            IntPtr filePointer = fileHandle.AddrOfPinnedObject();
+            var fileBuffer = new Buffer() { data = filePointer, error = false, len = (uint)templateFile.Length };
 
-        PreparedInputs preparedInputs = PrepareInputs(jsonInputs, blobInputs);
-
-        var buffer = OicanaFfiInternal.unsafe_register_template(templateId, fileBuffer, preparedInputs.JsonInputs, preparedInputs.BlobInputs, ConvertCompileOptions(compilationOptions));
-
-        preparedInputs.FreeAll();
-        fileHandle.Free();
-
-        return HandleBuffer(buffer);
+            PreparedInputs preparedInputs = PrepareInputs(jsonInputs, blobInputs);
+            try
+            {
+                var buffer = OicanaFfiInternal.unsafe_register_template(templateId, fileBuffer, preparedInputs.JsonInputs, preparedInputs.BlobInputs, ConvertCompileOptions(compilationOptions));
+                return HandleBuffer(buffer);
+            }
+            finally
+            {
+                preparedInputs.FreeAll();
+            }
+        }
+        finally
+        {
+            fileHandle.Free();
+        }
     }
 
     /// <summary>
