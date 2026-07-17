@@ -86,13 +86,11 @@ final class CompiledDocument
         $this->ensureOpen();
 
         $formatArray = ($exportFormat ?? ExportFormat::pdf())->toArray();
-        $bytes = \OicanaInternal\export_document(
+        return \OicanaInternal\export_document(
             $this->documentId,
             json_encode($formatArray, JSON_THROW_ON_ERROR),
             $pages?->toNative()
         );
-
-        return pack('C*', ...$bytes);
     }
 
     /**

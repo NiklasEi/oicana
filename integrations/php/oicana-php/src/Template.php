@@ -61,11 +61,10 @@ class Template
 
         $jsonInputs = self::encodeJsonInputs($jsonInputs);
         $nativeBlobs = $this->prepareBlobInputs($blobInputs);
-        $templateBytes = $this->stringToBytes($template);
 
         $docId = \OicanaInternal\register_template(
             $this->templateId,
-            $templateBytes,
+            $template,
             $jsonInputs,
             $nativeBlobs,
             $mode->toNative()
@@ -107,12 +106,11 @@ class Template
         $this->documentIds[] = $docId;
 
         try {
-            $bytes = \OicanaInternal\export_document(
+            return \OicanaInternal\export_document(
                 $docId,
                 json_encode($formatArray),
                 $pages?->toNative()
             );
-            return pack('C*', ...$bytes);
         } finally {
             \OicanaInternal\remove_document($docId);
             $this->documentIds = array_filter(
@@ -282,8 +280,7 @@ class Template
      */
     public function file(string $path): string
     {
-        $bytes = \OicanaInternal\get_file($this->templateId, $path);
-        return pack('C*', ...$bytes);
+        return \OicanaInternal\get_file($this->templateId, $path);
     }
 
     /**
@@ -386,24 +383,8 @@ class Template
             $meta = $blob->metadata !== null
                 ? json_encode($blob->metadata)
                 : '{}';
-            $bytes = $this->stringToBytes($blob->data);
-            $nativeBlobs[$key] = new \OicanaInternal\BlobWithMetadata($bytes, $meta);
+            $nativeBlobs[$key] = new \OicanaInternal\BlobWithMetadata($blob->data, $meta);
         }
         return $nativeBlobs;
-    }
-
-    /**
-     * Convert a string to a byte array for the native extension.
-     *
-     * @param string $data
-     * @return list<int>
-     */
-    private function stringToBytes(string $data): array
-    {
-        $unpacked = unpack('C*', $data);
-        if ($unpacked === false) {
-            return [];
-        }
-        return array_values($unpacked);
     }
 }

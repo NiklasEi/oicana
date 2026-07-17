@@ -1,5 +1,20 @@
 # Changelog
 
+## Upcoming
+
+- Performance improvement: more finegrained internal locking for exports to unlock more parallelization
+
+### PHP
+- Performance improvements
+
+### C#
+- Resolved possible memory leaks in error cases and if users forget to dispose a document stream 
+
+### Java
+- Fixed JSON encoding
+- Catch panics in `configureAutomaticCacheEviction` and `evictCache`
+
+
 ## v0.5.0
 
 - Fix potential ABBA deadlock when doing template compilation in parallel to document exports

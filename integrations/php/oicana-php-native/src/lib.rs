@@ -10,6 +10,8 @@
 
 use std::collections::HashMap;
 
+use ext_php_rs::binary::Binary;
+use ext_php_rs::binary_slice::BinarySlice;
 use ext_php_rs::prelude::*;
 use oicana_ffi_core::panic_message;
 
@@ -50,7 +52,6 @@ fn compilation_mode_from_i64(mode: i64) -> oicana_ffi_core::CompilationMode {
 #[derive(Debug, Clone)]
 pub struct BlobWithMetadata {
     /// The raw binary data of the blob.
-    #[php(prop)]
     pub bytes: Vec<u8>,
     /// JSON-encoded metadata associated with the blob.
     #[php(prop)]
@@ -60,8 +61,13 @@ pub struct BlobWithMetadata {
 #[php_impl]
 impl BlobWithMetadata {
     /// Creates a new BlobWithMetadata instance.
-    pub fn __construct(bytes: Vec<u8>, meta: String) -> Self {
-        Self { bytes, meta }
+    ///
+    /// `bytes` is a binary-safe PHP string holding the raw blob data.
+    pub fn __construct(bytes: Binary<u8>, meta: String) -> Self {
+        Self {
+            bytes: bytes.into(),
+            meta,
+        }
     }
 }
 
@@ -106,7 +112,7 @@ pub fn evict_cache(max_age: i64) -> PhpResult<()> {
 #[php(name = "OicanaInternal\\register_template")]
 pub fn register_template(
     template: String,
-    files: Vec<u8>,
+    files: BinarySlice<u8>,
     json_inputs: HashMap<String, String>,
     blob_inputs: HashMap<String, &BlobWithMetadata>,
     compilation_mode: i64,
@@ -114,7 +120,7 @@ pub fn register_template(
     catch_panic(|| {
         oicana_ffi_core::register_template(
             &template,
-            &files,
+            *files,
             json_inputs,
             into_core_blobs(blob_inputs),
             compilation_mode_from_i64(compilation_mode),
@@ -180,8 +186,12 @@ pub fn get_source(template: String, file: String) -> PhpResult<String> {
 /// identifier.
 #[php_function]
 #[php(name = "OicanaInternal\\get_file")]
-pub fn get_file(template: String, file: String) -> PhpResult<Vec<u8>> {
-    catch_panic(|| oicana_ffi_core::get_file(&template, &file).map_err(into_php_err))
+pub fn get_file(template: String, file: String) -> PhpResult<Binary<u8>> {
+    catch_panic(|| {
+        oicana_ffi_core::get_file(&template, &file)
+            .map(Binary::from)
+            .map_err(into_php_err)
+    })
 }
 
 /// Export the given document
@@ -196,12 +206,14 @@ pub fn export_document(
     document_id: String,
     export_format: String,
     page_range: Option<String>,
-) -> PhpResult<Vec<u8>> {
+) -> PhpResult<Binary<u8>> {
     catch_panic(|| {
         let format = oicana_ffi_core::parse_export_format(&export_format).map_err(into_php_err)?;
         let page = oicana_ffi_core::parse_page_range(page_range.as_deref().unwrap_or(""))
             .map_err(into_php_err)?;
-        oicana_ffi_core::export_document(&document_id, format, page).map_err(into_php_err)
+        oicana_ffi_core::export_document(&document_id, format, page)
+            .map(Binary::from)
+            .map_err(into_php_err)
     })
 }
 
