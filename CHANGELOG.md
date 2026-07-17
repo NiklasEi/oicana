@@ -14,6 +14,9 @@
 - Fixed JSON encoding
 - Catch panics in `configureAutomaticCacheEviction` and `evictCache`
 
+### Node.js
+- Method for async template registration
+
 
 ## v0.5.0
 

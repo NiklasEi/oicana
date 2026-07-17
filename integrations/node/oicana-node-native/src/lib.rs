@@ -81,6 +81,59 @@ pub fn compile_template(
   .map_err(into_napi_err)
 }
 
+/// Background task registering a template on the libuv thread pool.
+pub struct RegisterTemplateTask {
+  template: String,
+  files: Vec<u8>,
+  json_inputs: HashMap<String, String>,
+  blob_inputs: HashMap<String, oicana_ffi_core::BlobWithMetadata>,
+  compilation_mode: oicana_ffi_core::CompilationMode,
+}
+
+impl Task for RegisterTemplateTask {
+  type Output = String;
+  type JsValue = String;
+
+  fn compute(&mut self) -> Result<Self::Output> {
+    catch_panic(|| {
+      oicana_ffi_core::register_template(
+        &self.template,
+        &std::mem::take(&mut self.files),
+        std::mem::take(&mut self.json_inputs),
+        std::mem::take(&mut self.blob_inputs),
+        self.compilation_mode,
+      )
+      .map_err(into_napi_err)
+    })
+  }
+
+  fn resolve(&mut self, _env: Env, output: Self::Output) -> Result<Self::JsValue> {
+    Ok(output)
+  }
+}
+
+/// Register the given template on a background thread.
+///
+/// The returned promise resolves to the document id of the initial warm-up
+/// compilation. Unlike [`register_template`], this does not block the Node.js
+/// event loop while the template is read and compiled.
+#[napi(catch_unwind, ts_return_type = "Promise<string>")]
+pub fn register_template_async(
+  template: String,
+  files: Uint8Array,
+  json_inputs: HashMap<String, String>,
+  blob_inputs: HashMap<String, BlobWithMetadata>,
+  compilation_mode: CompilationMode,
+) -> AsyncTask<RegisterTemplateTask> {
+  AsyncTask::new(RegisterTemplateTask {
+    template,
+    files: files.to_vec(),
+    json_inputs,
+    blob_inputs: into_core_blobs(blob_inputs),
+    compilation_mode: compilation_mode.into(),
+  })
+}
+
 /// Background task compiling a template on the libuv thread pool.
 pub struct CompileTemplateTask {
   template: String,

@@ -200,3 +200,60 @@ describe('e2e test template', () => {
     template.dispose();
   });
 });
+
+describe('async registration', () => {
+  it('creates a template on a background thread', async () => {
+    const templateFile = await readFile(
+      '../../../e2e-tests/template/oicana-e2e-test-x.y.z.zip',
+    );
+    const template = await Template.create(templateFile);
+
+    const image = await template.exportPngAsync(
+      new Map(),
+      new Map(),
+      CompilationMode.Development,
+      1,
+    );
+    expect(Array.from(image.slice(0, 4))).toEqual([0x89, 0x50, 0x4e, 0x47]);
+
+    template.dispose();
+  });
+
+  it('rejects with registration errors', async () => {
+    const notAZip = new Uint8Array([1, 2, 3, 4]);
+    await expect(Template.create(notAZip)).rejects.toThrow(
+      /Failed to read template/,
+    );
+  });
+});
+
+describe('template introspection', () => {
+  it('exposes input definitions, sources and files', async () => {
+    const templateFile = await readFile(
+      '../../../e2e-tests/template/oicana-e2e-test-x.y.z.zip',
+    );
+    const template = new Template(templateFile);
+
+    expect(template.inputs()).toContain('development-blob');
+
+    expect(template.source('/main.typ')).toContain('development-blob');
+
+    const file = template.file('/default.txt');
+    expect(file.length).toBeGreaterThan(0);
+
+    expect(() => template.source('/nonexistent.typ')).toThrow(
+      /Failed to load source/,
+    );
+
+    template.dispose();
+  });
+});
+
+describe('constructor input validation', () => {
+  it('rejects values that are not a Uint8Array', () => {
+    expect(() => new Template({} as never)).toThrow(/must be a Uint8Array/);
+    expect(() => new Template([1, 2, 3] as never)).toThrow(
+      /must be a Uint8Array/,
+    );
+  });
+});

@@ -5,9 +5,13 @@ import {
   compileTemplateAsync,
   exportDocument,
   exportDocumentAsync,
+  getFile,
+  getSource,
   getWarnings,
   CompilationMode as NativeCompilationMode,
+  inputs as nativeInputs,
   registerTemplate,
+  registerTemplateAsync,
   removeDocument,
   removeWorld,
   setValidateInputs,
@@ -17,6 +21,32 @@ import { CompiledDocument } from './CompiledDocument.js';
 import { type ExportFormat, Pdf, Png, Svg } from './ExportFormat.js';
 import type { BlobWithMetadata } from './inputs/index.js';
 import { type PageRange, serializePageRange } from './PageRange.js';
+
+/**
+ * Marks a constructor call from {@link Template.create}, where the template
+ * has already been registered on a background thread.
+ */
+const alreadyRegistered = Symbol('oicana-already-registered');
+
+interface CompletedRegistration {
+  readonly token: typeof alreadyRegistered;
+  readonly templateId: string;
+  readonly warnings: string | undefined;
+}
+
+/**
+ * The token symbol is module-private, so only {@link Template.create} can
+ * produce a value satisfying this check.
+ */
+function isCompletedRegistration(
+  value: Uint8Array | CompletedRegistration,
+): value is CompletedRegistration {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    (value as CompletedRegistration).token === alreadyRegistered
+  );
+}
 
 /**
  * A template
@@ -57,22 +87,82 @@ export class Template implements Disposable {
     jsonInputs?: Map<string, string>,
     blobInputs?: Map<string, BlobWithMetadata>,
     compilationOptions?: CompilationMode,
+  );
+
+  public constructor(
+    template: Uint8Array | CompletedRegistration,
+    jsonInputs?: Map<string, string>,
+    blobInputs?: Map<string, BlobWithMetadata>,
+    compilationOptions?: CompilationMode,
   ) {
+    if (isCompletedRegistration(template)) {
+      this.template = template.templateId;
+      this.lastWarnings = template.warnings;
+      return;
+    }
+
+    if (!(template instanceof Uint8Array)) {
+      throw new TypeError(
+        'template must be a Uint8Array containing the packed template file',
+      );
+    }
+
     this.template = randomUUID();
 
     const documentId = registerTemplate(
       this.template,
       template,
       Object.fromEntries(jsonInputs ?? new Map<string, string>()),
-      this.convertBlobWithMetadata(
+      Template.convertBlobWithMetadata(
         blobInputs ?? new Map<string, BlobWithMetadata>(),
       ),
-      this.mapCompilationMode(
+      Template.mapCompilationMode(
         compilationOptions ?? CompilationMode.Development,
       ),
     );
     this.lastWarnings = getWarnings(documentId) ?? undefined;
     removeDocument(documentId);
+  }
+
+  /**
+   * Register a template on a background thread and resolve to the prepared
+   * {@link Template}.
+   *
+   * Unlike the constructor, this does not block the Node.js event loop while
+   * the template is read and its warm-up compilation runs.
+   * @param template - the packed Oicana template file
+   * @param jsonInputs for the initial compilation to warm up the cache (defaults to empty map)
+   * @param blobInputs for the initial compilation to warm up the cache (defaults to empty map)
+   * @param compilationOptions for the initial compilation to warm up the cache (defaults to Development)
+   */
+  public static async create(
+    template: Uint8Array,
+    jsonInputs?: Map<string, string>,
+    blobInputs?: Map<string, BlobWithMetadata>,
+    compilationOptions?: CompilationMode,
+  ): Promise<Template> {
+    const templateId = randomUUID();
+
+    const documentId = await registerTemplateAsync(
+      templateId,
+      template,
+      Object.fromEntries(jsonInputs ?? new Map<string, string>()),
+      Template.convertBlobWithMetadata(
+        blobInputs ?? new Map<string, BlobWithMetadata>(),
+      ),
+      Template.mapCompilationMode(
+        compilationOptions ?? CompilationMode.Development,
+      ),
+    );
+    const warnings = getWarnings(documentId) ?? undefined;
+    removeDocument(documentId);
+
+    const registration: CompletedRegistration = {
+      token: alreadyRegistered,
+      templateId,
+      warnings,
+    };
+    return new Template(registration as never);
   }
 
   /**
@@ -443,10 +533,12 @@ export class Template implements Disposable {
     const documentId = compileTemplate(
       this.template,
       Object.fromEntries(jsonInputs ?? new Map<string, string>()),
-      this.convertBlobWithMetadata(
+      Template.convertBlobWithMetadata(
         blobInputs ?? new Map<string, BlobWithMetadata>(),
       ),
-      this.mapCompilationMode(compilationOptions ?? CompilationMode.Production),
+      Template.mapCompilationMode(
+        compilationOptions ?? CompilationMode.Production,
+      ),
     );
     this.lastWarnings = getWarnings(documentId) ?? undefined;
     return documentId;
@@ -460,10 +552,12 @@ export class Template implements Disposable {
     const documentId = await compileTemplateAsync(
       this.template,
       Object.fromEntries(jsonInputs ?? new Map<string, string>()),
-      this.convertBlobWithMetadata(
+      Template.convertBlobWithMetadata(
         blobInputs ?? new Map<string, BlobWithMetadata>(),
       ),
-      this.mapCompilationMode(compilationOptions ?? CompilationMode.Production),
+      Template.mapCompilationMode(
+        compilationOptions ?? CompilationMode.Production,
+      ),
     );
     this.lastWarnings = getWarnings(documentId) ?? undefined;
     return documentId;
@@ -503,7 +597,7 @@ export class Template implements Disposable {
     this.dispose();
   }
 
-  private convertBlobWithMetadata(
+  private static convertBlobWithMetadata(
     blobInputs: Map<string, BlobWithMetadata>,
   ): Record<string, BlobWithMetadataNative> {
     return Object.fromEntries(
@@ -517,7 +611,9 @@ export class Template implements Disposable {
     );
   }
 
-  private mapCompilationMode(mode: CompilationMode): NativeCompilationMode {
+  private static mapCompilationMode(
+    mode: CompilationMode,
+  ): NativeCompilationMode {
     switch (mode) {
       case CompilationMode.Development:
         return NativeCompilationMode.Development;

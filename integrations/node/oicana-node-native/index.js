@@ -571,6 +571,7 @@ module.exports.getWarnings = nativeBinding.getWarnings
 module.exports.inputs = nativeBinding.inputs
 module.exports.NOT_REGISTERED = nativeBinding.NOT_REGISTERED
 module.exports.registerTemplate = nativeBinding.registerTemplate
+module.exports.registerTemplateAsync = nativeBinding.registerTemplateAsync
 module.exports.removeDocument = nativeBinding.removeDocument
 module.exports.removeWorld = nativeBinding.removeWorld
 module.exports.setValidateInputs = nativeBinding.setValidateInputs

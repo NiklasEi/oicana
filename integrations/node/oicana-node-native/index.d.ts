@@ -149,6 +149,21 @@ export declare function registerTemplate(
   compilationMode: CompilationMode,
 ): string
 
+/**
+ * Register the given template on a background thread.
+ *
+ * The returned promise resolves to the document id of the initial warm-up
+ * compilation. Unlike [`register_template`], this does not block the Node.js
+ * event loop while the template is read and compiled.
+ */
+export declare function registerTemplateAsync(
+  template: string,
+  files: Uint8Array,
+  jsonInputs: Record<string, string>,
+  blobInputs: Record<string, BlobWithMetadata>,
+  compilationMode: CompilationMode,
+): Promise<string>
+
 /** Remove the document from the cache. */
 export declare function removeDocument(documentId: string): void
 
