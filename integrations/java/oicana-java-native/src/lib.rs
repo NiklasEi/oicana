@@ -328,25 +328,35 @@ pub extern "system" fn Java_com_oicana_OicanaNative_setValidateInputs<'local>(
 
 #[unsafe(no_mangle)]
 pub extern "system" fn Java_com_oicana_OicanaNative_configureAutomaticCacheEviction<'local>(
-    _unowned_env: EnvUnowned<'local>,
+    mut unowned_env: EnvUnowned<'local>,
     _class: JClass<'local>,
     max_age: jint,
 ) {
-    let max_age = if max_age < 0 {
-        None
-    } else {
-        Some(max_age as usize)
-    };
-    oicana_ffi_core::configure_automatic_cache_eviction(max_age);
+    unowned_env
+        .with_env(|_env| -> jni::errors::Result<()> {
+            let max_age = if max_age < 0 {
+                None
+            } else {
+                Some(max_age as usize)
+            };
+            oicana_ffi_core::configure_automatic_cache_eviction(max_age);
+            Ok(())
+        })
+        .resolve::<jni::errors::ThrowRuntimeExAndDefault>()
 }
 
 #[unsafe(no_mangle)]
 pub extern "system" fn Java_com_oicana_OicanaNative_evictCache<'local>(
-    _unowned_env: EnvUnowned<'local>,
+    mut unowned_env: EnvUnowned<'local>,
     _class: JClass<'local>,
     max_age: jint,
 ) {
-    if max_age >= 0 {
-        oicana_ffi_core::evict_cache(max_age as usize);
-    }
+    unowned_env
+        .with_env(|_env| -> jni::errors::Result<()> {
+            if max_age >= 0 {
+                oicana_ffi_core::evict_cache(max_age as usize);
+            }
+            Ok(())
+        })
+        .resolve::<jni::errors::ThrowRuntimeExAndDefault>()
 }
