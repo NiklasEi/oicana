@@ -205,13 +205,12 @@ struct CachedDocument {
 /// A registered world behind its own per-template lock.
 type SharedWorld = Arc<RwLock<OicanaWorld<PackedTemplate>>>;
 
-// `WORLD_CACHE` shard guards are held only long enough to clone the `Arc`
-// out. Blocking lock order for everything else:
-// world `RwLock` -> `DOCUMENT_CACHE` -> `WARNINGS_CACHE`, at most one guard
-// per map at a time. Violations can deadlock integrations that call in
-// from multiple threads.
+// `WORLD_CACHE` and `DOCUMENT_CACHE` shard guards are held only long enough
+// to clone the `Arc` out. Blocking lock order for everything else:
+// world `RwLock` -> `WARNINGS_CACHE`, at most one guard per map at a time.
+// Violations can deadlock integrations that call in from multiple threads.
 static WORLD_CACHE: Lazy<DashMap<String, SharedWorld>> = Lazy::new(DashMap::new);
-static DOCUMENT_CACHE: Lazy<DashMap<String, CachedDocument>> = Lazy::new(DashMap::new);
+static DOCUMENT_CACHE: Lazy<DashMap<String, Arc<CachedDocument>>> = Lazy::new(DashMap::new);
 static WARNINGS_CACHE: Lazy<DashMap<String, String>> = Lazy::new(DashMap::new);
 
 fn get_world(template_id: &str) -> Result<SharedWorld, FfiError> {
@@ -345,11 +344,11 @@ pub fn register_template(
     store_warnings(&result_id, document.warnings);
     DOCUMENT_CACHE.insert(
         result_id.clone(),
-        CachedDocument {
+        Arc::new(CachedDocument {
             document: document.document,
             pdf_standards,
             pdf_tagged,
-        },
+        }),
     );
 
     auto_evict();
@@ -390,11 +389,11 @@ pub fn compile_template(
     store_warnings(&result_id, document.warnings);
     DOCUMENT_CACHE.insert(
         result_id.clone(),
-        CachedDocument {
+        Arc::new(CachedDocument {
             document: document.document,
             pdf_standards,
             pdf_tagged,
-        },
+        }),
     );
 
     auto_evict();
@@ -465,7 +464,10 @@ pub fn export_document(
     };
     let world = shared.as_ref().and_then(|world| try_read_world(world));
 
-    let Some(cached) = DOCUMENT_CACHE.get(document_id) else {
+    let Some(cached) = DOCUMENT_CACHE
+        .get(document_id)
+        .map(|entry| Arc::clone(entry.value()))
+    else {
         return Err(FfiError::DocumentNotFound(document_id.to_owned()));
     };
 
@@ -509,7 +511,10 @@ pub struct PageSize {
 /// Return the sizes (in points) of every page of a previously-compiled document,
 /// serialized as a JSON array of `{ "width": f64, "height": f64 }`.
 pub fn document_pages(document_id: &str) -> Result<String, FfiError> {
-    let Some(cached) = DOCUMENT_CACHE.get(document_id) else {
+    let Some(cached) = DOCUMENT_CACHE
+        .get(document_id)
+        .map(|entry| Arc::clone(entry.value()))
+    else {
         return Err(FfiError::DocumentNotFound(document_id.to_owned()));
     };
 
