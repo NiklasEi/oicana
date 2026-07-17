@@ -95,7 +95,7 @@ impl Test {
         };
         let (inputs, fuzzed_inputs) =
             Self::build_inputs(template_test.mode, template_test.inputs, root)?;
-        trace!("Collecting test {}", &template_test.name);
+        trace!("Collecting test {}", template_test.name);
 
         Ok(Test {
             inputs,

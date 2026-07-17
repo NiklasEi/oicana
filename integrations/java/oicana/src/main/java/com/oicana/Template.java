@@ -19,7 +19,7 @@ import java.util.UUID;
  */
 public class Template implements AutoCloseable {
     private final String templateId;
-    private boolean closed = false;
+    private volatile boolean closed = false;
 
     /**
      * Register a template with the given template file.
