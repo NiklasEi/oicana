@@ -16,6 +16,7 @@
 
 ### Node.js
 - Method for async template registration
+- Complete methods on `Template` with `inputs`, `source`, and `file`
 
 
 ## v0.5.0

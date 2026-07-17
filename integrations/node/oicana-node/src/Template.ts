@@ -572,6 +572,29 @@ export class Template implements Disposable {
   }
 
   /**
+   * The template's input definitions from its manifest, serialized as JSON.
+   */
+  public inputs(): string {
+    return nativeInputs(this.template);
+  }
+
+  /**
+   * The source text of a file inside the template.
+   * @param path - file path within the template
+   */
+  public source(path: string): string {
+    return getSource(this.template, path);
+  }
+
+  /**
+   * The raw bytes of a file inside the template.
+   * @param path - file path within the template
+   */
+  public file(path: string): Uint8Array {
+    return getFile(this.template, path);
+  }
+
+  /**
    * Enable or disable JSON schema validation for this template.
    *
    * When enabled (the default), JSON inputs are validated against their schemas
