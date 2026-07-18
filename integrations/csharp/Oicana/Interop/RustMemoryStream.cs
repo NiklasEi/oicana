@@ -26,6 +26,14 @@ internal class RustMemoryStream : UnmanagedMemoryStream
         _buffer = buffer;
     }
 
+    /// <summary>
+    /// Safety net releasing the Rust memory if the stream was never disposed.
+    /// </summary>
+    ~RustMemoryStream()
+    {
+        Dispose(false);
+    }
+
     /// <inheritdoc />
     protected override void Dispose(bool disposing)
     {
@@ -34,6 +42,11 @@ internal class RustMemoryStream : UnmanagedMemoryStream
             base.Dispose(disposing);
             OicanaFfiInternal.unsafe_free_buffer(_buffer);
             _isDisposed = true;
+        }
+
+        if (disposing)
+        {
+            GC.SuppressFinalize(this);
         }
     }
 }

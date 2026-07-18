@@ -26,6 +26,7 @@ use oicana_export::png::{export_png, PngExportError};
 use oicana_export::svg::{export_svg, SvgExportError};
 use oicana_export::PdfStandard;
 use oicana_files::packed::PackedTemplate;
+pub use oicana_files::packed::ZipLimits;
 use oicana_files::TemplateFiles;
 use oicana_input::input::blob::{Blob, BlobInput};
 use oicana_input::input::json::JsonInput;
@@ -205,13 +206,12 @@ struct CachedDocument {
 /// A registered world behind its own per-template lock.
 type SharedWorld = Arc<RwLock<OicanaWorld<PackedTemplate>>>;
 
-// `WORLD_CACHE` shard guards are held only long enough to clone the `Arc`
-// out. Blocking lock order for everything else:
-// world `RwLock` -> `DOCUMENT_CACHE` -> `WARNINGS_CACHE`, at most one guard
-// per map at a time. Violations can deadlock integrations that call in
-// from multiple threads.
+// `WORLD_CACHE` and `DOCUMENT_CACHE` shard guards are held only long enough
+// to clone the `Arc` out. Blocking lock order for everything else:
+// world `RwLock` -> `WARNINGS_CACHE`, at most one guard per map at a time.
+// Violations can deadlock integrations that call in from multiple threads.
 static WORLD_CACHE: Lazy<DashMap<String, SharedWorld>> = Lazy::new(DashMap::new);
-static DOCUMENT_CACHE: Lazy<DashMap<String, CachedDocument>> = Lazy::new(DashMap::new);
+static DOCUMENT_CACHE: Lazy<DashMap<String, Arc<CachedDocument>>> = Lazy::new(DashMap::new);
 static WARNINGS_CACHE: Lazy<DashMap<String, String>> = Lazy::new(DashMap::new);
 
 fn get_world(template_id: &str) -> Result<SharedWorld, FfiError> {
@@ -320,8 +320,9 @@ pub fn register_template(
     json_inputs: HashMap<String, String>,
     blob_inputs: HashMap<String, BlobWithMetadata>,
     mode: CompilationMode,
+    limits: Option<ZipLimits>,
 ) -> Result<String, FfiError> {
-    let packed = PackedTemplate::new(Cursor::new(files))
+    let packed = PackedTemplate::new_with_limits(Cursor::new(files), limits.unwrap_or_default())
         .map_err(|error| FfiError::PackedTemplate(error.to_string()))?;
     let manifest = packed
         .manifest()
@@ -345,11 +346,11 @@ pub fn register_template(
     store_warnings(&result_id, document.warnings);
     DOCUMENT_CACHE.insert(
         result_id.clone(),
-        CachedDocument {
+        Arc::new(CachedDocument {
             document: document.document,
             pdf_standards,
             pdf_tagged,
-        },
+        }),
     );
 
     auto_evict();
@@ -390,11 +391,11 @@ pub fn compile_template(
     store_warnings(&result_id, document.warnings);
     DOCUMENT_CACHE.insert(
         result_id.clone(),
-        CachedDocument {
+        Arc::new(CachedDocument {
             document: document.document,
             pdf_standards,
             pdf_tagged,
-        },
+        }),
     );
 
     auto_evict();
@@ -402,20 +403,30 @@ pub fn compile_template(
     Ok(result_id)
 }
 
+/// Export result bytes with their compilation warnings.
+#[derive(Debug)]
+pub struct ExportOnceResult {
+    /// The exported document.
+    pub bytes: Vec<u8>,
+    /// Compilation warnings, if any.
+    pub warnings: Option<String>,
+}
+
 /// Compile a template once and immediately export it, without caching the world.
 ///
-/// Useful for one-off compilations where the template will not be reused.
+/// Useful for one-off exports where the template will not be reused.
 /// For repeated compilations of the same template, use [`register_template`]
 /// + [`compile_template`] + [`export_document`] instead.
-pub fn compile_once(
+pub fn export_once(
     files: &[u8],
     json_inputs: HashMap<String, String>,
     blob_inputs: HashMap<String, BlobWithMetadata>,
     mode: CompilationMode,
     format: ExportFormat,
     pages: Option<PageRange>,
-) -> Result<Vec<u8>, FfiError> {
-    let packed = PackedTemplate::new(Cursor::new(files))
+    limits: Option<ZipLimits>,
+) -> Result<ExportOnceResult, FfiError> {
+    let packed = PackedTemplate::new_with_limits(Cursor::new(files), limits.unwrap_or_default())
         .map_err(|error| FfiError::PackedTemplate(error.to_string()))?;
     let manifest = packed
         .manifest()
@@ -434,8 +445,9 @@ pub fn compile_once(
 
     auto_evict();
 
+    let warnings = document.warnings;
     let document = &document.document;
-    Ok(match format {
+    let bytes = match format {
         ExportFormat::Png { pixels_per_pt } => export_png(document, pixels_per_pt, pages.as_ref())?,
         ExportFormat::Pdf => export_pdf(
             document,
@@ -446,7 +458,8 @@ pub fn compile_once(
         )
         .map_err(pdf_export_error)?,
         ExportFormat::Svg => export_svg(document, pages.as_ref())?,
-    })
+    };
+    Ok(ExportOnceResult { bytes, warnings })
 }
 
 /// Export a previously-compiled document.
@@ -465,7 +478,10 @@ pub fn export_document(
     };
     let world = shared.as_ref().and_then(|world| try_read_world(world));
 
-    let Some(cached) = DOCUMENT_CACHE.get(document_id) else {
+    let Some(cached) = DOCUMENT_CACHE
+        .get(document_id)
+        .map(|entry| Arc::clone(entry.value()))
+    else {
         return Err(FfiError::DocumentNotFound(document_id.to_owned()));
     };
 
@@ -509,7 +525,10 @@ pub struct PageSize {
 /// Return the sizes (in points) of every page of a previously-compiled document,
 /// serialized as a JSON array of `{ "width": f64, "height": f64 }`.
 pub fn document_pages(document_id: &str) -> Result<String, FfiError> {
-    let Some(cached) = DOCUMENT_CACHE.get(document_id) else {
+    let Some(cached) = DOCUMENT_CACHE
+        .get(document_id)
+        .map(|entry| Arc::clone(entry.value()))
+    else {
         return Err(FfiError::DocumentNotFound(document_id.to_owned()));
     };
 
@@ -810,6 +829,7 @@ mod tests {
             HashMap::new(),
             HashMap::new(),
             CompilationMode::Development,
+            None,
         )
         .expect("register template");
 
@@ -867,6 +887,7 @@ mod tests {
                 HashMap::new(),
                 HashMap::new(),
                 CompilationMode::Development,
+                None,
             )
             .expect("register template");
             remove_document(&doc_id);
@@ -914,6 +935,7 @@ mod tests {
             HashMap::new(),
             HashMap::new(),
             CompilationMode::Development,
+            None,
         )
         .expect("register template");
 
@@ -951,5 +973,109 @@ mod tests {
     #[test]
     fn swallow_panic_does_not_unwind() {
         swallow_panic(|| panic!("ignored"));
+    }
+
+    fn minimal_template_zip(main_typst: &str) -> Vec<u8> {
+        use std::io::Write;
+        use zip::write::SimpleFileOptions;
+        use zip::{CompressionMethod, ZipWriter};
+
+        let manifest = concat!(
+            "[package]\n",
+            "name = \"export-once-test\"\n",
+            "version = \"0.1.0\"\n",
+            "entrypoint = \"main.typ\"\n",
+            "\n",
+            "[tool.oicana]\n",
+            "manifest_version = 1\n",
+        );
+        let mut writer = ZipWriter::new(Cursor::new(Vec::new()));
+        let options = SimpleFileOptions::default().compression_method(CompressionMethod::Stored);
+        for (name, content) in [("typst.toml", manifest), ("main.typ", main_typst)] {
+            writer.start_file(name, options).unwrap();
+            writer.write_all(content.as_bytes()).unwrap();
+        }
+        writer.finish().unwrap().into_inner()
+    }
+
+    #[test]
+    fn export_once_surfaces_warnings() {
+        let files = minimal_template_zip("#set text(font: \"NonexistentFontFfiCore\")\nContent");
+
+        let result = export_once(
+            &files,
+            HashMap::new(),
+            HashMap::new(),
+            CompilationMode::Development,
+            ExportFormat::Svg,
+            None,
+            None,
+        )
+        .expect("export once");
+
+        assert!(result.bytes.starts_with(b"<svg"));
+        let warnings = result.warnings.expect("compile warnings");
+        assert!(warnings.contains("NonexistentFontFfiCore"));
+    }
+
+    #[test]
+    fn export_once_without_warnings_returns_none() {
+        let files = minimal_template_zip("Content");
+
+        let result = export_once(
+            &files,
+            HashMap::new(),
+            HashMap::new(),
+            CompilationMode::Development,
+            ExportFormat::Svg,
+            None,
+            None,
+        )
+        .expect("export once");
+
+        assert!(result.bytes.starts_with(b"<svg"));
+        assert!(result.warnings.is_none());
+    }
+
+    #[test]
+    fn register_template_enforces_zip_limits() {
+        let files = std::fs::read("../../assets/templates/table-0.1.0.zip")
+            .expect("read test template fixture");
+
+        let err = register_template(
+            &format!("limits-test-{}", Uuid::new_v4()),
+            &files,
+            HashMap::new(),
+            HashMap::new(),
+            CompilationMode::Development,
+            Some(ZipLimits {
+                max_entries: 1,
+                ..ZipLimits::default()
+            }),
+        )
+        .unwrap_err();
+
+        assert!(matches!(err, FfiError::PackedTemplate(_)));
+    }
+
+    #[test]
+    fn export_once_enforces_zip_limits() {
+        let files = minimal_template_zip("Content");
+
+        let err = export_once(
+            &files,
+            HashMap::new(),
+            HashMap::new(),
+            CompilationMode::Development,
+            ExportFormat::Pdf,
+            None,
+            Some(ZipLimits {
+                max_total_decompressed_bytes: 8,
+                ..ZipLimits::default()
+            }),
+        )
+        .unwrap_err();
+
+        assert!(matches!(err, FfiError::PackedTemplate(_)));
     }
 }

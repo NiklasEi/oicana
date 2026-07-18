@@ -50,6 +50,7 @@ pub fn register_template(
   json_inputs: HashMap<String, String>,
   blob_inputs: HashMap<String, BlobWithMetadata>,
   compilation_mode: CompilationMode,
+  limits: Option<ZipLimits>,
 ) -> Result<String> {
   oicana_ffi_core::register_template(
     &template,
@@ -57,6 +58,7 @@ pub fn register_template(
     json_inputs,
     into_core_blobs(blob_inputs),
     compilation_mode.into(),
+    into_core_limits(limits),
   )
   .map_err(into_napi_err)
 }
@@ -79,6 +81,173 @@ pub fn compile_template(
     compilation_mode.into(),
   )
   .map_err(into_napi_err)
+}
+
+/// Background task registering a template on the libuv thread pool.
+pub struct RegisterTemplateTask {
+  template: String,
+  files: Vec<u8>,
+  json_inputs: HashMap<String, String>,
+  blob_inputs: HashMap<String, oicana_ffi_core::BlobWithMetadata>,
+  compilation_mode: oicana_ffi_core::CompilationMode,
+  limits: Option<oicana_ffi_core::ZipLimits>,
+}
+
+impl Task for RegisterTemplateTask {
+  type Output = String;
+  type JsValue = String;
+
+  fn compute(&mut self) -> Result<Self::Output> {
+    catch_panic(|| {
+      oicana_ffi_core::register_template(
+        &self.template,
+        &std::mem::take(&mut self.files),
+        std::mem::take(&mut self.json_inputs),
+        std::mem::take(&mut self.blob_inputs),
+        self.compilation_mode,
+        self.limits,
+      )
+      .map_err(into_napi_err)
+    })
+  }
+
+  fn resolve(&mut self, _env: Env, output: Self::Output) -> Result<Self::JsValue> {
+    Ok(output)
+  }
+}
+
+/// Register the given template on a background thread.
+///
+/// The returned promise resolves to the document id of the initial warm-up
+/// compilation. Unlike [`register_template`], this does not block the Node.js
+/// event loop while the template is read and compiled.
+#[napi(catch_unwind, ts_return_type = "Promise<string>")]
+pub fn register_template_async(
+  template: String,
+  files: Uint8Array,
+  json_inputs: HashMap<String, String>,
+  blob_inputs: HashMap<String, BlobWithMetadata>,
+  compilation_mode: CompilationMode,
+  limits: Option<ZipLimits>,
+) -> AsyncTask<RegisterTemplateTask> {
+  AsyncTask::new(RegisterTemplateTask {
+    template,
+    files: files.to_vec(),
+    json_inputs,
+    blob_inputs: into_core_blobs(blob_inputs),
+    compilation_mode: compilation_mode.into(),
+    limits: into_core_limits(limits),
+  })
+}
+
+/// Result of a one-shot export.
+#[napi(object)]
+pub struct ExportOnceResult {
+  /// The exported document.
+  pub data: Buffer,
+  /// Compilation warnings, if any.
+  pub warnings: Option<String>,
+}
+
+/// Compile and export the given template once, without caching the template or document.
+///
+/// `page_range` is a JSON object `{ "start"?: number, "end"?: number }` with
+/// 0-based, inclusive bounds. If not set, the whole document is exported.
+#[napi(catch_unwind)]
+pub fn export_template_once(
+  files: Uint8Array,
+  json_inputs: HashMap<String, String>,
+  blob_inputs: HashMap<String, BlobWithMetadata>,
+  compilation_mode: CompilationMode,
+  export_format: String,
+  page_range: Option<String>,
+  limits: Option<ZipLimits>,
+) -> Result<ExportOnceResult> {
+  let format = oicana_ffi_core::parse_export_format(&export_format).map_err(into_napi_err)?;
+  let page = oicana_ffi_core::parse_page_range(page_range.as_deref().unwrap_or(""))
+    .map_err(into_napi_err)?;
+  let result = oicana_ffi_core::export_once(
+    &files,
+    json_inputs,
+    into_core_blobs(blob_inputs),
+    compilation_mode.into(),
+    format,
+    page,
+    into_core_limits(limits),
+  )
+  .map_err(into_napi_err)?;
+  Ok(ExportOnceResult {
+    data: result.bytes.into(),
+    warnings: result.warnings,
+  })
+}
+
+/// Background task compiling and exporting a template once on the libuv thread pool.
+pub struct ExportTemplateOnceTask {
+  files: Vec<u8>,
+  json_inputs: HashMap<String, String>,
+  blob_inputs: HashMap<String, oicana_ffi_core::BlobWithMetadata>,
+  compilation_mode: oicana_ffi_core::CompilationMode,
+  export_format: String,
+  page_range: Option<String>,
+  limits: Option<oicana_ffi_core::ZipLimits>,
+}
+
+impl Task for ExportTemplateOnceTask {
+  type Output = oicana_ffi_core::ExportOnceResult;
+  type JsValue = ExportOnceResult;
+
+  fn compute(&mut self) -> Result<Self::Output> {
+    catch_panic(|| {
+      let format =
+        oicana_ffi_core::parse_export_format(&self.export_format).map_err(into_napi_err)?;
+      let pages = oicana_ffi_core::parse_page_range(self.page_range.as_deref().unwrap_or(""))
+        .map_err(into_napi_err)?;
+      oicana_ffi_core::export_once(
+        &std::mem::take(&mut self.files),
+        std::mem::take(&mut self.json_inputs),
+        std::mem::take(&mut self.blob_inputs),
+        self.compilation_mode,
+        format,
+        pages,
+        self.limits,
+      )
+      .map_err(into_napi_err)
+    })
+  }
+
+  fn resolve(&mut self, _env: Env, output: Self::Output) -> Result<Self::JsValue> {
+    Ok(ExportOnceResult {
+      data: output.bytes.into(),
+      warnings: output.warnings,
+    })
+  }
+}
+
+/// Compile and export the given template once on a background thread.
+///
+/// The returned promise resolves to the exported bytes and any compilation
+/// warnings. Unlike [`export_template_once`], this does not block the Node.js
+/// event loop.
+#[napi(catch_unwind, ts_return_type = "Promise<ExportOnceResult>")]
+pub fn export_template_once_async(
+  files: Uint8Array,
+  json_inputs: HashMap<String, String>,
+  blob_inputs: HashMap<String, BlobWithMetadata>,
+  compilation_mode: CompilationMode,
+  export_format: String,
+  page_range: Option<String>,
+  limits: Option<ZipLimits>,
+) -> AsyncTask<ExportTemplateOnceTask> {
+  AsyncTask::new(ExportTemplateOnceTask {
+    files: files.to_vec(),
+    json_inputs,
+    blob_inputs: into_core_blobs(blob_inputs),
+    compilation_mode: compilation_mode.into(),
+    export_format,
+    page_range,
+    limits: into_core_limits(limits),
+  })
 }
 
 /// Background task compiling a template on the libuv thread pool.
@@ -275,6 +444,49 @@ pub fn remove_world(template_id: String) -> Result<()> {
 pub enum CompilationMode {
   Production,
   Development,
+}
+
+/// Color mode for compilation diagnostics.
+#[napi]
+pub enum DiagnosticColor {
+  None,
+  Ansi,
+}
+
+/// Configure the coloring of compilation diagnostics like warnings and errors.
+#[napi(catch_unwind)]
+pub fn configure_diagnostic_color(color: DiagnosticColor) {
+  let color = match color {
+    DiagnosticColor::Ansi => oicana_ffi_core::DiagnosticColor::Ansi,
+    DiagnosticColor::None => oicana_ffi_core::DiagnosticColor::None,
+  };
+  oicana_ffi_core::configure_diagnostic_color(color);
+}
+
+/// Limits applied when reading a packed template zip. Missing values keep the defaults.
+#[napi(object)]
+pub struct ZipLimits {
+  /// Maximum number of zip entries.
+  pub max_entries: Option<u32>,
+  /// Maximum total decompressed size in bytes.
+  pub max_total_decompressed_bytes: Option<i64>,
+}
+
+fn into_core_limits(limits: Option<ZipLimits>) -> Option<oicana_ffi_core::ZipLimits> {
+  let limits = limits?;
+  if limits.max_entries.is_none() && limits.max_total_decompressed_bytes.is_none() {
+    return None;
+  }
+  let mut result = oicana_ffi_core::ZipLimits::default();
+  if let Some(value) = limits.max_entries {
+    result.max_entries = value as usize;
+  }
+  if let Some(value) = limits.max_total_decompressed_bytes {
+    if let Ok(value) = u64::try_from(value) {
+      result.max_total_decompressed_bytes = value;
+    }
+  }
+  Some(result)
 }
 
 impl From<CompilationMode> for oicana_ffi_core::CompilationMode {

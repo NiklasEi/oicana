@@ -55,6 +55,15 @@ export declare function compileTemplateAsync(
  */
 export declare function configureAutomaticCacheEviction(maxAge?: number | undefined | null): void
 
+/** Configure the coloring of compilation diagnostics like warnings and errors. */
+export declare function configureDiagnosticColor(color: DiagnosticColor): void
+
+/** Color mode for compilation diagnostics. */
+export declare const enum DiagnosticColor {
+  None = 0,
+  Ansi = 1,
+}
+
 /**
  * Return the sizes (in points) of every page of a compiled document as a JSON
  * array of `{ "width": number, "height": number }`.
@@ -99,6 +108,47 @@ export declare function exportDocumentAsync(
   exportFormat: string,
   pageRange?: string | undefined | null,
 ): Promise<Buffer>
+
+/** Result of a one-shot export. */
+export interface ExportOnceResult {
+  /** The exported document. */
+  data: Buffer
+  /** Compilation warnings, if any. */
+  warnings?: string
+}
+
+/**
+ * Compile and export the given template once, without caching the template or document.
+ *
+ * `page_range` is a JSON object `{ "start"?: number, "end"?: number }` with
+ * 0-based, inclusive bounds. If not set, the whole document is exported.
+ */
+export declare function exportTemplateOnce(
+  files: Uint8Array,
+  jsonInputs: Record<string, string>,
+  blobInputs: Record<string, BlobWithMetadata>,
+  compilationMode: CompilationMode,
+  exportFormat: string,
+  pageRange?: string | undefined | null,
+  limits?: ZipLimits | undefined | null,
+): ExportOnceResult
+
+/**
+ * Compile and export the given template once on a background thread.
+ *
+ * The returned promise resolves to the exported bytes and any compilation
+ * warnings. Unlike [`export_template_once`], this does not block the Node.js
+ * event loop.
+ */
+export declare function exportTemplateOnceAsync(
+  files: Uint8Array,
+  jsonInputs: Record<string, string>,
+  blobInputs: Record<string, BlobWithMetadata>,
+  compilationMode: CompilationMode,
+  exportFormat: string,
+  pageRange?: string | undefined | null,
+  limits?: ZipLimits | undefined | null,
+): Promise<ExportOnceResult>
 
 /**
  * Load the source of the given file in the template.
@@ -147,7 +197,24 @@ export declare function registerTemplate(
   jsonInputs: Record<string, string>,
   blobInputs: Record<string, BlobWithMetadata>,
   compilationMode: CompilationMode,
+  limits?: ZipLimits | undefined | null,
 ): string
+
+/**
+ * Register the given template on a background thread.
+ *
+ * The returned promise resolves to the document id of the initial warm-up
+ * compilation. Unlike [`register_template`], this does not block the Node.js
+ * event loop while the template is read and compiled.
+ */
+export declare function registerTemplateAsync(
+  template: string,
+  files: Uint8Array,
+  jsonInputs: Record<string, string>,
+  blobInputs: Record<string, BlobWithMetadata>,
+  compilationMode: CompilationMode,
+  limits?: ZipLimits | undefined | null,
+): Promise<string>
 
 /** Remove the document from the cache. */
 export declare function removeDocument(documentId: string): void
@@ -169,3 +236,11 @@ export declare function removeWorld(templateId: string): void
  * identifier.
  */
 export declare function setValidateInputs(template: string, validate: boolean): void
+
+/** Limits applied when reading a packed template zip. Missing values keep the defaults. */
+export interface ZipLimits {
+  /** Maximum number of zip entries. */
+  maxEntries?: number
+  /** Maximum total decompressed size in bytes. */
+  maxTotalDecompressedBytes?: number
+}

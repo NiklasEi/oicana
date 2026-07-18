@@ -29,5 +29,8 @@ serde_json = { workspace = true }
 thiserror = { workspace = true }
 uuid = { workspace = true, features = ["v4"] }
 
+[dev-dependencies]
+zip = { workspace = true, default-features = false, features = ["zstd"] }
+
 [lints]
 workspace = true

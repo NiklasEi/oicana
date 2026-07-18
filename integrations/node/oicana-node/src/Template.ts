@@ -5,9 +5,15 @@ import {
   compileTemplateAsync,
   exportDocument,
   exportDocumentAsync,
+  exportTemplateOnce,
+  exportTemplateOnceAsync,
+  getFile,
+  getSource,
   getWarnings,
   CompilationMode as NativeCompilationMode,
+  inputs as nativeInputs,
   registerTemplate,
+  registerTemplateAsync,
   removeDocument,
   removeWorld,
   setValidateInputs,
@@ -15,8 +21,36 @@ import {
 import { CompilationMode } from './CompilationMode.js';
 import { CompiledDocument } from './CompiledDocument.js';
 import { type ExportFormat, Pdf, Png, Svg } from './ExportFormat.js';
+import type { ExportOnceResult } from './ExportOnceResult.js';
 import type { BlobWithMetadata } from './inputs/index.js';
 import { type PageRange, serializePageRange } from './PageRange.js';
+import type { ZipLimits } from './ZipLimits.js';
+
+/**
+ * Marks a constructor call from {@link Template.create}, where the template
+ * has already been registered on a background thread.
+ */
+const alreadyRegistered = Symbol('oicana-already-registered');
+
+interface CompletedRegistration {
+  readonly token: typeof alreadyRegistered;
+  readonly templateId: string;
+  readonly warnings: string | undefined;
+}
+
+/**
+ * The token symbol is module-private, so only {@link Template.create} can
+ * produce a value satisfying this check.
+ */
+function isCompletedRegistration(
+  value: Uint8Array | CompletedRegistration,
+): value is CompletedRegistration {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    (value as CompletedRegistration).token === alreadyRegistered
+  );
+}
 
 /**
  * A template
@@ -36,8 +70,8 @@ export class Template implements Disposable {
   /**
    * Register a template with the given template file and inputs
    * @param template - the packed Oicana template file
-   * @param jsonInputs for the initial compilation to warm up the cache
-   * @param blobInputs for the initial compilation to warm up the cache
+   * @param jsonInputs - for the initial compilation to warm up the cache
+   * @param blobInputs - for the initial compilation to warm up the cache
    */
   public constructor(
     template: Uint8Array,
@@ -48,31 +82,175 @@ export class Template implements Disposable {
   /**
    * Register a template with the given template file and inputs
    * @param template - the packed Oicana template file
-   * @param jsonInputs for the initial compilation to warm up the cache (defaults to empty map)
-   * @param blobInputs for the initial compilation to warm up the cache (defaults to empty map)
-   * @param compilationOptions for the initial compilation to warm up the cache (defaults to Development)
+   * @param jsonInputs  -for the initial compilation to warm up the cache (defaults to empty map)
+   * @param blobInputs - for the initial compilation to warm up the cache (defaults to empty map)
+   * @param compilationOptions - for the initial compilation to warm up the cache (defaults to Development)
+   * @param limits - for reading the template zip (defaults apply when omitted)
    */
   public constructor(
     template: Uint8Array,
     jsonInputs?: Map<string, string>,
     blobInputs?: Map<string, BlobWithMetadata>,
     compilationOptions?: CompilationMode,
+    limits?: ZipLimits,
+  );
+
+  public constructor(
+    template: Uint8Array | CompletedRegistration,
+    jsonInputs?: Map<string, string>,
+    blobInputs?: Map<string, BlobWithMetadata>,
+    compilationOptions?: CompilationMode,
+    limits?: ZipLimits,
   ) {
+    if (isCompletedRegistration(template)) {
+      this.template = template.templateId;
+      this.lastWarnings = template.warnings;
+      return;
+    }
+
+    if (!(template instanceof Uint8Array)) {
+      throw new TypeError(
+        'template must be a Uint8Array containing the packed template file',
+      );
+    }
+
     this.template = randomUUID();
 
     const documentId = registerTemplate(
       this.template,
       template,
       Object.fromEntries(jsonInputs ?? new Map<string, string>()),
-      this.convertBlobWithMetadata(
+      Template.convertBlobWithMetadata(
         blobInputs ?? new Map<string, BlobWithMetadata>(),
       ),
-      this.mapCompilationMode(
+      Template.mapCompilationMode(
         compilationOptions ?? CompilationMode.Development,
       ),
+      limits,
     );
     this.lastWarnings = getWarnings(documentId) ?? undefined;
     removeDocument(documentId);
+  }
+
+  /**
+   * Register a template on a background thread and resolve to the prepared
+   * {@link Template}.
+   *
+   * Unlike the constructor, this does not block the Node.js event loop while
+   * the template is read and its warm-up compilation runs.
+   * @param template - the packed Oicana template file
+   * @param jsonInputs - for the initial compilation to warm up the cache (defaults to empty map)
+   * @param blobInputs - for the initial compilation to warm up the cache (defaults to empty map)
+   * @param compilationOptions - for the initial compilation to warm up the cache (defaults to Development)
+   * @param limits - for reading the template zip (defaults apply when omitted)
+   */
+  public static async create(
+    template: Uint8Array,
+    jsonInputs?: Map<string, string>,
+    blobInputs?: Map<string, BlobWithMetadata>,
+    compilationOptions?: CompilationMode,
+    limits?: ZipLimits,
+  ): Promise<Template> {
+    const templateId = randomUUID();
+
+    const documentId = await registerTemplateAsync(
+      templateId,
+      template,
+      Object.fromEntries(jsonInputs ?? new Map<string, string>()),
+      Template.convertBlobWithMetadata(
+        blobInputs ?? new Map<string, BlobWithMetadata>(),
+      ),
+      Template.mapCompilationMode(
+        compilationOptions ?? CompilationMode.Development,
+      ),
+      limits,
+    );
+    const warnings = getWarnings(documentId) ?? undefined;
+    removeDocument(documentId);
+
+    const registration: CompletedRegistration = {
+      token: alreadyRegistered,
+      templateId,
+      warnings,
+    };
+    return new Template(registration as never);
+  }
+
+  /**
+   * Compile and export a template in a single native call, without caching.
+   *
+   * Nothing is registered and no warm-up compilation runs, so this is the
+   * fastest way to render a template exactly once. For repeated exports of the
+   * same template, create a {@link Template} instance instead.
+   * @param template - the packed Oicana template file
+   * @param jsonInputs - JSON inputs for the template (defaults to empty map)
+   * @param blobInputs - Blob inputs for the template (defaults to empty map)
+   * @param exportOptions - Export format specification (defaults to PDF)
+   * @param compilationOptions - Compilation mode (defaults to Production)
+   * @param pages - 0-based, inclusive page range (defaults to the whole document)
+   * @param limits - limits for reading the template zip (defaults apply when omitted)
+   */
+  public static exportOnce(
+    template: Uint8Array,
+    jsonInputs?: Map<string, string>,
+    blobInputs?: Map<string, BlobWithMetadata>,
+    exportOptions?: ExportFormat,
+    compilationOptions?: CompilationMode,
+    pages?: PageRange,
+    limits?: ZipLimits,
+  ): ExportOnceResult {
+    const result = exportTemplateOnce(
+      template,
+      Object.fromEntries(jsonInputs ?? new Map<string, string>()),
+      Template.convertBlobWithMetadata(
+        blobInputs ?? new Map<string, BlobWithMetadata>(),
+      ),
+      Template.mapCompilationMode(
+        compilationOptions ?? CompilationMode.Production,
+      ),
+      JSON.stringify(exportOptions ?? Pdf),
+      serializePageRange(pages),
+      limits,
+    );
+    return { document: result.data, warnings: result.warnings ?? undefined };
+  }
+
+  /**
+   * Compile and export a template in a single native call on a background
+   * thread, without caching.
+   *
+   * Unlike {@link exportOnce}, this does not block the Node.js event loop.
+   * @param template - the packed Oicana template file
+   * @param jsonInputs - JSON inputs for the template (defaults to empty map)
+   * @param blobInputs - Blob inputs for the template (defaults to empty map)
+   * @param exportOptions - Export format specification (defaults to PDF)
+   * @param compilationOptions - Compilation mode (defaults to Production)
+   * @param pages - 0-based, inclusive page range (defaults to the whole document)
+   * @param limits - limits for reading the template zip (defaults apply when omitted)
+   */
+  public static async exportOnceAsync(
+    template: Uint8Array,
+    jsonInputs?: Map<string, string>,
+    blobInputs?: Map<string, BlobWithMetadata>,
+    exportOptions?: ExportFormat,
+    compilationOptions?: CompilationMode,
+    pages?: PageRange,
+    limits?: ZipLimits,
+  ): Promise<ExportOnceResult> {
+    const result = await exportTemplateOnceAsync(
+      template,
+      Object.fromEntries(jsonInputs ?? new Map<string, string>()),
+      Template.convertBlobWithMetadata(
+        blobInputs ?? new Map<string, BlobWithMetadata>(),
+      ),
+      Template.mapCompilationMode(
+        compilationOptions ?? CompilationMode.Production,
+      ),
+      JSON.stringify(exportOptions ?? Pdf),
+      serializePageRange(pages),
+      limits,
+    );
+    return { document: result.data, warnings: result.warnings ?? undefined };
   }
 
   /**
@@ -443,10 +621,12 @@ export class Template implements Disposable {
     const documentId = compileTemplate(
       this.template,
       Object.fromEntries(jsonInputs ?? new Map<string, string>()),
-      this.convertBlobWithMetadata(
+      Template.convertBlobWithMetadata(
         blobInputs ?? new Map<string, BlobWithMetadata>(),
       ),
-      this.mapCompilationMode(compilationOptions ?? CompilationMode.Production),
+      Template.mapCompilationMode(
+        compilationOptions ?? CompilationMode.Production,
+      ),
     );
     this.lastWarnings = getWarnings(documentId) ?? undefined;
     return documentId;
@@ -460,10 +640,12 @@ export class Template implements Disposable {
     const documentId = await compileTemplateAsync(
       this.template,
       Object.fromEntries(jsonInputs ?? new Map<string, string>()),
-      this.convertBlobWithMetadata(
+      Template.convertBlobWithMetadata(
         blobInputs ?? new Map<string, BlobWithMetadata>(),
       ),
-      this.mapCompilationMode(compilationOptions ?? CompilationMode.Production),
+      Template.mapCompilationMode(
+        compilationOptions ?? CompilationMode.Production,
+      ),
     );
     this.lastWarnings = getWarnings(documentId) ?? undefined;
     return documentId;
@@ -475,6 +657,29 @@ export class Template implements Disposable {
    */
   public warnings(): string | undefined {
     return this.lastWarnings;
+  }
+
+  /**
+   * The template's input definitions from its manifest, serialized as JSON.
+   */
+  public inputs(): string {
+    return nativeInputs(this.template);
+  }
+
+  /**
+   * The source text of a file inside the template.
+   * @param path - file path within the template
+   */
+  public source(path: string): string {
+    return getSource(this.template, path);
+  }
+
+  /**
+   * The raw bytes of a file inside the template.
+   * @param path - file path within the template
+   */
+  public file(path: string): Uint8Array {
+    return getFile(this.template, path);
   }
 
   /**
@@ -503,7 +708,7 @@ export class Template implements Disposable {
     this.dispose();
   }
 
-  private convertBlobWithMetadata(
+  private static convertBlobWithMetadata(
     blobInputs: Map<string, BlobWithMetadata>,
   ): Record<string, BlobWithMetadataNative> {
     return Object.fromEntries(
@@ -517,7 +722,9 @@ export class Template implements Disposable {
     );
   }
 
-  private mapCompilationMode(mode: CompilationMode): NativeCompilationMode {
+  private static mapCompilationMode(
+    mode: CompilationMode,
+  ): NativeCompilationMode {
     switch (mode) {
       case CompilationMode.Development:
         return NativeCompilationMode.Development;

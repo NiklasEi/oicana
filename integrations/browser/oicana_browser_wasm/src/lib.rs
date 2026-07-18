@@ -3,9 +3,10 @@
 //! You most likely want to use the npm package `@oicana/browser` instead.
 
 use std::collections::HashMap;
+use std::sync::atomic::{AtomicU8, Ordering};
 
 use js_sys::Uint8Array;
-use log::{trace, warn, Level};
+use log::{trace, warn, Level, LevelFilter};
 use serde::Deserialize;
 use serde_wasm_bindgen::from_value;
 use wasm_bindgen::prelude::wasm_bindgen;
@@ -50,6 +51,7 @@ pub fn register_template(
     json_inputs: JsValue,
     blob_inputs: JsValue,
     compilation_mode: JsValue,
+    limits: JsValue,
 ) -> Result<String, String> {
     init_logging();
     let start = get_current_time();
@@ -58,6 +60,7 @@ pub fn register_template(
     let blob_map = decode_blob_inputs(blob_inputs)?;
     let compilation_mode: CompilationMode = from_value(compilation_mode)
         .map_err(|error| format!("Failed to convert to compilation mode: {error:?}"))?;
+    let limits = decode_zip_limits(limits)?;
 
     let mut bytes = vec![0; files.length() as usize];
     files.copy_to(&mut bytes[..]);
@@ -68,6 +71,7 @@ pub fn register_template(
         json_map,
         blob_map,
         compilation_mode.into(),
+        limits,
     )
     .map_err(|error| error.to_string())?;
 
@@ -77,6 +81,77 @@ pub fn register_template(
         get_current_time() - start
     );
     Ok(result_id)
+}
+
+/// Result of a one-shot export.
+#[wasm_bindgen(getter_with_clone)]
+pub struct ExportOnceResult {
+    /// The exported document.
+    pub data: Vec<u8>,
+    /// Compilation warnings, if any.
+    pub warnings: Option<String>,
+}
+
+/// Compile and export the given template once, without keeping the template in the cache.
+///
+/// `page_range` is a `{ start?: number; end?: number }` object with 0-based,
+/// inclusive bounds. If not set, the whole document is exported.
+#[wasm_bindgen]
+pub fn export_template_once(
+    files: &Uint8Array,
+    json_inputs: JsValue,
+    blob_inputs: JsValue,
+    compilation_mode: JsValue,
+    export_format: JsValue,
+    page_range: JsValue,
+    limits: JsValue,
+) -> Result<ExportOnceResult, String> {
+    init_logging();
+    let start = get_current_time();
+
+    let json_map = decode_json_inputs(json_inputs)?;
+    let blob_map = decode_blob_inputs(blob_inputs)?;
+    let compilation_mode: CompilationMode = from_value(compilation_mode)
+        .map_err(|error| format!("Failed to convert to compilation mode: {error:?}"))?;
+    let format: oicana_ffi_core::ExportFormat = from_value(export_format)
+        .map_err(|error| format!("Failed to convert to export format: {error:?}"))?;
+    let page: Option<oicana_ffi_core::PageRange> = from_value(page_range)
+        .map_err(|error| format!("Failed to convert to page range: {error:?}"))?;
+    let limits = decode_zip_limits(limits)?;
+
+    let mut bytes = vec![0; files.length() as usize];
+    files.copy_to(&mut bytes[..]);
+
+    let result = oicana_ffi_core::export_once(
+        &bytes,
+        json_map,
+        blob_map,
+        compilation_mode.into(),
+        format,
+        page,
+        limits,
+    )
+    .map_err(|error| error.to_string())?;
+
+    trace!(
+        "Done exporting document in {}ms",
+        get_current_time() - start
+    );
+    Ok(ExportOnceResult {
+        data: result.bytes,
+        warnings: result.warnings,
+    })
+}
+
+/// Configure the coloring of compilation diagnostics.
+#[wasm_bindgen]
+pub fn configure_diagnostic_color(ansi: bool) {
+    let color = if ansi {
+        oicana_ffi_core::DiagnosticColor::Ansi
+    } else {
+        oicana_ffi_core::DiagnosticColor::None
+    };
+    oicana_ffi_core::configure_diagnostic_color(color);
 }
 
 /// Compile the identified template with the given inputs.
@@ -208,9 +283,44 @@ pub fn export_document(
     Ok(bytes_to_js_array(&bytes))
 }
 
+/// The configured maximum log level as a [`LevelFilter`] discriminant.
+/// Defaults to `Warn`.
+static LOG_LEVEL: AtomicU8 = AtomicU8::new(LevelFilter::Warn as u8);
+
+/// Set the maximum log level for console output.
+///
+/// Accepts `off`, `error`, `warn`, `info`, `debug`, or `trace`. The default is `warn`.
+#[wasm_bindgen]
+pub fn set_log_level(level: &str) -> Result<(), String> {
+    let filter = match level.to_ascii_lowercase().as_str() {
+        "off" => LevelFilter::Off,
+        "error" => LevelFilter::Error,
+        "warn" => LevelFilter::Warn,
+        "info" => LevelFilter::Info,
+        "debug" => LevelFilter::Debug,
+        "trace" => LevelFilter::Trace,
+        other => return Err(format!("Unknown log level '{other}'")),
+    };
+    LOG_LEVEL.store(filter as u8, Ordering::Relaxed);
+    log::set_max_level(filter);
+    Ok(())
+}
+
+fn configured_log_level() -> LevelFilter {
+    match LOG_LEVEL.load(Ordering::Relaxed) {
+        0 => LevelFilter::Off,
+        1 => LevelFilter::Error,
+        2 => LevelFilter::Warn,
+        3 => LevelFilter::Info,
+        4 => LevelFilter::Debug,
+        _ => LevelFilter::Trace,
+    }
+}
+
 fn init_logging() {
     console_error_panic_hook::set_once();
     let _ = console_log::init_with_level(Level::Trace);
+    log::set_max_level(configured_log_level());
 }
 
 fn log_warnings(document_id: &str) {
@@ -251,6 +361,32 @@ fn decode_blob_inputs(
             ))
         })
         .collect()
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct ZipLimits {
+    max_entries: Option<usize>,
+    max_total_decompressed_bytes: Option<u64>,
+}
+
+fn decode_zip_limits(value: JsValue) -> Result<Option<oicana_ffi_core::ZipLimits>, String> {
+    let limits: Option<ZipLimits> = from_value(value)
+        .map_err(|error| format!("Failed to deserialize zip limits: {error:?}"))?;
+    let Some(limits) = limits else {
+        return Ok(None);
+    };
+    if limits.max_entries.is_none() && limits.max_total_decompressed_bytes.is_none() {
+        return Ok(None);
+    }
+    let mut result = oicana_ffi_core::ZipLimits::default();
+    if let Some(value) = limits.max_entries {
+        result.max_entries = value;
+    }
+    if let Some(value) = limits.max_total_decompressed_bytes {
+        result.max_total_decompressed_bytes = value;
+    }
+    Ok(Some(result))
 }
 
 #[derive(Deserialize)]

@@ -1,16 +1,29 @@
-import init from '@oicana/browser-wasm';
+import init, { configure_diagnostic_color } from '@oicana/browser-wasm';
 
 export {
   configure_automatic_cache_eviction as configureAutomaticCacheEviction,
   evict_cache as evictCache,
+  set_log_level as setLogLevel,
   set_validate_inputs as setValidateInputs,
 } from '@oicana/browser-wasm';
 export * from './CompilationMode.js';
 export * from './CompiledDocument.js';
 export * from './ExportFormat.js';
+export * from './ExportOnceResult.js';
 export * from './inputs/index.js';
 export * from './PageRange.js';
 export * from './Template.js';
+export * from './ZipLimits.js';
+
+/** Color mode for compilation diagnostics. */
+export type DiagnosticColor = 'none' | 'ansi';
+
+/**
+ * Configure the coloring of compilation diagnostics like warnings and errors.
+ */
+export function configureDiagnosticColor(color: DiagnosticColor): void {
+  configure_diagnostic_color(color === 'ansi');
+}
 
 const initialized: Set<string> = new Set();
 

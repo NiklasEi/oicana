@@ -1,6 +1,7 @@
 import {
   compile_template,
   export_document,
+  export_template_once,
   get_file,
   get_source,
   get_warnings,
@@ -13,12 +14,14 @@ import {
 import { CompilationMode } from './CompilationMode.js';
 import { CompiledDocument } from './CompiledDocument.js';
 import { type ExportFormat, Pdf, Png, Svg } from './ExportFormat.js';
+import type { ExportOnceResult } from './ExportOnceResult.js';
 import type {
   BlobInputDefinition,
   BlobWithMetadata,
   JsonInputDefinition,
 } from './inputs/index.js';
 import type { PageRange } from './PageRange.js';
+import type { ZipLimits } from './ZipLimits.js';
 
 /**
  * A template
@@ -53,12 +56,14 @@ export class Template implements Disposable {
    * @param jsonInputs for the initial compilation to warm up the cache (defaults to empty map)
    * @param blobInputs for the initial compilation to warm up the cache (defaults to empty map)
    * @param compilationOptions for the initial compilation to warm up the cache (defaults to Development)
+   * @param limits for reading the template zip (defaults apply when omitted)
    */
   public constructor(
     template: Uint8Array,
     jsonInputs?: Map<string, string>,
     blobInputs?: Map<string, BlobWithMetadata>,
     compilationOptions?: CompilationMode,
+    limits?: ZipLimits,
   ) {
     this.template = crypto.randomUUID();
     for (const blob of blobInputs?.entries() ?? []) {
@@ -73,9 +78,50 @@ export class Template implements Disposable {
       jsonInputs ?? new Map(),
       blobInputs ?? new Map(),
       compilationOptions ?? CompilationMode.Development,
+      limits,
     );
     this.lastWarnings = get_warnings(documentId);
     remove_document(documentId);
+  }
+
+  /**
+   * Compile and export a template in a single WASM call, without caching.
+   *
+   * Nothing is registered and no warm-up compilation runs, so this is the
+   * fastest way to render a template exactly once. For repeated exports of the
+   * same template, create a {@link Template} instance instead.
+   * @param template - the packed Oicana template file
+   * @param jsonInputs - JSON inputs for the template (defaults to empty map)
+   * @param blobInputs - Blob inputs for the template (defaults to empty map)
+   * @param exportFormat - Export format specification (defaults to PDF)
+   * @param compilationOptions - Compilation mode (defaults to Production)
+   * @param pages - 0-based, inclusive page range (defaults to the whole document)
+   * @param limits - limits for reading the template zip (defaults to max 10000 entries and 500mb)
+   */
+  public static exportOnce(
+    template: Uint8Array,
+    jsonInputs?: Map<string, string>,
+    blobInputs?: Map<string, BlobWithMetadata>,
+    exportFormat?: ExportFormat,
+    compilationOptions?: CompilationMode,
+    pages?: PageRange,
+    limits?: ZipLimits,
+  ): ExportOnceResult {
+    for (const blob of blobInputs?.entries() ?? []) {
+      if (blob[1].meta === undefined) {
+        blob[1].meta = {};
+      }
+    }
+    const result = export_template_once(
+      template,
+      jsonInputs ?? new Map(),
+      blobInputs ?? new Map(),
+      compilationOptions ?? CompilationMode.Production,
+      exportFormat ?? Pdf,
+      pages,
+      limits,
+    );
+    return { document: result.data, warnings: result.warnings };
   }
 
   /**

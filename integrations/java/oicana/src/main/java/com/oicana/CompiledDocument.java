@@ -28,7 +28,7 @@ public class CompiledDocument implements AutoCloseable {
     private static final Pattern PAGE_PATTERN = Pattern.compile(
             "\"width\"\\s*:\\s*([-+0-9.eE]+)\\s*,\\s*\"height\"\\s*:\\s*([-+0-9.eE]+)");
 
-    private String documentId;
+    private volatile String documentId;
     private final List<PageSize> pages;
     private final String warnings;
 

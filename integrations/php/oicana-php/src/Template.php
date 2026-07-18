@@ -39,6 +39,7 @@ class Template
      * @param array<string, string|array<mixed>> $jsonInputs JSON inputs (key => JSON string or array)
      * @param array<string, BlobInput> $blobInputs blob inputs
      * @param CompilationMode $mode Compilation mode
+     * @param ZipLimits|null $limits Limits for reading the template zip (defaults apply when null)
      * @throws \RuntimeException If the oicana extension is not loaded
      * @throws \Exception If template registration fails
      */
@@ -46,7 +47,8 @@ class Template
         string $template,
         array $jsonInputs = [],
         array $blobInputs = [],
-        CompilationMode $mode = CompilationMode::Development
+        CompilationMode $mode = CompilationMode::Development,
+        ?ZipLimits $limits = null
     ) {
         if (!extension_loaded('oicana')) {
             throw new \RuntimeException(
@@ -61,14 +63,15 @@ class Template
 
         $jsonInputs = self::encodeJsonInputs($jsonInputs);
         $nativeBlobs = $this->prepareBlobInputs($blobInputs);
-        $templateBytes = $this->stringToBytes($template);
 
         $docId = \OicanaInternal\register_template(
             $this->templateId,
-            $templateBytes,
+            $template,
             $jsonInputs,
             $nativeBlobs,
-            $mode->toNative()
+            $mode->toNative(),
+            $limits?->maxEntries,
+            $limits?->maxTotalDecompressedBytes
         );
 
         \OicanaInternal\remove_document($docId);
@@ -107,12 +110,11 @@ class Template
         $this->documentIds[] = $docId;
 
         try {
-            $bytes = \OicanaInternal\export_document(
+            return \OicanaInternal\export_document(
                 $docId,
                 json_encode($formatArray),
                 $pages?->toNative()
             );
-            return pack('C*', ...$bytes);
         } finally {
             \OicanaInternal\remove_document($docId);
             $this->documentIds = array_filter(
@@ -215,7 +217,7 @@ class Template
     }
 
     /**
-     * Compile the given template once without caching.
+     * Compile and export the given template once without caching.
      *
      * This is a convenience method for one-off compilations where you don't need
      * to reuse the template. For multiple compilations with the same template,
@@ -227,7 +229,8 @@ class Template
      * @param ExportFormat|null $exportFormat Export format configuration (defaults to PDF)
      * @param CompilationMode $mode Compilation mode
      * @param PageRange|null $pages 0-based, inclusive page range (defaults to the whole document)
-     * @return string Compiled document bytes (PDF, PNG, or SVG)
+     * @param ZipLimits|null $limits Limits for reading the template zip (defaults apply when null)
+     * @return ExportOnceResult The exported document and any compilation warnings
      * @throws \Exception If compilation or export fails
      */
     public static function exportOnce(
@@ -236,15 +239,26 @@ class Template
         array $blobInputs = [],
         ?ExportFormat $exportFormat = null,
         CompilationMode $mode = CompilationMode::Production,
-        ?PageRange $pages = null
-    ): string {
-        $template = new self($templateBytes, mode: CompilationMode::Development);
+        ?PageRange $pages = null,
+        ?ZipLimits $limits = null
+    ): ExportOnceResult {
+        $formatArray = ($exportFormat ?? ExportFormat::pdf())->toArray();
 
-        try {
-            return $template->export($jsonInputs, $blobInputs, $exportFormat, $mode, $pages);
-        } finally {
-            $template->cleanup();
-        }
+        $jsonInputs = self::encodeJsonInputs($jsonInputs);
+        $nativeBlobs = self::prepareBlobInputsStatic($blobInputs);
+
+        $result = \OicanaInternal\export_template_once(
+            $templateBytes,
+            $jsonInputs,
+            $nativeBlobs,
+            $mode->toNative(),
+            json_encode($formatArray),
+            $pages?->toNative(),
+            $limits?->maxEntries,
+            $limits?->maxTotalDecompressedBytes
+        );
+
+        return new ExportOnceResult($result->document(), $result->warnings);
     }
 
     /**
@@ -282,8 +296,7 @@ class Template
      */
     public function file(string $path): string
     {
-        $bytes = \OicanaInternal\get_file($this->templateId, $path);
-        return pack('C*', ...$bytes);
+        return \OicanaInternal\get_file($this->templateId, $path);
     }
 
     /**
@@ -381,29 +394,24 @@ class Template
      */
     private function prepareBlobInputs(array $blobInputs): array
     {
+        return self::prepareBlobInputsStatic($blobInputs);
+    }
+
+    /**
+     * Convert BlobInput objects to native BlobWithMetadata objects.
+     *
+     * @param array<string, BlobInput> $blobInputs
+     * @return array<string, \OicanaInternal\BlobWithMetadata>
+     */
+    private static function prepareBlobInputsStatic(array $blobInputs): array
+    {
         $nativeBlobs = [];
         foreach ($blobInputs as $key => $blob) {
             $meta = $blob->metadata !== null
                 ? json_encode($blob->metadata)
                 : '{}';
-            $bytes = $this->stringToBytes($blob->data);
-            $nativeBlobs[$key] = new \OicanaInternal\BlobWithMetadata($bytes, $meta);
+            $nativeBlobs[$key] = new \OicanaInternal\BlobWithMetadata($blob->data, $meta);
         }
         return $nativeBlobs;
-    }
-
-    /**
-     * Convert a string to a byte array for the native extension.
-     *
-     * @param string $data
-     * @return list<int>
-     */
-    private function stringToBytes(string $data): array
-    {
-        $unpacked = unpack('C*', $data);
-        if ($unpacked === false) {
-            return [];
-        }
-        return array_values($unpacked);
     }
 }

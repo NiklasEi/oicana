@@ -19,7 +19,7 @@ import java.util.UUID;
  */
 public class Template implements AutoCloseable {
     private final String templateId;
-    private boolean closed = false;
+    private volatile boolean closed = false;
 
     /**
      * Register a template with the given template file.
@@ -41,13 +41,29 @@ public class Template implements AutoCloseable {
      */
     public Template(byte[] templateFile, Map<String, String> jsonInputs,
                     Map<String, BlobInput> blobInputs, CompilationMode mode) {
+        this(templateFile, jsonInputs, blobInputs, mode, null);
+    }
+
+    /**
+     * Register a template with the given template file, inputs, and zip limits.
+     *
+     * @param templateFile the packed Oicana template ZIP file
+     * @param jsonInputs   JSON inputs for the initial warm-up compilation
+     * @param blobInputs   blob inputs for the initial warm-up compilation
+     * @param mode         compilation mode for the initial warm-up compilation
+     * @param limits       limits for reading the template ZIP, or {@code null} for the defaults
+     */
+    public Template(byte[] templateFile, Map<String, String> jsonInputs,
+                    Map<String, BlobInput> blobInputs, CompilationMode mode, ZipLimits limits) {
         this.templateId = UUID.randomUUID().toString();
         String documentId = OicanaNative.registerTemplate(
                 this.templateId,
                 templateFile,
                 jsonInputs,
                 convertBlobInputs(blobInputs),
-                mode.value
+                mode.value,
+                maxEntries(limits),
+                maxTotalDecompressedBytes(limits)
         );
         OicanaNative.removeDocument(documentId);
     }
@@ -310,7 +326,7 @@ public class Template implements AutoCloseable {
     }
 
     /**
-     * Compile a template in a single call without caching.
+     * Compile and export a template in a single call without caching.
      * Useful for one-off compilations where template reuse is not needed.
      *
      * @param templateFile the packed Oicana template ZIP file
@@ -318,14 +334,43 @@ public class Template implements AutoCloseable {
      * @param blobInputs   the blob inputs
      * @param exportFormat the output format
      * @param mode         the compilation mode
-     * @return the compiled document as a byte array
+     * @return the exported document and any compilation warnings
      */
-    public static byte[] exportOnce(byte[] templateFile, Map<String, String> jsonInputs,
-                                     Map<String, BlobInput> blobInputs,
-                                     ExportFormat exportFormat, CompilationMode mode) {
-        try (var template = new Template(templateFile, jsonInputs, blobInputs, mode)) {
-            return template.export(jsonInputs, blobInputs, exportFormat, mode);
-        }
+    public static ExportOnceResult exportOnce(byte[] templateFile, Map<String, String> jsonInputs,
+                                              Map<String, BlobInput> blobInputs,
+                                              ExportFormat exportFormat, CompilationMode mode) {
+        return exportOnce(templateFile, jsonInputs, blobInputs, exportFormat, mode, null, null);
+    }
+
+    /**
+     * Compile and export a template in a single call without caching.
+     * Useful for one-off compilations where template reuse is not needed.
+     *
+     * @param templateFile the packed Oicana template ZIP file
+     * @param jsonInputs   the JSON inputs
+     * @param blobInputs   the blob inputs
+     * @param exportFormat the output format
+     * @param mode         the compilation mode
+     * @param pages        the 0-based, inclusive page range to export, or {@code null} for the
+     *                     whole document
+     * @param limits       limits for reading the template ZIP, or {@code null} for the defaults
+     * @return the exported document and any compilation warnings
+     */
+    public static ExportOnceResult exportOnce(byte[] templateFile, Map<String, String> jsonInputs,
+                                              Map<String, BlobInput> blobInputs,
+                                              ExportFormat exportFormat, CompilationMode mode,
+                                              PageRange pages, ZipLimits limits) {
+        Object[] result = OicanaNative.exportTemplateOnce(
+                templateFile,
+                jsonInputs,
+                convertBlobInputs(blobInputs),
+                mode.value,
+                exportFormat.toJsonString(),
+                pages == null ? null : pages.toJsonString(),
+                maxEntries(limits),
+                maxTotalDecompressedBytes(limits)
+        );
+        return new ExportOnceResult((byte[]) result[0], (String) result[1]);
     }
 
     /**
@@ -411,6 +456,16 @@ public class Template implements AutoCloseable {
         }
     }
 
+    private static long maxEntries(ZipLimits limits) {
+        return limits == null || limits.maxEntries() == null ? -1 : limits.maxEntries();
+    }
+
+    private static long maxTotalDecompressedBytes(ZipLimits limits) {
+        return limits == null || limits.maxTotalDecompressedBytes() == null
+                ? -1
+                : limits.maxTotalDecompressedBytes();
+    }
+
     private static Map<String, NativeBlobWithMetadata> convertBlobInputs(Map<String, BlobInput> blobInputs) {
         if (blobInputs == null || blobInputs.isEmpty()) {
             return Map.of();
@@ -467,11 +522,27 @@ public class Template implements AutoCloseable {
         return "\"" + escapeJson(value.toString()) + "\"";
     }
 
-    private static String escapeJson(String s) {
-        return s.replace("\\", "\\\\")
-                .replace("\"", "\\\"")
-                .replace("\n", "\\n")
-                .replace("\r", "\\r")
-                .replace("\t", "\\t");
+    static String escapeJson(String s) {
+        StringBuilder sb = new StringBuilder(s.length() + 8);
+        for (int i = 0; i < s.length(); i++) {
+            char c = s.charAt(i);
+            switch (c) {
+                case '\\' -> sb.append("\\\\");
+                case '"' -> sb.append("\\\"");
+                case '\n' -> sb.append("\\n");
+                case '\r' -> sb.append("\\r");
+                case '\t' -> sb.append("\\t");
+                case '\b' -> sb.append("\\b");
+                case '\f' -> sb.append("\\f");
+                default -> {
+                    if (c < 0x20) {
+                        sb.append(String.format("\\u%04x", (int) c));
+                    } else {
+                        sb.append(c);
+                    }
+                }
+            }
+        }
+        return sb.toString();
     }
 }

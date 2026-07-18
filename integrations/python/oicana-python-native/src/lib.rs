@@ -66,10 +66,30 @@ fn evict_cache(py: Python<'_>, max_age: usize) {
     py.detach(|| oicana_ffi_core::evict_cache(max_age));
 }
 
+/// Build zip limits from optional arguments; `None` values keep the defaults.
+fn zip_limits_from_args(
+    max_entries: Option<usize>,
+    max_total_decompressed_bytes: Option<u64>,
+) -> Option<oicana_ffi_core::ZipLimits> {
+    if max_entries.is_none() && max_total_decompressed_bytes.is_none() {
+        return None;
+    }
+    let mut limits = oicana_ffi_core::ZipLimits::default();
+    if let Some(value) = max_entries {
+        limits.max_entries = value;
+    }
+    if let Some(value) = max_total_decompressed_bytes {
+        limits.max_total_decompressed_bytes = value;
+    }
+    Some(limits)
+}
+
 /// Register the given template. This will read the template files as a PackedTemplate and
 /// compile it once with the given inputs. The Typst World will be cached and reused for
 /// subsequent calls to the other methods with the same template identifier.
 #[pyfunction]
+#[pyo3(signature = (template, files, json_inputs, blob_inputs, compilation_mode, max_entries=None, max_total_decompressed_bytes=None))]
+#[allow(clippy::too_many_arguments)]
 fn register_template(
     py: Python<'_>,
     template: String,
@@ -77,6 +97,8 @@ fn register_template(
     json_inputs: HashMap<String, String>,
     blob_inputs: &Bound<'_, PyDict>,
     compilation_mode: CompilationMode,
+    max_entries: Option<usize>,
+    max_total_decompressed_bytes: Option<u64>,
 ) -> PyResult<String> {
     let blobs = into_core_blobs(py, blob_inputs)?;
     let files = files.as_bytes();
@@ -87,9 +109,60 @@ fn register_template(
             json_inputs,
             blobs,
             compilation_mode.into(),
+            zip_limits_from_args(max_entries, max_total_decompressed_bytes),
         )
     })
     .map_err(into_py_err)
+}
+
+/// Compile and export the given template once, without caching anything.
+///
+/// Returns a `(document_bytes, warnings)` tuple where `warnings` is `None` if
+/// there were none.
+#[pyfunction]
+#[pyo3(signature = (files, json_inputs, blob_inputs, compilation_mode, export_format, page_range=None, max_entries=None, max_total_decompressed_bytes=None))]
+#[allow(clippy::too_many_arguments)]
+fn export_once<'py>(
+    py: Python<'py>,
+    files: &Bound<'_, PyBytes>,
+    json_inputs: HashMap<String, String>,
+    blob_inputs: &Bound<'_, PyDict>,
+    compilation_mode: CompilationMode,
+    export_format: String,
+    page_range: Option<String>,
+    max_entries: Option<usize>,
+    max_total_decompressed_bytes: Option<u64>,
+) -> PyResult<(Bound<'py, PyBytes>, Option<String>)> {
+    let format = oicana_ffi_core::parse_export_format(&export_format).map_err(into_py_err)?;
+    let page = oicana_ffi_core::parse_page_range(page_range.as_deref().unwrap_or(""))
+        .map_err(into_py_err)?;
+    let blobs = into_core_blobs(py, blob_inputs)?;
+    let files = files.as_bytes();
+    let result = py
+        .detach(|| {
+            oicana_ffi_core::export_once(
+                files,
+                json_inputs,
+                blobs,
+                compilation_mode.into(),
+                format,
+                page,
+                zip_limits_from_args(max_entries, max_total_decompressed_bytes),
+            )
+        })
+        .map_err(into_py_err)?;
+    Ok((PyBytes::new(py, &result.bytes), result.warnings))
+}
+
+/// Configure the coloring of compilation diagnostics like warnings and errors.
+#[pyfunction]
+fn configure_diagnostic_color(ansi: bool) {
+    let color = if ansi {
+        oicana_ffi_core::DiagnosticColor::Ansi
+    } else {
+        oicana_ffi_core::DiagnosticColor::None
+    };
+    oicana_ffi_core::configure_diagnostic_color(color);
 }
 
 /// Compile the identified template with the given inputs.
@@ -238,6 +311,8 @@ fn into_py_err(error: oicana_ffi_core::FfiError) -> PyErr {
 #[pymodule]
 fn oicana_native(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(register_template, m)?)?;
+    m.add_function(wrap_pyfunction!(export_once, m)?)?;
+    m.add_function(wrap_pyfunction!(configure_diagnostic_color, m)?)?;
     m.add_function(wrap_pyfunction!(compile_template, m)?)?;
     m.add_function(wrap_pyfunction!(export_document, m)?)?;
     m.add_function(wrap_pyfunction!(inputs, m)?)?;

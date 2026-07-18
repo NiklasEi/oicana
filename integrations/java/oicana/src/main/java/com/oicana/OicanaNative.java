@@ -16,7 +16,25 @@ class OicanaNative {
             byte[] files,
             Map<String, String> jsonInputs,
             Map<String, NativeBlobWithMetadata> blobInputs,
-            int compilationMode
+            int compilationMode,
+            long maxEntries,
+            long maxTotalDecompressedBytes
+    );
+
+    /**
+     * Returns a two-element array of {@code byte[]} document and warnings
+     * {@code String} (or {@code null} if there were none).
+     * {@code pageRange} may be {@code null} to export the whole document.
+     */
+    static native Object[] exportTemplateOnce(
+            byte[] files,
+            Map<String, String> jsonInputs,
+            Map<String, NativeBlobWithMetadata> blobInputs,
+            int compilationMode,
+            String exportFormat,
+            String pageRange,
+            long maxEntries,
+            long maxTotalDecompressedBytes
     );
 
     static native String compileTemplate(
@@ -47,6 +65,8 @@ class OicanaNative {
     static native void setValidateInputs(String templateId, boolean validate);
 
     static native void configureAutomaticCacheEviction(int maxAge);
+
+    static native void configureDiagnosticColor(boolean ansi);
 
     static native void evictCache(int maxAge);
 }

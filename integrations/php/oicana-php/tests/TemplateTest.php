@@ -171,3 +171,34 @@ test('compile defaults to production mode', function () {
         $template->cleanup();
     }
 });
+
+test('binary-hostile blob data and binary export survive the FFI boundary', function () {
+    $templateBytes = file_get_contents(e2e_template_path());
+    $template = new Template($templateBytes);
+
+    // The template renders the blob as text, so the data must be printable
+    // UTF-8 - but multi-byte characters would be mangled by any per-byte
+    // marshaling. (NUL-safety of byte inputs is covered by the template zip
+    // itself, which every test passes through the same binary string path.)
+    $blobData = "binary \xC3\xA9\xC3\xBC\xC3\x9F data";
+    $blobInput = new BlobInput($blobData, ['image_format' => 'jpeg']);
+
+    try {
+        $pdf = $template->export(
+            blobInputs: ['development-blob' => $blobInput],
+            mode: CompilationMode::Development
+        );
+        expect(substr($pdf, 0, 4))->toBe('%PDF');
+
+        // PNG output starts with binary magic bytes; a non-binary-safe return
+        // path would corrupt them.
+        $png = $template->export(
+            blobInputs: ['development-blob' => $blobInput],
+            exportFormat: ExportFormat::png(),
+            mode: CompilationMode::Development
+        );
+        expect(substr($png, 0, 8))->toBe("\x89PNG\r\n\x1a\n");
+    } finally {
+        $template->cleanup();
+    }
+});

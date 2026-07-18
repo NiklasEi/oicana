@@ -25,22 +25,34 @@ internal static class OicanaFfi
     /// <param name="compilationOptions">Options for the template compilation.</param>
     /// <param name="exportFormat">Format configuration for the document export.</param>
     /// <param name="pages">0-based, inclusive page range to export, or <c>null</c> for the whole document.</param>
+    /// <param name="limits">Limits for reading the packed template zip, or <c>null</c> to use the defaults.</param>
     /// <exception cref="OicanaException">If the template compilation fails.</exception>
-    /// <returns>Stream containing the compiled template exported as the given <see cref="ExportTarget"/>.</returns>
-    public static Stream ExportTemplateOnce(byte[] templateFile, IDictionary<string, JsonNode> jsonInputs, IDictionary<string, BlobInput> blobInputs, Oicana.Config.CompilationOptions compilationOptions, Oicana.Config.ExportFormat exportFormat, Oicana.Config.PageRange? pages = null)
+    /// <returns>The exported document and any compilation warnings.</returns>
+    public static ExportOnceResult ExportTemplateOnce(byte[] templateFile, IDictionary<string, JsonNode> jsonInputs, IDictionary<string, BlobInput> blobInputs, Oicana.Config.CompilationOptions compilationOptions, Oicana.Config.ExportFormat exportFormat, Oicana.Config.PageRange? pages = null, Oicana.Config.ZipLimits? limits = null)
     {
         GCHandle fileHandle = GCHandle.Alloc(templateFile, GCHandleType.Pinned);
-        IntPtr filePointer = fileHandle.AddrOfPinnedObject();
-        var fileBuffer = new Buffer() { data = filePointer, error = false, len = (uint)templateFile.Length };
+        try
+        {
+            IntPtr filePointer = fileHandle.AddrOfPinnedObject();
+            var fileBuffer = new Buffer() { data = filePointer, error = false, len = (uint)templateFile.Length };
 
-        PreparedInputs preparedInputs = PrepareInputs(jsonInputs, blobInputs);
-
-        var buffer = OicanaFfiInternal.unsafe_export_template_once(fileBuffer, preparedInputs.JsonInputs, preparedInputs.BlobInputs, ConvertCompileOptions(compilationOptions), ConvertExportFormat(exportFormat), ConvertPageRange(pages));
-
-        preparedInputs.FreeAll();
-        fileHandle.Free();
-
-        return HandleBuffer(buffer);
+            PreparedInputs preparedInputs = PrepareInputs(jsonInputs, blobInputs);
+            try
+            {
+                var buffers = OicanaFfiInternal.unsafe_export_template_once(fileBuffer, preparedInputs.JsonInputs, preparedInputs.BlobInputs, ConvertCompileOptions(compilationOptions), ConvertExportFormat(exportFormat), ConvertPageRange(pages), ConvertZipLimits(limits));
+                var warnings = GetStringFromBuffer(buffers.warnings);
+                var document = HandleBuffer(buffers.document);
+                return new ExportOnceResult(document, warnings.Length == 0 ? null : warnings);
+            }
+            finally
+            {
+                preparedInputs.FreeAll();
+            }
+        }
+        finally
+        {
+            fileHandle.Free();
+        }
     }
 
     /// <summary>
@@ -55,12 +67,15 @@ internal static class OicanaFfi
     public static String CompileTemplate(string templateId, IDictionary<string, JsonNode> jsonInputs, IDictionary<string, BlobInput> blobInputs, Oicana.Config.CompilationOptions compilationOptions)
     {
         PreparedInputs preparedInputs = PrepareInputs(jsonInputs, blobInputs);
-
-        var buffer = OicanaFfiInternal.unsafe_compile_template(templateId, preparedInputs.JsonInputs, preparedInputs.BlobInputs, ConvertCompileOptions(compilationOptions));
-
-        preparedInputs.FreeAll();
-
-        return HandleStringBuffer(buffer);
+        try
+        {
+            var buffer = OicanaFfiInternal.unsafe_compile_template(templateId, preparedInputs.JsonInputs, preparedInputs.BlobInputs, ConvertCompileOptions(compilationOptions));
+            return HandleStringBuffer(buffer);
+        }
+        finally
+        {
+            preparedInputs.FreeAll();
+        }
     }
 
     /// <summary>
@@ -71,22 +86,32 @@ internal static class OicanaFfi
     /// <param name="jsonInputs">Json inputs for the compilation (key -> JsonNode).</param>
     /// <param name="blobInputs">Blob inputs for the compilation (key -> BlobInput).</param>
     /// <param name="compilationOptions">Options for the template compilation.</param>
+    /// <param name="limits">Limits for reading the packed template zip, or <c>null</c> for the defaults.</param>
     /// <exception cref="OicanaException">If the template compilation fails.</exception>
     /// <returns>Stream containing the compiled template exported as the given <see cref="ExportTarget"/>.</returns>
-    public static Stream RegisterTemplate(string templateId, byte[] templateFile, IDictionary<string, JsonNode> jsonInputs, IDictionary<string, BlobInput> blobInputs, Oicana.Config.CompilationOptions compilationOptions)
+    public static Stream RegisterTemplate(string templateId, byte[] templateFile, IDictionary<string, JsonNode> jsonInputs, IDictionary<string, BlobInput> blobInputs, Oicana.Config.CompilationOptions compilationOptions, Oicana.Config.ZipLimits? limits = null)
     {
         GCHandle fileHandle = GCHandle.Alloc(templateFile, GCHandleType.Pinned);
-        IntPtr filePointer = fileHandle.AddrOfPinnedObject();
-        var fileBuffer = new Buffer() { data = filePointer, error = false, len = (uint)templateFile.Length };
+        try
+        {
+            IntPtr filePointer = fileHandle.AddrOfPinnedObject();
+            var fileBuffer = new Buffer() { data = filePointer, error = false, len = (uint)templateFile.Length };
 
-        PreparedInputs preparedInputs = PrepareInputs(jsonInputs, blobInputs);
-
-        var buffer = OicanaFfiInternal.unsafe_register_template(templateId, fileBuffer, preparedInputs.JsonInputs, preparedInputs.BlobInputs, ConvertCompileOptions(compilationOptions));
-
-        preparedInputs.FreeAll();
-        fileHandle.Free();
-
-        return HandleBuffer(buffer);
+            PreparedInputs preparedInputs = PrepareInputs(jsonInputs, blobInputs);
+            try
+            {
+                var buffer = OicanaFfiInternal.unsafe_register_template(templateId, fileBuffer, preparedInputs.JsonInputs, preparedInputs.BlobInputs, ConvertCompileOptions(compilationOptions), ConvertZipLimits(limits));
+                return HandleBuffer(buffer);
+            }
+            finally
+            {
+                preparedInputs.FreeAll();
+            }
+        }
+        finally
+        {
+            fileHandle.Free();
+        }
     }
 
     /// <summary>
@@ -341,6 +366,16 @@ internal static class OicanaFfi
         {
             start = pages?.Start ?? -1,
             end = pages?.End ?? -1,
+        };
+    }
+
+    internal static Oicana.Interop.FfiZipLimits ConvertZipLimits(Oicana.Config.ZipLimits? limits)
+    {
+        // A value of -1 keeps the default limit.
+        return new FfiZipLimits()
+        {
+            max_entries = limits?.MaxEntries ?? -1,
+            max_total_decompressed_bytes = limits?.MaxTotalDecompressedBytes ?? -1,
         };
     }
 

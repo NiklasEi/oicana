@@ -3525,6 +3525,7 @@ dependencies = [
  "tmp-typst-custom-metadata",
  "tmp-typst-layout-custom-metadata",
  "uuid",
+ "zip 6.0.0",
 ]
 
 [[package]]

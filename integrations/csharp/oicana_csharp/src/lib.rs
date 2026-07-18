@@ -71,6 +71,7 @@ pub unsafe extern "C" fn unsafe_register_template(
     json_inputs: FFISlice<FfiJsonInput>,
     blob_inputs: FFISlice<FfiBlobInput>,
     compilation_options: CompilationOptions,
+    limits: FfiZipLimits,
 ) -> Buffer {
     catch_panic(|| {
         let template = match template.as_str() {
@@ -89,11 +90,12 @@ pub unsafe extern "C" fn unsafe_register_template(
             json_map,
             blob_map,
             compilation_options.mode.into(),
+            limits.into(),
         ))
     })
 }
 
-/// Compile the given template once.
+/// Compile and export the given template once.
 ///
 /// This method does not do any caching. If you want faster compilations,
 /// prepare your templates by registering them with [`unsafe_register_template`]
@@ -116,21 +118,38 @@ pub unsafe extern "C" fn unsafe_export_template_once(
     compile_options: CompilationOptions,
     export_options: ExportOptions,
     page_range: FfiPageRange,
-) -> Buffer {
-    catch_panic(|| {
+    limits: FfiZipLimits,
+) -> ExportOnceBuffers {
+    std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
         let files = unsafe { slice_from_buffer(files) };
         let (json_map, blob_map) = match unsafe { parse_inputs(json_inputs, blob_inputs) } {
             Ok(parsed) => parsed,
-            Err(error) => return error,
+            Err(error) => return ExportOnceBuffers::from_error_buffer(error),
         };
 
-        Buffer::from_bytes_result(oicana_ffi_core::compile_once(
+        match oicana_ffi_core::export_once(
             files,
             json_map,
             blob_map,
             compile_options.mode.into(),
             export_options.into(),
             page_range.into(),
+            limits.into(),
+        ) {
+            Ok(result) => ExportOnceBuffers {
+                document: Buffer::from_ok(result.bytes),
+                warnings: match result.warnings {
+                    Some(warnings) => Buffer::from_ok_string(warnings),
+                    None => Buffer::from_ok(Vec::new()),
+                },
+            },
+            Err(error) => ExportOnceBuffers::from_error(error.to_string()),
+        }
+    }))
+    .unwrap_or_else(|payload| {
+        ExportOnceBuffers::from_error(format!(
+            "internal panic: {}",
+            panic_message(payload.as_ref())
         ))
     })
 }
@@ -442,6 +461,57 @@ impl Buffer {
             Ok(()) => Buffer::from_ok(Vec::new()),
             Err(error) => Buffer::from_error(error.to_string()),
         }
+    }
+}
+
+/// Buffers returned by [`unsafe_export_template_once`].
+#[ffi_type]
+#[repr(C)]
+#[derive(Copy, Clone, Debug)]
+pub struct ExportOnceBuffers {
+    /// The exported document, or an error.
+    pub document: Buffer,
+    /// Compilation warnings; empty when there were none.
+    pub warnings: Buffer,
+}
+
+impl ExportOnceBuffers {
+    fn from_error(error_string: String) -> Self {
+        Self::from_error_buffer(Buffer::from_error(error_string))
+    }
+
+    fn from_error_buffer(error: Buffer) -> Self {
+        ExportOnceBuffers {
+            document: error,
+            warnings: Buffer::from_ok(Vec::new()),
+        }
+    }
+}
+
+/// Limits for packed templates.
+#[ffi_type]
+#[repr(C)]
+#[derive(Copy, Clone, Debug)]
+pub struct FfiZipLimits {
+    /// Maximum number of zip entries. `-1` uses the default.
+    pub max_entries: i64,
+    /// Maximum total decompressed size in bytes. `-1` uses the default.
+    pub max_total_decompressed_bytes: i64,
+}
+
+impl From<FfiZipLimits> for Option<oicana_ffi_core::ZipLimits> {
+    fn from(limits: FfiZipLimits) -> Self {
+        if limits.max_entries < 0 && limits.max_total_decompressed_bytes < 0 {
+            return None;
+        }
+        let mut result = oicana_ffi_core::ZipLimits::default();
+        if limits.max_entries >= 0 {
+            result.max_entries = limits.max_entries as usize;
+        }
+        if limits.max_total_decompressed_bytes >= 0 {
+            result.max_total_decompressed_bytes = limits.max_total_decompressed_bytes as u64;
+        }
+        Some(result)
     }
 }
 
