@@ -223,3 +223,14 @@ test('async compile rejects for unknown templates', async (t) => {
     message: /not registered/i,
   })
 })
+
+test('negative zip limits are rejected', (t) => {
+  const file = fs.readFileSync(`${assetsDir}/templates/invoice-0.1.0.zip`)
+  t.throws(
+    () =>
+      registerTemplate('negative-limits', file, {}, {}, CompilationMode.Development, {
+        maxTotalDecompressedBytes: -1,
+      }),
+    { message: /must not be negative/ },
+  )
+})
