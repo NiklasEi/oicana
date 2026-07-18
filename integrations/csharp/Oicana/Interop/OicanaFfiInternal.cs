@@ -36,7 +36,7 @@ namespace Oicana.Interop
         [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl, EntryPoint = "unsafe_compile_template")]
         public static extern Buffer unsafe_compile_template([MarshalAs(UnmanagedType.LPUTF8Str)] string template, SliceFfiJsonInput json_inputs, SliceFfiBlobInput blob_inputs, CompilationOptions compilation_options);
 
-        /// Compile the given template once.
+        /// Compile and export the given template once.
         ///
         /// This method does not do any caching. If you want faster compilations,
         /// prepare your templates by registering them with [`unsafe_register_template`]
@@ -51,7 +51,7 @@ namespace Oicana.Interop
         /// Additionally, the caller must ensure that no inputs are modified
         /// concurrently while this function is executing.
         [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl, EntryPoint = "unsafe_export_template_once")]
-        public static extern Buffer unsafe_export_template_once(Buffer files, SliceFfiJsonInput json_inputs, SliceFfiBlobInput blob_inputs, CompilationOptions compile_options, ExportOptions export_options, FfiPageRange page_range);
+        public static extern ExportOnceBuffers unsafe_export_template_once(Buffer files, SliceFfiJsonInput json_inputs, SliceFfiBlobInput blob_inputs, CompilationOptions compile_options, ExportOptions export_options, FfiPageRange page_range, FfiZipLimits limits);
 
         /// Register a template for the given identifier
         ///
@@ -67,7 +67,7 @@ namespace Oicana.Interop
         /// Additionally, the caller must ensure that no inputs are modified
         /// concurrently while this function is executing.
         [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl, EntryPoint = "unsafe_register_template")]
-        public static extern Buffer unsafe_register_template([MarshalAs(UnmanagedType.LPUTF8Str)] string template, Buffer files, SliceFfiJsonInput json_inputs, SliceFfiBlobInput blob_inputs, CompilationOptions compilation_options);
+        public static extern Buffer unsafe_register_template([MarshalAs(UnmanagedType.LPUTF8Str)] string template, Buffer files, SliceFfiJsonInput json_inputs, SliceFfiBlobInput blob_inputs, CompilationOptions compilation_options, FfiZipLimits limits);
 
         /// Export the given document
         ///
@@ -248,6 +248,17 @@ namespace Oicana.Interop
         public DiagnosticColor color;
     }
 
+    /// Buffers returned by [`unsafe_export_template_once`].
+    [Serializable]
+    [StructLayout(LayoutKind.Sequential)]
+    internal partial struct ExportOnceBuffers
+    {
+        /// The exported document, or an error.
+        public Buffer document;
+        /// Compilation warnings; empty when there were none.
+        public Buffer warnings;
+    }
+
     /// Options for exporting the template
     [Serializable]
     [StructLayout(LayoutKind.Sequential)]
@@ -300,6 +311,17 @@ namespace Oicana.Interop
         public long start;
         /// Last page index to export (0-based, inclusive). `-1` selects up to the last page.
         public long end;
+    }
+
+    /// Limits for packed templates.
+    [Serializable]
+    [StructLayout(LayoutKind.Sequential)]
+    internal partial struct FfiZipLimits
+    {
+        /// Maximum number of zip entries. `-1` uses the default.
+        public long max_entries;
+        /// Maximum total decompressed size in bytes. `-1` uses the default.
+        public long max_total_decompressed_bytes;
     }
 
     ///A pointer to an array of data someone else owns which may not be modified.

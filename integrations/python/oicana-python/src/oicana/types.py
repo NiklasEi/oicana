@@ -14,6 +14,13 @@ class CompilationMode(Enum):
     DEVELOPMENT = "development"
 
 
+class DiagnosticColor(Enum):
+    """Color mode for compilation diagnostics."""
+
+    NONE = "none"
+    ANSI = "ansi"
+
+
 class ExportFormatPdf(TypedDict):
     """PDF export format."""
 
@@ -71,6 +78,25 @@ class BlobInput:
 
     data: bytes
     metadata: dict[str, Any] | None = None
+
+
+@dataclass
+class ZipLimits:
+    """Limits applied when reading a packed template zip.
+
+    A ``None`` bound keeps the default (10 000 entries / 512 MiB decompressed).
+    """
+
+    max_entries: int | None = None
+    max_total_decompressed_bytes: int | None = None
+
+
+@dataclass
+class ExportOnceResult:
+    """Result of a one-shot template export."""
+
+    document: bytes
+    warnings: str | None
 
 
 @dataclass

@@ -6,17 +6,36 @@
 
 ### PHP
 - Performance improvements
+- Expose exportOnce for exportign a template without caching it or the document
+- Allow setting the limits when reading a packed template
+- Expose setter for the diagnostic coloring
 
 ### C#
-- Resolved possible memory leaks in error cases and if users forget to dispose a document stream 
+- Resolved possible memory leaks in error cases and if users forget to dispose a document stream
+- ExportOnce now returns compilation warnings as well as the export result
+- Allow setting the limits when reading a packed template
 
 ### Java
 - Fixed JSON encoding
 - Catch panics in `configureAutomaticCacheEviction` and `evictCache`
+- Expose exportOnce for exportign a template without caching it or the document
+- Allow setting the limits when reading a packed template
+- Expose setter for the diagnostic coloring
 
 ### Node.js
 - Method for async template registration
 - Complete methods on `Template` with `inputs`, `source`, and `file`
+- Expose exportOnce for exportign a template without caching it or the document
+- Allow setting the limits when reading a packed template
+
+### Browser
+- Expose exportOnce for exportign a template without caching it or the document
+- Allow setting the limits when reading a packed template
+
+### Python
+- Expose exportOnce for exportign a template without caching it or the document
+- Allow setting the limits when reading a packed template
+- Expose setter for the diagnostic coloring
 
 
 ## v0.5.0

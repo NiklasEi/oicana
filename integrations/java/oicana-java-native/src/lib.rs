@@ -7,9 +7,9 @@
 use std::collections::HashMap;
 
 use jni::errors::Error;
-use jni::objects::{JByteArray, JClass, JMap, JObject, JString};
+use jni::objects::{JByteArray, JClass, JMap, JObject, JObjectArray, JString};
 use jni::strings::JNIString;
-use jni::sys::jint;
+use jni::sys::{jint, jlong};
 use jni::{jni_sig, Env, EnvUnowned};
 
 /// Throw a Java OicanaException, returning Error::JavaException for use with `?`.
@@ -103,6 +103,24 @@ fn compilation_mode_from_jint(mode: jint) -> oicana_ffi_core::CompilationMode {
     }
 }
 
+/// Build zip limits from Java `long` values.
+fn zip_limits_from_jlongs(
+    max_entries: jlong,
+    max_total_decompressed_bytes: jlong,
+) -> Option<oicana_ffi_core::ZipLimits> {
+    if max_entries < 0 && max_total_decompressed_bytes < 0 {
+        return None;
+    }
+    let mut limits = oicana_ffi_core::ZipLimits::default();
+    if max_entries >= 0 {
+        limits.max_entries = max_entries as usize;
+    }
+    if max_total_decompressed_bytes >= 0 {
+        limits.max_total_decompressed_bytes = max_total_decompressed_bytes as u64;
+    }
+    Some(limits)
+}
+
 #[unsafe(no_mangle)]
 pub extern "system" fn Java_com_oicana_OicanaNative_registerTemplate<'local>(
     mut unowned_env: EnvUnowned<'local>,
@@ -112,6 +130,8 @@ pub extern "system" fn Java_com_oicana_OicanaNative_registerTemplate<'local>(
     json_inputs: JObject<'local>,
     blob_inputs: JObject<'local>,
     compilation_mode: jint,
+    max_entries: jlong,
+    max_total_decompressed_bytes: jlong,
 ) -> JString<'local> {
     unowned_env
         .with_env(|env| -> jni::errors::Result<JString<'_>> {
@@ -126,10 +146,87 @@ pub extern "system" fn Java_com_oicana_OicanaNative_registerTemplate<'local>(
                 json_map,
                 blob_map,
                 compilation_mode_from_jint(compilation_mode),
+                zip_limits_from_jlongs(max_entries, max_total_decompressed_bytes),
             )
             .map_err(|e| throw_ffi(env, e))?;
 
             JString::from_str(env, &result_id)
+        })
+        .resolve::<jni::errors::ThrowRuntimeExAndDefault>()
+}
+
+/// Compile and export a template once without caching it. Returns a two-element
+/// `Object[]` of the document and compilation warnings or null.
+#[unsafe(no_mangle)]
+pub extern "system" fn Java_com_oicana_OicanaNative_exportTemplateOnce<'local>(
+    mut unowned_env: EnvUnowned<'local>,
+    _class: JClass<'local>,
+    files: JByteArray<'local>,
+    json_inputs: JObject<'local>,
+    blob_inputs: JObject<'local>,
+    compilation_mode: jint,
+    export_format: JString<'local>,
+    page_range: JString<'local>,
+    max_entries: jlong,
+    max_total_decompressed_bytes: jlong,
+) -> JObjectArray<'local, JObject<'local>> {
+    unowned_env
+        .with_env(
+            |env| -> jni::errors::Result<JObjectArray<'_, JObject<'_>>> {
+                let file_bytes = env.convert_byte_array(files)?;
+                let json_map = extract_string_map(env, json_inputs)?;
+                let blob_map = extract_blob_map(env, blob_inputs)?;
+                let export_format_str = export_format.try_to_string(env)?;
+                let page_range_str = if page_range.is_null() {
+                    String::new()
+                } else {
+                    page_range.try_to_string(env)?
+                };
+
+                let format = oicana_ffi_core::parse_export_format(&export_format_str)
+                    .map_err(|e| throw_ffi(env, e))?;
+                let page = oicana_ffi_core::parse_page_range(&page_range_str)
+                    .map_err(|e| throw_ffi(env, e))?;
+
+                let result = oicana_ffi_core::export_once(
+                    &file_bytes,
+                    json_map,
+                    blob_map,
+                    compilation_mode_from_jint(compilation_mode),
+                    format,
+                    page,
+                    zip_limits_from_jlongs(max_entries, max_total_decompressed_bytes),
+                )
+                .map_err(|e| throw_ffi(env, e))?;
+
+                let array = JObjectArray::<JObject>::new(env, 2, &JObject::null())?;
+                let document = env.byte_array_from_slice(&result.bytes)?;
+                array.set_element(env, 0, &document)?;
+                if let Some(warnings) = result.warnings {
+                    let warnings = JString::from_str(env, &warnings)?;
+                    array.set_element(env, 1, &warnings)?;
+                }
+                Ok(array)
+            },
+        )
+        .resolve::<jni::errors::ThrowRuntimeExAndDefault>()
+}
+
+#[unsafe(no_mangle)]
+pub extern "system" fn Java_com_oicana_OicanaNative_configureDiagnosticColor<'local>(
+    mut unowned_env: EnvUnowned<'local>,
+    _class: JClass<'local>,
+    ansi: u8,
+) {
+    unowned_env
+        .with_env(|_env| -> jni::errors::Result<()> {
+            let color = if ansi != 0 {
+                oicana_ffi_core::DiagnosticColor::Ansi
+            } else {
+                oicana_ffi_core::DiagnosticColor::None
+            };
+            oicana_ffi_core::configure_diagnostic_color(color);
+            Ok(())
         })
         .resolve::<jni::errors::ThrowRuntimeExAndDefault>()
 }

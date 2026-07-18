@@ -26,13 +26,28 @@ from oicana_native import (
     configure_automatic_cache_eviction as _configure_automatic_cache_eviction,
 )
 from oicana_native import (
+    configure_diagnostic_color as _configure_diagnostic_color,
+)
+from oicana_native import (
     evict_cache as _evict_cache,
+)
+from oicana_native import (
+    export_once as _export_once,
 )
 from oicana_native import (
     set_validate_inputs as _set_validate_inputs,
 )
 
-from .types import BlobInput, CompilationMode, ExportFormat, PageRange, PageSize
+from .types import (
+    BlobInput,
+    CompilationMode,
+    DiagnosticColor,
+    ExportFormat,
+    ExportOnceResult,
+    PageRange,
+    PageSize,
+    ZipLimits,
+)
 
 if TYPE_CHECKING:
     from typing import Any
@@ -71,6 +86,7 @@ class Template:
         json_inputs: dict[str, str] | None = None,
         blob_inputs: dict[str, BlobInput] | None = None,
         mode: CompilationMode = CompilationMode.DEVELOPMENT,
+        limits: ZipLimits | None = None,
     ) -> None:
         """Initialize template.
 
@@ -79,6 +95,7 @@ class Template:
             json_inputs: Initial JSON inputs (key -> JSON string)
             blob_inputs: Initial blob inputs
             mode: Compilation mode (development/production)
+            limits: Limits for reading the template zip (defaults to max 10000 entries and 500mb)
         """
         self._template_id = str(uuid.uuid4())
         self._document_ids: list[str] = []
@@ -103,6 +120,8 @@ class Template:
             native_json,
             native_blobs,
             native_mode,
+            limits.max_entries if limits else None,
+            limits.max_total_decompressed_bytes if limits else None,
         )
         remove_document(doc_id)
 
@@ -214,6 +233,61 @@ class Template:
             mode=mode,
             pages=pages,
         )
+
+    @staticmethod
+    def export_once(
+        template: bytes,
+        *,
+        json_inputs: dict[str, str] | None = None,
+        blob_inputs: dict[str, BlobInput] | None = None,
+        export: ExportFormat = {"format": "pdf"},  # type: ignore[typeddict-item]
+        mode: CompilationMode = CompilationMode.PRODUCTION,
+        pages: PageRange | None = None,
+        limits: ZipLimits | None = None,
+    ) -> ExportOnceResult:
+        """Compile and export a template in a single native call, without caching.
+
+        Nothing is registered and no warm-up compilation runs, so this is the
+        fastest way to render a template exactly once. For repeated exports of
+        the same template, create a :class:`Template` instance instead.
+
+        Args:
+            template: Template zip file bytes
+            json_inputs: JSON inputs
+            blob_inputs: Blob inputs
+            export: Export format and configuration (pdf/png/svg)
+            mode: Compilation mode
+            pages: 0-based, inclusive page range (defaults to the whole document)
+            limits: Limits for reading the template zip (defaults apply when None)
+
+        Returns:
+            The exported document and any compilation warnings.
+        """
+        native_mode = (
+            NativeCompilationMode.Production
+            if mode == CompilationMode.PRODUCTION
+            else NativeCompilationMode.Development
+        )
+
+        native_json = json_inputs if json_inputs is not None else {}
+
+        native_blobs = {}
+        if blob_inputs:
+            for key, blob in blob_inputs.items():
+                meta_str = json.dumps(blob.metadata) if blob.metadata else "{}"
+                native_blobs[key] = BlobWithMetadata(blob.data, meta_str)
+
+        document, warnings = _export_once(
+            template,
+            native_json,
+            native_blobs,
+            native_mode,
+            json.dumps(export),
+            _serialize_page_range(pages),
+            limits.max_entries if limits else None,
+            limits.max_total_decompressed_bytes if limits else None,
+        )
+        return ExportOnceResult(document=bytes(document), warnings=warnings)
 
     def compile(
         self,
@@ -449,3 +523,12 @@ def evict_cache(max_age: int) -> None:
             Entries with age >= this value will be removed.
     """
     _evict_cache(max_age)
+
+
+def configure_diagnostic_color(color: DiagnosticColor) -> None:
+    """Configure the coloring of compilation diagnostics like warnings and errors.
+
+    Args:
+        color: The color mode to use.
+    """
+    _configure_diagnostic_color(color == DiagnosticColor.ANSI)

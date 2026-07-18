@@ -105,6 +105,26 @@ pub fn evict_cache(max_age: i64) -> PhpResult<()> {
     })
 }
 
+/// Build zip limits from optional arguments; null values keep the defaults.
+fn zip_limits_from_args(
+    max_entries: Option<i64>,
+    max_total_decompressed_bytes: Option<i64>,
+) -> Option<oicana_ffi_core::ZipLimits> {
+    let max_entries = max_entries.and_then(|value| usize::try_from(value).ok());
+    let max_bytes = max_total_decompressed_bytes.and_then(|value| u64::try_from(value).ok());
+    if max_entries.is_none() && max_bytes.is_none() {
+        return None;
+    }
+    let mut limits = oicana_ffi_core::ZipLimits::default();
+    if let Some(value) = max_entries {
+        limits.max_entries = value;
+    }
+    if let Some(value) = max_bytes {
+        limits.max_total_decompressed_bytes = value;
+    }
+    Some(limits)
+}
+
 /// Register the given template. This will read the template files as a PackedTemplate and
 /// compile it once with the given inputs. The Typst World will be cached and reused for
 /// subsequent calls to the other methods with the same template identifier.
@@ -116,6 +136,8 @@ pub fn register_template(
     json_inputs: HashMap<String, String>,
     blob_inputs: HashMap<String, &BlobWithMetadata>,
     compilation_mode: i64,
+    max_entries: Option<i64>,
+    max_total_decompressed_bytes: Option<i64>,
 ) -> PhpResult<String> {
     catch_panic(|| {
         oicana_ffi_core::register_template(
@@ -124,8 +146,80 @@ pub fn register_template(
             json_inputs,
             into_core_blobs(blob_inputs),
             compilation_mode_from_i64(compilation_mode),
+            zip_limits_from_args(max_entries, max_total_decompressed_bytes),
         )
         .map_err(into_php_err)
+    })
+}
+
+/// Result of a one-shot export: document bytes plus any compilation warnings.
+#[php_class]
+#[php(name = "OicanaInternal\\ExportOnceResult")]
+pub struct ExportOnceResult {
+    document: Vec<u8>,
+    /// Compilation warnings, or null if there were none.
+    #[php(prop)]
+    pub warnings: Option<String>,
+}
+
+#[php_impl]
+impl ExportOnceResult {
+    /// The exported document as a binary string.
+    pub fn document(&self) -> Binary<u8> {
+        self.document.clone().into()
+    }
+}
+
+/// Compile and export the given template once, without caching anything.
+///
+/// `page_range` is a JSON object `{ "start"?: int, "end"?: int }` with 0-based,
+/// inclusive bounds. If not set, the whole document is exported.
+#[php_function]
+#[php(name = "OicanaInternal\\export_template_once")]
+#[allow(clippy::too_many_arguments)]
+pub fn export_template_once(
+    files: BinarySlice<u8>,
+    json_inputs: HashMap<String, String>,
+    blob_inputs: HashMap<String, &BlobWithMetadata>,
+    compilation_mode: i64,
+    export_format: String,
+    page_range: Option<String>,
+    max_entries: Option<i64>,
+    max_total_decompressed_bytes: Option<i64>,
+) -> PhpResult<ExportOnceResult> {
+    catch_panic(|| {
+        let format = oicana_ffi_core::parse_export_format(&export_format).map_err(into_php_err)?;
+        let page = oicana_ffi_core::parse_page_range(page_range.as_deref().unwrap_or(""))
+            .map_err(into_php_err)?;
+        let result = oicana_ffi_core::export_once(
+            *files,
+            json_inputs,
+            into_core_blobs(blob_inputs),
+            compilation_mode_from_i64(compilation_mode),
+            format,
+            page,
+            zip_limits_from_args(max_entries, max_total_decompressed_bytes),
+        )
+        .map_err(into_php_err)?;
+        Ok(ExportOnceResult {
+            document: result.bytes,
+            warnings: result.warnings,
+        })
+    })
+}
+
+/// Configure the coloring of compilation diagnostics like warnings and errors.
+#[php_function]
+#[php(name = "OicanaInternal\\configure_diagnostic_color")]
+pub fn configure_diagnostic_color(ansi: bool) -> PhpResult<()> {
+    catch_panic(|| {
+        let color = if ansi {
+            oicana_ffi_core::DiagnosticColor::Ansi
+        } else {
+            oicana_ffi_core::DiagnosticColor::None
+        };
+        oicana_ffi_core::configure_diagnostic_color(color);
+        Ok(())
     })
 }
 
@@ -287,6 +381,8 @@ pub fn get_module(module: ModuleBuilder) -> ModuleBuilder {
         .function(wrap_function!(configure_automatic_cache_eviction))
         .function(wrap_function!(evict_cache))
         .function(wrap_function!(register_template))
+        .function(wrap_function!(export_template_once))
+        .function(wrap_function!(configure_diagnostic_color))
         .function(wrap_function!(compile_template))
         .function(wrap_function!(inputs))
         .function(wrap_function!(document_pages))
@@ -298,6 +394,7 @@ pub fn get_module(module: ModuleBuilder) -> ModuleBuilder {
         .function(wrap_function!(remove_world))
         .function(wrap_function!(set_validate_inputs))
         .class::<BlobWithMetadata>()
+        .class::<ExportOnceResult>()
 }
 
 fn startup_function(_ty: i32, _mod_num: i32) -> i32 {
