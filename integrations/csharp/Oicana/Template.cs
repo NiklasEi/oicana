@@ -92,13 +92,20 @@ public class Template : ITemplate, IDisposable
     public Template(byte[] templateFile, IDictionary<string, JsonNode> jsonInputs, IDictionary<string, BlobInput> blobInputs, CompilationMode compilationMode, string? templateId, ZipLimits? limits = null)
     {
         _templateId = templateId ?? Guid.NewGuid().ToString();
-        OicanaFfi.RegisterTemplate(_templateId, templateFile, jsonInputs, blobInputs, new CompilationOptions(compilationMode), limits);
+        using var documentIdStream = OicanaFfi.RegisterTemplate(_templateId, templateFile, jsonInputs, blobInputs, new CompilationOptions(compilationMode), limits);
+        var documentId = OicanaFfi.GetMessageFromStream(documentIdStream);
+        Warnings = OicanaFfi.GetWarnings(documentId);
+        OicanaFfi.RemoveDocument(documentId);
     }
+
+    /// <inheritdoc />
+    public string? Warnings { get; private set; }
 
     /// <inheritdoc />
     public Stream Export(IDictionary<string, JsonNode> jsonInputs, IDictionary<string, BlobInput> blobInputs, ExportFormat exportFormat, CompilationOptions compilationOptions, PageRange? pages = null)
     {
         var documentId = OicanaFfi.CompileTemplate(_templateId, jsonInputs, blobInputs, compilationOptions);
+        Warnings = OicanaFfi.GetWarnings(documentId);
         try
         {
             return OicanaFfi.ExportDocument(documentId, exportFormat, pages);
@@ -131,7 +138,9 @@ public class Template : ITemplate, IDisposable
     public CompiledDocument Compile(IDictionary<string, JsonNode> jsonInputs, IDictionary<string, BlobInput> blobInputs, CompilationOptions compilationOptions)
     {
         var documentId = OicanaFfi.CompileTemplate(_templateId, jsonInputs, blobInputs, compilationOptions);
-        return new CompiledDocument(documentId);
+        var document = new CompiledDocument(documentId);
+        Warnings = document.Warnings;
+        return document;
     }
 
     /// <summary>

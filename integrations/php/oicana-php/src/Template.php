@@ -31,6 +31,7 @@ class Template
     private string $templateId;
     /** @var list<string> */
     private array $documentIds = [];
+    private ?string $lastWarnings = null;
 
     /**
      * Initialize template and register it with the native extension.
@@ -74,7 +75,16 @@ class Template
             $limits?->maxTotalDecompressedBytes
         );
 
+        $this->lastWarnings = \OicanaInternal\get_warnings($docId);
         \OicanaInternal\remove_document($docId);
+    }
+
+    /**
+     * Warnings produced by the most recent compilation, or null if there were none.
+     */
+    public function warnings(): ?string
+    {
+        return $this->lastWarnings;
     }
 
     /**
@@ -107,6 +117,7 @@ class Template
             $mode->toNative()
         );
 
+        $this->lastWarnings = \OicanaInternal\get_warnings($docId);
         $this->documentIds[] = $docId;
 
         try {
@@ -213,7 +224,9 @@ class Template
             $mode->toNative()
         );
 
-        return new CompiledDocument($docId);
+        $document = new CompiledDocument($docId);
+        $this->lastWarnings = $document->warnings;
+        return $document;
     }
 
     /**

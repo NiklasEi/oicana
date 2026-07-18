@@ -443,12 +443,12 @@ pub fn export_once(
         .compile()
         .map_err(|error| FfiError::Compilation(error.to_string()))?;
 
-    auto_evict();
-
     let warnings = document.warnings;
     let document = &document.document;
     let bytes = match format {
-        ExportFormat::Png { pixels_per_pt } => export_png(document, pixels_per_pt, pages.as_ref())?,
+        ExportFormat::Png { pixels_per_pt } => {
+            export_png(document, pixels_per_pt, pages.as_ref()).map_err(FfiError::from)
+        }
         ExportFormat::Pdf => export_pdf(
             document,
             &world,
@@ -456,10 +456,16 @@ pub fn export_once(
             world.manifest().pdf_tagged(),
             pages.as_ref(),
         )
-        .map_err(pdf_export_error)?,
-        ExportFormat::Svg => export_svg(document, pages.as_ref())?,
+        .map_err(pdf_export_error),
+        ExportFormat::Svg => export_svg(document, pages.as_ref()).map_err(FfiError::from),
     };
-    Ok(ExportOnceResult { bytes, warnings })
+
+    auto_evict();
+
+    Ok(ExportOnceResult {
+        bytes: bytes?,
+        warnings,
+    })
 }
 
 /// Export a previously-compiled document.

@@ -123,7 +123,14 @@ class Template:
             limits.max_entries if limits else None,
             limits.max_total_decompressed_bytes if limits else None,
         )
+        self._last_warnings: str | None = get_warnings(doc_id)
         remove_document(doc_id)
+
+    @property
+    def warnings(self) -> str | None:
+        """Warnings from the most recent compilation, or ``None`` if there were none.
+        """
+        return self._last_warnings
 
     def export(
         self,
@@ -339,6 +346,7 @@ class Template:
             native_blobs,
             native_mode,
         )
+        self._last_warnings = get_warnings(doc_id)
         return doc_id
 
     def inputs(self) -> dict[str, Any]:

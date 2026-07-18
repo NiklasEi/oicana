@@ -58,7 +58,7 @@ pub fn register_template(
     json_inputs,
     into_core_blobs(blob_inputs),
     compilation_mode.into(),
-    into_core_limits(limits),
+    into_core_limits(limits)?,
   )
   .map_err(into_napi_err)
 }
@@ -129,15 +129,15 @@ pub fn register_template_async(
   blob_inputs: HashMap<String, BlobWithMetadata>,
   compilation_mode: CompilationMode,
   limits: Option<ZipLimits>,
-) -> AsyncTask<RegisterTemplateTask> {
-  AsyncTask::new(RegisterTemplateTask {
+) -> Result<AsyncTask<RegisterTemplateTask>> {
+  Ok(AsyncTask::new(RegisterTemplateTask {
     template,
     files: files.to_vec(),
     json_inputs,
     blob_inputs: into_core_blobs(blob_inputs),
     compilation_mode: compilation_mode.into(),
-    limits: into_core_limits(limits),
-  })
+    limits: into_core_limits(limits)?,
+  }))
 }
 
 /// Result of a one-shot export.
@@ -173,7 +173,7 @@ pub fn export_template_once(
     compilation_mode.into(),
     format,
     page,
-    into_core_limits(limits),
+    into_core_limits(limits)?,
   )
   .map_err(into_napi_err)?;
   Ok(ExportOnceResult {
@@ -238,16 +238,16 @@ pub fn export_template_once_async(
   export_format: String,
   page_range: Option<String>,
   limits: Option<ZipLimits>,
-) -> AsyncTask<ExportTemplateOnceTask> {
-  AsyncTask::new(ExportTemplateOnceTask {
+) -> Result<AsyncTask<ExportTemplateOnceTask>> {
+  Ok(AsyncTask::new(ExportTemplateOnceTask {
     files: files.to_vec(),
     json_inputs,
     blob_inputs: into_core_blobs(blob_inputs),
     compilation_mode: compilation_mode.into(),
     export_format,
     page_range,
-    limits: into_core_limits(limits),
-  })
+    limits: into_core_limits(limits)?,
+  }))
 }
 
 /// Background task compiling a template on the libuv thread pool.
@@ -472,21 +472,25 @@ pub struct ZipLimits {
   pub max_total_decompressed_bytes: Option<i64>,
 }
 
-fn into_core_limits(limits: Option<ZipLimits>) -> Option<oicana_ffi_core::ZipLimits> {
-  let limits = limits?;
+fn into_core_limits(limits: Option<ZipLimits>) -> Result<Option<oicana_ffi_core::ZipLimits>> {
+  let Some(limits) = limits else {
+    return Ok(None);
+  };
   if limits.max_entries.is_none() && limits.max_total_decompressed_bytes.is_none() {
-    return None;
+    return Ok(None);
   }
   let mut result = oicana_ffi_core::ZipLimits::default();
   if let Some(value) = limits.max_entries {
     result.max_entries = value as usize;
   }
   if let Some(value) = limits.max_total_decompressed_bytes {
-    if let Ok(value) = u64::try_from(value) {
-      result.max_total_decompressed_bytes = value;
-    }
+    result.max_total_decompressed_bytes = u64::try_from(value).map_err(|_| {
+      Error::from_reason(format!(
+        "maxTotalDecompressedBytes must not be negative, got {value}"
+      ))
+    })?;
   }
-  Some(result)
+  Ok(Some(result))
 }
 
 impl From<CompilationMode> for oicana_ffi_core::CompilationMode {

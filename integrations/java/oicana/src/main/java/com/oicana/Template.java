@@ -1,7 +1,9 @@
 package com.oicana;
 
+import java.lang.reflect.Array;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -20,6 +22,7 @@ import java.util.UUID;
 public class Template implements AutoCloseable {
     private final String templateId;
     private volatile boolean closed = false;
+    private volatile String lastWarnings;
 
     /**
      * Register a template with the given template file.
@@ -65,7 +68,17 @@ public class Template implements AutoCloseable {
                 maxEntries(limits),
                 maxTotalDecompressedBytes(limits)
         );
+        this.lastWarnings = OicanaNative.getWarnings(documentId);
         OicanaNative.removeDocument(documentId);
+    }
+
+    /**
+     * Warnings produced by the most recent compilation.
+     *
+     * @return the warnings, or an empty Optional if there were none
+     */
+    public Optional<String> warnings() {
+        return Optional.ofNullable(lastWarnings);
     }
 
     /**
@@ -133,6 +146,7 @@ public class Template implements AutoCloseable {
                 convertBlobInputs(blobInputs),
                 mode.value
         );
+        this.lastWarnings = OicanaNative.getWarnings(documentId);
         try {
             return OicanaNative.exportDocument(
                     documentId,
@@ -322,7 +336,9 @@ public class Template implements AutoCloseable {
                 convertBlobInputs(blobInputs),
                 mode.value
         );
-        return new CompiledDocument(documentId);
+        CompiledDocument document = new CompiledDocument(documentId);
+        this.lastWarnings = document.warnings().orElse(null);
+        return document;
     }
 
     /**
@@ -493,17 +509,18 @@ public class Template implements AutoCloseable {
     }
 
     @SuppressWarnings("unchecked")
-    private static String valueToJson(Object value) {
+    static String valueToJson(Object value) {
         if (value == null) return "null";
         if (value instanceof String s) return "\"" + escapeJson(s) + "\"";
-        if (value instanceof Number n) return n.toString();
+        if (value instanceof Number n) return numberToJson(n);
         if (value instanceof Boolean b) return b.toString();
         if (value instanceof Map<?, ?> m) return toJson((Map<String, Object>) m);
-        if (value instanceof Object[] arr) {
+        if (value.getClass().isArray()) {
             StringBuilder sb = new StringBuilder("[");
-            for (int i = 0; i < arr.length; i++) {
+            int length = Array.getLength(value);
+            for (int i = 0; i < length; i++) {
                 if (i > 0) sb.append(",");
-                sb.append(valueToJson(arr[i]));
+                sb.append(valueToJson(Array.get(value, i)));
             }
             sb.append("]");
             return sb.toString();
@@ -520,6 +537,15 @@ public class Template implements AutoCloseable {
             return sb.toString();
         }
         return "\"" + escapeJson(value.toString()) + "\"";
+    }
+
+    private static String numberToJson(Number number) {
+        if ((number instanceof Double || number instanceof Float)
+                && !Double.isFinite(number.doubleValue())) {
+            throw new IllegalArgumentException(
+                    "Blob metadata numbers must be finite, got " + number);
+        }
+        return number.toString();
     }
 
     static String escapeJson(String s) {
