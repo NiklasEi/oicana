@@ -13,6 +13,11 @@ namespace Oicana;
 public interface ITemplate
 {
     /// <summary>
+    /// Warnings produced by the most recent compilation.
+    /// </summary>
+    string? Warnings { get; }
+
+    /// <summary>
     /// Compile the template with the given inputs to the specified format.
     /// </summary>
     /// <param name="jsonInputs">Json inputs for the compilation (key -> JsonNode).</param>

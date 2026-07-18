@@ -202,3 +202,35 @@ test('binary-hostile blob data and binary export survive the FFI boundary', func
         $template->cleanup();
     }
 });
+
+test('export surfaces warnings', function () {
+    $templateBytes = pack_minimal_template(
+        "#set text(font: \"NonexistentFontTemplate\")\nContent"
+    );
+    $template = new Template($templateBytes);
+
+    try {
+        expect($template->warnings())->not->toBeNull();
+
+        $svg = $template->export(exportFormat: ExportFormat::svg());
+
+        expect($svg)->toContain('<svg')
+            ->and($template->warnings())->not->toBeNull()
+            ->and($template->warnings())->toContain('NonexistentFontTemplate');
+    } finally {
+        $template->cleanup();
+    }
+});
+
+test('export without warnings leaves them null', function () {
+    $template = new Template(pack_minimal_template('Content'));
+
+    try {
+        expect($template->warnings())->toBeNull();
+        $template->export(exportFormat: ExportFormat::svg());
+
+        expect($template->warnings())->toBeNull();
+    } finally {
+        $template->cleanup();
+    }
+});

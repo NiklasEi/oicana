@@ -2,6 +2,7 @@ package com.oicana;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -20,6 +21,7 @@ import java.util.UUID;
 public class Template implements AutoCloseable {
     private final String templateId;
     private volatile boolean closed = false;
+    private volatile String lastWarnings;
 
     /**
      * Register a template with the given template file.
@@ -65,7 +67,17 @@ public class Template implements AutoCloseable {
                 maxEntries(limits),
                 maxTotalDecompressedBytes(limits)
         );
+        this.lastWarnings = OicanaNative.getWarnings(documentId);
         OicanaNative.removeDocument(documentId);
+    }
+
+    /**
+     * Warnings produced by the most recent compilation.
+     *
+     * @return the warnings, or an empty Optional if there were none
+     */
+    public Optional<String> warnings() {
+        return Optional.ofNullable(lastWarnings);
     }
 
     /**
@@ -133,6 +145,7 @@ public class Template implements AutoCloseable {
                 convertBlobInputs(blobInputs),
                 mode.value
         );
+        this.lastWarnings = OicanaNative.getWarnings(documentId);
         try {
             return OicanaNative.exportDocument(
                     documentId,
@@ -322,7 +335,9 @@ public class Template implements AutoCloseable {
                 convertBlobInputs(blobInputs),
                 mode.value
         );
-        return new CompiledDocument(documentId);
+        CompiledDocument document = new CompiledDocument(documentId);
+        this.lastWarnings = document.warnings().orElse(null);
+        return document;
     }
 
     /**
