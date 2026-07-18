@@ -30,4 +30,26 @@ class JsonEscapingTest {
         assertEquals("plain text 123", Template.escapeJson("plain text 123"));
         assertEquals(" ~é世", Template.escapeJson(" ~é世"));
     }
+
+    @Test
+    void rejectsNonFiniteNumbers() {
+        assertThrows(IllegalArgumentException.class, () -> Template.valueToJson(Double.NaN));
+        assertThrows(IllegalArgumentException.class,
+                () -> Template.valueToJson(Double.POSITIVE_INFINITY));
+        assertThrows(IllegalArgumentException.class,
+                () -> Template.valueToJson(Float.NEGATIVE_INFINITY));
+    }
+
+    @Test
+    void serializesPrimitiveArrays() {
+        assertEquals("[1,2,3]", Template.valueToJson(new int[] {1, 2, 3}));
+        assertEquals("[1.5,2.5]", Template.valueToJson(new double[] {1.5, 2.5}));
+        assertEquals("[true,false]", Template.valueToJson(new boolean[] {true, false}));
+    }
+
+    @Test
+    void serializesObjectArraysAndNestedValues() {
+        assertEquals("[\"a\",1,null]", Template.valueToJson(new Object[] {"a", 1, null}));
+        assertEquals("[[1,2],[3]]", Template.valueToJson(new int[][] {{1, 2}, {3}}));
+    }
 }
