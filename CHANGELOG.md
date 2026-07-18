@@ -3,6 +3,7 @@
 ## Upcoming
 
 - Performance improvement: more finegrained internal locking for exports to unlock more parallelization
+- Update the time for compilations when updating inputs
 
 ### PHP
 - Performance improvements
