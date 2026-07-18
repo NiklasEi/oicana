@@ -155,6 +155,7 @@ impl<Files: TemplateFiles> OicanaWorld<Files> {
             self.check_inputs_against_schemas(&inputs)?;
         }
         self.library = LazyHash::new(Library::builder().with_inputs(inputs.to_dict()).build());
+        self.reset_time();
         Ok(())
     }
 
@@ -981,5 +982,26 @@ mod tests {
 
         assert!(world.today(Some(seconds(0))).is_some());
         assert!(world.today(None).is_some());
+    }
+
+    #[test]
+    fn update_inputs_refreshes_the_cached_timestamp() {
+        use chrono::TimeZone;
+        use typst::foundations::Datetime;
+        use typst::World;
+
+        let files = template_with(simple_manifest(), "Test");
+        let manifest = files.manifest().unwrap();
+        let mut world = OicanaWorld::new(files, TemplateInputs::new(), manifest).unwrap();
+
+        let stale = chrono::Local.with_ymd_and_hms(2000, 1, 2, 3, 4, 5).unwrap();
+        world.now.set(stale).unwrap();
+        assert_eq!(world.today(None), Datetime::from_ymd(2000, 1, 2));
+
+        world
+            .update_inputs(TemplateInputs::new())
+            .expect("inputs should be accepted");
+
+        assert_ne!(world.today(None), Datetime::from_ymd(2000, 1, 2));
     }
 }
