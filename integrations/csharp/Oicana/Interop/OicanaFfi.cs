@@ -493,13 +493,15 @@ internal static class OicanaFfi
                 UnmanagedMemoryStream stream = new UnmanagedMemoryStream((byte*)buffer.data.ToPointer(),
                     buffer.len,
                     buffer.len, FileAccess.Read);
-                var message = GetMessageFromStream(stream);
-                OicanaFfiInternal.unsafe_free_buffer(buffer);
-                return message;
+                return GetMessageFromStream(stream);
             }
             catch (Exception ex)
             {
                 return $"Failed to get string from Rust: {ex.Message}";
+            }
+            finally
+            {
+                OicanaFfiInternal.unsafe_free_buffer(buffer);
             }
         }
     }
