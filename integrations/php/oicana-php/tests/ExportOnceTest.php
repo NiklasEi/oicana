@@ -20,33 +20,6 @@ beforeEach(function () {
     }
 });
 
-function pack_minimal_template(string $mainTypst): string
-{
-    $manifest = <<<TOML
-        [package]
-        name = "export-once-test"
-        version = "0.1.0"
-        entrypoint = "main.typ"
-
-        [tool.oicana]
-        manifest_version = 1
-        TOML;
-
-    $path = tempnam(sys_get_temp_dir(), 'oicana-test-') . '.zip';
-    $zip = new ZipArchive();
-    $zip->open($path, ZipArchive::CREATE | ZipArchive::OVERWRITE);
-    $zip->addFromString('typst.toml', $manifest);
-    $zip->addFromString('main.typ', $mainTypst);
-    $zip->setCompressionName('typst.toml', ZipArchive::CM_STORE);
-    $zip->setCompressionName('main.typ', ZipArchive::CM_STORE);
-    $zip->close();
-
-    $bytes = file_get_contents($path);
-    assert(is_string($bytes));
-    unlink($path);
-    return $bytes;
-}
-
 test('exportOnce exports without warnings', function () {
     $templateBytes = file_get_contents(e2e_template_path());
 
