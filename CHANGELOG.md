@@ -12,6 +12,7 @@
 - Expose setter for the diagnostic coloring
 
 ### C#
+- Breaking: `Template` constructors no longer accept a custom template id
 - Resolved possible memory leaks in error cases and if users forget to dispose a document stream
 - ExportOnce now returns compilation warnings as well as the export result
 - Allow setting the limits when reading a packed template

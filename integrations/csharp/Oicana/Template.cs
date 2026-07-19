@@ -35,25 +35,7 @@ public class Template : ITemplate, IDisposable
     /// </summary>
     /// <param name="templateFile">The packed Oicana template to register.</param>
     /// <exception cref="OicanaException">If the initial template compilation fails.</exception>
-    public Template(byte[] templateFile) : this(templateFile, Guid.NewGuid().ToString()) { }
-
-    /// <summary>
-    /// Prepare a template for fast compilation.
-    ///
-    /// This will compile the document in development mode.
-    /// Your template should not have any required inputs that don't have
-    /// development or default values defined, otherwise registration will fail.
-    ///
-    /// This call can be expensive depending on the template.
-    /// Reuse instances of this class if possible.
-    ///
-    /// If you want to compile a template once and not cache the template
-    /// use <see cref="ExportOnce"/> instead.
-    /// </summary>
-    /// <param name="templateFile">The packed Oicana template to register.</param>
-    /// <param name="templateId">Identifier of the template</param>
-    /// <exception cref="OicanaException">If the initial template compilation fails.</exception>
-    public Template(byte[] templateFile, string templateId) : this(templateFile, CompilationMode.Development, templateId) { }
+    public Template(byte[] templateFile) : this(templateFile, CompilationMode.Development) { }
 
     /// <summary>
     /// Prepare a template for fast compilation.
@@ -69,9 +51,8 @@ public class Template : ITemplate, IDisposable
     /// </summary>
     /// <param name="templateFile">The packed Oicana template to register.</param>
     /// <param name="compilationMode">Compilation mode to use for the initial template compilation during registration</param>
-    /// <param name="templateId">Identifier of the template</param>
     /// <exception cref="OicanaException">If the initial template compilation fails.</exception>
-    public Template(byte[] templateFile, CompilationMode compilationMode, string? templateId) : this(templateFile, new Dictionary<string, JsonNode>(), new Dictionary<string, BlobInput>(), compilationMode, templateId) { }
+    public Template(byte[] templateFile, CompilationMode compilationMode) : this(templateFile, new Dictionary<string, JsonNode>(), new Dictionary<string, BlobInput>(), compilationMode) { }
 
     /// <summary>
     /// Prepare a template for fast compilation.
@@ -86,12 +67,11 @@ public class Template : ITemplate, IDisposable
     /// <param name="jsonInputs">Json inputs for the initial compilation (key -> JsonNode).</param>
     /// <param name="blobInputs">Blob inputs for the initial compilation (key -> BlobInput).</param>
     /// <param name="compilationMode">Compilation mode to use for the initial template compilation during registration.</param>
-    /// <param name="templateId">Identifier of the template.</param>
     /// <param name="limits">Limits for reading the packed template zip, or <c>null</c> for the defaults.</param>
     /// <exception cref="OicanaException">If the initial template compilation fails.</exception>
-    public Template(byte[] templateFile, IDictionary<string, JsonNode> jsonInputs, IDictionary<string, BlobInput> blobInputs, CompilationMode compilationMode, string? templateId, ZipLimits? limits = null)
+    public Template(byte[] templateFile, IDictionary<string, JsonNode> jsonInputs, IDictionary<string, BlobInput> blobInputs, CompilationMode compilationMode, ZipLimits? limits = null)
     {
-        _templateId = templateId ?? Guid.NewGuid().ToString();
+        _templateId = Guid.NewGuid().ToString();
         using var documentIdStream = OicanaFfi.RegisterTemplate(_templateId, templateFile, jsonInputs, blobInputs, new CompilationOptions(compilationMode), limits);
         var documentId = OicanaFfi.GetMessageFromStream(documentIdStream);
         Warnings = OicanaFfi.GetWarnings(documentId);
