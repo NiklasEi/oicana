@@ -1,6 +1,6 @@
 # Changelog
 
-## Upcoming
+## v0.6.0
 
 - Performance improvement: more finegrained internal locking for exports to unlock more parallelization
 - Update the time for compilations when updating inputs
