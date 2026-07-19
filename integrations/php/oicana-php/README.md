@@ -9,7 +9,7 @@ Install via Composer:
 ```bash
 composer config repositories.oicana composer https://composer.oicana.com
 composer config allow-plugins.oicana/installer true
-composer require oicana/oicana:^0.5.0
+composer require oicana/oicana:^0.6.0-rc.1
 ```
 
 The installer will automatically download the appropriate native extension for your platform. To enable the extension, run:
