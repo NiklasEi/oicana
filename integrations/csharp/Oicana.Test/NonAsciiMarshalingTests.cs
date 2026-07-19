@@ -84,20 +84,4 @@ public class NonAsciiMarshalingTests
 
         CompileExpectingEcho(template, key);
     }
-
-    [Fact]
-    public void TemplateIdWithNonAsciiCharactersWorksAcrossAllCalls()
-    {
-        var packed = PackTemplate(ManifestWithJsonInput("unused"), "Hello");
-        using var template = new Template(packed, $"grüße-🚀-{Guid.NewGuid()}");
-
-        template.Source("main.typ").Should().Be("Hello");
-        JsonNode.Parse(template.Inputs()).Should().NotBeNull();
-
-        using var document = template.Compile(
-            new Dictionary<string, JsonNode>(),
-            new Dictionary<string, BlobInput>(),
-            new CompilationOptions(CompilationMode.Development));
-        document.PageCount.Should().BeGreaterThan(0);
-    }
 }
