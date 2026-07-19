@@ -7,6 +7,10 @@ Oicana offers seamless PDF templating across multiple platforms. Define your tem
 
 This package can live-preview Oicana templates and compile them with given input in the browser.
 
+## Running in a Web Worker
+
+Template compilation is CPU-bound and runs synchronously, so it blocks the thread it is called on. For anything beyond small templates, run this package inside a [Web Worker](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API) to keep the main thread and your UI responsive.
+
 ## Open source example
 
 You can find an example React application using this package on GitHub: https://github.com/oicana/oicana-example-typescript-react
