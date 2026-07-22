@@ -180,7 +180,7 @@ namespace Oicana.Interop
     }
 
     /// The mode of compilation
-    public enum CompilationMode
+    internal enum CompilationMode
     {
         /// Use development values for inputs if an input is not explicitly set.
         /// If there is no development value, fall back to the default value.
@@ -190,7 +190,7 @@ namespace Oicana.Interop
     }
 
     /// Formats that an Oicana template can be exported into.
-    public enum CompilationTarget
+    internal enum CompilationTarget
     {
         /// Export to a PDF file.
         ///
@@ -206,7 +206,7 @@ namespace Oicana.Interop
     }
 
     /// Color mode for compilation diagnostics.
-    public enum DiagnosticColor
+    internal enum DiagnosticColor
     {
         /// No colors in diagnostic output
         None = 0,
@@ -446,7 +446,7 @@ namespace Oicana.Interop
 
 
 
-    public class InteropException<T> : Exception
+    internal class InteropException<T> : Exception
     {
         public T Error { get; private set; }
 

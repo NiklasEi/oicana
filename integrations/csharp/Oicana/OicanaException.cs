@@ -1,4 +1,4 @@
-namespace Oicana.Interop;
+namespace Oicana;
 
 /// <summary>
 /// Exception while compiling a template.

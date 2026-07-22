@@ -25,6 +25,27 @@ fn main() -> Result<(), Error> {
     .write_file(OUTPUT_FILE)?;
 
     patch_utf8_marshaling(OUTPUT_FILE)?;
+    internalize_generated_types(OUTPUT_FILE)?;
+
+    Ok(())
+}
+
+/// Interoptopus applies `visibility_types` to generated structs and to the FFI class, but
+/// hardcodes `public` when writing enums and `InteropException<T>`. That leaks FFI plumbing
+/// into the package's
+/// public surface, where `Oicana.Interop.CompilationMode` collides with the real
+/// `Oicana.Config.CompilationMode` for anyone importing both namespaces.
+fn internalize_generated_types(path: &str) -> Result<(), Error> {
+    let content = std::fs::read_to_string(path)?;
+
+    let patched = content
+        .replace("\n    public enum ", "\n    internal enum ")
+        .replace(
+            "\n    public class InteropException<T>",
+            "\n    internal class InteropException<T>",
+        );
+
+    std::fs::write(path, patched)?;
 
     Ok(())
 }

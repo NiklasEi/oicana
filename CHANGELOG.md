@@ -1,5 +1,11 @@
 # Changelog
 
+## Upcoming
+
+### C#
+- Move `OicanaException` to root namespace
+
+
 ## v0.6.0
 
 - Performance improvement: more finegrained internal locking for exports to unlock more parallelization
