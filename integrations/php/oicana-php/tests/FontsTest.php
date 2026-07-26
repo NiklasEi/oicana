@@ -21,56 +21,12 @@ afterEach(function () {
     Configuration::clearFonts();
 });
 
-/**
- * Family the test font provides. No system or Typst-embedded font has it, so a
- * template requiring it can only be registered once the host registers the font.
- */
-const TEST_FAMILY = 'Oicana Test';
-
-/** The test font shipped with the repository. */
-function a_font_file(): string
-{
-    return dirname(__DIR__, 4) . '/assets/fonts/oicana-test-font.ttf';
-}
-
-/** Pack a template whose manifest requires the given font family. */
-function pack_template_requiring(string $family): string
-{
-    $manifest = <<<TOML
-        [package]
-        name = "font-test"
-        version = "0.1.0"
-        entrypoint = "main.typ"
-
-        [tool.oicana]
-        manifest_version = 1
-
-        [tool.oicana.fonts]
-        require = ["{$family}"]
-        TOML;
-
-    $path = tempnam(sys_get_temp_dir(), 'oicana-font-test-') . '.zip';
-    $zip = new ZipArchive();
-    $zip->open($path, ZipArchive::CREATE | ZipArchive::OVERWRITE);
-    $zip->addFromString('typst.toml', $manifest);
-    $zip->addFromString('main.typ', 'Content');
-    $zip->setCompressionName('typst.toml', ZipArchive::CM_STORE);
-    $zip->setCompressionName('main.typ', ZipArchive::CM_STORE);
-    $zip->close();
-
-    $bytes = file_get_contents($path);
-    assert(is_string($bytes));
-    unlink($path);
-
-    return $bytes;
-}
-
 test('registry starts empty', function () {
     expect(Configuration::registeredFonts())->toBe([]);
 });
 
 test('fonts can be registered from bytes without a path', function () {
-    $data = file_get_contents(a_font_file());
+    $data = file_get_contents(test_font_path());
     assert(is_string($data));
 
     expect(Configuration::registerFonts([$data]))->toBe(1);
@@ -89,7 +45,7 @@ test('data without a font is ignored', function () {
 });
 
 test('fonts registered by path report the path', function () {
-    $path = a_font_file();
+    $path = test_font_path();
 
     expect(Configuration::registerFontPaths([$path]))->toBe(1);
 
@@ -105,7 +61,7 @@ test('unreadable paths are skipped', function () {
 });
 
 test('clearFonts empties the registry', function () {
-    Configuration::registerFontPaths([a_font_file()]);
+    Configuration::registerFontPaths([test_font_path()]);
     expect(Configuration::registeredFonts())->not->toBe([]);
 
     Configuration::clearFonts();
@@ -127,7 +83,7 @@ test('the test template is rejected until the font is registered', function () {
 });
 
 test('a template requiring a registered family compiles', function () {
-    Configuration::registerFontPaths([a_font_file()]);
+    Configuration::registerFontPaths([test_font_path()]);
 
     $template = new Template(pack_template_requiring(TEST_FAMILY), mode: CompilationMode::Development);
 
