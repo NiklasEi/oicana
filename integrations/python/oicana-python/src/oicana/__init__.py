@@ -3,9 +3,13 @@
 from .template import (
     CompiledDocument,
     Template,
+    clear_fonts,
     configure_automatic_cache_eviction,
     configure_diagnostic_color,
     evict_cache,
+    register_font_paths,
+    register_fonts,
+    registered_fonts,
 )
 from .types import (
     BlobInput,
@@ -20,6 +24,7 @@ from .types import (
     JsonInputDefinition,
     PageRange,
     PageSize,
+    RegisteredFont,
     ZipLimits,
 )
 
@@ -31,6 +36,11 @@ __all__ = [
     "configure_automatic_cache_eviction",
     "configure_diagnostic_color",
     "evict_cache",
+    "register_fonts",
+    "register_font_paths",
+    "registered_fonts",
+    "clear_fonts",
+    "RegisteredFont",
     "CompilationMode",
     "DiagnosticColor",
     "BlobInput",

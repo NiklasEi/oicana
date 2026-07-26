@@ -557,6 +557,7 @@ if (!nativeBinding) {
 }
 
 module.exports = nativeBinding
+module.exports.clearFonts = nativeBinding.clearFonts
 module.exports.CompilationMode = nativeBinding.CompilationMode
 module.exports.compileTemplate = nativeBinding.compileTemplate
 module.exports.compileTemplateAsync = nativeBinding.compileTemplateAsync
@@ -574,6 +575,9 @@ module.exports.getSource = nativeBinding.getSource
 module.exports.getWarnings = nativeBinding.getWarnings
 module.exports.inputs = nativeBinding.inputs
 module.exports.NOT_REGISTERED = nativeBinding.NOT_REGISTERED
+module.exports.registeredFonts = nativeBinding.registeredFonts
+module.exports.registerFontPaths = nativeBinding.registerFontPaths
+module.exports.registerFonts = nativeBinding.registerFonts
 module.exports.registerTemplate = nativeBinding.registerTemplate
 module.exports.registerTemplateAsync = nativeBinding.registerTemplateAsync
 module.exports.removeDocument = nativeBinding.removeDocument

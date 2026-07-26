@@ -190,6 +190,55 @@ internal static class OicanaFfi
     }
 
     /// <summary>
+    /// Register a single font from its raw file content.
+    /// </summary>
+    /// <param name="font">Raw content of a font file.</param>
+    /// <returns>The number of font faces that were added; 0 if the data held no font.</returns>
+    public static long RegisterFont(byte[] font)
+    {
+        GCHandle fontHandle = GCHandle.Alloc(font, GCHandleType.Pinned);
+        try
+        {
+            IntPtr fontPointer = fontHandle.AddrOfPinnedObject();
+            var fontBuffer = new Buffer() { data = fontPointer, error = false, len = (uint)font.Length };
+            return OicanaFfiInternal.unsafe_register_font(fontBuffer);
+        }
+        finally
+        {
+            fontHandle.Free();
+        }
+    }
+
+    /// <summary>
+    /// Register a single font file by path, not retaining its data until it is used.
+    /// </summary>
+    /// <param name="path">Path to a font file.</param>
+    /// <returns>The number of font faces that were added; 0 if the file could not be read or held no font.</returns>
+    public static long RegisterFontPath(string path)
+    {
+        return OicanaFfiInternal.register_font_path(path);
+    }
+
+    /// <summary>
+    /// Get all font faces currently registered by the host.
+    /// </summary>
+    /// <exception cref="OicanaException">If the registered fonts cannot be serialized.</exception>
+    /// <returns>JSON array of <c>{ "family": string, "path": string | null }</c>.</returns>
+    public static string RegisteredFonts()
+    {
+        var buffer = OicanaFfiInternal.registered_fonts();
+        return HandleStringBuffer(buffer);
+    }
+
+    /// <summary>
+    /// Drop all fonts registered by the host.
+    /// </summary>
+    public static void ClearFonts()
+    {
+        OicanaFfiInternal.clear_fonts();
+    }
+
+    /// <summary>
     /// Get input definitions from the template manifest.
     /// </summary>
     /// <param name="templateId">Identifier of the template.</param>

@@ -3489,6 +3489,7 @@ dependencies = [
  "interoptopus",
  "interoptopus_backend_csharp",
  "oicana_ffi_core",
+ "serde_json",
 ]
 
 [[package]]
@@ -3514,6 +3515,7 @@ name = "oicana_ffi_core"
 version = "0.6.0"
 dependencies = [
  "dashmap",
+ "log",
  "oicana_export",
  "oicana_files",
  "oicana_input",
@@ -3524,6 +3526,7 @@ dependencies = [
  "thiserror",
  "tmp-typst-custom-metadata",
  "tmp-typst-layout-custom-metadata",
+ "typst-assets",
  "uuid",
  "zip 6.0.0",
 ]
@@ -3579,6 +3582,7 @@ version = "0.6.0"
 dependencies = [
  "ext-php-rs",
  "oicana_ffi_core",
+ "serde_json",
 ]
 
 [[package]]

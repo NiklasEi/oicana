@@ -32,6 +32,7 @@ use oicana_input::input::blob::{Blob, BlobInput};
 use oicana_input::input::json::JsonInput;
 use oicana_input::{CompilationConfig, TemplateInputs};
 use oicana_world::diagnostics::PlainDiagnostics;
+use oicana_world::fonts::FontSource;
 use oicana_world::manifest::OicanaWorldFiles;
 use oicana_world::world::OicanaWorld;
 
@@ -282,6 +283,111 @@ pub fn configure_diagnostic_color(color: DiagnosticColor) {
     }
 }
 
+/// Fonts registered by the host, shared by every world built after they were
+/// added.
+///
+/// Registering fonts is a process-wide setting. Worlds snapshot the list when they are created, so
+/// fonts have to be registered before the templates that need them.
+static HOST_FONTS: Lazy<RwLock<Vec<FontSource>>> = Lazy::new(|| RwLock::new(Vec::new()));
+
+fn host_fonts() -> Vec<FontSource> {
+    HOST_FONTS
+        .read()
+        .unwrap_or_else(PoisonError::into_inner)
+        .clone()
+}
+
+fn add_host_fonts(sources: Vec<FontSource>) -> usize {
+    let faces = sources
+        .iter()
+        .map(|source| source.families().len())
+        .sum::<usize>();
+    let mut fonts = HOST_FONTS.write().unwrap_or_else(PoisonError::into_inner);
+    fonts.extend(sources);
+    if !WORLD_CACHE.is_empty() {
+        log::warn!(
+            "Fonts were registered while {} template(s) are already registered; \
+             those templates keep the fonts they were created with. \
+             Register fonts before registering templates.",
+            WORLD_CACHE.len()
+        );
+    }
+    faces
+}
+
+/// A font face made available to templates by the host.
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
+pub struct RegisteredFont {
+    /// The family name.
+    pub family: String,
+    /// The file the face was read from, if it was registered by path.
+    pub path: Option<String>,
+}
+
+/// Register fonts from their raw file content.
+///
+/// Register each font only once: nothing deduplicates.
+///
+/// Returns the number of font faces that were added.
+pub fn register_fonts(fonts: Vec<Vec<u8>>) -> usize {
+    let sources = fonts
+        .into_iter()
+        .filter_map(|data| FontSource::from_bytes(Bytes::new(data)))
+        .collect();
+    add_host_fonts(sources)
+}
+
+/// Register a single font from its raw file content.
+///
+/// Returns the number of font faces that were added.
+pub fn register_font(data: Vec<u8>) -> usize {
+    register_fonts(vec![data])
+}
+
+/// Register fonts from files on disk.
+///
+/// The files are read immediately to collect their face metadata and then dropped; each
+/// is read again, and kept, the first time a document needs one of its glyphs.
+///
+/// Returns the number of font faces that were added.
+#[cfg(not(target_arch = "wasm32"))]
+pub fn register_font_paths(paths: Vec<std::path::PathBuf>) -> usize {
+    let sources = paths
+        .into_iter()
+        .filter_map(FontSource::from_path)
+        .collect();
+    add_host_fonts(sources)
+}
+
+/// All font faces currently registered by the host.
+pub fn registered_fonts() -> Vec<RegisteredFont> {
+    host_fonts()
+        .iter()
+        .flat_map(|source| {
+            let path = source
+                .path()
+                .map(|path| path.to_string_lossy().into_owned());
+            source
+                .families()
+                .into_iter()
+                .map(move |family| RegisteredFont {
+                    family,
+                    path: path.clone(),
+                })
+        })
+        .collect()
+}
+
+/// Drop all fonts registered by the host.
+///
+/// Templates that are already registered keep the fonts they were created with.
+pub fn clear_fonts() {
+    HOST_FONTS
+        .write()
+        .unwrap_or_else(PoisonError::into_inner)
+        .clear();
+}
+
 /// Parse an `export_format` JSON string into an [`ExportFormat`].
 ///
 /// Integrations that receive the export format as a JSON string (csharp, node,
@@ -331,7 +437,7 @@ pub fn register_template(
     let mut inputs = prepare_inputs(json_inputs, blob_inputs)?;
     inputs.with_config(mode.into());
 
-    let mut world = OicanaWorld::new(packed, inputs, manifest)
+    let mut world = OicanaWorld::new_with_fonts(packed, inputs, manifest, &host_fonts())
         .map_err(|error| FfiError::WorldCreation(error.to_string()))?;
     world.color = current_diagnostic_color();
 
@@ -435,7 +541,7 @@ pub fn export_once(
     let mut inputs = prepare_inputs(json_inputs, blob_inputs)?;
     inputs.with_config(mode.into());
 
-    let mut world = OicanaWorld::new(packed, inputs, manifest)
+    let mut world = OicanaWorld::new_with_fonts(packed, inputs, manifest, &host_fonts())
         .map_err(|error| FfiError::WorldCreation(error.to_string()))?;
     world.color = current_diagnostic_color();
 
@@ -740,6 +846,26 @@ fn pdf_export_error(error: String) -> FfiError {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn host_fonts_can_be_registered_listed_and_cleared() {
+        let font = typst_assets::fonts().next().expect("typst ships fonts");
+
+        assert!(registered_fonts().is_empty());
+
+        let faces = register_fonts(vec![font.to_vec()]);
+        assert!(faces > 0);
+        let registered = registered_fonts();
+        assert_eq!(registered.len(), faces);
+        assert!(registered.iter().all(|font| font.path.is_none()));
+        assert!(registered.iter().all(|font| !font.family.is_empty()));
+
+        assert_eq!(register_fonts(vec![b"not a font".to_vec()]), 0);
+        assert_eq!(registered_fonts().len(), faces);
+
+        clear_fonts();
+        assert!(registered_fonts().is_empty());
+    }
 
     #[test]
     fn parses_export_format_pdf() {

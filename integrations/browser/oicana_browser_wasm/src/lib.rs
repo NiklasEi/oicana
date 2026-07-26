@@ -8,7 +8,7 @@ use std::sync::atomic::{AtomicU8, Ordering};
 use js_sys::Uint8Array;
 use log::{trace, warn, Level, LevelFilter};
 use serde::Deserialize;
-use serde_wasm_bindgen::from_value;
+use serde_wasm_bindgen::{from_value, to_value};
 use wasm_bindgen::prelude::wasm_bindgen;
 use wasm_bindgen::JsValue;
 
@@ -141,6 +141,31 @@ pub fn export_template_once(
         data: result.bytes,
         warnings: result.warnings,
     })
+}
+
+/// Make fonts available to every template registered from now on.
+///
+/// Data that holds no font Typst can read is ignored. Returns the number of font
+/// faces that were added.
+#[wasm_bindgen]
+pub fn register_fonts(fonts: Vec<Uint8Array>) -> usize {
+    let fonts = fonts.into_iter().map(|font| font.to_vec()).collect();
+    oicana_ffi_core::register_fonts(fonts)
+}
+
+/// All font faces currently registered, as `{ family, path }` objects.
+#[wasm_bindgen]
+pub fn registered_fonts() -> Result<JsValue, String> {
+    let fonts = oicana_ffi_core::registered_fonts();
+    to_value(&fonts).map_err(|error| format!("Failed to serialize registered fonts: {error}"))
+}
+
+/// Drop all fonts registered by the host.
+///
+/// Templates that are already registered keep the fonts they were created with.
+#[wasm_bindgen]
+pub fn clear_fonts() {
+    oicana_ffi_core::clear_fonts();
 }
 
 /// Configure the coloring of compilation diagnostics.

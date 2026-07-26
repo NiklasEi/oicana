@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+using System.Text.Json;
 using Oicana.Interop;
 
 namespace Oicana;
@@ -35,4 +37,61 @@ public static class Configuration
         OicanaFfi.ConfigureAutomaticCacheEviction(maxAge);
     }
 
+    /// <summary>
+    /// Make fonts available to every template registered from now on.
+    /// </summary>
+    /// <param name="fonts">Raw content of the font files. Data that holds no font is ignored.</param>
+    /// <returns>The number of font faces that were added.</returns>
+    public static long RegisterFonts(params byte[][] fonts)
+    {
+        long faces = 0;
+        foreach (var font in fonts)
+        {
+            faces += OicanaFfi.RegisterFont(font);
+        }
+
+        return faces;
+    }
+
+    /// <summary>
+    /// Make fonts on disk available to every template registered from now on.
+    /// </summary>
+    /// <param name="paths">Paths to font files.</param>
+    /// <returns>The number of font faces that were added.</returns>
+    public static long RegisterFontPaths(params string[] paths)
+    {
+        long faces = 0;
+        foreach (var path in paths)
+        {
+            faces += OicanaFfi.RegisterFontPath(path);
+        }
+
+        return faces;
+    }
+
+    /// <summary>
+    /// All font faces currently registered by the host.
+    /// </summary>
+    /// <returns>The registered faces, in registration order.</returns>
+    public static IReadOnlyList<RegisteredFont> RegisteredFonts()
+    {
+        var json = OicanaFfi.RegisteredFonts();
+        return JsonSerializer.Deserialize<List<RegisteredFont>>(json, FontSerializerOptions)
+               ?? new List<RegisteredFont>();
+    }
+
+    /// <summary>
+    /// Drop all fonts registered by the host.
+    ///
+    /// Templates that are already registered keep the fonts they were created with.
+    /// </summary>
+    public static void ClearFonts()
+    {
+        OicanaFfi.ClearFonts();
+    }
+
+    private static readonly JsonSerializerOptions FontSerializerOptions = new()
+    {
+        PropertyNameCaseInsensitive = true,
+    };
 }

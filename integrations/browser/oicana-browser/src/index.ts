@@ -1,8 +1,13 @@
-import init, { configure_diagnostic_color } from '@oicana/browser-wasm';
+import init, {
+  configure_diagnostic_color,
+  registered_fonts,
+} from '@oicana/browser-wasm';
 
 export {
+  clear_fonts as clearFonts,
   configure_automatic_cache_eviction as configureAutomaticCacheEviction,
   evict_cache as evictCache,
+  register_fonts as registerFonts,
   set_log_level as setLogLevel,
   set_validate_inputs as setValidateInputs,
 } from '@oicana/browser-wasm';
@@ -23,6 +28,24 @@ export type DiagnosticColor = 'none' | 'ansi';
  */
 export function configureDiagnosticColor(color: DiagnosticColor): void {
   configure_diagnostic_color(color === 'ansi');
+}
+
+/** A font face made available to templates by the host. */
+export interface RegisteredFont {
+  /** The family name, as used in Typst's `text(font: ...)`. */
+  family: string;
+  /**
+   * The file the face was read from. Always absent in the browser, where fonts
+   * can only be registered from memory.
+   */
+  path?: string;
+}
+
+/**
+ * All font faces currently registered with `registerFonts`.
+ */
+export function registeredFonts(): RegisteredFont[] {
+  return registered_fonts() as RegisteredFont[];
 }
 
 const initialized: Set<string> = new Set();

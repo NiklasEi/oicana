@@ -258,8 +258,12 @@ fn find_fonts(project_root: &Path) -> Vec<FileId> {
     };
 
     fn append_font_ids(fonts: &mut Vec<FileId>, fonts_dir: ReadDir, project_root: &Path) {
-        for entry in fonts_dir.flatten() {
-            let path = entry.path();
+        // Typst resolves font fallback ties by the order faces were discovered,
+        // so the directory order has to be stable: `read_dir` is not sorted and
+        // varies between filesystems and machines.
+        let mut entries: Vec<_> = fonts_dir.flatten().map(|entry| entry.path()).collect();
+        entries.sort();
+        for path in entries {
             if path.is_file() {
                 match path.extension().and_then(|e| e.to_str()) {
                     Some("ttf") | Some("ttc") | Some("TTF") | Some("TTC") | Some("otf")

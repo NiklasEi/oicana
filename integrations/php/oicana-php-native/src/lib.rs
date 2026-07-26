@@ -223,6 +223,52 @@ pub fn configure_diagnostic_color(ansi: bool) -> PhpResult<()> {
     })
 }
 
+/// Register a single font from its raw file content.
+///
+/// Returns the number of font faces that were added, so `0` means the data held
+/// no font Typst can read.
+#[php_function]
+#[php(name = "OicanaInternal\\register_font")]
+pub fn register_font(font: BinarySlice<u8>) -> PhpResult<i64> {
+    catch_panic(|| Ok(oicana_ffi_core::register_font(font.to_vec()) as i64))
+}
+
+/// Register fonts from files on disk, not retaining their data until it is used.
+///
+/// Returns the number of font faces that were added.
+#[php_function]
+#[php(name = "OicanaInternal\\register_font_paths")]
+pub fn register_font_paths(paths: Vec<String>) -> PhpResult<i64> {
+    catch_panic(|| {
+        let paths = paths.into_iter().map(std::path::PathBuf::from).collect();
+        Ok(oicana_ffi_core::register_font_paths(paths) as i64)
+    })
+}
+
+/// All font faces currently registered by the host, as a JSON array of
+/// `{ "family": ..., "path": ... }` objects.
+#[php_function]
+#[php(name = "OicanaInternal\\registered_fonts")]
+pub fn registered_fonts() -> PhpResult<String> {
+    catch_panic(|| {
+        serde_json::to_string(&oicana_ffi_core::registered_fonts()).map_err(|error| {
+            PhpException::default(format!("Failed to serialize registered fonts: {error}"))
+        })
+    })
+}
+
+/// Drop all fonts registered by the host.
+///
+/// Templates that are already registered keep the fonts they were created with.
+#[php_function]
+#[php(name = "OicanaInternal\\clear_fonts")]
+pub fn clear_fonts() -> PhpResult<()> {
+    catch_panic(|| {
+        oicana_ffi_core::clear_fonts();
+        Ok(())
+    })
+}
+
 /// Compile the identified template with the given inputs.
 ///
 /// Calling this method requires a previous call to `register_template` with the same template
@@ -393,6 +439,10 @@ pub fn get_module(module: ModuleBuilder) -> ModuleBuilder {
         .function(wrap_function!(get_warnings))
         .function(wrap_function!(remove_world))
         .function(wrap_function!(set_validate_inputs))
+        .function(wrap_function!(register_font))
+        .function(wrap_function!(register_font_paths))
+        .function(wrap_function!(registered_fonts))
+        .function(wrap_function!(clear_fonts))
         .class::<BlobWithMetadata>()
         .class::<ExportOnceResult>()
 }

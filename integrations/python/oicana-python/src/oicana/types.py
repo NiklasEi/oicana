@@ -92,6 +92,16 @@ class ZipLimits:
 
 
 @dataclass
+class RegisteredFont:
+    """A font face made available to templates by the host."""
+
+    #: Family name, as used in Typst's ``text(font: ...)``.
+    family: str
+    #: File the face was read from; ``None`` for fonts registered from memory.
+    path: str | None = None
+
+
+@dataclass
 class ExportOnceResult:
     """Result of a one-shot template export."""
 

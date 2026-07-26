@@ -159,6 +159,7 @@ mod tests {
                     validate_json_inputs_by_default: true,
                     tests: PathBuf::from("tests"),
                     export: oicana::template::ExportConfig::default(),
+                    fonts: oicana::template::FontConfig::default(),
                 },
             ),
         };

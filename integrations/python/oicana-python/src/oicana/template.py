@@ -23,6 +23,9 @@ from oicana_native import (
     CompilationMode as NativeCompilationMode,
 )
 from oicana_native import (
+    clear_fonts as _clear_fonts,
+)
+from oicana_native import (
     configure_automatic_cache_eviction as _configure_automatic_cache_eviction,
 )
 from oicana_native import (
@@ -33,6 +36,15 @@ from oicana_native import (
 )
 from oicana_native import (
     export_once as _export_once,
+)
+from oicana_native import (
+    register_font_paths as _register_font_paths,
+)
+from oicana_native import (
+    register_fonts as _register_fonts,
+)
+from oicana_native import (
+    registered_fonts as _registered_fonts,
 )
 from oicana_native import (
     set_validate_inputs as _set_validate_inputs,
@@ -46,10 +58,13 @@ from .types import (
     ExportOnceResult,
     PageRange,
     PageSize,
+    RegisteredFont,
     ZipLimits,
 )
 
 if TYPE_CHECKING:
+    import os
+    from collections.abc import Iterable
     from typing import Any
 
 
@@ -128,8 +143,7 @@ class Template:
 
     @property
     def warnings(self) -> str | None:
-        """Warnings from the most recent compilation, or ``None`` if there were none.
-        """
+        """Warnings from the most recent compilation, or ``None`` if there were none."""
         return self._last_warnings
 
     def export(
@@ -540,3 +554,46 @@ def configure_diagnostic_color(color: DiagnosticColor) -> None:
         color: The color mode to use.
     """
     _configure_diagnostic_color(color == DiagnosticColor.ANSI)
+
+
+def register_fonts(fonts: bytes | Iterable[bytes]) -> int:
+    """Make fonts available to every template registered from now on.
+
+    Args:
+        fonts: The content of one or more font files. Data that holds no font
+            is ignored.
+
+    Returns:
+        The number of font faces that were added.
+    """
+    if isinstance(fonts, (bytes, bytearray, memoryview)):
+        fonts = [fonts]
+    return _register_fonts([bytes(font) for font in fonts])  # type: ignore[no-any-return]
+
+
+def register_font_paths(paths: str | os.PathLike[str] | Iterable[str | os.PathLike[str]]) -> int:
+    """Make fonts on disk available to every template registered from now on.
+
+    Args:
+        paths: One or more paths to font files.
+
+    Returns:
+        The number of font faces that were added.
+    """
+    if isinstance(paths, str) or hasattr(paths, "__fspath__"):
+        paths = [paths]  # type: ignore[list-item]
+    return _register_font_paths([str(path) for path in paths])  # type: ignore[no-any-return,union-attr]
+
+
+def registered_fonts() -> list[RegisteredFont]:
+    """The font faces currently registered with :func:`register_fonts` or
+    :func:`register_font_paths`."""
+    return [RegisteredFont(family=family, path=path) for family, path in _registered_fonts()]
+
+
+def clear_fonts() -> None:
+    """Drop all registered fonts.
+
+    Templates that are already registered keep the fonts they were created with.
+    """
+    _clear_fonts()

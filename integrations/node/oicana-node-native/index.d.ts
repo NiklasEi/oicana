@@ -8,6 +8,13 @@ export interface BlobWithMetadata {
   meta: string
 }
 
+/**
+ * Drop all fonts registered by the host.
+ *
+ * Templates that are already registered keep the fonts they were created with.
+ */
+export declare function clearFonts(): void
+
 export declare const enum CompilationMode {
   Production = 0,
   Development = 1,
@@ -185,6 +192,32 @@ export declare function inputs(template: string): string
  * trying to use the template through a different method.
  */
 export const NOT_REGISTERED: string
+
+/** A font face made available to templates by the host. */
+export interface RegisteredFont {
+  /** The family name, as used in Typst's `text(font: ...)`. */
+  family: string
+  /** The file the face was read from; absent for fonts registered from memory. */
+  path?: string
+}
+
+/** All font faces currently registered by the host. */
+export declare function registeredFonts(): Array<RegisteredFont>
+
+/**
+ * Make fonts on disk available to every template registered from now on.
+ *
+ * Returns the number of font faces that were added.
+ */
+export declare function registerFontPaths(paths: Array<string>): number
+
+/**
+ * Make fonts available to every template registered from now on.
+ *
+ * Data that holds no font Typst can read is ignored. Returns the number of font
+ * faces that were added.
+ */
+export declare function registerFonts(fonts: Array<Uint8Array>): number
 
 /**
  * Register the given template. This will read the template files as a [`PackedTemplate`] and

@@ -7,7 +7,8 @@ use typst_layout::PagedDocument;
 
 /// Diagnostics for the Typst World with codespan-reporting
 pub mod diagnostics;
-mod fonts;
+/// Fonts available to a template and the ones a host can provide
+pub mod fonts;
 /// Get the manifest of an Oicana World
 pub mod manifest;
 /// Oicana implementation of a Typst World

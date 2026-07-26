@@ -231,6 +231,83 @@ pub extern "system" fn Java_com_oicana_OicanaNative_configureDiagnosticColor<'lo
         .resolve::<jni::errors::ThrowRuntimeExAndDefault>()
 }
 
+/// Register a single font from its raw file content, returning the number of
+/// font faces that were added.
+#[unsafe(no_mangle)]
+pub extern "system" fn Java_com_oicana_OicanaNative_registerFont<'local>(
+    mut unowned_env: EnvUnowned<'local>,
+    _class: JClass<'local>,
+    font: JByteArray<'local>,
+) -> jint {
+    unowned_env
+        .with_env(|env| -> jni::errors::Result<jint> {
+            let data = env.convert_byte_array(font)?;
+            Ok(oicana_ffi_core::register_font(data) as jint)
+        })
+        .resolve::<jni::errors::ThrowRuntimeExAndDefault>()
+}
+
+/// Register a single font file by path, returning the number of font faces that
+/// were added. The font data is not retained until it is used.
+#[unsafe(no_mangle)]
+pub extern "system" fn Java_com_oicana_OicanaNative_registerFontPath<'local>(
+    mut unowned_env: EnvUnowned<'local>,
+    _class: JClass<'local>,
+    path: JString<'local>,
+) -> jint {
+    unowned_env
+        .with_env(|env| -> jni::errors::Result<jint> {
+            let path = path.try_to_string(env)?;
+            let faces = oicana_ffi_core::register_font_paths(vec![path.into()]);
+            Ok(faces as jint)
+        })
+        .resolve::<jni::errors::ThrowRuntimeExAndDefault>()
+}
+
+/// All font faces currently registered, flattened into `[family, path, ...]`.
+///
+/// Two entries per face, with a null path for fonts registered from memory. A
+/// flat array rather than JSON: the Java side has no JSON parser, and font
+/// families and file paths are arbitrary strings that a regex parser would
+/// mangle.
+#[unsafe(no_mangle)]
+pub extern "system" fn Java_com_oicana_OicanaNative_registeredFonts<'local>(
+    mut unowned_env: EnvUnowned<'local>,
+    _class: JClass<'local>,
+) -> JObjectArray<'local, JObject<'local>> {
+    unowned_env
+        .with_env(
+            |env| -> jni::errors::Result<JObjectArray<'_, JObject<'_>>> {
+                let fonts = oicana_ffi_core::registered_fonts();
+                let array = JObjectArray::<JObject>::new(env, fonts.len() * 2, &JObject::null())?;
+                for (index, font) in fonts.iter().enumerate() {
+                    let family = JString::from_str(env, &font.family)?;
+                    array.set_element(env, index * 2, &family)?;
+                    if let Some(path) = &font.path {
+                        let path = JString::from_str(env, path)?;
+                        array.set_element(env, index * 2 + 1, &path)?;
+                    }
+                }
+                Ok(array)
+            },
+        )
+        .resolve::<jni::errors::ThrowRuntimeExAndDefault>()
+}
+
+/// Drop all fonts registered by the host.
+#[unsafe(no_mangle)]
+pub extern "system" fn Java_com_oicana_OicanaNative_clearFonts<'local>(
+    mut unowned_env: EnvUnowned<'local>,
+    _class: JClass<'local>,
+) {
+    unowned_env
+        .with_env(|_env| -> jni::errors::Result<()> {
+            oicana_ffi_core::clear_fonts();
+            Ok(())
+        })
+        .resolve::<jni::errors::ThrowRuntimeExAndDefault>()
+}
+
 #[unsafe(no_mangle)]
 pub extern "system" fn Java_com_oicana_OicanaNative_compileTemplate<'local>(
     mut unowned_env: EnvUnowned<'local>,

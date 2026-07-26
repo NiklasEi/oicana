@@ -2,6 +2,7 @@ use std::collections::{HashMap, HashSet};
 use std::path::PathBuf;
 use std::time::Instant;
 
+use crate::fonts::FontArgs;
 use crate::target::{TargetArgs, TemplateDir};
 use crate::watch::FileWatcher;
 use anyhow::bail;
@@ -16,6 +17,8 @@ use walkdir::WalkDir;
 pub struct TestArgs {
     #[clap(flatten)]
     target: TargetArgs,
+    #[clap(flatten)]
+    fonts: FontArgs,
     #[arg(short, long, help = "Update snapshot files and create missing ones")]
     update: bool,
     #[arg(short, long, help = "Watch for file changes and re-run affected tests")]
@@ -38,7 +41,7 @@ pub fn test(args: TestArgs) -> anyhow::Result<()> {
     let error = style("Error").red();
     let warning = style("Warning").yellow();
 
-    let test_runner_context = TestRunnerContext::new()?;
+    let test_runner_context = TestRunnerContext::with_fonts(args.fonts.load())?;
     let started = Instant::now();
 
     println!(
@@ -194,7 +197,7 @@ fn watch_tests(args: TestArgs) -> anyhow::Result<()> {
         SnapshotMode::Compare
     };
 
-    let test_runner_context = TestRunnerContext::new()?;
+    let test_runner_context = TestRunnerContext::with_fonts(args.fonts.load())?;
 
     println!(
         "{} {}  Collecting templates...",

@@ -11,6 +11,7 @@ use oicana_export::png::{export_png, PngExportError};
 use oicana_files::native::{package_data_dir, NativeTemplate};
 use oicana_input::{input::json::JsonInput, input_definition::InputDefinition, TemplateInputs};
 use oicana_template::manifest::TemplateManifest;
+use oicana_world::fonts::FontSource;
 use oicana_world::CompiledDocument;
 use oxipng::PngError;
 use rand::thread_rng;
@@ -21,14 +22,23 @@ use crate::{Snapshot, SnapshotMode, Test};
 /// Context for test runners
 pub struct TestRunnerContext {
     packages: PathBuf,
+    fonts: Vec<FontSource>,
 }
 
 impl TestRunnerContext {
     /// Create a new test runner
     pub fn new() -> Result<Self, CreateTestRunnerError> {
+        Self::with_fonts(vec![])
+    }
+
+    /// Create a new test runner with additional fonts.
+    ///
+    /// The fonts are available to every template the context runs, mirroring a
+    /// host that registers them at runtime.
+    pub fn with_fonts(fonts: Vec<FontSource>) -> Result<Self, CreateTestRunnerError> {
         let packages = package_data_dir().ok_or(CreateTestRunnerError::NoPackageDirectory)?;
 
-        Ok(TestRunnerContext { packages })
+        Ok(TestRunnerContext { packages, fonts })
     }
 
     /// Prepare a runner for the template at the given path
@@ -38,7 +48,12 @@ impl TestRunnerContext {
         manifest: &TemplateManifest,
     ) -> Result<TestRunner, TemplateInitializationError> {
         Ok(TestRunner {
-            instance: Template::<NativeTemplate>::from(path, &self.packages, manifest.clone())?,
+            instance: Template::<NativeTemplate>::from_with_fonts(
+                path,
+                &self.packages,
+                manifest.clone(),
+                &self.fonts,
+            )?,
             template_path: path.to_path_buf(),
         })
     }
