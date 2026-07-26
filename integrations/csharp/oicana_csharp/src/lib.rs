@@ -50,6 +50,65 @@ pub extern "C" fn evict_cache(max_age: i64) {
     });
 }
 
+/// Register a single font from its raw file content.
+///
+/// Returns the number of font faces that were added, so `0` means the data held
+/// no font Typst can read. Returns `-1` if the call panicked.
+///
+/// # Safety
+///
+/// The caller is responsible for ensuring that `font` points to valid, properly
+/// aligned and initialized data that is not modified concurrently.
+#[ffi_function]
+#[no_mangle]
+pub unsafe extern "C" fn unsafe_register_font(font: Buffer) -> i64 {
+    catch_panic_with(-1, || {
+        let data = unsafe { slice_from_buffer(font) };
+        oicana_ffi_core::register_font(data.to_vec()) as i64
+    })
+}
+
+/// Register a single font file by path, not retaining its data until it is used.
+///
+/// Returns the number of font faces that were added. Returns `-1` if the path is
+/// not valid UTF-8 or the call panicked.
+#[ffi_function]
+#[no_mangle]
+pub extern "C" fn register_font_path(path: AsciiPointer) -> i64 {
+    catch_panic_with(-1, || {
+        let Ok(path) = path.as_str() else {
+            return -1;
+        };
+        oicana_ffi_core::register_font_paths(vec![path.into()]) as i64
+    })
+}
+
+/// All font faces currently registered by the host, as a JSON array of
+/// `{ "family": ..., "path": ... }` objects.
+///
+/// Check if the returned buffer is an error before interpreting the content.
+#[ffi_function]
+#[no_mangle]
+pub extern "C" fn registered_fonts() -> Buffer {
+    catch_panic(
+        || match serde_json::to_string(&oicana_ffi_core::registered_fonts()) {
+            Ok(json) => Buffer::from_ok_string(json),
+            Err(error) => {
+                Buffer::from_error(format!("Failed to serialize registered fonts: {error}"))
+            }
+        },
+    )
+}
+
+/// Drop all fonts registered by the host.
+///
+/// Templates that are already registered keep the fonts they were created with.
+#[ffi_function]
+#[no_mangle]
+pub extern "C" fn clear_fonts() {
+    swallow_panic(oicana_ffi_core::clear_fonts);
+}
+
 /// Register a template for the given identifier
 ///
 /// After a successful call to this method, use [`unsafe_compile_template()`] for compiling
@@ -737,6 +796,10 @@ pub fn my_inventory() -> Inventory {
         .register(function!(set_validate_inputs))
         .register(function!(configure_automatic_cache_eviction))
         .register(function!(evict_cache))
+        .register(function!(unsafe_register_font))
+        .register(function!(register_font_path))
+        .register(function!(registered_fonts))
+        .register(function!(clear_fonts))
         .inventory()
 }
 
@@ -751,6 +814,14 @@ fn catch_panic(body: impl FnOnce() -> Buffer) -> Buffer {
             panic_message(payload.as_ref())
         ))
     })
+}
+
+/// Run `body`, returning `fallback` if it panics.
+///
+/// For entry points that return a plain value rather than a [`Buffer`], and so
+/// have no channel to report the error through.
+fn catch_panic_with<T>(fallback: T, body: impl FnOnce() -> T) -> T {
+    std::panic::catch_unwind(std::panic::AssertUnwindSafe(body)).unwrap_or(fallback)
 }
 
 #[cfg(test)]

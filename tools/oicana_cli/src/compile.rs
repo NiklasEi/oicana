@@ -1,4 +1,5 @@
 use crate::compile::export::{export_image, export_pdf, ExportFormat, ImageExportFormat};
+use crate::fonts::FontArgs;
 use anyhow::{Context, Ok};
 use chrono::Utc;
 use clap::Args;
@@ -23,6 +24,7 @@ pub const COMPILE_AFTER_HELP: &str = color_print::cstr!("\
   oicana compile
   oicana compile templates/invoice
   oicana compile -j test=inputs/input1.json -j foo=bar.json -b logo=company.png
+  oicana compile --font-path /usr/share/fonts
 ");
 
 #[derive(Debug, Args)]
@@ -75,6 +77,8 @@ pub struct CompileArgs {
         value_delimiter = ','
     )]
     pub(crate) pdf_standards: Option<Vec<String>>,
+    #[clap(flatten)]
+    pub(crate) fonts: FontArgs,
 }
 
 pub fn compile(args: CompileArgs) -> anyhow::Result<()> {
@@ -84,7 +88,7 @@ pub fn compile(args: CompileArgs) -> anyhow::Result<()> {
         None => Path::new("."),
         Some(ref template) => Path::new(template),
     };
-    let mut template = Template::<NativeTemplate>::init(path)?;
+    let mut template = Template::<NativeTemplate>::init_with_fonts(path, &args.fonts.load())?;
     let name: String = template.manifest().package.name.to_string();
     info!("Compiling template '{name}'.");
 

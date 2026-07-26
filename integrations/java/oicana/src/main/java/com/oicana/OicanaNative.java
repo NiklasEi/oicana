@@ -69,4 +69,13 @@ class OicanaNative {
     static native void configureDiagnosticColor(boolean ansi);
 
     static native void evictCache(int maxAge);
+
+    static native int registerFont(byte[] font);
+
+    static native int registerFontPath(String path);
+
+    /** Flattened {@code [family, path, ...]}, two entries per face. */
+    static native Object[] registeredFonts();
+
+    static native void clearFonts();
 }

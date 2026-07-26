@@ -32,7 +32,7 @@ pub fn watch(args: CompileArgs) -> anyhow::Result<()> {
         None => Path::new(".").to_owned(),
         Some(ref template) => Path::new(template).to_owned(),
     };
-    let mut template = Template::<NativeTemplate>::init(&path)?;
+    let mut template = Template::<NativeTemplate>::init_with_fonts(&path, &args.fonts.load())?;
     let name = template.manifest().package.name.to_string();
 
     let out_dir = Path::new(&args.out_dir);

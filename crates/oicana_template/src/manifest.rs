@@ -121,6 +121,11 @@ impl TemplateManifest {
     pub fn pdf_tagged(&self) -> bool {
         self.tool.oicana.export.pdf.tagged
     }
+
+    /// Font families this template expects its host to provide.
+    pub fn required_font_families(&self) -> &[String] {
+        &self.tool.oicana.fonts.require
+    }
 }
 
 /// Tool section of a Typst package manifest.
@@ -191,7 +196,7 @@ mod tests {
 
     use crate::{
         manifest::{ManifestValidationError, TemplateManifest},
-        ExportConfig, OicanaConfig,
+        ExportConfig, FontConfig, OicanaConfig,
     };
 
     fn default_package_info() -> PackageInfo {
@@ -218,6 +223,7 @@ mod tests {
                 validate_json_inputs_by_default: true,
                 tests: PathBuf::from("tests"),
                 export: ExportConfig::default(),
+                fonts: FontConfig::default(),
             },
         );
 
@@ -252,6 +258,7 @@ mod tests {
                 validate_json_inputs_by_default: true,
                 tests: PathBuf::from("tests"),
                 export: ExportConfig::default(),
+                fonts: FontConfig::default(),
             },
         );
 
@@ -273,6 +280,7 @@ mod tests {
                 validate_json_inputs_by_default: true,
                 tests: PathBuf::from("custom_tests"),
                 export: ExportConfig::default(),
+                fonts: FontConfig::default(),
             },
         );
 
@@ -292,6 +300,7 @@ mod tests {
                 validate_json_inputs_by_default: true,
                 tests: PathBuf::from("tests"),
                 export: ExportConfig::default(),
+                fonts: FontConfig::default(),
             },
         );
 
@@ -314,6 +323,7 @@ mod tests {
                 validate_json_inputs_by_default: true,
                 tests: PathBuf::from("custom_tests"),
                 export: ExportConfig::default(),
+                fonts: FontConfig::default(),
             },
         );
 
@@ -331,6 +341,7 @@ mod tests {
                 validate_json_inputs_by_default: true,
                 tests,
                 export: ExportConfig::default(),
+                fonts: FontConfig::default(),
             },
         )
     }

@@ -3,6 +3,7 @@
 //! You will want to use this through the Python package `oicana`.
 
 use std::collections::HashMap;
+use std::path::PathBuf;
 
 use pyo3::exceptions::PyRuntimeError;
 use pyo3::prelude::*;
@@ -165,6 +166,42 @@ fn configure_diagnostic_color(ansi: bool) {
     oicana_ffi_core::configure_diagnostic_color(color);
 }
 
+/// Register fonts from their raw file content.
+///
+/// Returns the number of font faces that were added.
+#[pyfunction]
+fn register_fonts(py: Python<'_>, fonts: Vec<Vec<u8>>) -> usize {
+    py.detach(|| oicana_ffi_core::register_fonts(fonts))
+}
+
+/// Register fonts from files on disk, reading their data lazily.
+///
+/// Paths that cannot be read or hold no font are skipped.
+/// Returns the number of font faces that were added.
+#[pyfunction]
+fn register_font_paths(py: Python<'_>, paths: Vec<PathBuf>) -> usize {
+    py.detach(|| oicana_ffi_core::register_font_paths(paths))
+}
+
+/// All font faces currently registered, as `(family, path)` tuples.
+///
+/// `path` is `None` for fonts registered from memory.
+#[pyfunction]
+fn registered_fonts() -> Vec<(String, Option<String>)> {
+    oicana_ffi_core::registered_fonts()
+        .into_iter()
+        .map(|font| (font.family, font.path))
+        .collect()
+}
+
+/// Drop all registered fonts.
+///
+/// Templates that are already registered keep the fonts they were created with.
+#[pyfunction]
+fn clear_fonts() {
+    oicana_ffi_core::clear_fonts();
+}
+
 /// Compile the identified template with the given inputs.
 ///
 /// Calling this method requires a previous call to `register_template` with the same template
@@ -325,6 +362,10 @@ fn oicana_native(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(set_validate_inputs, m)?)?;
     m.add_function(wrap_pyfunction!(configure_automatic_cache_eviction, m)?)?;
     m.add_function(wrap_pyfunction!(evict_cache, m)?)?;
+    m.add_function(wrap_pyfunction!(register_fonts, m)?)?;
+    m.add_function(wrap_pyfunction!(register_font_paths, m)?)?;
+    m.add_function(wrap_pyfunction!(registered_fonts, m)?)?;
+    m.add_function(wrap_pyfunction!(clear_fonts, m)?)?;
     m.add_class::<CompilationMode>()?;
     m.add_class::<BlobWithMetadata>()?;
     Ok(())

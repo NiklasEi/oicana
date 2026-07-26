@@ -76,6 +76,9 @@ pub struct OicanaConfig {
     /// Export configuration for the template.
     #[serde(default)]
     pub export: ExportConfig,
+    /// Font configuration for this template.
+    #[serde(default)]
+    pub fonts: FontConfig,
 }
 
 fn default_true() -> bool {
@@ -84,6 +87,18 @@ fn default_true() -> bool {
 
 fn default_test_dir() -> PathBuf {
     PathBuf::from("tests")
+}
+
+/// Font configuration for a template.
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Default)]
+pub struct FontConfig {
+    /// Font families the host has to provide.
+    ///
+    /// All listed families must be available; matching is case insensitive and
+    /// uses the same family names as Typst's `text(font: ...)`. Fonts packed
+    /// with the template satisfy the requirement as well.
+    #[serde(default = "Vec::new")]
+    pub require: Vec<String>,
 }
 
 /// Configuration for exporting compiled documents.
@@ -194,7 +209,10 @@ fn default_pdf_standards() -> Vec<PdfStandard> {
 
 #[cfg(test)]
 mod tests {
-    use crate::{validate_native_template, ExportConfig, OicanaConfig, PdfStandard, TemplateError};
+    use crate::{
+        validate_native_template, ExportConfig, FontConfig, OicanaConfig, PdfStandard,
+        TemplateError,
+    };
     use oicana_input::input_definition::blob::{BlobInputDefinition, FallbackBlobInput};
     use oicana_input::input_definition::json::JsonInputDefinition;
     use oicana_input::input_definition::InputDefinition;
@@ -234,6 +252,7 @@ mod tests {
             validate_json_inputs_by_default: true,
             tests: PathBuf::from("tests"),
             export: ExportConfig::default(),
+            fonts: FontConfig::default(),
         };
         assert_eq!(result.unwrap().tool.oicana, expected);
     }
@@ -466,6 +485,7 @@ mod tests {
             ],
             validate_json_inputs_by_default: true,
             export: ExportConfig::default(),
+            fonts: FontConfig::default(),
         };
         assert_eq!(result.unwrap().tool.oicana, expected);
     }

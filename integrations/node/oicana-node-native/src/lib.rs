@@ -463,6 +463,54 @@ pub fn configure_diagnostic_color(color: DiagnosticColor) {
   oicana_ffi_core::configure_diagnostic_color(color);
 }
 
+/// A font face made available to templates by the host.
+#[napi(object)]
+pub struct RegisteredFont {
+  /// The family name, as used in Typst's `text(font: ...)`.
+  pub family: String,
+  /// The file the face was read from; absent for fonts registered from memory.
+  pub path: Option<String>,
+}
+
+/// Make fonts available to every template registered from now on.
+///
+/// Data that holds no font Typst can read is ignored. Returns the number of font
+/// faces that were added.
+#[napi(catch_unwind)]
+pub fn register_fonts(fonts: Vec<Uint8Array>) -> u32 {
+  let fonts = fonts.into_iter().map(|font| font.to_vec()).collect();
+  oicana_ffi_core::register_fonts(fonts) as u32
+}
+
+/// Make fonts on disk available to every template registered from now on.
+///
+/// Returns the number of font faces that were added.
+#[napi(catch_unwind)]
+pub fn register_font_paths(paths: Vec<String>) -> u32 {
+  let paths = paths.into_iter().map(std::path::PathBuf::from).collect();
+  oicana_ffi_core::register_font_paths(paths) as u32
+}
+
+/// All font faces currently registered by the host.
+#[napi(catch_unwind)]
+pub fn registered_fonts() -> Vec<RegisteredFont> {
+  oicana_ffi_core::registered_fonts()
+    .into_iter()
+    .map(|font| RegisteredFont {
+      family: font.family,
+      path: font.path,
+    })
+    .collect()
+}
+
+/// Drop all fonts registered by the host.
+///
+/// Templates that are already registered keep the fonts they were created with.
+#[napi(catch_unwind)]
+pub fn clear_fonts() {
+  oicana_ffi_core::clear_fonts();
+}
+
 /// Limits applied when reading a packed template zip. Missing values keep the defaults.
 #[napi(object)]
 pub struct ZipLimits {

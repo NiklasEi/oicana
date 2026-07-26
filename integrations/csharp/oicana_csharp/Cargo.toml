@@ -1,7 +1,7 @@
 [package]
 name = "oicana_csharp"
 description = "Oicana integration for C#."
-version = "0.6.0"
+version = "0.7.0-rc.1"
 publish = false
 keywords = { workspace = true }
 categories = { workspace = true }
@@ -18,6 +18,7 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 oicana_ffi_core = { workspace = true }
+serde_json = { workspace = true }
 
 interoptopus = { workspace = true }
 

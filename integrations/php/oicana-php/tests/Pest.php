@@ -84,3 +84,47 @@ function pack_minimal_template(string $mainTypst): string
     unlink($path);
     return $bytes;
 }
+
+/**
+ * Family the test font provides. No system or Typst-embedded font has it, so a
+ * template requiring it can only be registered once the host registers the font.
+ */
+const TEST_FAMILY = 'Oicana Test';
+
+/** The test font shipped with the repository. */
+function test_font_path(): string
+{
+    return assets_path('fonts/oicana-test-font.ttf');
+}
+
+/** Pack a template whose manifest requires the given font family. */
+function pack_template_requiring(string $family): string
+{
+    $manifest = <<<TOML
+        [package]
+        name = "font-test"
+        version = "0.1.0"
+        entrypoint = "main.typ"
+
+        [tool.oicana]
+        manifest_version = 1
+
+        [tool.oicana.fonts]
+        require = ["{$family}"]
+        TOML;
+
+    $path = tempnam(sys_get_temp_dir(), 'oicana-font-test-') . '.zip';
+    $zip = new ZipArchive();
+    $zip->open($path, ZipArchive::CREATE | ZipArchive::OVERWRITE);
+    $zip->addFromString('typst.toml', $manifest);
+    $zip->addFromString('main.typ', 'Content');
+    $zip->setCompressionName('typst.toml', ZipArchive::CM_STORE);
+    $zip->setCompressionName('main.typ', ZipArchive::CM_STORE);
+    $zip->close();
+
+    $bytes = file_get_contents($path);
+    assert(is_string($bytes));
+    unlink($path);
+
+    return $bytes;
+}

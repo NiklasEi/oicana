@@ -1,5 +1,5 @@
 use crate::diagnostics::{DiagnosticColor, TemplateDiagnostics};
-use crate::fonts::{FontCollection, FontSlot};
+use crate::fonts::{missing_font_families, FontCollection, FontSlot, FontSource};
 use crate::{get_current_time, CompiledDocument, TemplateCompilationFailure};
 
 use chrono::{DateTime, Datelike, Local};
@@ -121,6 +121,16 @@ impl<Files: TemplateFiles> OicanaWorld<Files> {
         inputs: TemplateInputs,
         manifest: TemplateManifest,
     ) -> Result<Self, WorldCreationError> {
+        Self::new_with_fonts(files, inputs, manifest, &[])
+    }
+
+    /// Create a new Typst World with additional fonts provided by the host.
+    pub fn new_with_fonts(
+        files: Files,
+        inputs: TemplateInputs,
+        manifest: TemplateManifest,
+        host_fonts: &[FontSource],
+    ) -> Result<Self, WorldCreationError> {
         let library = Library::builder().with_inputs(inputs.to_dict()).build();
 
         let main_path = VirtualPath::new(manifest.package.entrypoint.as_str())?;
@@ -128,7 +138,12 @@ impl<Files: TemplateFiles> OicanaWorld<Files> {
         files.source(main)?;
 
         let mut searcher = FontCollection::new();
-        searcher.collect(&files);
+        searcher.collect(&files, host_fonts);
+
+        let missing = missing_font_families(&searcher.book, manifest.required_font_families());
+        if !missing.is_empty() {
+            return Err(WorldCreationError::MissingFonts(missing));
+        }
 
         let validate_inputs = manifest.tool.oicana.validate_json_inputs_by_default;
         let validators = build_validators(&manifest, &files)?;
@@ -251,6 +266,13 @@ pub enum WorldCreationError {
     /// The entrypoint configured in the manifest is not a valid path
     #[error("The entrypoint configured in the manifest is not a valid path: {0}")]
     InvalidEntrypoint(#[from] PathError),
+    /// The template requires font families that are not available
+    #[error(
+        "The template requires font families that are not available: {}. \
+         Either add the fonts to the template or register them with the host.",
+        .0.join(", ")
+    )]
+    MissingFonts(Vec<String>),
 }
 
 /// A JSON input did not match its schema

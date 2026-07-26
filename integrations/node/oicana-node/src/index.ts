@@ -1,8 +1,13 @@
+export type { RegisteredFont } from '@oicana/node-native';
 export {
+  clearFonts,
   configureAutomaticCacheEviction,
   configureDiagnosticColor,
   DiagnosticColor,
   evictCache,
+  registeredFonts,
+  registerFontPaths,
+  registerFonts,
   setValidateInputs,
 } from '@oicana/node-native';
 export * from './CompilationMode.js';

@@ -22,6 +22,7 @@ use oicana_template::manifest::TemplateManifest;
 use oicana_world::manifest::OicanaWorldFiles;
 use oicana_world::{
     diagnostics::{DiagnosticColor, TemplateDiagnostics},
+    fonts::FontSource,
     manifest::OicanaWorldManifestError,
     world::{OicanaWorld, WorldCreationError},
     CompiledDocument, InputValidationError, TemplateCompilationFailure,
@@ -46,6 +47,9 @@ pub use oicana_input as input;
 
 /// Oicana world, diagnostics, and compilation primitives.
 pub use oicana_world as world;
+
+/// Fonts a host can make available to templates.
+pub use oicana_world::fonts;
 
 /// Template manifest and configuration types.
 pub use oicana_template as template;
@@ -98,10 +102,23 @@ pub struct Template<F: TemplateFiles> {
 impl Template<PackedTemplate> {
     /// Initialize the given template
     pub fn init<R: Read + Seek>(template: R) -> Result<Self, TemplateInitializationError> {
+        Self::init_with_fonts(template, &[])
+    }
+
+    /// Initialize the given template with additional fonts.
+    ///
+    /// The fonts are available to the template on top of the ones packed with
+    /// it, but do not become part of it: a template relying on them only
+    /// renders where an equivalent font is provided. Declare the families under
+    /// `tool.oicana.fonts.require` in the manifest to have that checked here.
+    pub fn init_with_fonts<R: Read + Seek>(
+        template: R,
+        fonts: &[FontSource],
+    ) -> Result<Self, TemplateInitializationError> {
         let files = PackedTemplate::new(template)?;
         let manifest = files.manifest()?;
 
-        let world = OicanaWorld::new(files, TemplateInputs::new(), manifest)?;
+        let world = OicanaWorld::new_with_fonts(files, TemplateInputs::new(), manifest, fonts)?;
 
         Ok(Template { world })
     }

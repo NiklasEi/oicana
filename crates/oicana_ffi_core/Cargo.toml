@@ -23,6 +23,7 @@ typst = { workspace = true }
 typst-layout = { workspace = true }
 
 dashmap = { workspace = true }
+log = { workspace = true }
 once_cell = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
@@ -30,6 +31,7 @@ thiserror = { workspace = true }
 uuid = { workspace = true, features = ["v4"] }
 
 [dev-dependencies]
+typst-assets = { workspace = true, features = ["fonts"] }
 zip = { workspace = true, default-features = false, features = ["zstd"] }
 
 [lints]

@@ -177,6 +177,38 @@ namespace Oicana.Interop
         [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl, EntryPoint = "evict_cache")]
         public static extern void evict_cache(long max_age);
 
+        /// Register a single font from its raw file content.
+        ///
+        /// Returns the number of font faces that were added, so `0` means the data held
+        /// no font Typst can read. Returns `-1` if the call panicked.
+        ///
+        /// # Safety
+        ///
+        /// The caller is responsible for ensuring that `font` points to valid, properly
+        /// aligned and initialized data that is not modified concurrently.
+        [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl, EntryPoint = "unsafe_register_font")]
+        public static extern long unsafe_register_font(Buffer font);
+
+        /// Register a single font file by path, not retaining its data until it is used.
+        ///
+        /// Returns the number of font faces that were added. Returns `-1` if the path is
+        /// not valid UTF-8 or the call panicked.
+        [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl, EntryPoint = "register_font_path")]
+        public static extern long register_font_path([MarshalAs(UnmanagedType.LPUTF8Str)] string path);
+
+        /// All font faces currently registered by the host, as a JSON array of
+        /// `{ "family": ..., "path": ... }` objects.
+        ///
+        /// Check if the returned buffer is an error before interpreting the content.
+        [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl, EntryPoint = "registered_fonts")]
+        public static extern Buffer registered_fonts();
+
+        /// Drop all fonts registered by the host.
+        ///
+        /// Templates that are already registered keep the fonts they were created with.
+        [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl, EntryPoint = "clear_fonts")]
+        public static extern void clear_fonts();
+
     }
 
     /// The mode of compilation

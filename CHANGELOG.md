@@ -2,7 +2,38 @@
 
 ## Upcoming
 
+- Hosts can provide fonts to templates on top of the ones a template packs itself
+  - fonts are registered per process and shared by every template, so a large font costs memory once instead of once per template
+  - fonts registered by path do not retain their data until it is used: the file is read once for its face metadata and dropped, then read again and kept when a glyph first needs it, so an unused font costs no memory
+  - nothing deduplicates fonts, so register each font only once per process
+- Templates can declare the font families they expect from their host via `[tool.oicana.fonts] require`; registering such a template without those fonts now fails with a clear error instead of failing later during export
+
+### CLI
+- `compile`, `watch` and `test` accept `--font-file <FILE>` and `--font-path <DIR>` (also read from `OICANA_FONT_PATHS`) to mimic a host that registers fonts
+
+### Internal
+- `assets/fonts/oicana-test-font.ttf` (family `Oicana Test`) backs the host-font tests of every integration, so they no longer depend on the fonts installed on the machine running them
+
+### Rust
+- `Template::init_with_fonts` / `Template::from_with_fonts` and `OicanaWorld::new_with_fonts`
+
+### Python
+- Expose `register_fonts`, `register_font_paths`, `registered_fonts` and `clear_fonts`
+
+### Node.js
+- Expose `registerFonts`, `registerFontPaths`, `registeredFonts` and `clearFonts`
+
+### Browser
+- Expose `registerFonts`, `registeredFonts` and `clearFonts`; there is no path-based variant, since there is no filesystem to read fonts from
+
+### PHP
+- Expose `Configuration::registerFonts`, `registerFontPaths`, `registeredFonts` and `clearFonts`
+
+### Java
+- Expose `Configuration.registerFonts`, `registerFontPaths`, `registeredFonts` and `clearFonts`
+
 ### C#
+- Expose `Configuration.RegisterFonts`, `RegisterFontPaths`, `RegisteredFonts` and `ClearFonts`
 - Move `OicanaException` to root namespace
 
 
