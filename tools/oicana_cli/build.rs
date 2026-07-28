@@ -29,7 +29,7 @@ fn main() {
     //     .unwrap_or_else(|e| panic!("Failed to read {}: {e}", lock_path.display()));
     // let version =
     //     find_package_version(&lock, "typst").expect("typst package not found in Cargo.lock");
-    println!("cargo:rustc-env=TYPST_VERSION=0.15.0 + custom PDF metadata support");
+    println!("cargo:rustc-env=TYPST_VERSION=0.15.1 + custom PDF metadata support");
 }
 
 fn find_cargo_lock(start: &Path) -> Option<PathBuf> {
