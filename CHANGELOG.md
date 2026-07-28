@@ -6,6 +6,7 @@
   - fonts are registered per process and shared by every template, so a large font costs memory once instead of once per template
   - fonts registered by path do not retain their data until it is used
 - Templates can declare the font families they expect from their host with `[tool.oicana.fonts] require`
+- Update Typst from 0.15.0 to 0.15.1
 
 ### CLI
 - `compile`, `watch` and `test` accept `--font-file <FILE>` and `--font-path <DIR>` (also read from `OICANA_FONT_PATHS`) to mimic a host that registers fonts
