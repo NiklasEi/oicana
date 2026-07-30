@@ -6,6 +6,7 @@
   - fonts are registered per process and shared by every template, so a large font costs memory once instead of once per template
   - fonts registered by path do not retain their data until it is used
 - Templates can declare the font families they expect from their host with `[tool.oicana.fonts] require`
+- The fonts embedded in Typst are parsed once per process instead of for every template, which speeds up registering templates and one-off exports
 - Update Typst from 0.15.0 to 0.15.1
 
 ### CLI
