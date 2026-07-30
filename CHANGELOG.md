@@ -30,6 +30,7 @@
 
 ### PHP
 - Expose `Configuration::registerFonts`, `registerFontPaths`, `registeredFonts` and `clearFonts`
+- Fix: `new BlobInput($data, [])` no longer fails with "invalid type: sequence, expected a map"
 
 ### Java
 - Expose `Configuration.registerFonts`, `registerFontPaths`, `registeredFonts` and `clearFonts`
