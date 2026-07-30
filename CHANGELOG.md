@@ -11,6 +11,7 @@
 
 ### CLI
 - `compile`, `watch` and `test` accept `--font-file <FILE>` and `--font-path <DIR>` (also read from `OICANA_FONT_PATHS`) to mimic a host that registers fonts
+- `validate` and `pack` report why a `typst.toml` could not be read instead of "No valid Oicana template found"
 
 ### Internal
 - `assets/fonts/oicana-test-font.ttf` (family `Oicana Test`) backs the host-font tests of every integration, so they no longer depend on the fonts installed on the machine running them

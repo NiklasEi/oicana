@@ -41,6 +41,7 @@ color-print = { workspace = true }
 indicatif = { workspace = true }
 console = { workspace = true }
 serde_json = { workspace = true }
+toml = { workspace = true }
 jsonschema = { workspace = true }
 rand = { workspace = true }
 notify = { workspace = true }
