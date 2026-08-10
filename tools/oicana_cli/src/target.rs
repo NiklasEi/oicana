@@ -92,15 +92,27 @@ pub fn is_path_oicana_template(path: &Path) -> anyhow::Result<Option<TemplateMan
         }
         Ok(manifest) => manifest,
     };
-    let manifest = match TemplateManifest::from_toml(&manifest) {
+    match TemplateManifest::from_toml(&manifest) {
+        Ok(manifest) => Ok(Some(manifest)),
         Err(error) => {
-            debug!("{possible_manifest_path:?} is not a valid Oicana template manifest: {error:?}");
-            return Ok(None);
+            if declares_oicana_section(&manifest) {
+                bail!("Manifest error: Failed to parse manifest file {possible_manifest_path:?}: {error}");
+            }
+            debug!("{possible_manifest_path:?} is not an Oicana template manifest: {error:?}");
+            Ok(None)
         }
-        Ok(manifest) => manifest,
-    };
+    }
+}
 
-    Ok(Some(manifest))
+/// Whether a `typst.toml` is meant to describe an Oicana template.
+fn declares_oicana_section(manifest: &str) -> bool {
+    let Ok(manifest) = manifest.parse::<toml::Table>() else {
+        return true;
+    };
+    manifest
+        .get("tool")
+        .and_then(toml::Value::as_table)
+        .is_some_and(|tool| tool.contains_key("oicana"))
 }
 
 #[derive(Debug)]
@@ -132,17 +144,81 @@ impl TemplateDir {
 
 #[cfg(test)]
 mod tests {
-    use std::{fs::File, path::PathBuf};
+    use std::{
+        fs::{write, File},
+        path::PathBuf,
+    };
 
     use oicana::template::{manifest::TemplateManifest, OicanaConfig};
     use oicana_testing::SnapshotMode;
-    use tempfile::tempdir;
+    use tempfile::{tempdir, TempDir};
     use typst::syntax::package::PackageInfo;
 
-    use super::TemplateDir;
+    use super::{is_path_oicana_template, TemplateDir};
 
     fn default_package_info() -> PackageInfo {
         PackageInfo::new("test-package", "0.1.0".parse().unwrap(), "main.typ")
+    }
+
+    const PACKAGE_SECTION: &str = "\
+[package]
+name = \"test-package\"
+version = \"0.1.0\"
+entrypoint = \"main.typ\"
+";
+
+    fn template_dir_with_manifest(manifest: &str) -> TempDir {
+        let tempdir = tempdir().unwrap();
+        write(tempdir.path().join("typst.toml"), manifest).unwrap();
+        tempdir
+    }
+
+    #[test]
+    fn a_directory_without_a_manifest_is_not_a_template() {
+        let tempdir = tempdir().unwrap();
+
+        assert!(is_path_oicana_template(tempdir.path()).unwrap().is_none());
+    }
+
+    #[test]
+    fn a_plain_typst_package_is_not_a_template() {
+        let tempdir = template_dir_with_manifest(PACKAGE_SECTION);
+
+        assert!(is_path_oicana_template(tempdir.path()).unwrap().is_none());
+    }
+
+    #[test]
+    fn a_valid_manifest_is_a_template() {
+        let tempdir = template_dir_with_manifest(&format!(
+            "{PACKAGE_SECTION}\n[tool.oicana]\nmanifest_version = 1\n"
+        ));
+
+        let manifest = is_path_oicana_template(tempdir.path()).unwrap().unwrap();
+        assert_eq!(manifest.package.name, "test-package");
+    }
+
+    #[test]
+    fn a_broken_oicana_manifest_reports_the_parse_error() {
+        let tempdir = template_dir_with_manifest(&format!(
+            "{PACKAGE_SECTION}\n[tool.oicana]\nmanifest_version = 1\n\n[tool.oicana.export.pdf]\nstandards = [\"banana\"]\n"
+        ));
+
+        let error = is_path_oicana_template(tempdir.path()).unwrap_err();
+        assert!(
+            error.to_string().contains("banana"),
+            "expected the parse error to name the offending value, got: {error}"
+        );
+    }
+
+    #[test]
+    fn a_manifest_that_is_no_toml_reports_the_parse_error() {
+        let tempdir = template_dir_with_manifest("[package\nname = \"test-package\"\n");
+
+        let error = is_path_oicana_template(tempdir.path()).unwrap_err();
+        assert!(
+            error.to_string().contains("TOML parse error"),
+            "expected a TOML parse error, got: {error}"
+        );
     }
 
     #[test]

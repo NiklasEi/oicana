@@ -1,15 +1,17 @@
 # Changelog
 
-## Upcoming
+## v0.7.0
 
 - Hosts can provide fonts to templates on top of the ones a template packs itself
   - fonts are registered per process and shared by every template, so a large font costs memory once instead of once per template
-  - fonts registered by path do not retain their data until it is used: the file is read once for its face metadata and dropped, then read again and kept when a glyph first needs it, so an unused font costs no memory
-  - nothing deduplicates fonts, so register each font only once per process
-- Templates can declare the font families they expect from their host via `[tool.oicana.fonts] require`; registering such a template without those fonts now fails with a clear error instead of failing later during export
+  - fonts registered by path do not retain their data until it is used
+- Templates can declare the font families they expect from their host with `[tool.oicana.fonts] require`
+- The fonts embedded in Typst are parsed once per process instead of for every template, which speeds up registering templates and one-off exports
+- Update Typst from 0.15.0 to 0.15.1
 
 ### CLI
 - `compile`, `watch` and `test` accept `--font-file <FILE>` and `--font-path <DIR>` (also read from `OICANA_FONT_PATHS`) to mimic a host that registers fonts
+- `validate` and `pack` report why a `typst.toml` could not be read instead of "No valid Oicana template found"
 
 ### Internal
 - `assets/fonts/oicana-test-font.ttf` (family `Oicana Test`) backs the host-font tests of every integration, so they no longer depend on the fonts installed on the machine running them
@@ -28,6 +30,7 @@
 
 ### PHP
 - Expose `Configuration::registerFonts`, `registerFontPaths`, `registeredFonts` and `clearFonts`
+- Fix: `new BlobInput($data, [])` no longer fails with "invalid type: sequence, expected a map"
 
 ### Java
 - Expose `Configuration.registerFonts`, `registerFontPaths`, `registeredFonts` and `clearFonts`

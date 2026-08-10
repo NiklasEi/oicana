@@ -420,9 +420,7 @@ class Template
     {
         $nativeBlobs = [];
         foreach ($blobInputs as $key => $blob) {
-            $meta = $blob->metadata !== null
-                ? json_encode($blob->metadata)
-                : '{}';
+            $meta = json_encode((object) ($blob->metadata ?? []), JSON_THROW_ON_ERROR);
             $nativeBlobs[$key] = new \OicanaInternal\BlobWithMetadata($blob->data, $meta);
         }
         return $nativeBlobs;

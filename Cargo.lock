@@ -3415,7 +3415,7 @@ dependencies = [
 
 [[package]]
 name = "oicana"
-version = "0.7.0-rc.1"
+version = "0.7.0"
 dependencies = [
  "oicana_export",
  "oicana_files",
@@ -3428,7 +3428,7 @@ dependencies = [
 
 [[package]]
 name = "oicana-browser-wasm"
-version = "0.7.0-rc.1"
+version = "0.7.0"
 dependencies = [
  "console_error_panic_hook",
  "console_log",
@@ -3445,7 +3445,7 @@ dependencies = [
 
 [[package]]
 name = "oicana-python-native"
-version = "0.7.0-rc.1"
+version = "0.7.0"
 dependencies = [
  "oicana_ffi_core",
  "pyo3",
@@ -3454,7 +3454,7 @@ dependencies = [
 
 [[package]]
 name = "oicana_cli"
-version = "0.7.0-rc.1"
+version = "0.7.0"
 dependencies = [
  "anyhow",
  "axoupdater",
@@ -3479,12 +3479,13 @@ dependencies = [
  "thiserror",
  "tmp-typst-custom-metadata",
  "tmp-typst-layout-custom-metadata",
+ "toml 0.9.12+spec-1.1.0",
  "walkdir",
 ]
 
 [[package]]
 name = "oicana_csharp"
-version = "0.7.0-rc.1"
+version = "0.7.0"
 dependencies = [
  "interoptopus",
  "interoptopus_backend_csharp",
@@ -3494,7 +3495,7 @@ dependencies = [
 
 [[package]]
 name = "oicana_export"
-version = "0.7.0-rc.1"
+version = "0.7.0"
 dependencies = [
  "oicana_files",
  "oicana_input",
@@ -3512,7 +3513,7 @@ dependencies = [
 
 [[package]]
 name = "oicana_ffi_core"
-version = "0.7.0-rc.1"
+version = "0.7.0"
 dependencies = [
  "dashmap",
  "log",
@@ -3533,7 +3534,7 @@ dependencies = [
 
 [[package]]
 name = "oicana_files"
-version = "0.7.0-rc.1"
+version = "0.7.0"
 dependencies = [
  "codespan-reporting",
  "dirs",
@@ -3550,7 +3551,7 @@ dependencies = [
 
 [[package]]
 name = "oicana_input"
-version = "0.7.0-rc.1"
+version = "0.7.0"
 dependencies = [
  "log",
  "serde",
@@ -3560,7 +3561,7 @@ dependencies = [
 
 [[package]]
 name = "oicana_java_native"
-version = "0.7.0-rc.1"
+version = "0.7.0"
 dependencies = [
  "jni",
  "oicana_ffi_core",
@@ -3568,7 +3569,7 @@ dependencies = [
 
 [[package]]
 name = "oicana_node_native"
-version = "0.7.0-rc.1"
+version = "0.7.0"
 dependencies = [
  "napi",
  "napi-build",
@@ -3578,7 +3579,7 @@ dependencies = [
 
 [[package]]
 name = "oicana_php_native"
-version = "0.7.0-rc.1"
+version = "0.7.0"
 dependencies = [
  "ext-php-rs",
  "oicana_ffi_core",
@@ -3587,7 +3588,7 @@ dependencies = [
 
 [[package]]
 name = "oicana_template"
-version = "0.7.0-rc.1"
+version = "0.7.0"
 dependencies = [
  "chrono",
  "ignore",
@@ -3605,7 +3606,7 @@ dependencies = [
 
 [[package]]
 name = "oicana_testing"
-version = "0.7.0-rc.1"
+version = "0.7.0"
 dependencies = [
  "image",
  "json_schema_ast",
@@ -3630,7 +3631,7 @@ dependencies = [
 
 [[package]]
 name = "oicana_world"
-version = "0.7.0-rc.1"
+version = "0.7.0"
 dependencies = [
  "anyhow",
  "chrono",
@@ -5288,7 +5289,7 @@ dependencies = [
 
 [[package]]
 name = "test_compare"
-version = "0.7.0-rc.1"
+version = "0.7.0"
 dependencies = [
  "anyhow",
  "clap",
@@ -5472,9 +5473,9 @@ dependencies = [
 
 [[package]]
 name = "tmp-typst-custom-metadata"
-version = "0.16.0-rc.1"
+version = "0.15.1-custom.metadata"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1f8f909a980dda337aba51bf776f6d35b9fc37f299cbd8f4d0d2472b9485b4f2"
+checksum = "f5be0e250a562fc02058a6b3a2be3783c81908d34b853cb280ea88cf8c84954d"
 dependencies = [
  "arrayvec",
  "comemo",
@@ -5493,9 +5494,9 @@ dependencies = [
 
 [[package]]
 name = "tmp-typst-eval-custom-metadata"
-version = "0.16.0-rc.1"
+version = "0.15.1-custom.metadata"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7daaf5a3f63e3c0b4e408e5c8f33c88f00c04f40b9abaa21ae592777855b87ce"
+checksum = "e2786c9658861b78a7dd15fe2172c39677fa63c651ec348c48146fcf9cf18890"
 dependencies = [
  "comemo",
  "ecow",
@@ -5513,9 +5514,9 @@ dependencies = [
 
 [[package]]
 name = "tmp-typst-html-custom-metadata"
-version = "0.16.0-rc.1"
+version = "0.15.1-custom.metadata"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0c06ec88c8aaab330b47ce2e47bea967614593790a15016d602779ddf43049c2"
+checksum = "2074ea9a8635d059735c7264f3c3a64a016f8cbd1ae900a333b13d336f5b69fd"
 dependencies = [
  "az",
  "bumpalo",
@@ -5536,9 +5537,9 @@ dependencies = [
 
 [[package]]
 name = "tmp-typst-kit-custom-metadata"
-version = "0.16.0-rc.1"
+version = "0.15.1-custom.metadata"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0f3560ba0d3f03e1c1102395368feb9297bc25b6308e5d11700b3f152bee671d"
+checksum = "d21093163d6f0ecf7de7f902d6720220fa66f5e9f3e88ae28c60036bb926a9f5"
 dependencies = [
  "dirs",
  "ecow",
@@ -5563,9 +5564,9 @@ dependencies = [
 
 [[package]]
 name = "tmp-typst-layout-custom-metadata"
-version = "0.16.0-rc.1"
+version = "0.15.1-custom.metadata"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4af88994c45f9107756e86204cc8bd5e7f44efebc25c886fc55bb1317f690eeb"
+checksum = "60add4f2c3e6370a7dddce00d86c53dc27423b5d71cf3afd3f728dfd83208462"
 dependencies = [
  "az",
  "bumpalo",
@@ -5599,9 +5600,9 @@ dependencies = [
 
 [[package]]
 name = "tmp-typst-library-custom-metadata"
-version = "0.16.0-rc.1"
+version = "0.15.1-custom.metadata"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "74550d272c3767d38716603d7c2b263c42b8a706166274e5478117bcddc608e4"
+checksum = "da47a7a465acea36894bb4fb9f663071d7882e496340930ec4c8eca0e37b7dcf"
 dependencies = [
  "arrayvec",
  "az",
@@ -5666,9 +5667,9 @@ dependencies = [
 
 [[package]]
 name = "tmp-typst-macros-custom-metadata"
-version = "0.16.0-rc.1"
+version = "0.15.1-custom.metadata"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d92a87eb0fbf7258b63552b125408d9f7833d32ce57365cb29f983a379a01487"
+checksum = "99a952c92c3d90bc99b3fe2dd890e811cfbe3b0f3806be3b13e4432967fc5dae"
 dependencies = [
  "heck 0.5.0",
  "proc-macro2",
@@ -5678,9 +5679,9 @@ dependencies = [
 
 [[package]]
 name = "tmp-typst-pdf-custom-metadata"
-version = "0.16.0-rc.1"
+version = "0.15.1-custom.metadata"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "950c5fef4c40a5576c540b3889cfb9db95c979842c35cae5d5e8bc5f2956abe6"
+checksum = "b79a2220c4baab0b9dc7371fd5b29154b5cd873987cf03be47bd220fc350c93d"
 dependencies = [
  "az",
  "bytemuck",
@@ -5707,9 +5708,9 @@ dependencies = [
 
 [[package]]
 name = "tmp-typst-realize-custom-metadata"
-version = "0.16.0-rc.1"
+version = "0.15.1-custom.metadata"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5cb89ab1ff070480b7d52985e21e574d2cd96a415a48f5d891274730b68d9945"
+checksum = "11fcad4a7073dc811d0f311b2380f3a71f683a3bf4a442e1cc1bc39966ec3533"
 dependencies = [
  "arrayvec",
  "bumpalo",
@@ -5726,9 +5727,9 @@ dependencies = [
 
 [[package]]
 name = "tmp-typst-render-custom-metadata"
-version = "0.16.0-rc.1"
+version = "0.15.1-custom.metadata"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8dfadbb18f3e338b0dea14f44eb6f1ca666945e0e6b82b603a877f2ebbfcfeed"
+checksum = "f642daf2694b4e2bbef42c1a2d169461b5d36b4a3054bbd7914f6ef21b0d7eae"
 dependencies = [
  "bytemuck",
  "comemo",
@@ -5749,9 +5750,9 @@ dependencies = [
 
 [[package]]
 name = "tmp-typst-svg-custom-metadata"
-version = "0.16.0-rc.1"
+version = "0.15.1-custom.metadata"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a668107f2c7af5c5ef811b26a094377d85bad79fc9ad286362583c64f0a8e81f"
+checksum = "d3695c373696cdfe43493412c5be7fde16517bfa376b899298177349dff88a06"
 dependencies = [
  "base64 0.22.1",
  "comemo",
@@ -5776,9 +5777,9 @@ dependencies = [
 
 [[package]]
 name = "tmp-typst-syntax-custom-metadata"
-version = "0.16.0-rc.1"
+version = "0.15.1-custom.metadata"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6dd1837bcfa959e4cc73e76866029e1eafee37ac1082d2d243ff24913e9a2304"
+checksum = "41b7c19b57e07ae209e7a22b49be908a7f4baed0ee5017ccf9765600c7ebfa06"
 dependencies = [
  "ecow",
  "rustc-hash",
@@ -5795,9 +5796,9 @@ dependencies = [
 
 [[package]]
 name = "tmp-typst-timing-custom-metadata"
-version = "0.16.0-rc.1"
+version = "0.15.1-custom.metadata"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f24195863ddb40b9c212f7ae5499d21706a8711ff77210cb4d67f151a7a9b082"
+checksum = "2fdb4914799a020e3bdfa24747746051f24e20745fc54164ade1bdc5d819150a"
 dependencies = [
  "parking_lot",
  "serde",
@@ -5806,9 +5807,9 @@ dependencies = [
 
 [[package]]
 name = "tmp-typst-utils-custom-metadata"
-version = "0.16.0-rc.1"
+version = "0.15.1-custom.metadata"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "46ca24c602e92af1f01f6d6d695fd45273a4aee9cdb58bdd84dd43e05e236706"
+checksum = "0164f8515e1760c931ef4a203e6b48b4c82a6467a85a0f18bb836e3fe40a0ffc"
 dependencies = [
  "libm",
  "once_cell",
@@ -6062,9 +6063,9 @@ checksum = "b6f5e870be6c3b371b77fe0ee0bafb859fa4964b4404c27de1d380043c4dda20"
 
 [[package]]
 name = "typst-assets"
-version = "0.15.0"
+version = "0.15.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "da9b236d339dce0ec443dc44afe4ba4c6d76b8917bd4b1ae80158d2111f6637b"
+checksum = "bcee505dac6702dd1c5e65aa2e94a6179d19ee09e2e5637d7313db91765dc4e0"
 dependencies = [
  "bitflags 2.13.0",
 ]

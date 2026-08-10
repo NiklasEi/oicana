@@ -4,7 +4,6 @@ use std::path::Path;
 #[cfg(not(target_arch = "wasm32"))]
 use std::path::PathBuf;
 use std::sync::Arc;
-#[cfg(not(target_arch = "wasm32"))]
 use std::sync::OnceLock;
 
 use log::warn;
@@ -127,6 +126,16 @@ impl PathFontSource {
     }
 }
 
+/// The fonts embedded in Typst, parsed on first use and shared by every world.
+fn embedded_fonts() -> &'static [Font] {
+    static FONTS: OnceLock<Vec<Font>> = OnceLock::new();
+    FONTS.get_or_init(|| {
+        typst_assets::fonts()
+            .flat_map(|data| Font::iter(Bytes::new(data)))
+            .collect()
+    })
+}
+
 /// Collects all fonts.
 pub struct FontCollection {
     /// Metadata about all discovered fonts.
@@ -226,9 +235,8 @@ impl FontCollection {
     }
 
     fn add_embedded_fonts(&mut self) {
-        for data in typst_assets::fonts() {
-            let buffer = Bytes::new(data);
-            self.load_fonts_from_bytes(buffer);
+        for font in embedded_fonts() {
+            self.push(font.info().clone(), FontSlot::Loaded(font.clone()));
         }
     }
 
@@ -340,6 +348,13 @@ mod tests {
         for slot in collection.fonts.iter().take(host_faces) {
             assert!(slot.get().is_some());
         }
+    }
+
+    #[test]
+    fn embedded_fonts_are_parsed_once_and_shared() {
+        assert!(!embedded_fonts().is_empty());
+        assert_eq!(embedded_fonts().as_ptr(), embedded_fonts().as_ptr());
+        assert_eq!(embedded_only().fonts.len(), embedded_fonts().len());
     }
 
     #[test]

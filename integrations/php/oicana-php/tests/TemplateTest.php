@@ -83,6 +83,25 @@ test('template compiles with blob inputs', function () {
     }
 });
 
+test('blob inputs accept omitted and empty metadata', function () {
+    $blobData = file_get_contents(assets_path('inputs/input.txt'));
+
+    foreach ([new BlobInput($blobData), new BlobInput($blobData, [])] as $blobInput) {
+        $template = new Template(file_get_contents(e2e_template_path()));
+
+        try {
+            $pdf = $template->export(
+                blobInputs: ['development-blob' => $blobInput],
+                mode: CompilationMode::Development
+            );
+
+            expect(substr($pdf, 0, 4))->toBe('%PDF');
+        } finally {
+            $template->cleanup();
+        }
+    }
+});
+
 test('template exports to SVG', function () {
     $templateBytes = file_get_contents(e2e_template_path());
     $template = new Template($templateBytes, mode: CompilationMode::Development);
