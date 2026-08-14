@@ -63,10 +63,12 @@ pub fn collect_tests(
 
         let tests_collection = TemplateTestCollection::read_from(collection_path)?;
 
+        let collection_defaults = tests_collection.defaults();
         for test_case in tests_collection.tests {
             tests.push(Test::new(
                 test_case,
                 tests_collection.name.clone(),
+                &collection_defaults,
                 &test_path_components,
                 collection_path,
                 snapshot_mode,
