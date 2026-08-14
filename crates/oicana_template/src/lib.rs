@@ -9,6 +9,7 @@ use crate::manifest::{ManifestValidationError, TemplateManifest};
 use log::error;
 use oicana_input::input_definition::InputDefinition;
 use serde::{Deserialize, Serialize};
+use std::fmt::{Display, Formatter};
 use std::fs::read_to_string;
 use std::io;
 use std::path::PathBuf;
@@ -169,6 +170,31 @@ pub enum PdfStandard {
     /// PDF/UA-1.
     #[serde(rename = "ua-1")]
     Ua_1,
+}
+
+impl Display for PdfStandard {
+    fn fmt(&self, formatter: &mut Formatter<'_>) -> std::fmt::Result {
+        let name = match self {
+            PdfStandard::V_1_4 => "1.4",
+            PdfStandard::V_1_5 => "1.5",
+            PdfStandard::V_1_6 => "1.6",
+            PdfStandard::V_1_7 => "1.7",
+            PdfStandard::V_2_0 => "2.0",
+            PdfStandard::A_1b => "a-1b",
+            PdfStandard::A_1a => "a-1a",
+            PdfStandard::A_2b => "a-2b",
+            PdfStandard::A_2u => "a-2u",
+            PdfStandard::A_2a => "a-2a",
+            PdfStandard::A_3b => "a-3b",
+            PdfStandard::A_3u => "a-3u",
+            PdfStandard::A_3a => "a-3a",
+            PdfStandard::A_4 => "a-4",
+            PdfStandard::A_4f => "a-4f",
+            PdfStandard::A_4e => "a-4e",
+            PdfStandard::Ua_1 => "ua-1",
+        };
+        formatter.write_str(name)
+    }
 }
 
 /// Configuration for PDF export.

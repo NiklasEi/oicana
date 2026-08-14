@@ -35,6 +35,8 @@ pub struct Test {
     pub name: String,
     /// Snapshot file
     pub snapshot: Snapshot,
+    /// Whether to export the document to PDF with the standards from the template manifest
+    pub pdf: bool,
     /// The collection that contains this Test
     pub collection: PathBuf,
     /// Descriptor of the tests
@@ -66,12 +68,16 @@ impl Test {
     pub fn new(
         template_test: TemplateTest,
         collection_name: Option<String>,
+        collection_defaults: &CollectionDefaults,
         path_components: &[String],
         collection_path: &Path,
         snapshot_mode: SnapshotMode,
         root: &Path,
     ) -> Result<Self, PrepareTestError> {
-        let snapshot_path = match template_test.snapshot {
+        let snapshot_config = template_test
+            .snapshot
+            .or_else(|| collection_defaults.snapshot.clone());
+        let snapshot_path = match snapshot_config {
             None => Some(root.join(format!(
                 "{}{}.png",
                 collection_name
@@ -110,6 +116,7 @@ impl Test {
                 .join(" > "),
             name: template_test.name,
             snapshot,
+            pdf: template_test.pdf.unwrap_or(collection_defaults.pdf),
         })
     }
 
@@ -203,12 +210,50 @@ pub struct TemplateTestCollection {
     pub tests_version: u8,
     /// Name of the test collection.
     pub name: Option<String>,
+    /// Snapshot configuration for all tests in this collection.
+    ///
+    /// Individual tests can override this.
+    #[serde(deserialize_with = "snapshot_config", default = "none")]
+    pub snapshot: Option<SnapshotConfig>,
+    /// Whether the tests in this collection export the document to PDF.
+    ///
+    /// Individual tests can override this. Defaults to `true`.
+    #[serde(default = "default_true")]
+    pub pdf: bool,
     /// The tests defined in this collection.
     #[serde(default = "Vec::new", rename = "test")]
     pub tests: Vec<TemplateTest>,
 }
 
+/// Settings of a test collection that apply to all its tests unless a test overrides them.
+#[derive(Debug, Clone)]
+pub struct CollectionDefaults {
+    /// Snapshot configuration for the tests in the collection.
+    ///
+    /// `None` lets every test derive its own snapshot path from its name.
+    pub snapshot: Option<SnapshotConfig>,
+    /// Whether the tests in the collection export the document to PDF.
+    pub pdf: bool,
+}
+
+impl Default for CollectionDefaults {
+    fn default() -> Self {
+        CollectionDefaults {
+            snapshot: None,
+            pdf: default_true(),
+        }
+    }
+}
+
 impl TemplateTestCollection {
+    /// The settings that apply to all tests in this collection.
+    pub fn defaults(&self) -> CollectionDefaults {
+        CollectionDefaults {
+            snapshot: self.snapshot.clone(),
+            pdf: self.pdf,
+        }
+    }
+
     fn read_from(path: &Path) -> Result<Self, TestCollectionError> {
         let mut file = File::open(path)?;
         let mut content = String::new();
@@ -261,6 +306,10 @@ pub struct TemplateTest {
     /// Relative path to snapshot file for this test
     #[serde(deserialize_with = "snapshot_config", default = "none")]
     pub snapshot: Option<SnapshotConfig>,
+    /// Whether to export the document to PDF with the PDF standards from the template manifest.
+    ///
+    /// Overrides the setting of the test collection. Defaults to `true`.
+    pub pdf: Option<bool>,
     /// The input values for this test.
     #[serde(default = "Vec::new")]
     pub inputs: Vec<InputValue>,
@@ -271,6 +320,10 @@ pub struct TemplateTest {
 
 fn none() -> Option<SnapshotConfig> {
     None
+}
+
+fn default_true() -> bool {
+    true
 }
 
 fn snapshot_config<'de, D>(deserializer: D) -> Result<Option<SnapshotConfig>, D::Error>
@@ -288,7 +341,7 @@ where
 }
 
 /// Configure or disable snapshot file comparison for the test
-#[derive(Serialize, Deserialize, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 #[serde(untagged, deny_unknown_fields)]
 pub enum SnapshotConfig {
     /// This test should only be compiled
@@ -357,7 +410,7 @@ pub struct BlobInputValue {
 
 #[cfg(test)]
 mod tests {
-    use crate::TemplateTestCollection;
+    use crate::{Snapshot, SnapshotConfig, SnapshotMode, TemplateTestCollection, Test};
     use oicana_input::CompilationMode;
     use std::fs::File;
     use std::io::Write;
@@ -459,6 +512,91 @@ mod tests {
         let test_collection = TemplateTestCollection::read_from(&path)
             .expect("Failed to read test collection from file");
         assert_eq!(test_collection.tests[0].mode, CompilationMode::Production);
+    }
+
+    #[test]
+    fn collection_defaults_apply_to_tests_without_own_settings() {
+        let temp_dir = tempdir().unwrap();
+        let path = temp_dir.path().join("tests.toml");
+        let mut file = File::create(&path).unwrap();
+        write!(
+            &mut file,
+            r#"
+                tests_version = 1
+                snapshot = false
+                pdf = false
+
+                [[test]]
+                name = "inherits"
+
+                [[test]]
+                name = "overrides"
+                snapshot = "own.png"
+                pdf = true
+                "#
+        )
+        .unwrap();
+
+        let test_collection = TemplateTestCollection::read_from(&path)
+            .expect("Failed to read test collection from file");
+        let defaults = test_collection.defaults();
+        assert_eq!(defaults.snapshot, Some(SnapshotConfig::Disabled));
+        assert!(!defaults.pdf);
+
+        let tests: Vec<Test> = test_collection
+            .tests
+            .into_iter()
+            .map(|test| {
+                Test::new(
+                    test,
+                    None,
+                    &defaults,
+                    &[],
+                    &path,
+                    SnapshotMode::Compare,
+                    temp_dir.path(),
+                )
+                .unwrap()
+            })
+            .collect();
+
+        assert!(matches!(tests[0].snapshot, Snapshot::None));
+        assert!(!tests[0].pdf);
+        assert!(matches!(tests[1].snapshot, Snapshot::Missing(..)));
+        assert!(tests[1].pdf);
+    }
+
+    #[test]
+    fn pdf_export_is_enabled_by_default() {
+        let temp_dir = tempdir().unwrap();
+        let path = temp_dir.path().join("tests.toml");
+        let mut file = File::create(&path).unwrap();
+        write!(
+            &mut file,
+            r#"
+                tests_version = 1
+
+                [[test]]
+                name = "test"
+                "#
+        )
+        .unwrap();
+
+        let test_collection = TemplateTestCollection::read_from(&path)
+            .expect("Failed to read test collection from file");
+        let defaults = test_collection.defaults();
+        let test = Test::new(
+            test_collection.tests.into_iter().next().unwrap(),
+            None,
+            &defaults,
+            &[],
+            &path,
+            SnapshotMode::Compare,
+            temp_dir.path(),
+        )
+        .unwrap();
+
+        assert!(test.pdf);
     }
 
     #[test]

@@ -7,6 +7,7 @@ use std::{
 use image::{GenericImageView, ImageError};
 use log::{debug, error};
 use oicana::{CompileError, Template, TemplateInitializationError};
+use oicana_export::pdf::export_pdf;
 use oicana_export::png::{export_png, PngExportError};
 use oicana_files::native::{package_data_dir, NativeTemplate};
 use oicana_input::{input::json::JsonInput, input_definition::InputDefinition, TemplateInputs};
@@ -147,20 +148,21 @@ impl TestRunner {
                     inputs.with_input(JsonInput::new(fuzzed_input.key.clone(), value.to_string()));
                     debug!("Fuzzing the input '{}' with {}", fuzzed_input.key, value);
 
-                    self.run_with_inputs(inputs, &test.snapshot)
+                    self.run_with_inputs(inputs, &test.snapshot, test.pdf)
                 })
                 .map(|res| res.map(|vec| vec.into_iter()))
                 .collect::<Result<Vec<_>, _>>()
                 .map(|iterators| iterators.into_iter().flatten().collect());
         }
 
-        self.run_with_inputs(test.inputs, &test.snapshot)
+        self.run_with_inputs(test.inputs, &test.snapshot, test.pdf)
     }
 
     fn run_with_inputs(
         &mut self,
         inputs: TemplateInputs,
         snapshot: &Snapshot,
+        pdf: bool,
     ) -> Result<Vec<String>, TestExecutionError> {
         let CompiledDocument { document, warnings } = self.instance.compile(inputs)?;
         let mut warnings = if let Some(warning) = warnings {
@@ -168,6 +170,21 @@ impl TestRunner {
         } else {
             vec![]
         };
+
+        if pdf {
+            let standards = self.instance.manifest().pdf_standards().to_vec();
+            let tagged = self.instance.manifest().pdf_tagged();
+            export_pdf(&document, &self.instance, &standards, tagged, None).map_err(
+                |diagnostics| TestExecutionError::PdfExport {
+                    standards: standards
+                        .iter()
+                        .map(|standard| standard.to_string())
+                        .collect::<Vec<_>>()
+                        .join(", "),
+                    diagnostics,
+                },
+            )?;
+        }
 
         let image = export_png(&document, 1., None)?;
         match snapshot {
@@ -248,6 +265,84 @@ pub fn compare_images(path: &Path, data: &[u8], tolerance: u8) -> Result<bool, I
     Ok(true)
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::{Snapshot, Test};
+    use std::fs;
+    use tempfile::{tempdir, TempDir};
+
+    /// Write a template that enforces PDF/UA-1 and renders the given body.
+    fn ua_1_template(body: &str) -> TempDir {
+        let dir = tempdir().unwrap();
+        fs::write(
+            dir.path().join("typst.toml"),
+            r#"
+            [package]
+            name = "ua-1-template"
+            version = "0.1.0"
+            entrypoint = "main.typ"
+
+            [tool.oicana]
+            manifest_version = 1
+
+            [tool.oicana.export.pdf]
+            standards = ["ua-1"]
+            "#,
+        )
+        .unwrap();
+        fs::write(dir.path().join("main.typ"), body).unwrap();
+
+        dir
+    }
+
+    fn run_template(dir: &TempDir, pdf: bool) -> Result<Vec<String>, TestExecutionError> {
+        let manifest_content = fs::read_to_string(dir.path().join("typst.toml")).unwrap();
+        let manifest = TemplateManifest::from_toml(&manifest_content).unwrap();
+        let mut runner = TestRunnerContext::new()
+            .unwrap()
+            .get_runner(dir.path(), &manifest)
+            .unwrap();
+
+        runner.run(Test {
+            inputs: TemplateInputs::new(),
+            fuzzed_inputs: None,
+            name: "pdf-standards".to_owned(),
+            snapshot: Snapshot::None,
+            pdf,
+            collection: dir.path().to_path_buf(),
+            descriptor: "pdf-standards".to_owned(),
+        })
+    }
+
+    #[test]
+    fn fails_for_document_violating_the_pdf_standard() {
+        let dir = ua_1_template("Hello");
+
+        let error = run_template(&dir, true).unwrap_err();
+
+        // PDF/UA-1 requires a document title.
+        assert!(
+            matches!(error, TestExecutionError::PdfExport { ref standards, .. } if standards == "ua-1"),
+            "Unexpected error: {error}"
+        );
+    }
+
+    #[test]
+    fn passes_for_document_conforming_to_the_pdf_standard() {
+        let dir = ua_1_template("#set document(title: \"Accessible\")\nHello");
+
+        run_template(&dir, true).expect("Test should pass for a conforming document");
+    }
+
+    #[test]
+    fn skips_pdf_export_when_disabled() {
+        let dir = ua_1_template("Hello");
+
+        run_template(&dir, false).expect("Test should pass when the PDF export is disabled");
+    }
+}
+
 /// Errors that can be produced when executing tests
 #[derive(Debug, Error)]
 pub enum CreateTestRunnerError {
@@ -265,6 +360,14 @@ pub enum TestExecutionError {
     /// Failed to export png image
     #[error("{0}")]
     ExportError(#[from] PngExportError),
+    /// The document does not conform to the PDF standards of the template manifest
+    #[error("Failed to export PDF for the standards '{standards}' configured in the template manifest:\n{diagnostics}")]
+    PdfExport {
+        /// The PDF standards that the export was attempted with
+        standards: String,
+        /// Diagnostics of the failed export
+        diagnostics: String,
+    },
     /// Failure during fuzzing setup
     #[error("{0}")]
     FuzzingSetup(String),

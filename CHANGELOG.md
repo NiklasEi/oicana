@@ -1,5 +1,12 @@
 # Changelog
 
+## Upcoming
+
+### CLI
+- `test` exports every test case to PDF with the standards configured in the template manifest
+  - tests and test collections can opt out with `pdf = false`
+- `snapshot` can be configured for a whole test collection; single tests override the setting of their collection
+
 ## v0.7.0
 
 - Hosts can provide fonts to templates on top of the ones a template packs itself
