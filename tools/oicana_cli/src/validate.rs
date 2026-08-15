@@ -13,6 +13,8 @@ static CHECKMARK: Emoji<'_, '_> = Emoji("✔️", "");
 pub struct ValidateArgs {
     #[clap(flatten)]
     target: TargetArgs,
+    #[arg(long, help = "Fail the validation if any warnings are reported")]
+    deny_warnings: bool,
 }
 
 #[rustfmt::skip]
@@ -28,6 +30,7 @@ pub fn validate(args: ValidateArgs) -> anyhow::Result<()> {
 
     let mut all_passed = true;
     let mut passed_count = 0;
+    let mut warning_count = 0;
     let template_count = templates.len();
 
     for template in templates {
@@ -53,13 +56,24 @@ pub fn validate(args: ValidateArgs) -> anyhow::Result<()> {
                     continue;
                 }
 
-                let mut errors =
-                    validate_json_fallback_values(&template.path, &manifest.tool.oicana.inputs);
+                let InputIssues {
+                    mut errors,
+                    warnings,
+                } = validate_input_values(&template.path, &manifest.tool.oicana.inputs);
 
                 if let Err(error) =
                     validate_pdf_standards(&manifest.tool.oicana.export.pdf.standards)
                 {
                     errors.push(error);
+                }
+
+                warning_count += warnings.len();
+                for warning in &warnings {
+                    eprintln!(
+                        "{}: Template {:?}: {warning}",
+                        style("Warning").yellow().for_stderr(),
+                        template.path
+                    );
                 }
 
                 if errors.is_empty() {
@@ -79,127 +93,190 @@ pub fn validate(args: ValidateArgs) -> anyhow::Result<()> {
         }
     }
 
-    if all_passed {
-        println!(
-            "\nValidated {} template{} successfully",
-            passed_count,
-            if template_count == 1 { "" } else { "s" },
-        );
-        Ok(())
-    } else {
+    if !all_passed {
         anyhow::bail!("Validation failed for one or more templates.")
     }
+
+    println!(
+        "\nValidated {} template{} successfully{}",
+        passed_count,
+        if template_count == 1 { "" } else { "s" },
+        match warning_count {
+            0 => String::new(),
+            1 => " with 1 warning".to_owned(),
+            count => format!(" with {count} warnings"),
+        },
+    );
+
+    if args.deny_warnings && warning_count > 0 {
+        anyhow::bail!("Validation reported warnings and --deny-warnings is set.")
+    }
+
+    Ok(())
 }
 
-/// Validate default and development JSON files against their schemas.
-///
-/// For each JSON input that has a schema, this checks that any configured
-/// `default` or `development` value files exist, contain valid JSON, and
-/// conform to the schema.
-fn validate_json_fallback_values(template_path: &Path, inputs: &[InputDefinition]) -> Vec<String> {
-    let mut errors = Vec::new();
+/// Errors and warnings collected while validating a template's inputs.
+#[derive(Debug, Default)]
+struct InputIssues {
+    errors: Vec<String>,
+    warnings: Vec<String>,
+}
+
+/// Validate the fallback values configured for a template's inputs.
+fn validate_input_values(template_path: &Path, inputs: &[InputDefinition]) -> InputIssues {
+    let mut issues = InputIssues::default();
 
     for input in inputs {
-        let InputDefinition::Json(json_def) = input else {
-            continue;
-        };
-        let Some(schema_path) = &json_def.schema else {
-            continue;
-        };
+        match input {
+            InputDefinition::Json(json_def) => {
+                let validator = json_def.schema.as_ref().and_then(|schema_path| {
+                    compile_schema(
+                        template_path,
+                        &json_def.key,
+                        schema_path,
+                        &mut issues.errors,
+                    )
+                    .map(|validator| (validator, schema_path))
+                });
 
-        let full_schema_path = template_path.join(schema_path);
-        let schema_bytes = match std::fs::read(&full_schema_path) {
-            Ok(bytes) => bytes,
-            Err(e) => {
-                errors.push(format!(
-                    "Input '{}': failed to read schema file '{}': {e}",
-                    json_def.key, schema_path
-                ));
-                continue;
-            }
-        };
+                for (label, file_path) in [
+                    ("default", &json_def.default),
+                    ("development", &json_def.development),
+                ] {
+                    let Some(file_path) = file_path else {
+                        continue;
+                    };
 
-        let schema_value: serde_json::Value = match serde_json::from_slice(&schema_bytes) {
-            Ok(v) => v,
-            Err(e) => {
-                errors.push(format!(
-                    "Input '{}': failed to parse schema file '{}': {e}",
-                    json_def.key, schema_path
-                ));
-                continue;
-            }
-        };
-
-        let validator = match jsonschema::validator_for(&schema_value) {
-            Ok(v) => v,
-            Err(e) => {
-                errors.push(format!(
-                    "Input '{}': failed to compile schema '{}': {e}",
-                    json_def.key, schema_path
-                ));
-                continue;
-            }
-        };
-
-        for (label, file_path) in [
-            ("default", &json_def.default),
-            ("development", &json_def.development),
-        ] {
-            let Some(file_path) = file_path else {
-                continue;
-            };
-
-            let full_path = template_path.join(file_path);
-            let content = match std::fs::read(&full_path) {
-                Ok(bytes) => bytes,
-                Err(e) => {
-                    errors.push(format!(
-                        "Input '{}': failed to read {label} value file '{file_path}': {e}",
-                        json_def.key,
-                    ));
-                    continue;
-                }
-            };
-
-            let parsed: serde_json::Value = match serde_json::from_slice(&content) {
-                Ok(v) => v,
-                Err(e) => {
-                    errors.push(format!(
-                        "Input '{}': {label} value file '{file_path}' is not valid JSON: {e}",
-                        json_def.key,
-                    ));
-                    continue;
-                }
-            };
-
-            if !validator.is_valid(&parsed) {
-                let validation_errors: Vec<String> = validator
-                    .iter_errors(&parsed)
-                    .map(|error| {
-                        let path = error.instance_path().to_string();
-                        if path.is_empty() {
-                            error.to_string()
-                        } else {
-                            format!("  at {path}: {error}")
+                    let content = match std::fs::read(template_path.join(file_path)) {
+                        Ok(bytes) => bytes,
+                        Err(e) => {
+                            issues.errors.push(format!(
+                                "Input '{}': failed to read {label} value file '{file_path}': {e}",
+                                json_def.key,
+                            ));
+                            continue;
                         }
-                    })
-                    .collect();
+                    };
 
-                errors.push(format!(
-                    "Input '{}': {label} value file '{file_path}' does not match schema '{schema_path}':\n{}",
-                    json_def.key,
-                    validation_errors.join("\n"),
-                ));
+                    let Some((validator, schema_path)) = &validator else {
+                        continue;
+                    };
+
+                    let parsed: serde_json::Value = match serde_json::from_slice(&content) {
+                        Ok(v) => v,
+                        Err(e) => {
+                            issues.errors.push(format!(
+                                "Input '{}': {label} value file '{file_path}' is not valid JSON: {e}",
+                                json_def.key,
+                            ));
+                            continue;
+                        }
+                    };
+
+                    if !validator.is_valid(&parsed) {
+                        let validation_errors: Vec<String> = validator
+                            .iter_errors(&parsed)
+                            .map(|error| {
+                                let path = error.instance_path().to_string();
+                                if path.is_empty() {
+                                    error.to_string()
+                                } else {
+                                    format!("  at {path}: {error}")
+                                }
+                            })
+                            .collect();
+
+                        issues.errors.push(format!(
+                            "Input '{}': {label} value file '{file_path}' does not match schema '{schema_path}':\n{}",
+                            json_def.key,
+                            validation_errors.join("\n"),
+                        ));
+                    }
+                }
             }
+            InputDefinition::Blob(blob_def) => {
+                for (label, fallback) in [
+                    ("default", &blob_def.default),
+                    ("development", &blob_def.development),
+                ] {
+                    let Some(fallback) = fallback else {
+                        continue;
+                    };
+
+                    let file_path = &fallback.file;
+                    if let Err(e) = std::fs::metadata(template_path.join(file_path)) {
+                        issues.errors.push(format!(
+                            "Input '{}': failed to read {label} value file '{file_path}': {e}",
+                            blob_def.key,
+                        ));
+                    }
+                }
+            }
+        }
+
+        if input.required() && !has_fallback(input) {
+            issues.warnings.push(format!(
+                "Input '{}' is required but has no default or development value. \
+                 Compiling without a value for it will fail, including the warm-up \
+                 compilation that most integrations run when registering the template.",
+                input.key(),
+            ));
         }
     }
 
-    errors
+    issues
+}
+
+/// Whether the input has a `default` or `development` value configured.
+fn has_fallback(input: &InputDefinition) -> bool {
+    match input {
+        InputDefinition::Json(def) => def.default.is_some() || def.development.is_some(),
+        InputDefinition::Blob(def) => def.default.is_some() || def.development.is_some(),
+    }
+}
+
+/// Read and compile the JSON schema of an input, reporting failures as errors.
+fn compile_schema(
+    template_path: &Path,
+    key: &str,
+    schema_path: &str,
+    errors: &mut Vec<String>,
+) -> Option<jsonschema::Validator> {
+    let schema_bytes = match std::fs::read(template_path.join(schema_path)) {
+        Ok(bytes) => bytes,
+        Err(e) => {
+            errors.push(format!(
+                "Input '{key}': failed to read schema file '{schema_path}': {e}"
+            ));
+            return None;
+        }
+    };
+
+    let schema_value: serde_json::Value = match serde_json::from_slice(&schema_bytes) {
+        Ok(v) => v,
+        Err(e) => {
+            errors.push(format!(
+                "Input '{key}': failed to parse schema file '{schema_path}': {e}"
+            ));
+            return None;
+        }
+    };
+
+    match jsonschema::validator_for(&schema_value) {
+        Ok(validator) => Some(validator),
+        Err(e) => {
+            errors.push(format!(
+                "Input '{key}': failed to compile schema '{schema_path}': {e}"
+            ));
+            None
+        }
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use oicana::input::input_definition::blob::{BlobInputDefinition, FallbackBlobInput};
     use std::fs::File;
     use std::io::Write;
     use tempfile::tempdir;
@@ -255,7 +332,7 @@ mod tests {
             Some(r#"{"name": "Bob"}"#),
         );
 
-        let errors = validate_json_fallback_values(dir.path(), &inputs);
+        let errors = validate_input_values(dir.path(), &inputs).errors;
         assert!(errors.is_empty(), "Expected no errors, got: {errors:?}");
     }
 
@@ -267,7 +344,7 @@ mod tests {
             None,
         );
 
-        let errors = validate_json_fallback_values(dir.path(), &inputs);
+        let errors = validate_input_values(dir.path(), &inputs).errors;
         assert_eq!(errors.len(), 1);
         assert!(errors[0].contains("default"));
         assert!(errors[0].contains("does not match schema"));
@@ -281,7 +358,7 @@ mod tests {
             Some(r#"{"name": 42}"#), // name should be string
         );
 
-        let errors = validate_json_fallback_values(dir.path(), &inputs);
+        let errors = validate_input_values(dir.path(), &inputs).errors;
         assert_eq!(errors.len(), 1);
         assert!(errors[0].contains("development"));
         assert!(errors[0].contains("does not match schema"));
@@ -295,7 +372,7 @@ mod tests {
             Some(r#"[]"#),                      // wrong type entirely
         );
 
-        let errors = validate_json_fallback_values(dir.path(), &inputs);
+        let errors = validate_input_values(dir.path(), &inputs).errors;
         assert_eq!(errors.len(), 2);
         assert!(errors[0].contains("default"));
         assert!(errors[1].contains("development"));
@@ -319,7 +396,7 @@ mod tests {
             },
         )];
 
-        let errors = validate_json_fallback_values(dir.path(), &inputs);
+        let errors = validate_input_values(dir.path(), &inputs).errors;
         assert_eq!(errors.len(), 1);
         assert!(errors[0].contains("failed to read default value file"));
     }
@@ -345,7 +422,7 @@ mod tests {
             },
         )];
 
-        let errors = validate_json_fallback_values(dir.path(), &inputs);
+        let errors = validate_input_values(dir.path(), &inputs).errors;
         assert_eq!(errors.len(), 1);
         assert!(errors[0].contains("not valid JSON"));
     }
@@ -368,7 +445,7 @@ mod tests {
             },
         )];
 
-        let errors = validate_json_fallback_values(dir.path(), &inputs);
+        let errors = validate_input_values(dir.path(), &inputs).errors;
         assert!(errors.is_empty(), "No schema means no validation");
     }
 
@@ -390,8 +467,104 @@ mod tests {
             },
         )];
 
-        let errors = validate_json_fallback_values(dir.path(), &inputs);
+        let errors = validate_input_values(dir.path(), &inputs).errors;
         assert_eq!(errors.len(), 1);
         assert!(errors[0].contains("failed to read schema file"));
+    }
+
+    fn json_input(default: Option<&str>, development: Option<&str>) -> InputDefinition {
+        InputDefinition::Json(oicana::input::input_definition::json::JsonInputDefinition {
+            key: "data".to_string(),
+            required: true,
+            default: default.map(str::to_string),
+            development: development.map(str::to_string),
+            schema: None,
+            validate: true,
+        })
+    }
+
+    fn blob_input(default: Option<&str>, development: Option<&str>) -> InputDefinition {
+        let fallback = |file: &str| FallbackBlobInput {
+            file: file.to_string(),
+            meta: None,
+        };
+        InputDefinition::Blob(BlobInputDefinition {
+            key: "logo".to_string(),
+            required: true,
+            default: default.map(fallback),
+            development: development.map(fallback),
+        })
+    }
+
+    #[test]
+    fn missing_dev_file_without_schema_reports_error() {
+        let dir = tempdir().unwrap();
+        let inputs = vec![json_input(None, Some("nope.json"))];
+
+        let errors = validate_input_values(dir.path(), &inputs).errors;
+        assert_eq!(errors.len(), 1);
+        assert!(
+            errors[0].contains("failed to read development value file 'nope.json'"),
+            "got: {errors:?}"
+        );
+    }
+
+    #[test]
+    fn missing_blob_fallback_files_report_errors() {
+        let dir = tempdir().unwrap();
+        let inputs = vec![blob_input(
+            Some("missing-default.png"),
+            Some("missing-dev.png"),
+        )];
+
+        let errors = validate_input_values(dir.path(), &inputs).errors;
+        assert_eq!(errors.len(), 2);
+        assert!(errors[0].contains("failed to read default value file 'missing-default.png'"));
+        assert!(errors[1].contains("failed to read development value file 'missing-dev.png'"));
+    }
+
+    #[test]
+    fn existing_blob_fallback_file_passes() {
+        let dir = tempdir().unwrap();
+        File::create(dir.path().join("logo.png")).unwrap();
+        let inputs = vec![blob_input(None, Some("logo.png"))];
+
+        let issues = validate_input_values(dir.path(), &inputs);
+        assert!(issues.errors.is_empty(), "got: {:?}", issues.errors);
+        assert!(issues.warnings.is_empty(), "got: {:?}", issues.warnings);
+    }
+
+    #[test]
+    fn required_input_without_any_fallback_warns() {
+        let dir = tempdir().unwrap();
+        let inputs = vec![json_input(None, None), blob_input(None, None)];
+
+        let issues = validate_input_values(dir.path(), &inputs);
+        assert!(issues.errors.is_empty(), "got: {:?}", issues.errors);
+        assert_eq!(issues.warnings.len(), 2);
+        assert!(issues.warnings[0].contains("Input 'data' is required"));
+        assert!(issues.warnings[1].contains("Input 'logo' is required"));
+    }
+
+    #[test]
+    fn optional_input_without_fallback_does_not_warn() {
+        let dir = tempdir().unwrap();
+        let InputDefinition::Json(mut json_def) = json_input(None, None) else {
+            unreachable!("json_input builds a JSON input");
+        };
+        json_def.required = false;
+
+        let issues = validate_input_values(dir.path(), &[InputDefinition::Json(json_def)]);
+        assert!(issues.warnings.is_empty(), "got: {:?}", issues.warnings);
+    }
+
+    #[test]
+    fn required_input_with_fallback_does_not_warn() {
+        let dir = tempdir().unwrap();
+        File::create(dir.path().join("dev.json")).unwrap();
+        let inputs = vec![json_input(None, Some("dev.json"))];
+
+        let issues = validate_input_values(dir.path(), &inputs);
+        assert!(issues.warnings.is_empty(), "got: {:?}", issues.warnings);
     }
 }

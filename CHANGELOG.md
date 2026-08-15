@@ -6,6 +6,8 @@
 - `test` exports every test case to PDF with the standards configured in the template manifest
   - tests and test collections can opt out with `pdf = false`
 - `snapshot` can be configured for a whole test collection; single tests override the setting of their collection
+- `validate` checks that `default` and `development` value files exist
+- `validate` warns about required inputs that have no `default` or `development` value
 - Nicer error messages
 
 ### Rust
