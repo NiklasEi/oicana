@@ -2,6 +2,7 @@ use std::collections::{HashMap, HashSet};
 use std::path::PathBuf;
 use std::time::Instant;
 
+use crate::compile::diagnostic_color;
 use crate::fonts::FontArgs;
 use crate::target::{TargetArgs, TemplateDir};
 use crate::watch::FileWatcher;
@@ -94,6 +95,7 @@ pub fn test(args: TestArgs) -> anyhow::Result<()> {
         }
         let mut runner =
             test_runner_context.get_runner(&template_dir.path, &template_dir.manifest)?;
+        runner.set_diagnostic_color(diagnostic_color());
         let mut failures = vec![];
 
         println!("  -> {}", style(&template_dir.manifest.package.name).bold());
@@ -217,7 +219,8 @@ fn watch_tests(args: TestArgs) -> anyhow::Result<()> {
     let mut watched: Vec<WatchedTemplate> = templates
         .into_iter()
         .map(|dir| {
-            let runner = test_runner_context.get_runner(&dir.path, &dir.manifest)?;
+            let mut runner = test_runner_context.get_runner(&dir.path, &dir.manifest)?;
+            runner.set_diagnostic_color(diagnostic_color());
             let test_dir = dir.path.join(&dir.manifest.tool.oicana.tests);
             let root = dir.path.canonicalize().unwrap_or_else(|_| dir.path.clone());
             Ok(WatchedTemplate {

@@ -9,6 +9,7 @@ use oicana::files::native::NativeTemplate;
 use oicana::input::input::blob::BlobInput;
 use oicana::input::input::json::JsonInput;
 use oicana::input::{CompilationConfig, TemplateInputs};
+use oicana::world::diagnostics::DiagnosticColor;
 use oicana::Template;
 use std::collections::HashMap;
 use std::fs::{self, read, read_to_string};
@@ -89,6 +90,7 @@ pub fn compile(args: CompileArgs) -> anyhow::Result<()> {
         Some(ref template) => Path::new(template),
     };
     let mut template = Template::<NativeTemplate>::init_with_fonts(path, &args.fonts.load())?;
+    template.set_diagnostic_color(diagnostic_color());
     let name: String = template.manifest().package.name.to_string();
     info!("Compiling template '{name}'.");
 
@@ -118,6 +120,15 @@ pub fn compile(args: CompileArgs) -> anyhow::Result<()> {
     );
 
     Ok(())
+}
+
+/// Color mode for Typst diagnostics.
+pub(crate) fn diagnostic_color() -> DiagnosticColor {
+    if console::colors_enabled_stderr() {
+        DiagnosticColor::Ansi
+    } else {
+        DiagnosticColor::None
+    }
 }
 
 pub(crate) fn build_file_name(args: &CompileArgs, template: &Template<NativeTemplate>) -> String {

@@ -12,6 +12,7 @@ use oicana_export::png::{export_png, PngExportError};
 use oicana_files::native::{package_data_dir, NativeTemplate};
 use oicana_input::{input::json::JsonInput, input_definition::InputDefinition, TemplateInputs};
 use oicana_template::manifest::TemplateManifest;
+use oicana_world::diagnostics::DiagnosticColor;
 use oicana_world::fonts::FontSource;
 use oicana_world::CompiledDocument;
 use oxipng::PngError;
@@ -67,6 +68,11 @@ pub struct TestRunner {
 }
 
 impl TestRunner {
+    /// Configure the coloring of diagnostic output from this template.
+    pub fn set_diagnostic_color(&mut self, color: DiagnosticColor) {
+        self.instance.set_diagnostic_color(color);
+    }
+
     /// Reset file access tracking for the next compilation cycle.
     ///
     /// This clears the accessed flags on file slots but preserves cached data
