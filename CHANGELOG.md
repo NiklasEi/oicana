@@ -2,7 +2,9 @@
 
 ## Upcoming
 
-- a `manifest_version` from a newer Oicana gets rejected by the CLI and by every integration
+- an unsupported `manifest_version` gets rejected by the CLI and by every integration
+- all integrations now validate pixels per pt for png exports to be finite and positive
+- Unify zip limit validation in the integrations
 
 ### CLI
 - `test` exports every test case to PDF with the standards configured in the template manifest
@@ -14,6 +16,13 @@
 
 ### Rust
 - `TemplateInitializationError` and `CompileError` forward their source errors transparently instead of re-printing them
+
+### Browser
+- stop mutating user's blob with metadata objects
+- remove exports for unused/unusable `NOT_REGISTERED` and `setValidateInputs`
+
+### Node
+- remove exports for unused/unusable `NOT_REGISTERED` and `setValidateInputs`
 
 ## v0.7.0
 
