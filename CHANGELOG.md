@@ -7,6 +7,9 @@
   - tests and test collections can opt out with `pdf = false`
 - `snapshot` can be configured for a whole test collection; single tests override the setting of their collection
 
+### Rust
+- `TemplateInitializationError` and `CompileError` forward their source errors transparently instead of re-printing them
+
 ## v0.7.0
 
 - Hosts can provide fonts to templates on top of the ones a template packs itself
