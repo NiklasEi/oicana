@@ -23,8 +23,15 @@ public class ExportFormat
     /// Create a new export format configuration for compiling to PNG
     /// </summary>
     /// <param name="pixelsPerPt">The number of pixels per pt. Higher numbers take longer, but create sharper images.</param>
+    /// <exception cref="ArgumentOutOfRangeException">If <paramref name="pixelsPerPt"/> is not a positive, finite number.</exception>
     public static ExportFormat Png(float pixelsPerPt = 1.0f)
     {
+        if (!float.IsFinite(pixelsPerPt) || pixelsPerPt <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(pixelsPerPt), pixelsPerPt,
+                "pixelsPerPt must be a positive, finite number.");
+        }
+
         return new ExportFormat()
         {
             ExportTarget = ExportTarget.Png,
