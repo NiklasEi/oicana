@@ -420,6 +420,38 @@ mod tests {
     }
 
     #[test]
+    fn refuses_to_read_a_manifest_from_a_newer_oicana() {
+        let mut files = HashMap::new();
+        files.insert("main.typ".to_owned(), "Test".to_owned());
+        files.insert(
+            "typst.toml".to_owned(),
+            r#"
+        [package]
+        entrypoint = "main.typ"
+        name = "test"
+        version = "0.1.0"
+
+        [tool.oicana]
+        manifest_version = 99
+        "#
+            .to_owned(),
+        );
+        let files = PreloadedTemplate::new(files);
+
+        let Err(OicanaWorldManifestError::UnsupportedManifestVersion(error)) = files.manifest()
+        else {
+            panic!("Read a manifest declaring an unsupported version")
+        };
+
+        assert!(
+            error
+                .to_string()
+                .contains("Unsupported manifest_version 99"),
+            "got: {error}"
+        );
+    }
+
+    #[test]
     fn fails_to_build_world_without_typst_toml_file() {
         let mut files = HashMap::new();
         files.insert("some_wrong_file_name.typ".to_owned(), "Test".to_owned());
