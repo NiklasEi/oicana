@@ -36,6 +36,16 @@ pub enum PackedTemplateError {
     },
 }
 
+/// A zip limit was given as a negative number, which cannot express a bound.
+#[derive(Error, Debug, PartialEq, Eq)]
+#[error("{bound} must not be negative, got {value}")]
+pub struct NegativeZipLimit {
+    /// The bound that was negative, named as the integrations expose it.
+    pub bound: &'static str,
+    /// The value that was passed.
+    pub value: i64,
+}
+
 /// Limits applied while reading a packed template archive.
 #[derive(Debug, Clone, Copy)]
 pub struct ZipLimits {
@@ -55,6 +65,53 @@ impl Default for ZipLimits {
 }
 
 impl ZipLimits {
+    /// Build limits from optional bounds, keeping the default for every bound that is `None`.
+    pub fn from_optional(
+        max_entries: Option<u64>,
+        max_total_decompressed_bytes: Option<u64>,
+    ) -> Option<Self> {
+        if max_entries.is_none() && max_total_decompressed_bytes.is_none() {
+            return None;
+        }
+        let defaults = ZipLimits::default();
+        Some(ZipLimits {
+            max_entries: max_entries
+                .map(|entries| usize::try_from(entries).unwrap_or(usize::MAX))
+                .unwrap_or(defaults.max_entries),
+            max_total_decompressed_bytes: max_total_decompressed_bytes
+                .unwrap_or(defaults.max_total_decompressed_bytes),
+        })
+    }
+
+    /// Build limits from signed bounds, rejecting negative values.
+    /// For ABIs that can express absence but carry the bounds as signed integers.
+    pub fn from_signed(
+        max_entries: Option<i64>,
+        max_total_decompressed_bytes: Option<i64>,
+    ) -> Result<Option<Self>, NegativeZipLimit> {
+        fn checked(
+            bound: &'static str,
+            value: Option<i64>,
+        ) -> Result<Option<u64>, NegativeZipLimit> {
+            value
+                .map(|value| u64::try_from(value).map_err(|_| NegativeZipLimit { bound, value }))
+                .transpose()
+        }
+        Ok(Self::from_optional(
+            checked("maxEntries", max_entries)?,
+            checked("maxTotalDecompressedBytes", max_total_decompressed_bytes)?,
+        ))
+    }
+
+    /// Build limits for ABIs that cannot express absence, where a negative bound keeps the
+    /// default. See [`ZipLimits::from_optional`].
+    pub fn from_sentinels(max_entries: i64, max_total_decompressed_bytes: i64) -> Option<Self> {
+        Self::from_optional(
+            u64::try_from(max_entries).ok(),
+            u64::try_from(max_total_decompressed_bytes).ok(),
+        )
+    }
+
     /// Check the sizes declared in an archive's central directory against these limits.
     pub fn check_declared<R: Read + Seek>(&self, reader: R) -> Result<(), PackedTemplateError> {
         let mut archive = ZipArchive::new(reader).map_err(PackedTemplateError::InvalidArchive)?;
@@ -272,7 +329,7 @@ impl TemplateFiles for PackedTemplate {
 
 #[cfg(test)]
 mod tests {
-    use crate::packed::{PackedTemplate, PackedTemplateError, ZipLimits};
+    use crate::packed::{NegativeZipLimit, PackedTemplate, PackedTemplateError, ZipLimits};
     use crate::TemplateFiles;
     use std::fs::read;
     use std::io::{Cursor, Write};
@@ -281,6 +338,63 @@ mod tests {
     use typst::syntax::{FileId, RootedPath, VirtualPath, VirtualRoot};
     use zip::write::SimpleFileOptions;
     use zip::{CompressionMethod, ZipWriter};
+
+    #[test]
+    fn no_bound_means_defaults() {
+        assert!(ZipLimits::from_optional(None, None).is_none());
+        assert!(ZipLimits::from_sentinels(-1, -1).is_none());
+    }
+
+    #[test]
+    fn an_unset_bound_keeps_its_default() {
+        let defaults = ZipLimits::default();
+
+        let entries_only = ZipLimits::from_optional(Some(5), None).expect("limits");
+        assert_eq!(entries_only.max_entries, 5);
+        assert_eq!(
+            entries_only.max_total_decompressed_bytes,
+            defaults.max_total_decompressed_bytes
+        );
+
+        let bytes_only = ZipLimits::from_sentinels(-1, 128).expect("limits");
+        assert_eq!(bytes_only.max_entries, defaults.max_entries);
+        assert_eq!(bytes_only.max_total_decompressed_bytes, 128);
+    }
+
+    #[test]
+    fn a_bound_beyond_usize_saturates_instead_of_wrapping() {
+        let limits = ZipLimits::from_optional(Some(u64::MAX), Some(u64::MAX)).expect("limits");
+        assert_eq!(limits.max_entries, usize::MAX);
+        assert_eq!(limits.max_total_decompressed_bytes, u64::MAX);
+    }
+
+    #[test]
+    fn signed_bounds_reject_negative_values() {
+        assert_eq!(
+            ZipLimits::from_signed(Some(-1), None).unwrap_err(),
+            NegativeZipLimit {
+                bound: "maxEntries",
+                value: -1,
+            }
+        );
+        assert_eq!(
+            ZipLimits::from_signed(None, Some(-8)).unwrap_err().bound,
+            "maxTotalDecompressedBytes"
+        );
+        assert!(ZipLimits::from_signed(None, None).unwrap().is_none());
+
+        let limits = ZipLimits::from_signed(Some(3), None)
+            .unwrap()
+            .expect("limits");
+        assert_eq!(limits.max_entries, 3);
+    }
+
+    #[test]
+    fn zero_is_a_bound_not_an_absent_value() {
+        let limits = ZipLimits::from_optional(Some(0), Some(0)).expect("limits");
+        assert_eq!(limits.max_entries, 0);
+        assert_eq!(limits.max_total_decompressed_bytes, 0);
+    }
 
     fn project_file(path: &str) -> FileId {
         FileId::new(RootedPath::new(

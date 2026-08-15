@@ -109,20 +109,9 @@ pub fn evict_cache(max_age: i64) -> PhpResult<()> {
 fn zip_limits_from_args(
     max_entries: Option<i64>,
     max_total_decompressed_bytes: Option<i64>,
-) -> Option<oicana_ffi_core::ZipLimits> {
-    let max_entries = max_entries.and_then(|value| usize::try_from(value).ok());
-    let max_bytes = max_total_decompressed_bytes.and_then(|value| u64::try_from(value).ok());
-    if max_entries.is_none() && max_bytes.is_none() {
-        return None;
-    }
-    let mut limits = oicana_ffi_core::ZipLimits::default();
-    if let Some(value) = max_entries {
-        limits.max_entries = value;
-    }
-    if let Some(value) = max_bytes {
-        limits.max_total_decompressed_bytes = value;
-    }
-    Some(limits)
+) -> PhpResult<Option<oicana_ffi_core::ZipLimits>> {
+    oicana_ffi_core::ZipLimits::from_signed(max_entries, max_total_decompressed_bytes)
+        .map_err(|error| PhpException::default(error.to_string()))
 }
 
 /// Register the given template. This will read the template files as a PackedTemplate and
@@ -146,7 +135,7 @@ pub fn register_template(
             json_inputs,
             into_core_blobs(blob_inputs),
             compilation_mode_from_i64(compilation_mode),
-            zip_limits_from_args(max_entries, max_total_decompressed_bytes),
+            zip_limits_from_args(max_entries, max_total_decompressed_bytes)?,
         )
         .map_err(into_php_err)
     })
@@ -189,8 +178,8 @@ pub fn export_template_once(
 ) -> PhpResult<ExportOnceResult> {
     catch_panic(|| {
         let format = oicana_ffi_core::parse_export_format(&export_format).map_err(into_php_err)?;
-        let page = oicana_ffi_core::parse_page_range(page_range.as_deref().unwrap_or(""))
-            .map_err(into_php_err)?;
+        let page =
+            oicana_ffi_core::parse_page_range(page_range.as_deref()).map_err(into_php_err)?;
         let result = oicana_ffi_core::export_once(
             *files,
             json_inputs,
@@ -198,7 +187,7 @@ pub fn export_template_once(
             compilation_mode_from_i64(compilation_mode),
             format,
             page,
-            zip_limits_from_args(max_entries, max_total_decompressed_bytes),
+            zip_limits_from_args(max_entries, max_total_decompressed_bytes)?,
         )
         .map_err(into_php_err)?;
         Ok(ExportOnceResult {
@@ -349,8 +338,8 @@ pub fn export_document(
 ) -> PhpResult<Binary<u8>> {
     catch_panic(|| {
         let format = oicana_ffi_core::parse_export_format(&export_format).map_err(into_php_err)?;
-        let page = oicana_ffi_core::parse_page_range(page_range.as_deref().unwrap_or(""))
-            .map_err(into_php_err)?;
+        let page =
+            oicana_ffi_core::parse_page_range(page_range.as_deref()).map_err(into_php_err)?;
         oicana_ffi_core::export_document(&document_id, format, page)
             .map(Binary::from)
             .map_err(into_php_err)

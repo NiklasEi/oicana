@@ -390,7 +390,7 @@ fn decode_blob_inputs(
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct ZipLimits {
-    max_entries: Option<usize>,
+    max_entries: Option<u64>,
     max_total_decompressed_bytes: Option<u64>,
 }
 
@@ -400,17 +400,10 @@ fn decode_zip_limits(value: JsValue) -> Result<Option<oicana_ffi_core::ZipLimits
     let Some(limits) = limits else {
         return Ok(None);
     };
-    if limits.max_entries.is_none() && limits.max_total_decompressed_bytes.is_none() {
-        return Ok(None);
-    }
-    let mut result = oicana_ffi_core::ZipLimits::default();
-    if let Some(value) = limits.max_entries {
-        result.max_entries = value;
-    }
-    if let Some(value) = limits.max_total_decompressed_bytes {
-        result.max_total_decompressed_bytes = value;
-    }
-    Ok(Some(result))
+    Ok(oicana_ffi_core::ZipLimits::from_optional(
+        limits.max_entries,
+        limits.max_total_decompressed_bytes,
+    ))
 }
 
 #[derive(Deserialize)]

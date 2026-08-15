@@ -159,8 +159,7 @@ pub fn export_template_once(
   limits: Option<ZipLimits>,
 ) -> Result<ExportOnceResult> {
   let format = oicana_ffi_core::parse_export_format(&export_format).map_err(into_napi_err)?;
-  let page = oicana_ffi_core::parse_page_range(page_range.as_deref().unwrap_or(""))
-    .map_err(into_napi_err)?;
+  let page = oicana_ffi_core::parse_page_range(page_range.as_deref()).map_err(into_napi_err)?;
   let result = oicana_ffi_core::export_once(
     &files,
     json_inputs,
@@ -196,8 +195,8 @@ impl Task for ExportTemplateOnceTask {
     catch_panic(|| {
       let format =
         oicana_ffi_core::parse_export_format(&self.export_format).map_err(into_napi_err)?;
-      let pages = oicana_ffi_core::parse_page_range(self.page_range.as_deref().unwrap_or(""))
-        .map_err(into_napi_err)?;
+      let pages =
+        oicana_ffi_core::parse_page_range(self.page_range.as_deref()).map_err(into_napi_err)?;
       oicana_ffi_core::export_once(
         &std::mem::take(&mut self.files),
         std::mem::take(&mut self.json_inputs),
@@ -345,8 +344,7 @@ pub fn export_document(
   page_range: Option<String>,
 ) -> Result<Buffer> {
   let format = oicana_ffi_core::parse_export_format(&export_format).map_err(into_napi_err)?;
-  let page = oicana_ffi_core::parse_page_range(page_range.as_deref().unwrap_or(""))
-    .map_err(into_napi_err)?;
+  let page = oicana_ffi_core::parse_page_range(page_range.as_deref()).map_err(into_napi_err)?;
   oicana_ffi_core::export_document(&document_id, format, page)
     .map(Into::into)
     .map_err(into_napi_err)
@@ -367,8 +365,8 @@ impl Task for ExportDocumentTask {
     catch_panic(|| {
       let format =
         oicana_ffi_core::parse_export_format(&self.export_format).map_err(into_napi_err)?;
-      let pages = oicana_ffi_core::parse_page_range(self.page_range.as_deref().unwrap_or(""))
-        .map_err(into_napi_err)?;
+      let pages =
+        oicana_ffi_core::parse_page_range(self.page_range.as_deref()).map_err(into_napi_err)?;
       oicana_ffi_core::export_document(&self.document_id, format, pages).map_err(into_napi_err)
     })
   }
@@ -510,7 +508,7 @@ pub fn clear_fonts() {
 #[napi(object)]
 pub struct ZipLimits {
   /// Maximum number of zip entries.
-  pub max_entries: Option<u32>,
+  pub max_entries: Option<i64>,
   /// Maximum total decompressed size in bytes.
   pub max_total_decompressed_bytes: Option<i64>,
 }
@@ -519,21 +517,8 @@ fn into_core_limits(limits: Option<ZipLimits>) -> Result<Option<oicana_ffi_core:
   let Some(limits) = limits else {
     return Ok(None);
   };
-  if limits.max_entries.is_none() && limits.max_total_decompressed_bytes.is_none() {
-    return Ok(None);
-  }
-  let mut result = oicana_ffi_core::ZipLimits::default();
-  if let Some(value) = limits.max_entries {
-    result.max_entries = value as usize;
-  }
-  if let Some(value) = limits.max_total_decompressed_bytes {
-    result.max_total_decompressed_bytes = u64::try_from(value).map_err(|_| {
-      Error::from_reason(format!(
-        "maxTotalDecompressedBytes must not be negative, got {value}"
-      ))
-    })?;
-  }
-  Ok(Some(result))
+  oicana_ffi_core::ZipLimits::from_signed(limits.max_entries, limits.max_total_decompressed_bytes)
+    .map_err(|error| Error::from_reason(error.to_string()))
 }
 
 impl From<CompilationMode> for oicana_ffi_core::CompilationMode {

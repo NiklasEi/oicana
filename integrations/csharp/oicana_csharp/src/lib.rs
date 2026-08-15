@@ -560,17 +560,10 @@ pub struct FfiZipLimits {
 
 impl From<FfiZipLimits> for Option<oicana_ffi_core::ZipLimits> {
     fn from(limits: FfiZipLimits) -> Self {
-        if limits.max_entries < 0 && limits.max_total_decompressed_bytes < 0 {
-            return None;
-        }
-        let mut result = oicana_ffi_core::ZipLimits::default();
-        if limits.max_entries >= 0 {
-            result.max_entries = limits.max_entries as usize;
-        }
-        if limits.max_total_decompressed_bytes >= 0 {
-            result.max_total_decompressed_bytes = limits.max_total_decompressed_bytes as u64;
-        }
-        Some(result)
+        oicana_ffi_core::ZipLimits::from_sentinels(
+            limits.max_entries,
+            limits.max_total_decompressed_bytes,
+        )
     }
 }
 

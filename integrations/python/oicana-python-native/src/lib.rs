@@ -67,24 +67,6 @@ fn evict_cache(py: Python<'_>, max_age: usize) {
     py.detach(|| oicana_ffi_core::evict_cache(max_age));
 }
 
-/// Build zip limits from optional arguments; `None` values keep the defaults.
-fn zip_limits_from_args(
-    max_entries: Option<usize>,
-    max_total_decompressed_bytes: Option<u64>,
-) -> Option<oicana_ffi_core::ZipLimits> {
-    if max_entries.is_none() && max_total_decompressed_bytes.is_none() {
-        return None;
-    }
-    let mut limits = oicana_ffi_core::ZipLimits::default();
-    if let Some(value) = max_entries {
-        limits.max_entries = value;
-    }
-    if let Some(value) = max_total_decompressed_bytes {
-        limits.max_total_decompressed_bytes = value;
-    }
-    Some(limits)
-}
-
 /// Register the given template. This will read the template files as a PackedTemplate and
 /// compile it once with the given inputs. The Typst World will be cached and reused for
 /// subsequent calls to the other methods with the same template identifier.
@@ -98,7 +80,7 @@ fn register_template(
     json_inputs: HashMap<String, String>,
     blob_inputs: &Bound<'_, PyDict>,
     compilation_mode: CompilationMode,
-    max_entries: Option<usize>,
+    max_entries: Option<u64>,
     max_total_decompressed_bytes: Option<u64>,
 ) -> PyResult<String> {
     let blobs = into_core_blobs(py, blob_inputs)?;
@@ -110,7 +92,7 @@ fn register_template(
             json_inputs,
             blobs,
             compilation_mode.into(),
-            zip_limits_from_args(max_entries, max_total_decompressed_bytes),
+            oicana_ffi_core::ZipLimits::from_optional(max_entries, max_total_decompressed_bytes),
         )
     })
     .map_err(into_py_err)
@@ -131,12 +113,11 @@ fn export_once<'py>(
     compilation_mode: CompilationMode,
     export_format: String,
     page_range: Option<String>,
-    max_entries: Option<usize>,
+    max_entries: Option<u64>,
     max_total_decompressed_bytes: Option<u64>,
 ) -> PyResult<(Bound<'py, PyBytes>, Option<String>)> {
     let format = oicana_ffi_core::parse_export_format(&export_format).map_err(into_py_err)?;
-    let page = oicana_ffi_core::parse_page_range(page_range.as_deref().unwrap_or(""))
-        .map_err(into_py_err)?;
+    let page = oicana_ffi_core::parse_page_range(page_range.as_deref()).map_err(into_py_err)?;
     let blobs = into_core_blobs(py, blob_inputs)?;
     let files = files.as_bytes();
     let result = py
@@ -148,7 +129,10 @@ fn export_once<'py>(
                 compilation_mode.into(),
                 format,
                 page,
-                zip_limits_from_args(max_entries, max_total_decompressed_bytes),
+                oicana_ffi_core::ZipLimits::from_optional(
+                    max_entries,
+                    max_total_decompressed_bytes,
+                ),
             )
         })
         .map_err(into_py_err)?;
@@ -276,8 +260,7 @@ fn export_document(
     page_range: Option<String>,
 ) -> PyResult<Bound<'_, PyBytes>> {
     let format = oicana_ffi_core::parse_export_format(&export_format).map_err(into_py_err)?;
-    let page = oicana_ffi_core::parse_page_range(page_range.as_deref().unwrap_or(""))
-        .map_err(into_py_err)?;
+    let page = oicana_ffi_core::parse_page_range(page_range.as_deref()).map_err(into_py_err)?;
     let bytes = py
         .detach(|| oicana_ffi_core::export_document(&document_id, format, page))
         .map_err(into_py_err)?;

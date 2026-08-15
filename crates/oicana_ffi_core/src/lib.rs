@@ -26,7 +26,7 @@ use oicana_export::png::{export_png, PngExportError};
 use oicana_export::svg::{export_svg, SvgExportError};
 use oicana_export::PdfStandard;
 use oicana_files::packed::PackedTemplate;
-pub use oicana_files::packed::ZipLimits;
+pub use oicana_files::packed::{NegativeZipLimit, ZipLimits};
 use oicana_files::TemplateFiles;
 use oicana_input::input::blob::{Blob, BlobInput};
 use oicana_input::input::json::JsonInput;
@@ -400,13 +400,13 @@ pub fn parse_export_format(json: &str) -> Result<ExportFormat, FfiError> {
 
 /// Parse an optional [`PageRange`] from its JSON object representation.
 ///
-/// An empty string means "no range" (the whole document). Otherwise the JSON is
-/// a `{ "start"?: number, "end"?: number }` object with 0-based, inclusive
+/// `None` means "no range" (the whole document). Otherwise the JSON is a
+/// `{ "start"?: number, "end"?: number }` object with 0-based, inclusive
 /// bounds.
-pub fn parse_page_range(json: &str) -> Result<Option<PageRange>, FfiError> {
-    if json.is_empty() {
+pub fn parse_page_range(json: Option<&str>) -> Result<Option<PageRange>, FfiError> {
+    let Some(json) = json else {
         return Ok(None);
-    }
+    };
     serde_json::from_str(json)
         .map(Some)
         .map_err(|error| FfiError::PageRangeParse(error.to_string()))
@@ -889,33 +889,42 @@ mod tests {
     }
 
     #[test]
-    fn parses_empty_page_range_as_none() {
-        assert_eq!(parse_page_range("").unwrap(), None);
+    fn parses_absent_page_range_as_none() {
+        assert_eq!(parse_page_range(None).unwrap(), None);
+    }
+
+    #[test]
+    fn rejects_an_empty_page_range() {
+        let err = parse_page_range(Some("")).unwrap_err();
+        assert!(matches!(err, FfiError::PageRangeParse(_)));
     }
 
     #[test]
     fn parses_page_range_bounds() {
         assert_eq!(
-            parse_page_range(r#"{"start":2,"end":3}"#).unwrap(),
+            parse_page_range(Some(r#"{"start":2,"end":3}"#)).unwrap(),
             Some(PageRange {
                 start: Some(2),
                 end: Some(3),
             })
         );
         assert_eq!(
-            parse_page_range(r#"{"start":2}"#).unwrap(),
+            parse_page_range(Some(r#"{"start":2}"#)).unwrap(),
             Some(PageRange::from(2))
         );
         assert_eq!(
-            parse_page_range(r#"{"end":4}"#).unwrap(),
+            parse_page_range(Some(r#"{"end":4}"#)).unwrap(),
             Some(PageRange::to(4))
         );
-        assert_eq!(parse_page_range("{}").unwrap(), Some(PageRange::default()));
+        assert_eq!(
+            parse_page_range(Some("{}")).unwrap(),
+            Some(PageRange::default())
+        );
     }
 
     #[test]
     fn rejects_invalid_page_range() {
-        let err = parse_page_range(r#"{"start":"two"}"#).unwrap_err();
+        let err = parse_page_range(Some(r#"{"start":"two"}"#)).unwrap_err();
         assert!(matches!(err, FfiError::PageRangeParse(_)));
     }
 
