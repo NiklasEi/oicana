@@ -757,9 +757,9 @@ jobs:
           uv pip install --system --no-deps .
           uv pip install --system pytest
         working-directory: ./integrations/python/oicana-python
-      - name: Run Python E2E tests
+      - name: Run Python tests
         if: matrix.libc == 'gnu'
-        run: pytest tests/test_e2e.py -v
+        run: pytest tests -v
         working-directory: ./integrations/python/oicana-python
       - name: Download musllinux wheel
         if: matrix.libc == 'musl'
@@ -767,7 +767,7 @@ jobs:
         with:
           name: python_native_musl
           path: ./dist-musl
-      - name: Run Python E2E tests in Alpine (musl)
+      - name: Run Python tests in Alpine (musl)
         if: matrix.libc == 'musl'
         run: |
           docker run --rm -v "$PWD:/io" -w /io alpine:3.20 sh -ec '
@@ -778,7 +778,7 @@ jobs:
             pip install --quiet --no-deps /io/integrations/python/oicana-python
             pip install --quiet pytest
             cd /io/integrations/python/oicana-python
-            pytest tests/test_e2e.py -v
+            pytest tests -v
           '
       - name: compare test output
         run: test-compare e2e-tests/template integrations/python/oicana-python/tests/testOutput/
@@ -850,9 +850,9 @@ jobs:
           php -d extension=php-ext/${{ matrix.lib }} -m 2>&1
           echo "=== Fail if the extension did not load ==="
           php -d extension=php-ext/${{ matrix.lib }} -r "exit(function_exists('OicanaInternal\\inputs') ? 0 : 1);"
-      - name: Run PHP E2E tests
+      - name: Run PHP tests
         if: success() || failure()
-        run: php -d extension=${{ github.workspace }}/php-ext/${{ matrix.lib }} vendor/bin/pest tests/E2eTest.php
+        run: php -d extension=${{ github.workspace }}/php-ext/${{ matrix.lib }} vendor/bin/pest
         working-directory: ./integrations/php/oicana-php
       - name: compare test output
         if: success() || failure()

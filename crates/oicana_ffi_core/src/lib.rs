@@ -946,6 +946,27 @@ mod tests {
     }
 
     #[test]
+    fn registering_a_template_from_a_newer_oicana_fails() {
+        let files = std::fs::read("../../assets/templates/future-manifest-0.1.0.zip")
+            .expect("read test template fixture");
+
+        let error = register_template(
+            &format!("future-manifest-{}", Uuid::new_v4()),
+            &files,
+            HashMap::new(),
+            HashMap::new(),
+            CompilationMode::Development,
+            None,
+        )
+        .expect_err("a template declaring a newer manifest version must not register");
+
+        assert!(
+            error.to_string().contains("manifest_version 99"),
+            "got: {error}"
+        );
+    }
+
+    #[test]
     fn concurrent_compile_and_export_do_not_deadlock() {
         use std::sync::mpsc;
         use std::thread;

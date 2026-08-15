@@ -20,4 +20,15 @@ public class ErrorHandlingTests
         var error = OicanaFfi.GetMessageFromStream(stream);
         error.Should().Be("{ \\\"test\\\"\\n");
     }
+
+    [Fact]
+    public void RefusesTemplatePackedByNewerOicana()
+    {
+        var templateFile = File.ReadAllBytes(
+            Path.GetFullPath("../../../../../../assets/templates/future-manifest-0.1.0.zip"));
+
+        var register = () => new Template(templateFile);
+
+        register.Should().Throw<Exception>().WithMessage("*manifest_version 99*");
+    }
 }

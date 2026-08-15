@@ -165,4 +165,14 @@ class E2eTest {
 
         document.close();
     }
+
+    @Test
+    void refusesTemplatePackedByNewerOicana() throws IOException {
+        byte[] templateFile = asset("templates/future-manifest-0.1.0.zip");
+
+        Exception error = assertThrows(Exception.class, () -> new Template(templateFile));
+
+        assertTrue(error.getMessage().contains("manifest_version 99"),
+                "unexpected message: " + error.getMessage());
+    }
 }
