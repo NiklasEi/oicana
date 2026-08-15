@@ -142,45 +142,46 @@ pub(crate) fn build_file_name(args: &CompileArgs, template: &Template<NativeTemp
         .replace("{format}", args.format.file_ending())
 }
 
+fn split_pair(pair: &str) -> Option<(&str, &str)> {
+    let split = pair.split_once('=');
+    if split.is_none() {
+        warn!("Ignoring invalid key-value pair: {pair}");
+    }
+    split
+}
+
 pub(crate) fn build_inputs(args: &CompileArgs) -> anyhow::Result<TemplateInputs> {
     let mut inputs = TemplateInputs::new();
     if !args.development {
         inputs.with_config(CompilationConfig::production());
     }
     for pair in &args.json {
-        let parts: Vec<&str> = pair.splitn(2, '=').collect();
-        if parts.len() == 2 {
-            let input = read_to_string(parts[1]).context("Failed to read json input file.")?;
-            inputs.with_input(JsonInput::new(parts[0], input));
-        } else {
-            warn!("Ignoring invalid key-value pair: {pair}");
-        }
+        let Some((key, path)) = split_pair(pair) else {
+            continue;
+        };
+        let input = read_to_string(path).context("Failed to read json input file.")?;
+        inputs.with_input(JsonInput::new(key, input));
     }
 
     let mut blobs = HashMap::new();
     for pair in &args.blob {
-        let parts: Vec<&str> = pair.splitn(2, '=').collect();
-        if parts.len() == 2 {
-            let blob = read(parts[1]).context("Failed to read blob input file.")?;
-            blobs.insert(parts[0].to_owned(), BlobInput::new(parts[0], blob));
-        } else {
-            warn!("Ignoring invalid key-value pair: {pair}");
-        }
+        let Some((key, path)) = split_pair(pair) else {
+            continue;
+        };
+        let blob = read(path).context("Failed to read blob input file.")?;
+        blobs.insert(key.to_owned(), BlobInput::new(key, blob));
     }
     for pair in &args.blob_meta {
-        let parts: Vec<&str> = pair.splitn(2, '=').collect();
-        if parts.len() == 2 {
-            let Some(blob) = blobs.get_mut(parts[0]) else {
-                warn!("Ignoring blob meta key-value pair: {pair}, because no corresponding blob was passed.");
-                continue;
-            };
-            let meta =
-                read_to_string(parts[1]).context("Failed to read json file as blob metadata.")?;
-            blob.value.metadata = serde_json::from_str(&meta)
-                .context("Failed to convert blob metadata to a Typst dictionary.")?;
-        } else {
-            warn!("Ignoring invalid key-value pair: {pair}");
-        }
+        let Some((key, path)) = split_pair(pair) else {
+            continue;
+        };
+        let Some(blob) = blobs.get_mut(key) else {
+            warn!("Ignoring blob meta key-value pair: {pair}, because no corresponding blob was passed.");
+            continue;
+        };
+        let meta = read_to_string(path).context("Failed to read json file as blob metadata.")?;
+        blob.value.metadata = serde_json::from_str(&meta)
+            .context("Failed to convert blob metadata to a Typst dictionary.")?;
     }
 
     for (_, blob) in blobs {
