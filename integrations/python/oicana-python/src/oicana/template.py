@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import math
 import uuid
 from typing import TYPE_CHECKING
 
@@ -68,6 +69,22 @@ if TYPE_CHECKING:
     from typing import Any
 
 
+def _serialize_export_format(export: ExportFormat) -> str:
+    """Serialize an export format for the native export calls.
+
+    Raises:
+        ValueError: If ``pixelsPerPt`` is not a positive, finite number. ``json.dumps``
+            would otherwise emit ``NaN``/``Infinity``, which is not valid JSON.
+    """
+    if export["format"] == "png":
+        pixels_per_pt = export["pixelsPerPt"]
+        if not math.isfinite(pixels_per_pt) or pixels_per_pt <= 0:
+            raise ValueError(
+                f"pixelsPerPt must be a positive, finite number, got {pixels_per_pt}"
+            )
+    return json.dumps(export)
+
+
 def _serialize_page_range(pages: PageRange | None) -> str | None:
     """Serialize a page range for the native ``export_document`` call.
 
@@ -110,10 +127,9 @@ class Template:
             json_inputs: Initial JSON inputs (key -> JSON string)
             blob_inputs: Initial blob inputs
             mode: Compilation mode (development/production)
-            limits: Limits for reading the template zip (defaults to max 10000 entries and 500mb)
+            limits: Limits for reading the template zip (defaults apply when None)
         """
         self._template_id = str(uuid.uuid4())
-        self._document_ids: list[str] = []
 
         native_mode = (
             NativeCompilationMode.Production
@@ -168,12 +184,12 @@ class Template:
             Compiled document bytes
         """
         doc_id = self._compile_to_document_id(json_inputs, blob_inputs, mode)
-        self._document_ids.append(doc_id)
         try:
-            result = export_document(doc_id, json.dumps(export), _serialize_page_range(pages))
+            result = export_document(
+                doc_id, _serialize_export_format(export), _serialize_page_range(pages)
+            )
         finally:
             remove_document(doc_id)
-            self._document_ids.remove(doc_id)
 
         return bytes(result)
 
@@ -303,7 +319,7 @@ class Template:
             native_json,
             native_blobs,
             native_mode,
-            json.dumps(export),
+            _serialize_export_format(export),
             _serialize_page_range(pages),
             limits.max_entries if limits else None,
             limits.max_total_decompressed_bytes if limits else None,
@@ -407,10 +423,6 @@ class Template:
 
     def cleanup(self) -> None:
         """Clean up cached resources."""
-        for doc_id in list(self._document_ids):
-            remove_document(doc_id)
-        self._document_ids.clear()
-
         remove_world(self._template_id)
 
     def __enter__(self) -> Template:
@@ -466,7 +478,9 @@ class CompiledDocument:
         if self._document_id is None:
             raise RuntimeError("CompiledDocument has already been closed")
         return bytes(
-            export_document(self._document_id, json.dumps(export), _serialize_page_range(pages))
+            export_document(
+                self._document_id, _serialize_export_format(export), _serialize_page_range(pages)
+            )
         )
 
     def export_pdf(self, pages: PageRange | None = None) -> bytes:

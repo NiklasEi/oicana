@@ -175,16 +175,16 @@ impl<Files: TemplateFiles> TemplateDiagnostics for Template<Files> {
 #[derive(Error, Debug)]
 pub enum TemplateInitializationError {
     /// An error concerning the template manifest
-    #[error("Manifest error: {0}")]
+    #[error(transparent)]
     ManifestError(#[from] OicanaWorldManifestError),
 
     /// Error while creating the template world
-    #[error("Issue while creating template World: {0}")]
+    #[error(transparent)]
     WorldCreationError(#[from] WorldCreationError),
 
     /// The packed template could not be read
     #[cfg(feature = "packed")]
-    #[error("{0}")]
+    #[error(transparent)]
     PackedTemplateError(#[from] PackedTemplateError),
 
     /// The data directory for Typst packages could not be found
@@ -196,10 +196,10 @@ pub enum TemplateInitializationError {
 #[derive(Error, Debug)]
 pub enum CompileError {
     /// A JSON input failed schema validation
-    #[error("{0}")]
+    #[error(transparent)]
     ValidationFailed(#[from] InputValidationError),
 
     /// The Typst compilation failed
-    #[error("{0}")]
+    #[error(transparent)]
     CompilationFailed(#[from] TemplateCompilationFailure),
 }

@@ -1,6 +1,7 @@
 """Tests for the Template class."""
 import zipfile
 from io import BytesIO
+from pathlib import Path
 
 import pytest
 
@@ -60,3 +61,20 @@ def test_export_without_warnings_has_none() -> None:
         tmpl.export(export={"format": "svg"})
 
         assert tmpl.warnings is None
+
+
+def future_manifest_template() -> bytes:
+    """A template packed by a newer Oicana than this release understands."""
+    path = (
+        Path(__file__).parents[4]
+        / "assets"
+        / "templates"
+        / "future-manifest-0.1.0.zip"
+    )
+    return path.read_bytes()
+
+
+def test_refuses_a_template_packed_by_a_newer_oicana() -> None:
+    """Registering a template with an unsupported manifest version fails."""
+    with pytest.raises(Exception, match="manifest_version 99"):
+        Template(future_manifest_template())

@@ -175,3 +175,13 @@ describe('e2e test template', () => {
     document.dispose();
   });
 });
+
+describe('manifest compatibility', () => {
+  it('refuses a template packed by a newer Oicana', async () => {
+    const templateFile = await readFile(
+      '../../../assets/templates/future-manifest-0.1.0.zip',
+    );
+
+    expect(() => new Template(templateFile)).toThrow(/manifest_version 99/);
+  });
+});

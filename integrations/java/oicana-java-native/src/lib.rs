@@ -103,24 +103,6 @@ fn compilation_mode_from_jint(mode: jint) -> oicana_ffi_core::CompilationMode {
     }
 }
 
-/// Build zip limits from Java `long` values.
-fn zip_limits_from_jlongs(
-    max_entries: jlong,
-    max_total_decompressed_bytes: jlong,
-) -> Option<oicana_ffi_core::ZipLimits> {
-    if max_entries < 0 && max_total_decompressed_bytes < 0 {
-        return None;
-    }
-    let mut limits = oicana_ffi_core::ZipLimits::default();
-    if max_entries >= 0 {
-        limits.max_entries = max_entries as usize;
-    }
-    if max_total_decompressed_bytes >= 0 {
-        limits.max_total_decompressed_bytes = max_total_decompressed_bytes as u64;
-    }
-    Some(limits)
-}
-
 #[unsafe(no_mangle)]
 pub extern "system" fn Java_com_oicana_OicanaNative_registerTemplate<'local>(
     mut unowned_env: EnvUnowned<'local>,
@@ -146,7 +128,10 @@ pub extern "system" fn Java_com_oicana_OicanaNative_registerTemplate<'local>(
                 json_map,
                 blob_map,
                 compilation_mode_from_jint(compilation_mode),
-                zip_limits_from_jlongs(max_entries, max_total_decompressed_bytes),
+                oicana_ffi_core::ZipLimits::from_sentinels(
+                    max_entries,
+                    max_total_decompressed_bytes,
+                ),
             )
             .map_err(|e| throw_ffi(env, e))?;
 
@@ -178,14 +163,14 @@ pub extern "system" fn Java_com_oicana_OicanaNative_exportTemplateOnce<'local>(
                 let blob_map = extract_blob_map(env, blob_inputs)?;
                 let export_format_str = export_format.try_to_string(env)?;
                 let page_range_str = if page_range.is_null() {
-                    String::new()
+                    None
                 } else {
-                    page_range.try_to_string(env)?
+                    Some(page_range.try_to_string(env)?)
                 };
 
                 let format = oicana_ffi_core::parse_export_format(&export_format_str)
                     .map_err(|e| throw_ffi(env, e))?;
-                let page = oicana_ffi_core::parse_page_range(&page_range_str)
+                let page = oicana_ffi_core::parse_page_range(page_range_str.as_deref())
                     .map_err(|e| throw_ffi(env, e))?;
 
                 let result = oicana_ffi_core::export_once(
@@ -195,7 +180,10 @@ pub extern "system" fn Java_com_oicana_OicanaNative_exportTemplateOnce<'local>(
                     compilation_mode_from_jint(compilation_mode),
                     format,
                     page,
-                    zip_limits_from_jlongs(max_entries, max_total_decompressed_bytes),
+                    oicana_ffi_core::ZipLimits::from_sentinels(
+                        max_entries,
+                        max_total_decompressed_bytes,
+                    ),
                 )
                 .map_err(|e| throw_ffi(env, e))?;
 
@@ -350,14 +338,14 @@ pub extern "system" fn Java_com_oicana_OicanaNative_exportDocument<'local>(
             let export_format_str = export_format.try_to_string(env)?;
             // A null page range selects the whole document.
             let page_range_str = if page_range.is_null() {
-                String::new()
+                None
             } else {
-                page_range.try_to_string(env)?
+                Some(page_range.try_to_string(env)?)
             };
 
             let format = oicana_ffi_core::parse_export_format(&export_format_str)
                 .map_err(|e| throw_ffi(env, e))?;
-            let page = oicana_ffi_core::parse_page_range(&page_range_str)
+            let page = oicana_ffi_core::parse_page_range(page_range_str.as_deref())
                 .map_err(|e| throw_ffi(env, e))?;
             let bytes = oicana_ffi_core::export_document(&document_id, format, page)
                 .map_err(|e| throw_ffi(env, e))?;

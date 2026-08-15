@@ -58,9 +58,17 @@ final readonly class ExportFormat
      *                           - 1.0 = 72 DPI (standard, default)
      *                           - 2.0 = 144 DPI (retina)
      *                           - 3.0 = 216 DPI (high quality print)
+     *
+     * @throws \InvalidArgumentException if $pixelsPerPt is not a positive, finite number
      */
     public static function png(float $pixelsPerPt = 1.0): self
     {
+        if (!is_finite($pixelsPerPt) || $pixelsPerPt <= 0) {
+            throw new \InvalidArgumentException(
+                "pixelsPerPt must be a positive, finite number, got {$pixelsPerPt}"
+            );
+        }
+
         return new self([
             'format' => 'png',
             'pixelsPerPt' => $pixelsPerPt

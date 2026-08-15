@@ -13,7 +13,17 @@ public sealed interface ExportFormat {
      *
      * @param pixelsPerPt the number of pixels per pt; higher values produce sharper but larger images
      */
-    record Png(float pixelsPerPt) implements ExportFormat {}
+    record Png(float pixelsPerPt) implements ExportFormat {
+        /**
+         * @throws IllegalArgumentException if {@code pixelsPerPt} is not a positive, finite number
+         */
+        public Png {
+            if (!Float.isFinite(pixelsPerPt) || pixelsPerPt <= 0) {
+                throw new IllegalArgumentException(
+                        "pixelsPerPt must be a positive, finite number, got " + pixelsPerPt);
+            }
+        }
+    }
 
     /** SVG export format. */
     record Svg() implements ExportFormat {}

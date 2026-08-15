@@ -14,7 +14,7 @@ use notify::{Event, RecommendedWatcher, RecursiveMode, Watcher as _};
 use same_file::is_same_file;
 
 use crate::compile::export::{export_image, export_pdf, ExportFormat, ImageExportFormat};
-use crate::compile::{build_file_name, build_inputs, CompileArgs, CHECKMARK};
+use crate::compile::{build_file_name, build_inputs, diagnostic_color, CompileArgs, CHECKMARK};
 use oicana::files::native::NativeTemplate;
 use oicana::Template;
 
@@ -33,6 +33,7 @@ pub fn watch(args: CompileArgs) -> anyhow::Result<()> {
         Some(ref template) => Path::new(template).to_owned(),
     };
     let mut template = Template::<NativeTemplate>::init_with_fonts(&path, &args.fonts.load())?;
+    template.set_diagnostic_color(diagnostic_color());
     let name = template.manifest().package.name.to_string();
 
     let out_dir = Path::new(&args.out_dir);

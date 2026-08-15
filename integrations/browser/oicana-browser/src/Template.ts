@@ -66,12 +66,6 @@ export class Template implements Disposable {
     limits?: ZipLimits,
   ) {
     this.template = crypto.randomUUID();
-    for (const blob of blobInputs?.entries() ?? []) {
-      if (blob[1].meta === undefined) {
-        // Otherwise the FFI layer will fail to pass the blobs over to WASM
-        blob[1].meta = {};
-      }
-    }
     const documentId = register_template(
       this.template,
       template,
@@ -96,7 +90,7 @@ export class Template implements Disposable {
    * @param exportFormat - Export format specification (defaults to PDF)
    * @param compilationOptions - Compilation mode (defaults to Production)
    * @param pages - 0-based, inclusive page range (defaults to the whole document)
-   * @param limits - limits for reading the template zip (defaults to max 10000 entries and 500mb)
+   * @param limits - limits for reading the template zip (defaults apply when omitted)
    */
   public static exportOnce(
     template: Uint8Array,
@@ -107,11 +101,6 @@ export class Template implements Disposable {
     pages?: PageRange,
     limits?: ZipLimits,
   ): ExportOnceResult {
-    for (const blob of blobInputs?.entries() ?? []) {
-      if (blob[1].meta === undefined) {
-        blob[1].meta = {};
-      }
-    }
     const result = export_template_once(
       template,
       jsonInputs ?? new Map(),
@@ -333,14 +322,6 @@ export class Template implements Disposable {
     blobInputs?: Map<string, BlobWithMetadata>,
     compilationOptions?: CompilationMode,
   ): string {
-    for (const blob of blobInputs instanceof Map
-      ? (blobInputs?.entries() ?? [])
-      : Object.entries<BlobWithMetadata>(blobInputs ?? {})) {
-      if (blob[1].meta === undefined) {
-        // Otherwise the FFI layer will fail to pass the blobs over to WASM
-        blob[1].meta = {};
-      }
-    }
     const documentId = compile_template(
       this.template,
       jsonInputs ?? new Map(),

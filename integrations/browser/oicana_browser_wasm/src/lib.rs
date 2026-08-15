@@ -14,10 +14,6 @@ use wasm_bindgen::JsValue;
 
 use oicana_world::get_current_time;
 
-/// Error string when a requested template is not registered yet. Call `[register_template]` before
-/// trying to use the template through a different method.
-pub const NOT_REGISTERED: &str = "Template is not registered";
-
 /// Configure automatic cache eviction after each compilation.
 ///
 /// # Parameters
@@ -375,8 +371,11 @@ fn decode_blob_inputs(
     blobs
         .into_iter()
         .map(|(key, blob)| {
-            let meta = serde_json::to_string(&blob.meta)
-                .map_err(|error| format!("Failed to encode metadata for '{key}': {error:?}"))?;
+            let meta = match blob.meta {
+                Some(meta) => serde_json::to_string(&meta)
+                    .map_err(|error| format!("Failed to encode metadata for '{key}': {error:?}"))?,
+                None => "{}".to_owned(),
+            };
             Ok((
                 key,
                 oicana_ffi_core::BlobWithMetadata {
@@ -391,7 +390,7 @@ fn decode_blob_inputs(
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct ZipLimits {
-    max_entries: Option<usize>,
+    max_entries: Option<u64>,
     max_total_decompressed_bytes: Option<u64>,
 }
 
@@ -401,17 +400,10 @@ fn decode_zip_limits(value: JsValue) -> Result<Option<oicana_ffi_core::ZipLimits
     let Some(limits) = limits else {
         return Ok(None);
     };
-    if limits.max_entries.is_none() && limits.max_total_decompressed_bytes.is_none() {
-        return Ok(None);
-    }
-    let mut result = oicana_ffi_core::ZipLimits::default();
-    if let Some(value) = limits.max_entries {
-        result.max_entries = value;
-    }
-    if let Some(value) = limits.max_total_decompressed_bytes {
-        result.max_total_decompressed_bytes = value;
-    }
-    Ok(Some(result))
+    Ok(oicana_ffi_core::ZipLimits::from_optional(
+        limits.max_entries,
+        limits.max_total_decompressed_bytes,
+    ))
 }
 
 #[derive(Deserialize)]
@@ -434,5 +426,6 @@ impl From<CompilationMode> for oicana_ffi_core::CompilationMode {
 #[derive(Deserialize)]
 struct BlobWithMetadata {
     bytes: Vec<u8>,
-    meta: serde_json::Value,
+    #[serde(default)]
+    meta: Option<serde_json::Value>,
 }

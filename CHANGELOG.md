@@ -2,10 +2,27 @@
 
 ## Upcoming
 
+- an unsupported `manifest_version` gets rejected by the CLI and by every integration
+- all integrations now validate pixels per pt for png exports to be finite and positive
+- Unify zip limit validation in the integrations
+
 ### CLI
 - `test` exports every test case to PDF with the standards configured in the template manifest
   - tests and test collections can opt out with `pdf = false`
-- `snapshot` can be configured for a whole test collection; single tests override the setting of their collection
+- `snapshot` can be configured for a test collection
+- `validate` checks that `default` and `development` value files exist
+- `validate` warns about required inputs that have no `default` or `development` value
+- Nicer error messages
+
+### Rust
+- `TemplateInitializationError` and `CompileError` forward their source errors transparently instead of re-printing them
+
+### Browser
+- stop mutating user's blob with metadata objects
+- remove exports for unused/unusable `NOT_REGISTERED` and `setValidateInputs`
+
+### Node
+- remove exports for unused/unusable `NOT_REGISTERED` and `setValidateInputs`
 
 ## v0.7.0
 

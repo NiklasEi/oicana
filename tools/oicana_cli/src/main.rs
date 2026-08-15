@@ -22,13 +22,26 @@ use anyhow::Error;
 use clap::Parser;
 use clap_verbosity::{Verbosity, WarnLevel};
 use compile::{CompileArgs, COMPILE_AFTER_HELP};
+use console::style;
 use log::trace;
+use oicana::CompileError;
 use pack::PACK_AFTER_HELP;
+use std::process::ExitCode;
 use test::{test, TestArgs, TEST_AFTER_HELP};
 use validate::VALIDATE_AFTER_HELP;
 use watch::watch;
 
-fn main() -> Result<(), Error> {
+fn main() -> ExitCode {
+    match run() {
+        Ok(()) => ExitCode::SUCCESS,
+        Err(error) => {
+            report(&error);
+            ExitCode::FAILURE
+        }
+    }
+}
+
+fn run() -> Result<(), Error> {
     let cli = Cli::parse();
     env_logger::Builder::new()
         .filter_level(cli.verbosity.log_level_filter())
@@ -47,6 +60,22 @@ fn main() -> Result<(), Error> {
     }
 
     Ok(())
+}
+
+/// Report a top-level error on stderr.
+///
+/// Failed compilations already carry Typst's own `error:` label from the
+/// rendered diagnostics. Every other error gets the label here, so the CLI
+/// consistently marks errors the way Typst does.
+fn report(error: &Error) {
+    if matches!(
+        error.downcast_ref::<CompileError>(),
+        Some(CompileError::CompilationFailed(_))
+    ) {
+        eprintln!("{error:?}");
+    } else {
+        eprintln!("{} {error:?}", style("error:").red().bold().for_stderr());
+    }
 }
 
 const VERSION: &str = concat!(

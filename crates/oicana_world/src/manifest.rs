@@ -1,5 +1,5 @@
 use oicana_files::TemplateFiles;
-use oicana_template::manifest::TemplateManifest;
+use oicana_template::manifest::{ManifestValidationError, TemplateManifest};
 use thiserror::Error;
 use typst::diag::FileError;
 use typst::syntax::{FileId, RootedPath, VirtualPath, VirtualRoot};
@@ -13,11 +13,14 @@ pub trait OicanaWorldFiles<Files: TemplateFiles> {
 impl<Files: TemplateFiles> OicanaWorldFiles<Files> for Files {
     fn manifest(&self) -> Result<TemplateManifest, OicanaWorldManifestError> {
         let manifest_path = VirtualPath::new("/typst.toml").expect("static path is valid");
-        let manifest = self.source(FileId::new(RootedPath::new(
+        let source = self.source(FileId::new(RootedPath::new(
             VirtualRoot::Project,
             manifest_path,
         )))?;
-        TemplateManifest::from_toml(manifest.text()).map_err(Into::into)
+        let manifest = TemplateManifest::from_toml(source.text())?;
+        manifest.check_manifest_version()?;
+
+        Ok(manifest)
     }
 }
 
@@ -30,4 +33,7 @@ pub enum OicanaWorldManifestError {
     /// The manifest file could not be found.
     #[error("Failed to find the manifest file: {0}")]
     NoManifest(#[from] FileError),
+    /// The manifest declares a version this release cannot interpret.
+    #[error(transparent)]
+    UnsupportedManifestVersion(#[from] ManifestValidationError),
 }

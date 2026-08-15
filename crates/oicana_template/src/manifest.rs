@@ -8,6 +8,12 @@ use typst::diag::EcoString;
 use typst::syntax::package::{PackageInfo, TemplateInfo, UnknownFields};
 use unicode_ident::{is_xid_continue, is_xid_start};
 
+/// The `manifest_version` this release of Oicana can interpret.
+pub const SUPPORTED_MANIFEST_VERSION: u8 = 1;
+
+/// The lowest value that is a manifest version at all.
+pub const MINIMUM_MANIFEST_VERSION: u8 = 1;
+
 /// An Oicana template's relevant information.
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct TemplateManifest {
@@ -40,6 +46,8 @@ impl TemplateManifest {
     /// Never touches the filesystem. Use [`Self::validate_at`]
     /// when the template root is available for more checks.
     pub fn validate(&self) -> Result<(), ManifestValidationError> {
+        self.check_manifest_version()?;
+
         let mut unknown_keys: Vec<_> = self.unknown_fields.keys().map(String::from).collect();
         unknown_keys.extend(
             self.package
@@ -79,6 +87,19 @@ impl TemplateManifest {
         let tests = template_root.join(&self.tool.oicana.tests);
         if tests.exists() && !tests.is_dir() {
             return Err(ManifestValidationError::InvalidTestsPath);
+        }
+
+        Ok(())
+    }
+
+    /// Check that this release can interpret the manifest's `manifest_version`.
+    pub fn check_manifest_version(&self) -> Result<(), ManifestValidationError> {
+        let version = self.tool.oicana.manifest_version;
+        if version < MINIMUM_MANIFEST_VERSION {
+            return Err(ManifestValidationError::InvalidManifestVersion(version));
+        }
+        if version > SUPPORTED_MANIFEST_VERSION {
+            return Err(ManifestValidationError::UnsupportedManifestVersion(version));
         }
 
         Ok(())
@@ -160,6 +181,19 @@ pub enum ManifestValidationError {
     /// Value of 'tests' needs to be a relative path from the template root to a directory.
     #[error("Value of 'tests' needs to be a relative path from the template root to a directory.")]
     InvalidTestsPath,
+    /// The manifest declares a value that is not a manifest version.
+    #[error(
+        "Invalid manifest_version {0}. \
+         Manifest versions start at {MINIMUM_MANIFEST_VERSION}."
+    )]
+    InvalidManifestVersion(u8),
+    /// The manifest declares a version this release cannot interpret.
+    #[error(
+        "Unsupported manifest_version {0}. This Oicana release supports \
+         manifest_version up to {SUPPORTED_MANIFEST_VERSION}. \
+         Update Oicana to use this template."
+    )]
+    UnsupportedManifestVersion(u8),
 }
 
 /// Whether a string is a valid Oicana template name.
@@ -195,7 +229,10 @@ mod tests {
     use typst::syntax::package::PackageInfo;
 
     use crate::{
-        manifest::{ManifestValidationError, TemplateManifest},
+        manifest::{
+            ManifestValidationError, TemplateManifest, MINIMUM_MANIFEST_VERSION,
+            SUPPORTED_MANIFEST_VERSION,
+        },
         ExportConfig, FontConfig, OicanaConfig,
     };
 
@@ -344,6 +381,41 @@ mod tests {
                 fonts: FontConfig::default(),
             },
         )
+    }
+
+    #[test]
+    fn rejects_manifest_versions_from_the_future() {
+        let mut manifest = manifest_with_tests_path(PathBuf::from("tests"));
+        manifest.tool.oicana.manifest_version = SUPPORTED_MANIFEST_VERSION + 1;
+
+        let expected = Err(ManifestValidationError::UnsupportedManifestVersion(
+            SUPPORTED_MANIFEST_VERSION + 1,
+        ));
+        assert_eq!(manifest.check_manifest_version(), expected);
+        assert_eq!(manifest.validate(), expected);
+    }
+
+    #[test]
+    fn accepts_the_supported_manifest_version() {
+        let manifest = manifest_with_tests_path(PathBuf::from("tests"));
+
+        assert_eq!(manifest.check_manifest_version(), Ok(()));
+        assert_eq!(manifest.validate(), Ok(()));
+    }
+
+    /// Only versions above the supported one are refused as "too new", so
+    /// raising [`SUPPORTED_MANIFEST_VERSION`] keeps older templates readable.
+    /// Anything below [`MINIMUM_MANIFEST_VERSION`] is not a version at all.
+    #[test]
+    fn rejects_manifest_versions_below_the_minimum() {
+        let mut manifest = manifest_with_tests_path(PathBuf::from("tests"));
+        manifest.tool.oicana.manifest_version = MINIMUM_MANIFEST_VERSION - 1;
+
+        let expected = Err(ManifestValidationError::InvalidManifestVersion(
+            MINIMUM_MANIFEST_VERSION - 1,
+        ));
+        assert_eq!(manifest.check_manifest_version(), expected);
+        assert_eq!(manifest.validate(), expected);
     }
 
     #[test]

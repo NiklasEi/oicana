@@ -253,3 +253,10 @@ test('export without warnings leaves them null', function () {
         $template->cleanup();
     }
 });
+
+test('template packed by a newer Oicana is refused', function () {
+    $templateBytes = file_get_contents(assets_path('templates/future-manifest-0.1.0.zip'));
+
+    expect(fn () => new Template($templateBytes))
+        ->toThrow(Exception::class, 'manifest_version 99');
+});
