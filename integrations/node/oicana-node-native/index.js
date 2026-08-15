@@ -574,7 +574,6 @@ module.exports.getFile = nativeBinding.getFile
 module.exports.getSource = nativeBinding.getSource
 module.exports.getWarnings = nativeBinding.getWarnings
 module.exports.inputs = nativeBinding.inputs
-module.exports.NOT_REGISTERED = nativeBinding.NOT_REGISTERED
 module.exports.registeredFonts = nativeBinding.registeredFonts
 module.exports.registerFontPaths = nativeBinding.registerFontPaths
 module.exports.registerFonts = nativeBinding.registerFonts

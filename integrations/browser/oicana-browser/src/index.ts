@@ -9,7 +9,6 @@ export {
   evict_cache as evictCache,
   register_fonts as registerFonts,
   set_log_level as setLogLevel,
-  set_validate_inputs as setValidateInputs,
 } from '@oicana/browser-wasm';
 export * from './CompilationMode.js';
 export * from './CompiledDocument.js';

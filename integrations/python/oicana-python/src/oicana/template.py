@@ -110,10 +110,9 @@ class Template:
             json_inputs: Initial JSON inputs (key -> JSON string)
             blob_inputs: Initial blob inputs
             mode: Compilation mode (development/production)
-            limits: Limits for reading the template zip (defaults to max 10000 entries and 500mb)
+            limits: Limits for reading the template zip (defaults apply when None)
         """
         self._template_id = str(uuid.uuid4())
-        self._document_ids: list[str] = []
 
         native_mode = (
             NativeCompilationMode.Production
@@ -168,12 +167,10 @@ class Template:
             Compiled document bytes
         """
         doc_id = self._compile_to_document_id(json_inputs, blob_inputs, mode)
-        self._document_ids.append(doc_id)
         try:
             result = export_document(doc_id, json.dumps(export), _serialize_page_range(pages))
         finally:
             remove_document(doc_id)
-            self._document_ids.remove(doc_id)
 
         return bytes(result)
 
@@ -407,10 +404,6 @@ class Template:
 
     def cleanup(self) -> None:
         """Clean up cached resources."""
-        for doc_id in list(self._document_ids):
-            remove_document(doc_id)
-        self._document_ids.clear()
-
         remove_world(self._template_id)
 
     def __enter__(self) -> Template:

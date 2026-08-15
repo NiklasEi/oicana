@@ -12,11 +12,6 @@ use std::collections::HashMap;
 use napi::bindgen_prelude::{AsyncTask, Buffer, Result, Uint8Array};
 use napi::{Env, Error, Task};
 
-/// Error string when a requested template is not registered yet. Call `[register_template]` before
-/// trying to use the template through a different method.
-#[napi]
-pub const NOT_REGISTERED: &str = "Template is not registered";
-
 /// Configure automatic cache eviction after each compilation.
 ///
 /// # Parameters

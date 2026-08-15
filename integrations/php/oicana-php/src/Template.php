@@ -29,8 +29,6 @@ use Oicana\Inputs\BlobInput;
 class Template
 {
     private string $templateId;
-    /** @var list<string> */
-    private array $documentIds = [];
     private ?string $lastWarnings = null;
 
     /**
@@ -118,7 +116,6 @@ class Template
         );
 
         $this->lastWarnings = \OicanaInternal\get_warnings($docId);
-        $this->documentIds[] = $docId;
 
         try {
             return \OicanaInternal\export_document(
@@ -128,10 +125,6 @@ class Template
             );
         } finally {
             \OicanaInternal\remove_document($docId);
-            $this->documentIds = array_filter(
-                $this->documentIds,
-                static fn(string $id): bool => $id !== $docId
-            );
         }
     }
 
@@ -320,11 +313,6 @@ class Template
      */
     public function cleanup(): void
     {
-        foreach ($this->documentIds as $docId) {
-            \OicanaInternal\remove_document($docId);
-        }
-        $this->documentIds = [];
-
         \OicanaInternal\remove_world($this->templateId);
     }
 

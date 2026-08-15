@@ -14,10 +14,6 @@ use wasm_bindgen::JsValue;
 
 use oicana_world::get_current_time;
 
-/// Error string when a requested template is not registered yet. Call `[register_template]` before
-/// trying to use the template through a different method.
-pub const NOT_REGISTERED: &str = "Template is not registered";
-
 /// Configure automatic cache eviction after each compilation.
 ///
 /// # Parameters
@@ -375,8 +371,11 @@ fn decode_blob_inputs(
     blobs
         .into_iter()
         .map(|(key, blob)| {
-            let meta = serde_json::to_string(&blob.meta)
-                .map_err(|error| format!("Failed to encode metadata for '{key}': {error:?}"))?;
+            let meta = match blob.meta {
+                Some(meta) => serde_json::to_string(&meta)
+                    .map_err(|error| format!("Failed to encode metadata for '{key}': {error:?}"))?,
+                None => "{}".to_owned(),
+            };
             Ok((
                 key,
                 oicana_ffi_core::BlobWithMetadata {
@@ -434,5 +433,6 @@ impl From<CompilationMode> for oicana_ffi_core::CompilationMode {
 #[derive(Deserialize)]
 struct BlobWithMetadata {
     bytes: Vec<u8>,
-    meta: serde_json::Value,
+    #[serde(default)]
+    meta: Option<serde_json::Value>,
 }

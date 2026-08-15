@@ -8,7 +8,6 @@ export {
   registeredFonts,
   registerFontPaths,
   registerFonts,
-  setValidateInputs,
 } from '@oicana/node-native';
 export * from './CompilationMode.js';
 export * from './CompiledDocument.js';

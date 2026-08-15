@@ -187,12 +187,6 @@ export declare function getWarnings(documentId: string): string | null
  */
 export declare function inputs(template: string): string
 
-/**
- * Error string when a requested template is not registered yet. Call `[register_template]` before
- * trying to use the template through a different method.
- */
-export const NOT_REGISTERED: string
-
 /** A font face made available to templates by the host. */
 export interface RegisteredFont {
   /** The family name, as used in Typst's `text(font: ...)`. */
