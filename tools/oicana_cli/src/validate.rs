@@ -37,10 +37,7 @@ pub fn validate(args: ValidateArgs) -> anyhow::Result<()> {
         let validation_result = validate_native_template(&template.path);
         match validation_result {
             Err(e) => {
-                eprintln!(
-                    "Template {:?}: manifest validation failed: {e}",
-                    template.path
-                );
+                eprintln!("Template {:?}: {e}", template.path);
                 all_passed = false;
             }
             Ok(manifest) => {
