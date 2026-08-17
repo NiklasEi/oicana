@@ -103,4 +103,22 @@ public class ExportOnceTests
 
         act.Should().Throw<OicanaException>().WithMessage("*entries*");
     }
+
+    [Fact]
+    public void RejectsNegativeZipLimits()
+    {
+        var entries = () => new ZipLimits { MaxEntries = -1 };
+        entries.Should().Throw<ArgumentOutOfRangeException>().WithMessage("*MaxEntries*");
+
+        var bytes = () => new ZipLimits { MaxTotalDecompressedBytes = -8 };
+        bytes.Should().Throw<ArgumentOutOfRangeException>()
+            .WithMessage("*MaxTotalDecompressedBytes*");
+    }
+
+    [Fact]
+    public void AcceptsZeroAndNullZipLimits()
+    {
+        new ZipLimits { MaxEntries = 0 }.MaxEntries.Should().Be(0);
+        new ZipLimits().MaxEntries.Should().BeNull();
+    }
 }

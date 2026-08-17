@@ -359,6 +359,13 @@ mod tests {
         let bytes_only = ZipLimits::from_sentinels(-1, 128).expect("limits");
         assert_eq!(bytes_only.max_entries, defaults.max_entries);
         assert_eq!(bytes_only.max_total_decompressed_bytes, 128);
+
+        let entries_only = ZipLimits::from_sentinels(10, -1).expect("limits");
+        assert_eq!(entries_only.max_entries, 10);
+        assert_eq!(
+            entries_only.max_total_decompressed_bytes,
+            defaults.max_total_decompressed_bytes
+        );
     }
 
     #[test]

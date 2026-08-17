@@ -12,6 +12,7 @@
 - `snapshot` can be configured for a test collection
 - `validate` checks that `default` and `development` value files exist
 - `validate` warns about required inputs that have no `default` or `development` value
+- `validate --deny-warnings` fails the validation if any warnings are reported
 - Nicer error messages
 
 ### Rust
@@ -23,6 +24,12 @@
 
 ### Node
 - remove exports for unused/unusable `NOT_REGISTERED` and `setValidateInputs`
+
+### C#
+- `ZipLimits` rejects negative bounds instead of silently falling back to the default
+
+### Java
+- `ZipLimits` rejects negative bounds instead of silently falling back to the default
 
 ## v0.7.0
 

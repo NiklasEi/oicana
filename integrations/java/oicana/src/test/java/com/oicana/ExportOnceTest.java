@@ -113,6 +113,23 @@ class ExportOnceTest {
     }
 
     @Test
+    void rejectsNegativeZipLimits() {
+        var entries = assertThrows(IllegalArgumentException.class,
+                () -> new ZipLimits(-1L, null));
+        assertTrue(entries.getMessage().contains("maxEntries"));
+
+        var bytes = assertThrows(IllegalArgumentException.class,
+                () -> new ZipLimits(null, -8L));
+        assertTrue(bytes.getMessage().contains("maxTotalDecompressedBytes"));
+    }
+
+    @Test
+    void acceptsZeroAndNullZipLimits() {
+        assertEquals(0L, new ZipLimits(0L, null).maxEntries());
+        assertNull(new ZipLimits(null, null).maxEntries());
+    }
+
+    @Test
     void diagnosticColorConfigurationSucceeds() {
         Configuration.setDiagnosticColor(DiagnosticColor.ANSI);
         Configuration.setDiagnosticColor(DiagnosticColor.NONE);

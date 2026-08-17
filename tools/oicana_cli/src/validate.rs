@@ -23,6 +23,7 @@ pub const VALIDATE_AFTER_HELP: &str = color_print::cstr!("\
   oicana validate templates/invoice
   oicana validate -a
   oicana validate templates -a
+  oicana validate -a --deny-warnings
 ");
 
 pub fn validate(args: ValidateArgs) -> anyhow::Result<()> {
@@ -94,6 +95,10 @@ pub fn validate(args: ValidateArgs) -> anyhow::Result<()> {
         anyhow::bail!("Validation failed for one or more templates.")
     }
 
+    if args.deny_warnings && warning_count > 0 {
+        anyhow::bail!("Validation reported warnings and --deny-warnings is set.")
+    }
+
     println!(
         "\nValidated {} template{} successfully{}",
         passed_count,
@@ -104,10 +109,6 @@ pub fn validate(args: ValidateArgs) -> anyhow::Result<()> {
             count => format!(" with {count} warnings"),
         },
     );
-
-    if args.deny_warnings && warning_count > 0 {
-        anyhow::bail!("Validation reported warnings and --deny-warnings is set.")
-    }
 
     Ok(())
 }

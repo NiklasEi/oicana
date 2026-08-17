@@ -10,4 +10,17 @@ package com.oicana;
  *                                   for the default
  */
 public record ZipLimits(Long maxEntries, Long maxTotalDecompressedBytes) {
+    /**
+     * @throws IllegalArgumentException if a bound is negative
+     */
+    public ZipLimits {
+        requireNonNegative(maxEntries, "maxEntries");
+        requireNonNegative(maxTotalDecompressedBytes, "maxTotalDecompressedBytes");
+    }
+
+    private static void requireNonNegative(Long value, String name) {
+        if (value != null && value < 0) {
+            throw new IllegalArgumentException(name + " must not be negative, got " + value);
+        }
+    }
 }
