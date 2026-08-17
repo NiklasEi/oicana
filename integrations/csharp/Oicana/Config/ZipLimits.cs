@@ -8,9 +8,32 @@ namespace Oicana.Config;
 /// </summary>
 public class ZipLimits
 {
+    private readonly long? _maxEntries;
+    private readonly long? _maxTotalDecompressedBytes;
+
     /// <summary>Maximum number of zip entries, or <c>null</c> for the default.</summary>
-    public long? MaxEntries { get; init; }
+    /// <exception cref="ArgumentOutOfRangeException">If the value is negative.</exception>
+    public long? MaxEntries
+    {
+        get => _maxEntries;
+        init => _maxEntries = NonNegative(value, nameof(MaxEntries));
+    }
 
     /// <summary>Maximum total decompressed size in bytes, or <c>null</c> for the default.</summary>
-    public long? MaxTotalDecompressedBytes { get; init; }
+    /// <exception cref="ArgumentOutOfRangeException">If the value is negative.</exception>
+    public long? MaxTotalDecompressedBytes
+    {
+        get => _maxTotalDecompressedBytes;
+        init => _maxTotalDecompressedBytes = NonNegative(value, nameof(MaxTotalDecompressedBytes));
+    }
+
+    private static long? NonNegative(long? value, string name)
+    {
+        if (value < 0)
+        {
+            throw new ArgumentOutOfRangeException(name, value, $"{name} must not be negative.");
+        }
+
+        return value;
+    }
 }
