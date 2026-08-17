@@ -93,7 +93,12 @@ pub fn is_path_oicana_template(path: &Path) -> anyhow::Result<Option<TemplateMan
         Ok(manifest) => manifest,
     };
     match TemplateManifest::from_toml(&manifest) {
-        Ok(manifest) => Ok(Some(manifest)),
+        Ok(parsed) => {
+            if let Err(error) = parsed.check_manifest_version() {
+                bail!("Manifest error in {possible_manifest_path:?}: {error}");
+            }
+            Ok(Some(parsed))
+        }
         Err(error) => {
             if declares_oicana_section(&manifest) {
                 bail!("Manifest error: Failed to parse manifest file {possible_manifest_path:?}: {error}");
@@ -207,6 +212,21 @@ entrypoint = \"main.typ\"
         assert!(
             error.to_string().contains("banana"),
             "expected the parse error to name the offending value, got: {error}"
+        );
+    }
+
+    #[test]
+    fn a_manifest_from_a_newer_oicana_is_refused() {
+        let tempdir = template_dir_with_manifest(&format!(
+            "{PACKAGE_SECTION}\n[tool.oicana]\nmanifest_version = 99\n"
+        ));
+
+        let error = is_path_oicana_template(tempdir.path()).unwrap_err();
+        assert!(
+            error
+                .to_string()
+                .contains("Unsupported manifest_version 99"),
+            "expected the unsupported version to be named, got: {error}"
         );
     }
 
