@@ -10,7 +10,7 @@ buildscript {
 
 subprojects {
     group = "com.oicana"
-    version = "0.7.0"
+    version = "0.8.0-rc.1"
 
     apply(plugin = "java-library")
     apply(plugin = "com.vanniktech.maven.publish")

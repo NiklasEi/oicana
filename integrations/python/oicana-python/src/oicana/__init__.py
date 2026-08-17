@@ -28,7 +28,7 @@ from .types import (
     ZipLimits,
 )
 
-__version__ = "0.7.0"
+__version__ = "0.8.0rc1"
 
 __all__ = [
     "Template",
