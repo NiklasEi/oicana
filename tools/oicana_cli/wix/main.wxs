@@ -69,7 +69,7 @@
 
         <Package Id='*'
             Keywords='Installer'
-            Description='CLI for working with Oicana templates.'
+            Description='Scaffold, validate, snapshot-test, and pack Oicana templates.'
             Manufacturer='Oicana'
             InstallerVersion='450'
             Languages='1033'

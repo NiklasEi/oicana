@@ -1,4 +1,8 @@
-# Python Integration
+# Oicana Python Integration
+
+> Contributor documentation for building and publishing the Python integration.
+> Using Oicana in a Python project? Start at [`oicana-python/README.md`](oicana-python/README.md)
+> or the [Python getting started guide](https://oicana.com/docs/getting-started/4-6-python/).
 
 Two packages: `oicana-native` (PyO3 Rust extension) + `oicana` (Python wrapper).
 

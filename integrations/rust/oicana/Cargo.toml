@@ -1,6 +1,6 @@
 [package]
 name = "oicana"
-description = "Oicana for Rust - Dynamic PDF Generation with Typst."
+description = "Generate typeset PDFs in Rust from Typst templates, in process. No headless browser, no per-document fees."
 keywords = { workspace = true }
 categories = { workspace = true }
 version = { workspace = true }

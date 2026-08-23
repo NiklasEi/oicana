@@ -1,7 +1,7 @@
 {
   "name": "@oicana/node-native",
   "version": "0.8.0-rc.1",
-  "description": "Template project for writing node package with napi-rs",
+  "description": "Native binary for @oicana/node. Install @oicana/node instead.",
   "main": "index.js",
   "repository": {
     "type": "git",

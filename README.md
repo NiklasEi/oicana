@@ -1,136 +1,145 @@
 # Oicana
-*Dynamic PDF Generation based on Typst*
 
-https://oicana.com
+*One template. Every platform. Typeset PDFs.*
 
-Oicana offers seamless PDF templating across multiple platforms. Define your templates in Typst, specify dynamic inputs, and generate high quality PDFs from any environment - whether it's a web browser, server application, or desktop software.
+[https://oicana.com](https://oicana.com)
 
-## What Oicana offers
+Oicana compiles [Typst](https://typst.app/) templates to PDF, PNG, and SVG from Node.js, Python, Java, C#, Rust, PHP, and the browser. No headless Chrome, no per-document fees, no document data leaving your infrastructure. One template format works everywhere.
 
-- *Multi-platform* - the same template works across all integrations: browser, Node.js, C#, Java, Rust, Python, and PHP.
-- *Powerful layouting* - templates use the full power of Typst, including its package ecosystem.
-- *Performant* - PDFs can generate in single-digit milliseconds.
-- *AI and version control ready* - templates are text files. They live next to your code, and AI can help write them.
-- *Escape vendor lock-in* - templates are plain Typst projects. The Typst compiler is open source.
+> **Free for noncommercial use.** Commercial use is free for 30 days, then needs a [per-application subscription](https://oicana.com/#pricing) with unlimited seats.
 
-## Getting started
+## Why Oicana
 
-The [getting started guide][getting-started] demonstrates how to
-1. Create an Oicana Template
-2. Define and use inputs for the template
-3. Compile a PDF based on the template from either a
-   * Browser application using [React](https://react.dev/)
-   * C# application using [ASP.NET](https://dotnet.microsoft.com/en-us/apps/aspnet)
-   * Java application using [Spring Boot](https://spring.io/projects/spring-boot)
-   * Node.js application using [NestJS](https://nestjs.com/)
-   * Rust application with [Axum](https://github.com/tokio-rs/axum)
-   * Python application with [FastAPI](https://fastapi.tiangolo.com/)
-   * PHP application with [Slim](https://www.slimframework.com/)
+- **Runs in your infrastructure**: PDFs are generated inside your own application. No data is sent to a third-party service.
+- **Multi-platform**: the same template works in the browser, Node.js, C#, Java, Rust, Python, and PHP.
+- **Powerful layouting**: templates have all of Typst, including its package ecosystem.
+- **Performant**: a warmed up template renders a PDF in single-digit milliseconds.
+- **AI and version control ready**: templates are text files. They live next to your code, and AI can help write them.
+- **No proprietary format**: templates are plain Typst projects. The Typst compiler is open source.
 
-## Available integrations
+## What a template looks like
 
-Integrations allow you to use Oicana templates from different platforms and programming languages.
+Templates are plain [Typst](https://typst.app/) projects. A `typst.toml` manifest names the entrypoint and declares the inputs your application passes in:
 
-Ready to use:
-* TypeScript/JavaScript
-    * in the browser -> [@oicana/browser](https://www.npmjs.com/package/@oicana/browser)
-    * Node.js -> [@oicana/node](https://www.npmjs.com/package/@oicana/node)
-* C# -> [Oicana](https://www.nuget.org/packages/Oicana)
-* Java -> [com.oicana:oicana](https://central.sonatype.com/artifact/com.oicana/oicana)
-* Rust -> [oicana](https://crates.io/crates/oicana)
-* Python -> [oicana](https://pypi.org/project/oicana/)
-* PHP -> [oicana/oicana](https://composer.oicana.com)
+```toml
+[package]
+name = "invoice"
+version = "0.1.0"
+entrypoint = "main.typ"
 
-You can find an open source example project in the [Oicana GitHub organization][oicana-github] for every available integration.
-The example project for the browser integration is deployed to https://example.oicana.com (not compatible with some mobile browsers).
+[tool.oicana]
+manifest_version = 1
 
-> More integrations are planned. If you are missing a specific one, please open a GitHub issue or sent us an e-mail at `hello@oicana.com`. This helps with prioritizing.
+[[tool.oicana.inputs]]
+type = "json"
+key = "invoice"
+development = "invoice.json"
+```
 
-## Oicana template development
+The entrypoint, `main.typ`, reads those inputs through the Oicana Typst package and lays out the document:
 
-For more details, please take a look at [the documentation][docs].
-
-An Oicana template consists of
-- one or multiple Typst `.typ` files
-- a `typst.toml` manifest with
-  - `name`, `version`, `entrypoint` and `tool.oicana.manifest_version` values
-  - any number of input definitions
-
-Oicana templates are "normal" Typst projects and can be worked on in the official [Typst editor][Typst] or any other editor with Typst support.
-
-You can find a [couple of open source example templates][oicana-example-templates] on GitHub.
-
-### Typst package
-
-The Oicana Typst package has to be set up for every template. It will handle inputs for you and fall back on their default or development values when needed.
-
-The package needs minimal setup:
 ```typst
 #import "@preview/oicana:0.2.0": setup
 
-#let read-project-file(path) = return read(path, encoding: none);
-#let (input, oicana-image, oicana-config) = setup(read-project-file);
+#let read-project-file(path) = read(path, encoding: none)
+#let (input, oicana-image, oicana-config) = setup(read-project-file)
+
+#set document(title: "Invoice", date: datetime.today())
+
+= Invoice #input.invoice.number
+
+Billed to: #input.invoice.customer
+
+*Total: #input.invoice.total*
 ```
 
-[The example templates][oicana-example-templates] showcase how to use the return values of the setup function.
+The `development` value lets the template preview with real data in any Typst editor. `oicana pack` turns the directory into `invoice-0.1.0.zip`, the archive every Oicana integration loads.
 
-### Testing
+## Integrations
 
-Snapshot tests can be defined for every template. The CLI described in the next section has an `oicana test` command.
+| Platform | Package | Guide |
+| -------- | ------- | ----- |
+| Browser | [`@oicana/browser`](https://www.npmjs.com/package/@oicana/browser) | [Browser / React](https://oicana.com/docs/getting-started/4-1-browser/) |
+| Node.js | [`@oicana/node`](https://www.npmjs.com/package/@oicana/node) | [Node.js / NestJS](https://oicana.com/docs/getting-started/4-4-nodejs/) |
+| C# | [`Oicana`](https://www.nuget.org/packages/Oicana) | [C# / ASP.NET](https://oicana.com/docs/getting-started/4-2-csharp/) |
+| Java | [`com.oicana:oicana`](https://central.sonatype.com/artifact/com.oicana/oicana) | [Java / Spring Boot](https://oicana.com/docs/getting-started/4-3-java/) |
+| Rust | [`oicana`](https://crates.io/crates/oicana) | [Rust / Axum](https://oicana.com/docs/getting-started/4-5-rust/) |
+| Python | [`oicana`](https://pypi.org/project/oicana/) | [Python / FastAPI](https://oicana.com/docs/getting-started/4-6-python/) |
+| PHP | [`oicana/oicana`](https://composer.oicana.com) | [PHP / Slim](https://oicana.com/docs/getting-started/4-7-php/) |
+
+Every integration has an open source example project in the [Oicana GitHub organization](https://github.com/oicana). The browser example is deployed at [example.oicana.com](https://example.oicana.com).
+
+> More integrations are planned. Missing one? Open a GitHub issue or write to `hello@oicana.com`. It helps us prioritize.
+
+## Getting started
+
+The [getting started guide](https://oicana.com/docs/getting-started/1-setup/) walks through creating a template, defining its inputs, and generating a PDF from any integration.
+
+Comparing options? Read [how Oicana differs from headless browsers, PDF libraries, LaTeX, and hosted APIs](https://oicana.com/compare/).
+
+## Template development
+
+An Oicana template consists of
+
+- one or more Typst `.typ` files
+- a `typst.toml` manifest with `name`, `version`, `entrypoint`, and `tool.oicana.manifest_version`, plus any number of input definitions
+
+Templates are ordinary Typst projects, so you can edit them in the official [Typst editor](https://typst.app/) or any editor with Typst support. Start from the [open source example templates](https://github.com/oicana/oicana-example-templates).
+
+### Typst package
+
+Every template sets up the [Oicana Typst package](https://typst.app/universe/package/oicana). It collects the declared inputs and falls back to their `default` or `development` values:
+
+```typst
+#import "@preview/oicana:0.2.0": setup
+
+#let read-project-file(path) = read(path, encoding: none)
+#let (input, oicana-image, oicana-config) = setup(read-project-file)
+```
+
+### PDF standards
+
+A template declares the standards its PDFs conform to and whether the output is tagged for accessibility:
+
+```toml
+[tool.oicana.export.pdf]
+standards = ["2.0", "a-4"]
+tagged = true
+```
+
+| Family | Accepted values |
+| ------ | --------------- |
+| Base PDF version | `1.4`, `1.5`, `1.6`, `1.7`, `2.0` |
+| PDF/A (archival) | `a-1b`, `a-1a`, `a-2b`, `a-2u`, `a-2a`, `a-3b`, `a-3u`, `a-3a`, `a-4`, `a-4f`, `a-4e` |
+| PDF/UA (accessibility) | `ua-1` |
+
+Standards combine as long as the combination is producible: at most one base version, at most one PDF/A standard, and at most one PDF/UA standard, all sharing overlapping PDF versions. `oicana validate` rejects the rest.
+
+The defaults are `standards = ["a-3b"]` and `tagged = true`. Tagging is skipped automatically when a page range omits pages, because Typst cannot tag a partial document.
+
+On top of comparing snapshots, `oicana test` exports every test document under the configured standards, so a template that cannot be produced in its declared standard fails the suite. Set `pdf = false` on a single test or a whole collection to skip the export.
 
 ### CLI
 
-Please refer to the documentation for installation instructions: https://oicana.com/docs/cli
+The CLI scaffolds, validates, packages, and tests templates. See the [CLI documentation](https://oicana.com/docs/cli/) for installation and the full reference.
 
-#### Packaging
+```bash
+oicana new invoice                          # scaffold a template
+oicana validate -a                          # check every manifest, input schema, and fallback value
+oicana compile -j invoice=invoice.json      # render an unpacked template
+oicana watch                                # recompile whenever a source file changes
+oicana test -a                              # snapshot tests, plus PDF export in the declared standards
+oicana pack --all                           # produce the archives integrations load
+```
 
-Packing Oicana templates is required to use templates with integrations.
-
-Example commands to package templates:
-- `oicana pack --all` - pack all templates in the current directory (including child directories)
-- `oicana pack templates/invoice -o output` - pack the template in the `templates/invoice` directory and put the output into the `output` directory
-
-
-#### Compilation
-
-The `compile` command will create `pdf`, `png`, or `svg` files from unpacked templates.
-
-Example commands to compile templates:
-- `oicana compile templates/invoice -f pdf -j invoice=templates/invoice/invoice.json -b logo=templates/invoice/logo.jpg`
-- `oicana compile templates/table -j input=templates/table/data.json`
-- `oicana compile templates/package -j input=templates/package/sample.json`
-
-
-#### Test
-
-Example commands to test templates:
-- `oicana test` - run all tests of the template in the current directory
-- `oicana test templates/invoice` - run the tests of the template in the directory `templates/invoice`
-- `oicana test -a` - run all tests of all templates found in the current directory and all child directories
-
+Integrations load packed archives, not directories, so `oicana pack` is the one command every project needs.
 
 ## Pronunciation
+
 /ɔɪkɑna/
 
 ## Licensing
 
-Oicana is source-available under [PolyForm Noncommercial License 1.0.0](./LICENSE.md). You can use it for free in any noncommercial context.
-For commercial use, please visit [the Oicana website][oicana-website] for pricing options.
+Oicana is source-available under the [PolyForm Noncommercial License 1.0.0](https://github.com/oicana/oicana/blob/main/LICENSE.md) and free for noncommercial use. Commercial use is free for 30 days; see [pricing](https://oicana.com/#pricing) for subscriptions, or write to `hello@oicana.com`.
 
-The [Typst integration][oicana-typst] and several example projects in the Oicana GitHub organization are open source under their respective licenses.
-
-
-See [NOTICE](NOTICE) for a report of licenses in this project.
-
-
-
-[Typst]: https://typst.app/
-[typst-universe]: https://typst.app/universe/
-[typst-packages]: https://github.com/typst/packages/
-[oicana-github]: https://github.com/oicana
-[oicana-example-templates]: https://github.com/oicana/oicana-example-templates
-[napi]: https://napi.rs/
-[oicana-typst]: https://typst.app/universe/package/oicana
-[docs]: https://oicana.com/docs
-[getting-started]: https://oicana.com/docs/getting-started/1-setup/
-[oicana-website]: https://oicana.com
+The [Typst integration](https://typst.app/universe/package/oicana) and the example projects in the Oicana GitHub organization are open source under their respective licenses. See [NOTICE](NOTICE) for a report of the third party licenses in this project.

@@ -1,5 +1,9 @@
 # Oicana Java Integration
 
+> Contributor documentation for building and publishing the Java integration.
+> Using Oicana in a Java project? Start at [`oicana/README.md`](oicana/README.md)
+> or the [Java getting started guide](https://oicana.com/docs/getting-started/4-3-java/).
+
 JNI bindings for Oicana, published to Maven Central as `com.oicana:oicana` plus per-platform native JARs.
 
 ## Project structure

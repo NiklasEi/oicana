@@ -1,21 +1,28 @@
 # Oicana
-*Dynamic PDF Generation based on Typst*
 
-https://oicana.com
+*Turn a Typst project into a document template your software application can render.*
 
-Oicana offers seamless PDF templating across multiple platforms. Define your templates in Typst, specify dynamic inputs, and generate high quality PDFs from any environment - whether it's a web browser, server application, or desktop software.
+This package is the template-side half of [Oicana](https://oicana.com). It collects the inputs your application passes in and falls back to the `default` or `development` values from the manifest when they are missing, so one file serves both as a live preview in a Typst editor and as a production document rendered from Node.js, Python, Java, C#, Rust, PHP, or the browser.
 
-## What Oicana offers
+> This package is [MIT licensed](./LICENSE.md) and free to use. The Oicana integrations that render these templates from application code are source-available: free for noncommercial use, with commercial use free for 30 days. See [pricing](https://oicana.com/#pricing).
 
-- *Multi-platform* - The same templates work with all Oicana integrations.
-- *Powerful Layouting* - Templates can use all of Typst's functionality, including its extensive package ecosystem.
-- *Performant* - Create a PDF in single digit milliseconds.
-- *AI and Version Control Ready* - Templates are text files. They can live next to your code and AI can assist in writing them.
-- *Escape Vendor Lock-in* - Reuse templates with other Typst based solutions. The Typst compiler is open source!
+## Setup
 
-## Example usage
+Every template imports `setup` and destructures its return values:
 
-Considering a Typst project with the following `typst.toml`:
+```typst
+#import "@preview/oicana:0.2.0": setup
+
+#let read-project-file(path) = read(path, encoding: none)
+#let (input, oicana-image, oicana-config) = setup(read-project-file)
+```
+
+`read-project-file` is passed in because a package cannot read the files of the project using it. `input` holds the JSON inputs, `oicana-image` resolves blob inputs to images, and `oicana-config` exposes the compilation configuration.
+
+## Example
+
+A `typst.toml` declaring one JSON and one blob input:
+
 ```toml
 [package]
 name = "example"
@@ -36,47 +43,45 @@ key = "logo"
 development = { file = "company-logo.png" }
 ```
 
-This package will collect the two inputs and prepare them for use in your Typst code. Previewing the following `main.typ` file in a Typst editor, would show the contents of the `data.json` and `company-logo.png` files:
+The matching `main.typ`:
+
 ```typst
 #import "@preview/oicana:0.2.0": setup
 
-#let read-project-file(path) = return read(path, encoding: none);
-#let (input, oicana-image, oicana-config) = setup(read-project-file);
+#let read-project-file(path) = read(path, encoding: none)
+#let (input, oicana-image, oicana-config) = setup(read-project-file)
 
-this is the current value of the input with the key "data":
+#set document(date: datetime.today())
+
+The current value of the input with the key "data":
 #input.data
 
 The image passed into the template with the input key "logo": \
 #oicana-image("logo")
 ```
 
-If compiled through one of the Oicana integrations (for example out of C# code), the input values given by the integration would be used instead of the defined `development` values from the manifest file.
+Previewing this in a Typst editor shows the contents of `data.json` and `company-logo.png`. Rendered through an Oicana integration (from C# code, say), the application's values are used instead.
 
-A Typst project that configures Oicana in its manifest file and uses the package `@preview/oicana` is called an Oicana template in the documentation.
+A Typst project that configures Oicana in its manifest and uses this package is what the documentation calls an *Oicana template*.
 
-## Getting started
+## Why Oicana
 
-The [getting started guide][getting-started] demonstrates how to
-1. Create an Oicana Template
-2. Define and use inputs for the template
-3. Compile a PDF based on the template from either a
-   * Browser application using [React](https://react.dev/)
-   * C# application using [ASP.NET](https://dotnet.microsoft.com/en-us/apps/aspnet)
-   * Java application using [Spring Boot](https://spring.io/projects/spring-boot)
-   * Node.js application using [NestJS](https://nestjs.com/)
-   * Rust application with [Axum](https://github.com/tokio-rs/axum)
-   * Python application with [FastAPI](https://fastapi.tiangolo.com/)
-   * PHP application with [Slim](https://www.slimframework.com/)
+- **Runs in your infrastructure**: PDFs are generated inside your own application. No data is sent to a third-party service.
+- **Multi-platform**: the same template works in the browser, Node.js, C#, Java, Rust, Python, and PHP.
+- **Powerful layouting**: templates have all of Typst, including its package ecosystem.
+- **Performant**: a warmed up template renders a PDF in single-digit milliseconds.
+- **AI and version control ready**: templates are text files. They live next to your code, and AI can help write them.
+- **No proprietary format**: templates are plain Typst projects. The Typst compiler is open source.
 
-If you would like to dive in head first, check out [the example templates][example-templates].
+## Where to go next
+
+- [Getting started](https://oicana.com/docs/getting-started/1-setup/): build a template and render it from your language of choice
+- [Inputs](https://oicana.com/docs/templates/inputs/): JSON schemas, blob metadata, defaults, and required inputs
+- [Example templates](https://github.com/oicana/oicana-example-templates): including a complete e-invoice
+- [The Oicana CLI](https://oicana.com/docs/cli/): scaffold, validate, snapshot-test, and pack templates
 
 ## Licensing
 
 This package is available under the [MIT license](./LICENSE.md).
 
-Oicana itself is source available under PolyForm Noncommercial License 1.0.0. For other licensing details, please take a look at [the website][Oicana]. 
-
-
-[Oicana]: https://oicana.com
-[example-templates]: https://github.com/oicana/oicana-example-templates
-[getting-started]: https://oicana.com/docs/getting-started/1-setup
+Oicana itself is source-available under the [PolyForm Noncommercial License 1.0.0](https://github.com/oicana/oicana/blob/main/LICENSE.md). For commercial licensing details, see [the Oicana website](https://oicana.com/#pricing).
