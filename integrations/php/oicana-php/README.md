@@ -15,7 +15,7 @@ Oicana is distributed from its own Composer repository:
 ```bash
 composer config repositories.oicana composer https://composer.oicana.com
 composer config allow-plugins.oicana/installer true
-composer require oicana/oicana:^0.8.0
+composer require oicana/oicana
 ```
 
 The installer downloads the native extension for your platform. Enable it with:
