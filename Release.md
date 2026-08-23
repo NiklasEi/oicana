@@ -21,7 +21,6 @@
     * integrations/php/oicana-php-native/Cargo.toml
     * integrations/php/oicana-php/composer.json
     * integrations/php/oicana-php-installer/composer.json
-    * integrations/php/oicana-php/README.md
   * Java:
     * integrations/java/oicana-java-native/Cargo.toml
     * integrations/java/build.gradle.kts (version in `subprojects` block)
@@ -95,7 +94,7 @@ The wrapper package `@oicana/node` is currently published manually.
 
 Push a tag `oicana_php-v0.0.0-rc.1` or manually trigger .github/workflows/publish-integration-php.yml with a version input.
 
-The CD pipeline validates version consistency across all 4 version sources, builds native extensions for PHP 8.3/8.4/8.5 (NTS + ZTS) on Linux, macOS, and Windows, creates a GitHub release with binaries, and triggers a Composer registry rebuild.
+The CD pipeline validates version consistency across all 3 version sources, builds native extensions for PHP 8.3/8.4/8.5 (NTS + ZTS) on Linux, macOS, and Windows, creates a GitHub release with binaries, and triggers a Composer registry rebuild.
 
 ## Java
 

@@ -271,6 +271,6 @@ jobs:
             - [Documentation](https://oicana.com/docs)
             - [Example Spring Boot Application](https://github.com/oicana/oicana-example-java-spring-boot)
           draft: false
-          prerelease: true
+          prerelease: ${{ contains(env.VERSION, '-') }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

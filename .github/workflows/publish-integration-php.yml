@@ -307,7 +307,7 @@ jobs:
             - [Oicana Website](https://oicana.com)
           files: binaries/*
           draft: false
-          prerelease: true
+          prerelease: ${{ contains(env.VERSION, '-') }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
