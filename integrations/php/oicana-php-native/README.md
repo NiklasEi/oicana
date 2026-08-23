@@ -1,44 +1,29 @@
-# Oicana PHP Native Extension
+# Oicana PHP native extension
 
-Native PHP extension for Oicana.
+> **This is an internal build artifact of [Oicana](https://oicana.com).** Install the [`oicana/oicana`](https://github.com/oicana/oicana/tree/main/integrations/php/oicana-php) Composer package instead. It downloads this extension for your platform and wraps it in the documented API.
 
-## Overview
-
-This is the low-level native binding layer for the Oicana PHP integration. **Most users should use the [`oicana/oicana`](../oicana-php) package instead**, which provides a convenient PHP wrapper around this extension.
+Native PHP extension built with [ext-php-rs](https://github.com/extphprs/ext-php-rs). The functions here take and return raw handles, with no stability guarantees between releases.
 
 ## Building
 
-### Prerequisites
-
-- Rust 1.88+
-- PHP 8.3, 8.4, or 8.5 (with development headers)
-
-### Build Instructions
+Requires Rust 1.88+ and PHP 8.3, 8.4, or 8.5 with development headers.
 
 ```bash
 cargo build --release
 ```
 
-The extension will be compiled to `target/release/liboicana_php_native.so` (Linux), `liboicana_php_native.dylib` (macOS), or `oicana_php_native.dll` (Windows).
+The extension lands in `target/release/` as `liboicana_php_native.so` (Linux), `liboicana_php_native.dylib` (macOS), or `oicana_php_native.dll` (Windows).
 
-### Installing Locally
-
-After building, copy the extension to your PHP extensions directory:
+## Installing locally
 
 ```bash
-# Find your extension directory
-php -i | grep extension_dir
-
-# Copy the extension
-cp target/release/liboicana_php_native.so /path/to/extensions/
-
-# Or use cargo-php if available
-cargo install cargo-php
-cargo php install --release
+php -i | grep extension_dir                       # find your extension directory
+cp target/release/liboicana_php_native.so "$dir"  # copy it there
+echo "extension=oicana_php_native.so" >> php.ini  # and load it
 ```
 
-Then add to your `php.ini`:
+Or load it for a single command with `php -d extension=/path/to/liboicana_php_native.so`.
 
-```ini
-extension=oicana_php_native.so
-```
+## Licensing
+
+Oicana is source-available under the [PolyForm Noncommercial License 1.0.0](https://github.com/oicana/oicana/blob/main/LICENSE.md) and free for noncommercial use. Commercial use is free for 30 days; see [pricing](https://oicana.com/#pricing) for subscriptions.

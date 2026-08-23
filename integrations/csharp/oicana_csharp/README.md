@@ -1,6 +1,8 @@
-# Oicana csharp
+# oicana_csharp
 
-This crate exposes FFI bindings for the C# wrapper package `../Oicana`.
+> **This is an internal build artifact of [Oicana](https://oicana.com).** Install the [`Oicana`](https://www.nuget.org/packages/Oicana) NuGet package instead. It ships this native library and wraps it in the documented API.
+
+FFI bindings consumed by the C# wrapper package in [`../Oicana`](https://github.com/oicana/oicana/tree/main/integrations/csharp/Oicana). The exported functions take and return raw handles, with no stability guarantees between releases.
 
 ## Development
 
@@ -8,10 +10,12 @@ This crate exposes FFI bindings for the C# wrapper package `../Oicana`.
 cargo run --example csharp_bindings -p oicana_csharp && cargo build --release -p oicana_csharp
 ```
 
-The command above generates the C# class and creates the dynamic library. The C# class will be written directly to the C# wrapper project.
-The C# wrapper will copy the library build from the `target` directory to its own `bin` directory at build time (only in
-Debug mode).
+This generates the C# interop class into the wrapper project and builds the dynamic library. In Debug builds the wrapper copies the library from `target/` into its own `bin/` directory.
 
 ## .NET support
 
-This library currently supports .NET 7 and higher. If you need support for older versions, please contact `info@oicana.com`.
+The wrapper package targets .NET 8.0 and newer. If you need an older version, write to `hello@oicana.com`.
+
+## Licensing
+
+Oicana is source-available under the [PolyForm Noncommercial License 1.0.0](https://github.com/oicana/oicana/blob/main/LICENSE.md) and free for noncommercial use. Commercial use is free for 30 days; see [pricing](https://oicana.com/#pricing) for subscriptions.

@@ -1,59 +1,27 @@
-# Oicana PHP Installer
+# Oicana PHP installer
 
-Composer plugin that automatically downloads and installs the Oicana native extension for PHP.
+> **This is an internal dependency of [Oicana](https://oicana.com).** Install the [`oicana/oicana`](https://github.com/oicana/oicana/tree/main/integrations/php/oicana-php) Composer package instead. It pulls this plugin in automatically.
 
-## What it does
+Composer plugin that downloads and installs the Oicana native extension. On install it detects your platform (OS, architecture, PHP version, thread safety), fetches the matching binary from GitHub Releases, verifies it against the checksums bundled with this plugin, and prints how to enable it.
 
-This plugin automatically:
+The plugin only installs the binary for its own version, so `oicana/oicana` and `oicana/installer` upgrade in lockstep.
 
-1. Detects your platform (OS, architecture, PHP version, thread-safety)
-2. Downloads the appropriate native extension binary from GitHub Releases
-3. Installs it to the correct location
-4. Provides instructions for enabling the extension
-
-## Requirements
-
-- PHP 8.3, 8.4, 8.5
-- Composer 2.0+
-- One of: Linux (x64/ARM64), macOS (x64/ARM64), or Windows (x64)
-
-## Installation
-
-This package is automatically installed as a dependency of `oicana/oicana`:
-
-```bash
-composer require oicana/oicana
-```
-
-## Manual Installation
-
-If automatic installation fails, you can:
-
-### Option 1: Download Manually
-
-1. Go to https://github.com/oicana/oicana/releases
-2. Download the binary for your platform
-3. Place it in your PHP extensions directory
-4. Add `extension=oicana` to your php.ini
-
-### Option 2: Build from Source
-
-See the [oicana-php-native](../oicana-php-native) package for build instructions.
-
-## Supported Platforms
+## Supported platforms
 
 | OS | Architecture | PHP 8.3 | PHP 8.4 | PHP 8.5 |
-|----|-------------|---------|---------|---------|
+| -- | ------------ | ------- | ------- | ------- |
 | Linux | x64 | ✓ | ✓ | ✓ |
 | Linux | ARM64 | ✓ | ✓ | ✓ |
 | macOS | x64 | ✓ | ✓ | ✓ |
 | macOS | ARM64 | ✓ | ✓ | ✓ |
 | Windows | x64 | ✓ | ✓ | ✓ |
 
-Both NTS (non-thread-safe) and ZTS (thread-safe) builds are provided.
+Both NTS (non-thread-safe) and ZTS (thread-safe) builds are published. Requires Composer 2.0 or newer.
 
-## License
+## If automatic installation fails
 
-This project is licensed under the PolyForm Noncommercial License 1.0.0. See [LICENSE.md](LICENSE.md) for details.
+Download the binary for your platform from [the releases page](https://github.com/oicana/oicana/releases) and add `extension=/full/path/to/liboicana_php_native.so` to your `php.ini`, the same line this plugin writes for you. Building from source is covered in [`oicana-php-native`](https://github.com/oicana/oicana/tree/main/integrations/php/oicana-php-native).
 
-For commercial use, please contact hello@oicana.com.
+## Licensing
+
+Oicana is source-available under the [PolyForm Noncommercial License 1.0.0](https://github.com/oicana/oicana/blob/main/LICENSE.md) and free for noncommercial use. Commercial use is free for 30 days; see [pricing](https://oicana.com/#pricing) for subscriptions, or write to `hello@oicana.com`.

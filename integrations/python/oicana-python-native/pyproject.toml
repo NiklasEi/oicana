@@ -5,7 +5,7 @@ build-backend = "maturin"
 [project]
 name = "oicana-native"
 version = "0.8.0rc1"
-description = "Native Python bindings for Oicana (PDF templating with Typst)"
+description = "Native bindings for Oicana. Install the `oicana` package instead."
 readme = "README.md"
 requires-python = ">=3.9"
 license = { file = "LICENSE.md" }

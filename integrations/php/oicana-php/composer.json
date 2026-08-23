@@ -1,6 +1,6 @@
 {
   "name": "oicana/oicana",
-  "description": "PDF templating with Typst",
+  "description": "Generate typeset PDFs in PHP from Typst templates, in process. No headless browser, no per-document fees.",
   "type": "library",
   "license": "PolyForm-Noncommercial-1.0.0",
   "version": "0.8.0-rc.1",

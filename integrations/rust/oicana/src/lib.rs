@@ -1,8 +1,57 @@
 //! # Oicana
 //!
-//! _Dynamic PDF Generation based on Typst_
+//! _Generate PDFs from Typst templates, in process._
 //!
-//! With this library, you can compile Oicana templates from Rust code.
+//! Oicana compiles [Typst](https://typst.app/) templates to PDF, PNG, and SVG. Documents are
+//! designed as templates that declare typed inputs; your application loads a packed template
+//! once and renders it from JSON. No headless browser, no hand-coded layout.
+//!
+//! ```no_run
+//! use std::fs::File;
+//!
+//! use oicana::Template;
+//! use oicana::export::pdf::export_pdf;
+//! use oicana::input::input::json::JsonInput;
+//! use oicana::input::{CompilationConfig, TemplateInputs};
+//!
+//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! let mut template = Template::init(File::open("invoice-0.1.0.zip")?)?;
+//!
+//! let mut inputs = TemplateInputs::new();
+//! inputs.with_config(CompilationConfig::production());
+//! inputs.with_input(JsonInput::new("invoice", r#"{"number": "2026-001"}"#));
+//!
+//! let document = template.compile(inputs)?;
+//!
+//! let pdf = export_pdf(
+//!     &document.document,
+//!     &template,
+//!     template.manifest().pdf_standards(),
+//!     template.manifest().pdf_tagged(),
+//!     None,
+//! )?;
+//! # Ok(())
+//! # }
+//! ```
+//!
+//! [`Template::compile`] returns a reusable [`CompiledDocument`], and the free functions in
+//! [`export`] turn it into bytes. Keeping the two apart lets one compilation produce several
+//! formats or page ranges.
+//!
+//! [`Template::init`] only reads the template, it does not compile it, so the first
+//! [`Template::compile`] call pays the full compilation cost.
+//!
+//! # Feature flags
+//!
+//! `pdf` and `packed` are enabled by default. Enable `png` or `svg` for the other export
+//! formats, `native` to read an unpacked template from disk, and `preloaded` to read one from
+//! an in-memory file map in tests.
+//!
+//! # Where to go next
+//!
+//! The [documentation](https://oicana.com/docs) covers templates, inputs, and the CLI that packs
+//! them; the [Axum example](https://github.com/oicana/oicana-example-rust-axum) showcases a more complete
+//! service.
 
 #[cfg(feature = "packed")]
 use std::io::{Read, Seek};

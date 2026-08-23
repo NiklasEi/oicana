@@ -1,10 +1,17 @@
-# Oicana node native
+# @oicana/node-native
 
-> You most likely want to use `@oicana/node` instead of this package.
+> **This is an internal build artifact of [Oicana](https://oicana.com).** Install [`@oicana/node`](https://www.npmjs.com/package/@oicana/node) instead. It depends on this package and wraps it in the documented, fully typed API.
+
+Low-level [napi-rs](https://napi.rs/) bindings to the Oicana core, published as one package per platform. The functions here take and return raw handles, with no stability guarantees between releases.
 
 ## Development
 
-- `yarn install`
-- `yarn build`
+```bash
+yarn install
+yarn build
+yarn test
+```
 
-Now you are ready to run `yarn test`
+## Licensing
+
+Oicana is source-available under the [PolyForm Noncommercial License 1.0.0](https://github.com/oicana/oicana/blob/main/LICENSE.md) and free for noncommercial use. Commercial use is free for 30 days; see [pricing](https://oicana.com/#pricing) for subscriptions.

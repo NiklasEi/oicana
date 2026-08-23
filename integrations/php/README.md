@@ -1,4 +1,8 @@
-# PHP Integration
+# Oicana PHP Integration
+
+> Contributor documentation for building and publishing the PHP integration.
+> Using Oicana in a PHP project? Start at [`oicana-php/README.md`](oicana-php/README.md)
+> or the [PHP getting started guide](https://oicana.com/docs/getting-started/4-7-php/).
 
 Oicana integration for PHP 8.3+.
 
@@ -61,19 +65,18 @@ echo "extension=oicana_php_native.{so,dylib,dll}" >> /path/to/php.ini
 
 #### PHP Wrapper Tests
 
+The tests need the native extension loaded, so build it first and point PHP at the
+local build.
+
 ```bash
+cargo build --release -p oicana_php_native
+
 cd oicana-php
 composer install
-composer test
+php -d extension=../../../target/release/liboicana_php_native.so vendor/bin/pest
 ```
 
-Note: Requires the native extension to be loaded.
-
-
-To run the e2e tests with a local extension build:
-```bash
-php -d extension=../../../target/release/liboicana_php_native.so vendor/bin/pest tests/E2eTest.php
-```
+Append a path such as `tests/E2eTest.php` to run a single suite.
 
 ### Code Quality
 

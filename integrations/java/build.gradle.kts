@@ -28,7 +28,13 @@ subprojects {
         extensions.configure<com.vanniktech.maven.publish.MavenPublishBaseExtension> {
             pom {
                 name.set(project.name)
-                description.set("Oicana PDF templating engine - ${project.name}")
+                description.set(
+                    if (project.name == "oicana") {
+                        "Generate typeset PDFs on the JVM from Typst templates, in process. No headless browser, no per-document fees."
+                    } else {
+                        "Native library for Oicana PDF generation (${project.name.removePrefix("oicana-")})."
+                    }
+                )
                 url.set("https://oicana.com")
                 licenses {
                     license {
