@@ -54,11 +54,11 @@ After building, install the extension:
 # Find your extension directory
 php -i | grep extension_dir
 
-# Copy the extension
+# Copy the extension (.so on Linux, .dylib on macOS, .dll on Windows)
 cp ../../target/release/liboicana_php_native.so /path/to/extensions/
 
 # Add to php.ini
-echo "extension=oicana_php_native.{so,dylib,dll}" >> /path/to/php.ini
+echo "extension=/path/to/extensions/liboicana_php_native.so" >> /path/to/php.ini
 ```
 
 ### Testing

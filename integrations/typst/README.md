@@ -51,6 +51,8 @@ The matching `main.typ`:
 #let read-project-file(path) = read(path, encoding: none)
 #let (input, oicana-image, oicana-config) = setup(read-project-file)
 
+#set document(date: datetime.today())
+
 The current value of the input with the key "data":
 #input.data
 

@@ -55,13 +55,21 @@ try {
 }
 ```
 
-For a template you only render once, `Template::exportOnce()` handles registration and cleanup for you:
+For a template you only render once, `Template::exportOnce()` handles registration and cleanup for you. It returns an `ExportOnceResult` with the document bytes and any compilation warnings:
 
 ```php
-$pdf = Template::exportOnce(
+$result = Template::exportOnce(
     file_get_contents('invoice-0.1.0.zip'),
-    jsonInputs: ['invoice' => ['number' => '2026-001']]
+    jsonInputs: [
+        'invoice' => [
+            'number' => '2026-001',
+            'customer' => 'Acme GmbH',
+            'total' => '€1,190.00',
+        ],
+    ]
 );
+
+file_put_contents('invoice.pdf', $result->document);
 ```
 
 ## What a template looks like
@@ -124,17 +132,23 @@ The mode can be set separately for creating a template (`new Template`) and expo
 
 **Development mode** falls back to the `development` values from the manifest when an input is missing. **Production mode** requires every required input, so missing data fails loudly instead of silently rendering test values.
 
-The defaults follow that split: `new Template()` uses development mode, so a template registers without every input, and `export()` uses production mode.
+The defaults follow that split: `new Template()` compiles in development mode, falling back to the `development` and `default` values in the manifest, and `export()` uses production mode. Creating a template therefore needs no inputs of its own, as long as every required input has a fallback value.
 
 ```php
 use Oicana\CompilationMode;
 
+$data = ['invoice' => [
+    'number' => '2026-001',
+    'customer' => 'Acme GmbH',
+    'total' => '€1,190.00',
+]];
+
 // The defaults: development for creation, production for export
 $template = new Template($bytes);
-$pdf = $template->export(jsonInputs: ['invoice' => ['number' => '2026-001']]);
+$pdf = $template->export(jsonInputs: $data);
 
 // Override either one
-$template = new Template($bytes, mode: CompilationMode::Production);
+$template = new Template($bytes, jsonInputs: $data, mode: CompilationMode::Production);
 $pdf = $template->export(jsonInputs: $data, mode: CompilationMode::Development);
 ```
 
