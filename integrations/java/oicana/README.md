@@ -29,8 +29,6 @@ Declaring several natives is fine; the matching one is loaded at runtime. See th
 ## Quick start
 
 ```java
-import com.oicana.CompilationMode;
-import com.oicana.ExportFormat;
 import com.oicana.Template;
 
 import java.nio.file.Files;
@@ -41,10 +39,8 @@ byte[] templateBytes = Files.readAllBytes(Path.of("invoice-0.1.0.zip"));
 
 try (var template = new Template(templateBytes)) {
     byte[] pdf = template.export(
-            Map.of("invoice", "{\"number\":\"2026-001\",\"customer\":\"Acme GmbH\"}"),
-            Map.of(),
-            ExportFormat.pdf(),
-            CompilationMode.PRODUCTION
+            Map.of("invoice", "{\"number\":\"2026-001\",\"customer\":\"Acme GmbH\",\"total\":\"€1,190.00\"}"),
+            Map.of()
     );
     Files.write(Path.of("invoice.pdf"), pdf);
 }
