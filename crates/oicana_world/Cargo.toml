@@ -36,6 +36,9 @@ codespan-reporting = { workspace = true }
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 js-sys = { workspace = true }
 
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+walkdir = { workspace = true }
+
 [dev-dependencies]
 typst-pdf = { workspace = true }
 anyhow = { workspace = true }
