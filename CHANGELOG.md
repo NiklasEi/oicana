@@ -7,6 +7,12 @@
 ### CLI
 - `pack` no longer writes directory entries for directories that end up with no packed content, for example a directory whose files are all excluded
 
+### Java
+- A JVM that has not granted native access now fails with an `OicanaException` naming the required `--enable-native-access` flag
+
+### Node.js
+- `engines` declares the actual minimum of `^20.19.0 || >=22.12.0`; the package is ESM-only, so CommonJS callers such as NestJS need a Node version with `require(esm)`
+
 ## v0.8.0
 
 - an unsupported `manifest_version` gets rejected by the CLI and by every integration
