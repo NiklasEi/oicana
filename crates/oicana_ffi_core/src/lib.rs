@@ -344,7 +344,10 @@ pub fn register_font(data: Vec<u8>) -> usize {
     register_fonts(vec![data])
 }
 
-/// Register fonts from files on disk.
+/// Register fonts from paths on disk.
+///
+/// Each path is either a font file or a directory, which adds every `.ttf`, `.ttc`,
+/// `.otf`, and `.otc` file in its tree.
 ///
 /// The files are read immediately to collect their face metadata and then dropped; each
 /// is read again, and kept, the first time a document needs one of its glyphs.
@@ -354,6 +357,7 @@ pub fn register_font(data: Vec<u8>) -> usize {
 pub fn register_font_paths(paths: Vec<std::path::PathBuf>) -> usize {
     let sources = paths
         .into_iter()
+        .flat_map(oicana_world::fonts::font_files_at)
         .filter_map(FontSource::from_path)
         .collect();
     add_host_fonts(sources)
@@ -865,6 +869,25 @@ mod tests {
 
         clear_fonts();
         assert!(registered_fonts().is_empty());
+
+        // A path is either a font file or a directory holding font files.
+        let dir = std::env::temp_dir().join("oicana_ffi_font_dir_test");
+        std::fs::remove_dir_all(&dir).ok();
+        std::fs::create_dir_all(dir.join("nested")).unwrap();
+        std::fs::write(dir.join("regular.ttf"), font).unwrap();
+        std::fs::write(dir.join("nested/nested.ttf"), font).unwrap();
+        std::fs::write(dir.join("readme.txt"), b"not a font").unwrap();
+
+        assert_eq!(register_font_paths(vec![dir.join("regular.ttf")]), faces);
+        clear_fonts();
+
+        assert_eq!(register_font_paths(vec![dir.clone()]), faces * 2);
+        assert!(registered_fonts().iter().all(|font| font.path.is_some()));
+        clear_fonts();
+
+        assert_eq!(register_font_paths(vec![dir.join("missing")]), 0);
+
+        std::fs::remove_dir_all(&dir).ok();
     }
 
     #[test]

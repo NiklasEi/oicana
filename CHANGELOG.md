@@ -2,6 +2,13 @@
 
 ## Upcoming
 
+- registering fonts by path accepts a directory and adds every font file in its tree, like the CLI's `--font-path` already did
+
+### CLI
+- `pack` no longer writes directory entries for directories that end up with no packed content, for example a directory whose files are all excluded
+
+## v0.8.0
+
 - an unsupported `manifest_version` gets rejected by the CLI and by every integration
 - all integrations now validate pixels per pt for png exports to be finite and positive
 - Unify zip limit validation in the integrations

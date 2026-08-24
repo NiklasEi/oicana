@@ -113,12 +113,15 @@ fn add_dir_to_zip<T: Write + Seek>(
     options: SimpleFileOptions,
 ) -> Result<(), PackageError> {
     let mut buffer = Vec::with_capacity(4096);
+    let mut pending_dirs: Vec<PathBuf> = Vec::new();
     for entry in it {
         let path = entry.path();
         let relative = path.strip_prefix(strip_prefix).unwrap();
         let name = zip_prefix.join(relative);
 
         if path.is_file() {
+            add_parent_dirs_to_zip(zip, &mut pending_dirs, &name, options)?;
+
             trace!("adding file {:?}", name);
             let mut f = File::open(path)?;
             zip.start_file_from_path(
@@ -130,8 +133,28 @@ fn add_dir_to_zip<T: Write + Seek>(
             zip.write_all(&buffer)?;
             buffer.clear();
         } else if !name.as_os_str().is_empty() {
-            trace!("adding dir {:?}", name);
-            zip.add_directory_from_path(&name, options)?;
+            pending_dirs.push(name);
+        }
+    }
+    Ok(())
+}
+
+/// Write the not-yet-written directory entries that `file` lives in, keeping the
+/// order they were discovered in so a directory precedes its content.
+fn add_parent_dirs_to_zip<T: Write + Seek>(
+    zip: &mut ZipWriter<T>,
+    pending: &mut Vec<PathBuf>,
+    file: &Path,
+    options: SimpleFileOptions,
+) -> Result<(), PackageError> {
+    let mut index = 0;
+    while index < pending.len() {
+        if file.starts_with(&pending[index]) {
+            let dir = pending.remove(index);
+            trace!("adding dir {:?}", dir);
+            zip.add_directory_from_path(&dir, options)?;
+        } else {
+            index += 1;
         }
     }
     Ok(())
@@ -269,6 +292,62 @@ manifest_version = 1
 
         assert!(!file_names.iter().any(|name| name.starts_with("tests")));
         assert!(file_names.contains(&"main.typ".to_string()));
+    }
+
+    #[test]
+    fn directories_without_packed_content_are_left_out() {
+        let dir = TempDir::new().unwrap();
+        std::fs::write(
+            dir.path().join("typst.toml"),
+            r#"
+[package]
+name = "test"
+version = "0.1.0"
+entrypoint = "main.typ"
+exclude = ["docs/*.pdf"]
+
+[tool.oicana]
+manifest_version = 1
+"#,
+        )
+        .unwrap();
+        std::fs::write(dir.path().join("main.typ"), "Hello").unwrap();
+        // Every file in here is excluded, so the directory holds nothing.
+        std::fs::create_dir(dir.path().join("docs")).unwrap();
+        std::fs::write(dir.path().join("docs").join("manual.pdf"), "%PDF").unwrap();
+        // A directory that is empty on disk.
+        std::fs::create_dir(dir.path().join("scratch")).unwrap();
+        // A directory that keeps content is still packed, entry first.
+        std::fs::create_dir_all(dir.path().join("assets/nested")).unwrap();
+        std::fs::write(dir.path().join("assets/nested/data.json"), "{}").unwrap();
+
+        let manifest = TemplateManifest::from_toml(
+            &std::fs::read_to_string(dir.path().join("typst.toml")).unwrap(),
+        )
+        .unwrap();
+
+        let mut buffer = Cursor::new(Vec::new());
+        package(dir.path(), &mut buffer, &manifest, None).unwrap();
+
+        buffer.set_position(0);
+        let archive = zip::ZipArchive::new(buffer).unwrap();
+        let names: Vec<String> = archive.file_names().map(|name| name.to_owned()).collect();
+
+        assert!(
+            !names.iter().any(|name| name.starts_with("docs")),
+            "{names:?}"
+        );
+        assert!(
+            !names.iter().any(|name| name.starts_with("scratch")),
+            "{names:?}"
+        );
+
+        let dir_position = names.iter().position(|name| name == "assets/nested/");
+        let file_position = names
+            .iter()
+            .position(|name| name == "assets/nested/data.json");
+        assert!(dir_position < file_position, "{names:?}");
+        assert!(names.contains(&"assets/".to_owned()), "{names:?}");
     }
 
     #[test]

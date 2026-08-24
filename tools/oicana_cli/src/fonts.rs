@@ -1,13 +1,10 @@
 use clap::Args;
 use log::{debug, info};
-use oicana::fonts::FontSource;
+use oicana::fonts::{font_files_at, FontSource};
 use std::path::PathBuf;
-use walkdir::WalkDir;
 
 /// Environment variable listing font directories, separated like `PATH`.
 const FONT_PATH_ENV: &str = "OICANA_FONT_PATHS";
-
-const FONT_EXTENSIONS: [&str; 4] = ["ttf", "ttc", "otf", "otc"];
 
 #[derive(Debug, Args, Default, Clone)]
 pub struct FontArgs {
@@ -33,7 +30,7 @@ impl FontArgs {
     pub fn load(&self) -> Vec<FontSource> {
         let mut files = self.font_file.clone();
         for dir in self.font_path.iter().cloned().chain(env_font_paths()) {
-            files.extend(font_files_in(&dir));
+            files.extend(font_files_at(&dir));
         }
 
         let sources: Vec<FontSource> = files.iter().filter_map(FontSource::from_path).collect();
@@ -60,26 +57,4 @@ fn env_font_paths() -> Vec<PathBuf> {
         return vec![];
     };
     std::env::split_paths(&paths).collect()
-}
-
-/// All font files in a directory tree, in a stable order.
-///
-/// Typst resolves fallback ties by discovery order, so the result is sorted to
-/// keep rendering reproducible across machines and filesystems.
-fn font_files_in(dir: &PathBuf) -> Vec<PathBuf> {
-    let mut files: Vec<PathBuf> = WalkDir::new(dir)
-        .into_iter()
-        .filter_map(Result::ok)
-        .filter(|entry| entry.path().is_file())
-        .map(|entry| entry.into_path())
-        .filter(|path| {
-            path.extension()
-                .and_then(|extension| extension.to_str())
-                .is_some_and(|extension| {
-                    FONT_EXTENSIONS.contains(&extension.to_lowercase().as_str())
-                })
-        })
-        .collect();
-    files.sort();
-    files
 }

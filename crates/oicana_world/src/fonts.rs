@@ -10,6 +10,38 @@ use log::warn;
 use oicana_files::TemplateFiles;
 use typst::foundations::Bytes;
 use typst::text::{Font, FontBook, FontInfo};
+#[cfg(not(target_arch = "wasm32"))]
+use walkdir::WalkDir;
+
+/// File extensions of the font formats Typst can read.
+#[cfg(not(target_arch = "wasm32"))]
+const FONT_EXTENSIONS: [&str; 4] = ["ttf", "ttc", "otf", "otc"];
+
+/// The font files at a path: the path itself when it is a file, every font file
+/// in its tree when it is a directory.
+#[cfg(not(target_arch = "wasm32"))]
+pub fn font_files_at(path: impl AsRef<Path>) -> Vec<PathBuf> {
+    let path = path.as_ref();
+    if path.is_file() {
+        return vec![path.to_path_buf()];
+    }
+
+    let mut files: Vec<PathBuf> = WalkDir::new(path)
+        .into_iter()
+        .filter_map(Result::ok)
+        .filter(|entry| entry.path().is_file())
+        .map(|entry| entry.into_path())
+        .filter(|path| {
+            path.extension()
+                .and_then(|extension| extension.to_str())
+                .is_some_and(|extension| {
+                    FONT_EXTENSIONS.contains(&extension.to_lowercase().as_str())
+                })
+        })
+        .collect();
+    files.sort();
+    files
+}
 
 /// A font made available to a template by its host.
 ///
@@ -360,6 +392,26 @@ mod tests {
     #[test]
     fn font_data_without_a_font_is_rejected() {
         assert!(FontSource::from_bytes(Bytes::new(b"not a font".to_vec())).is_none());
+    }
+
+    #[cfg(not(target_arch = "wasm32"))]
+    #[test]
+    fn font_files_are_collected_from_files_and_directories() {
+        let dir = std::env::temp_dir().join("oicana_font_files_at_test");
+        fs::remove_dir_all(&dir).ok();
+        fs::create_dir_all(dir.join("nested")).unwrap();
+        let font = dir.join("b.ttf");
+        let nested_font = dir.join("nested/a.OTF");
+        fs::write(&font, embedded_font_bytes().as_slice()).unwrap();
+        fs::write(&nested_font, embedded_font_bytes().as_slice()).unwrap();
+        fs::write(dir.join("notes.txt"), b"not a font").unwrap();
+
+        assert_eq!(font_files_at(&font), vec![font.clone()]);
+        // Sorted, recursive, and limited to the font extensions Typst can read.
+        assert_eq!(font_files_at(&dir), vec![font, nested_font]);
+        assert!(font_files_at(dir.join("does-not-exist")).is_empty());
+
+        fs::remove_dir_all(&dir).ok();
     }
 
     #[cfg(not(target_arch = "wasm32"))]
