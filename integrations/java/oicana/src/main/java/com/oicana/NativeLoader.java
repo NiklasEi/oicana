@@ -35,7 +35,16 @@ class NativeLoader {
             tempLib.toFile().deleteOnExit();
             tempDir.toFile().deleteOnExit();
 
-            System.load(tempLib.toAbsolutePath().toString());
+            try {
+                System.load(tempLib.toAbsolutePath().toString());
+            } catch (IllegalCallerException e) {
+                throw new OicanaException(
+                        "Oicana needs native access, which this JVM has not granted. Start the JVM with"
+                                + " --enable-native-access=ALL-UNNAMED (or --enable-native-access=com.oicana"
+                                + " when Oicana is on the module path), or add"
+                                + " 'Enable-Native-Access: ALL-UNNAMED' to the manifest of your executable jar.",
+                        e);
+            }
             loaded = true;
         } catch (IOException e) {
             throw new OicanaException("Failed to load native library", e);
