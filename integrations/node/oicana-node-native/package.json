@@ -30,6 +30,7 @@
       "x86_64-unknown-linux-gnu",
       "aarch64-unknown-linux-gnu",
       "aarch64-apple-darwin",
+      "x86_64-unknown-linux-musl",
       "aarch64-unknown-linux-musl",
       "aarch64-pc-windows-msvc"
     ]
@@ -117,6 +118,7 @@
     "@oicana/node-native-linux-arm64-gnu": "0.1.0-alpha.1",
     "@oicana/node-native-linux-arm64-musl": "0.1.0-alpha.1",
     "@oicana/node-native-linux-x64-gnu": "0.1.0-alpha.1",
+    "@oicana/node-native-linux-x64-musl": "0.1.0-alpha.1",
     "@oicana/node-native-win32-arm64-msvc": "0.1.0-alpha.1",
     "@oicana/node-native-win32-x64-msvc": "0.1.0-alpha.1"
   }

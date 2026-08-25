@@ -9,9 +9,11 @@
 
 ### Java
 - A JVM that has not granted native access now fails with an `OicanaException` naming the required `--enable-native-access` flag
+- All jars got valid module names
 
 ### Node.js
 - `engines` declares the actual minimum of `^20.19.0 || >=22.12.0`; the package is ESM-only, so CommonJS callers such as NestJS need a Node version with `require(esm)`
+- Publish a `linux-x64-musl` build
 
 ## v0.8.0
 
