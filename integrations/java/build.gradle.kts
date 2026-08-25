@@ -20,6 +20,17 @@ subprojects {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
+    if (project.name != "oicana") {
+        tasks.named<Jar>("jar") {
+            manifest {
+                attributes(
+                    "Automatic-Module-Name" to
+                        "com.oicana.natives.${project.name.removePrefix("oicana-").replace('-', '.')}"
+                )
+            }
+        }
+    }
+
     repositories {
         mavenCentral()
     }
