@@ -1,6 +1,6 @@
 {
   "name": "@oicana/node-native",
-  "version": "0.8.0",
+  "version": "0.9.0-rc.1",
   "description": "Native binary for @oicana/node. Install @oicana/node instead.",
   "main": "index.js",
   "repository": {
@@ -30,6 +30,7 @@
       "x86_64-unknown-linux-gnu",
       "aarch64-unknown-linux-gnu",
       "aarch64-apple-darwin",
+      "x86_64-unknown-linux-musl",
       "aarch64-unknown-linux-musl",
       "aarch64-pc-windows-msvc"
     ]

@@ -10,7 +10,7 @@ buildscript {
 
 subprojects {
     group = "com.oicana"
-    version = "0.8.0"
+    version = "0.9.0-rc.1"
 
     apply(plugin = "java-library")
     apply(plugin = "com.vanniktech.maven.publish")
@@ -18,6 +18,17 @@ subprojects {
     configure<JavaPluginExtension> {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
+    }
+
+    if (project.name != "oicana") {
+        tasks.named<Jar>("jar") {
+            manifest {
+                attributes(
+                    "Automatic-Module-Name" to
+                        "com.oicana.natives.${project.name.removePrefix("oicana-").replace('-', '.')}"
+                )
+            }
+        }
     }
 
     repositories {
