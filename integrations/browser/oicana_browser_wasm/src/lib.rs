@@ -365,21 +365,21 @@ fn decode_json_inputs(value: JsValue) -> Result<HashMap<String, String>, String>
 fn decode_blob_inputs(
     value: JsValue,
 ) -> Result<HashMap<String, oicana_ffi_core::BlobWithMetadata>, String> {
-    let blobs: HashMap<String, BlobWithMetadata> = from_value(value).map_err(|error| {
-        format!("Failed to deserialize HashMap<String, BlobWithMetadata> from JavaScript value: {error:?}")
+    let blobs: HashMap<String, BlobInput> = from_value(value).map_err(|error| {
+        format!("Failed to deserialize HashMap<String, BlobInput> from JavaScript value: {error:?}")
     })?;
     blobs
         .into_iter()
         .map(|(key, blob)| {
-            let meta = match blob.meta {
-                Some(meta) => serde_json::to_string(&meta)
+            let meta = match blob.metadata {
+                Some(metadata) => serde_json::to_string(&metadata)
                     .map_err(|error| format!("Failed to encode metadata for '{key}': {error:?}"))?,
                 None => "{}".to_owned(),
             };
             Ok((
                 key,
                 oicana_ffi_core::BlobWithMetadata {
-                    bytes: blob.bytes,
+                    bytes: blob.data,
                     meta,
                 },
             ))
@@ -424,8 +424,8 @@ impl From<CompilationMode> for oicana_ffi_core::CompilationMode {
 }
 
 #[derive(Deserialize)]
-struct BlobWithMetadata {
-    bytes: Vec<u8>,
+struct BlobInput {
+    data: Vec<u8>,
     #[serde(default)]
-    meta: Option<serde_json::Value>,
+    metadata: Option<serde_json::Value>,
 }

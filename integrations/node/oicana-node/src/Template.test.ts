@@ -2,7 +2,7 @@ import { readFile, writeFile } from 'node:fs/promises';
 import { describe, expect, it } from 'vitest';
 import { CompilationMode } from './CompilationMode';
 import { Png } from './ExportFormat';
-import type { BlobWithMetadata } from './inputs';
+import type { BlobInput } from './inputs';
 import { PageRange } from './PageRange';
 import { Template } from './Template';
 
@@ -36,10 +36,10 @@ describe('e2e test template', () => {
     const blob = await asset('inputs/input.txt');
     const json = await asset('inputs/input.json');
 
-    const blobInputs = new Map<string, BlobWithMetadata>();
+    const blobInputs = new Map<string, BlobInput>();
     blobInputs.set('development-blob', {
-      bytes: blob,
-      meta: { image_format: 'jpeg', foo: 43, bar: ['input', 'two'] },
+      data: blob,
+      metadata: { image_format: 'jpeg', foo: 43, bar: ['input', 'two'] },
     });
     const jsonInputs = new Map<string, string>();
     jsonInputs.set('development-json', json.toString());
@@ -58,18 +58,18 @@ describe('e2e test template', () => {
     const blob = await asset('inputs/input.txt');
     const json = await asset('inputs/input.json');
 
-    const blobInputs = new Map<string, BlobWithMetadata>();
+    const blobInputs = new Map<string, BlobInput>();
     blobInputs.set('default-blob', {
-      bytes: blob,
-      meta: { image_format: 'jpeg', foo: 42, bar: ['input', 'two'] },
+      data: blob,
+      metadata: { image_format: 'jpeg', foo: 42, bar: ['input', 'two'] },
     });
     blobInputs.set('development-blob', {
-      bytes: blob,
-      meta: { image_format: 'jpeg', foo: 43, bar: ['input', 'two'] },
+      data: blob,
+      metadata: { image_format: 'jpeg', foo: 43, bar: ['input', 'two'] },
     });
     blobInputs.set('both-blob', {
-      bytes: blob,
-      meta: { image_format: 'jpeg', foo: 44, bar: ['input', 'two'] },
+      data: blob,
+      metadata: { image_format: 'jpeg', foo: 44, bar: ['input', 'two'] },
     });
     const jsonInputs = new Map<string, string>();
     jsonInputs.set('default-json', json.toString());

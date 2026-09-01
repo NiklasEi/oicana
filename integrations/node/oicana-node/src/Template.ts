@@ -22,7 +22,7 @@ import { CompilationMode } from './CompilationMode.js';
 import { CompiledDocument } from './CompiledDocument.js';
 import { type ExportFormat, Pdf, Png, Svg } from './ExportFormat.js';
 import type { ExportOnceResult } from './ExportOnceResult.js';
-import type { BlobWithMetadata } from './inputs/index.js';
+import type { BlobInput } from './inputs/index.js';
 import { type PageRange, serializePageRange } from './PageRange.js';
 import type { ZipLimits } from './ZipLimits.js';
 
@@ -76,7 +76,7 @@ export class Template implements Disposable {
   public constructor(
     template: Uint8Array,
     jsonInputs: Map<string, string>,
-    blobInputs: Map<string, BlobWithMetadata>,
+    blobInputs: Map<string, BlobInput>,
   );
 
   /**
@@ -90,7 +90,7 @@ export class Template implements Disposable {
   public constructor(
     template: Uint8Array,
     jsonInputs?: Map<string, string>,
-    blobInputs?: Map<string, BlobWithMetadata>,
+    blobInputs?: Map<string, BlobInput>,
     compilationOptions?: CompilationMode,
     limits?: ZipLimits,
   );
@@ -98,7 +98,7 @@ export class Template implements Disposable {
   public constructor(
     template: Uint8Array | CompletedRegistration,
     jsonInputs?: Map<string, string>,
-    blobInputs?: Map<string, BlobWithMetadata>,
+    blobInputs?: Map<string, BlobInput>,
     compilationOptions?: CompilationMode,
     limits?: ZipLimits,
   ) {
@@ -120,9 +120,7 @@ export class Template implements Disposable {
       this.template,
       template,
       Object.fromEntries(jsonInputs ?? new Map<string, string>()),
-      Template.convertBlobWithMetadata(
-        blobInputs ?? new Map<string, BlobWithMetadata>(),
-      ),
+      Template.convertBlobInputs(blobInputs ?? new Map<string, BlobInput>()),
       Template.mapCompilationMode(
         compilationOptions ?? CompilationMode.Development,
       ),
@@ -147,7 +145,7 @@ export class Template implements Disposable {
   public static async create(
     template: Uint8Array,
     jsonInputs?: Map<string, string>,
-    blobInputs?: Map<string, BlobWithMetadata>,
+    blobInputs?: Map<string, BlobInput>,
     compilationOptions?: CompilationMode,
     limits?: ZipLimits,
   ): Promise<Template> {
@@ -157,9 +155,7 @@ export class Template implements Disposable {
       templateId,
       template,
       Object.fromEntries(jsonInputs ?? new Map<string, string>()),
-      Template.convertBlobWithMetadata(
-        blobInputs ?? new Map<string, BlobWithMetadata>(),
-      ),
+      Template.convertBlobInputs(blobInputs ?? new Map<string, BlobInput>()),
       Template.mapCompilationMode(
         compilationOptions ?? CompilationMode.Development,
       ),
@@ -193,7 +189,7 @@ export class Template implements Disposable {
   public static exportOnce(
     template: Uint8Array,
     jsonInputs?: Map<string, string>,
-    blobInputs?: Map<string, BlobWithMetadata>,
+    blobInputs?: Map<string, BlobInput>,
     exportOptions?: ExportFormat,
     compilationOptions?: CompilationMode,
     pages?: PageRange,
@@ -202,9 +198,7 @@ export class Template implements Disposable {
     const result = exportTemplateOnce(
       template,
       Object.fromEntries(jsonInputs ?? new Map<string, string>()),
-      Template.convertBlobWithMetadata(
-        blobInputs ?? new Map<string, BlobWithMetadata>(),
-      ),
+      Template.convertBlobInputs(blobInputs ?? new Map<string, BlobInput>()),
       Template.mapCompilationMode(
         compilationOptions ?? CompilationMode.Production,
       ),
@@ -231,7 +225,7 @@ export class Template implements Disposable {
   public static async exportOnceAsync(
     template: Uint8Array,
     jsonInputs?: Map<string, string>,
-    blobInputs?: Map<string, BlobWithMetadata>,
+    blobInputs?: Map<string, BlobInput>,
     exportOptions?: ExportFormat,
     compilationOptions?: CompilationMode,
     pages?: PageRange,
@@ -240,9 +234,7 @@ export class Template implements Disposable {
     const result = await exportTemplateOnceAsync(
       template,
       Object.fromEntries(jsonInputs ?? new Map<string, string>()),
-      Template.convertBlobWithMetadata(
-        blobInputs ?? new Map<string, BlobWithMetadata>(),
-      ),
+      Template.convertBlobInputs(blobInputs ?? new Map<string, BlobInput>()),
       Template.mapCompilationMode(
         compilationOptions ?? CompilationMode.Production,
       ),
@@ -267,7 +259,7 @@ export class Template implements Disposable {
    */
   public export(
     jsonInputs: Map<string, string>,
-    blobInputs: Map<string, BlobWithMetadata>,
+    blobInputs: Map<string, BlobInput>,
   ): Uint8Array;
 
   /**
@@ -278,7 +270,7 @@ export class Template implements Disposable {
    */
   public export(
     jsonInputs: Map<string, string>,
-    blobInputs: Map<string, BlobWithMetadata>,
+    blobInputs: Map<string, BlobInput>,
     exportOptions: ExportFormat,
   ): Uint8Array;
 
@@ -291,7 +283,7 @@ export class Template implements Disposable {
    */
   public export(
     jsonInputs: Map<string, string>,
-    blobInputs: Map<string, BlobWithMetadata>,
+    blobInputs: Map<string, BlobInput>,
     exportOptions: ExportFormat,
     compilationOptions: CompilationMode,
   ): Uint8Array;
@@ -306,7 +298,7 @@ export class Template implements Disposable {
    */
   public export(
     jsonInputs: Map<string, string>,
-    blobInputs: Map<string, BlobWithMetadata>,
+    blobInputs: Map<string, BlobInput>,
     exportOptions: ExportFormat,
     compilationOptions: CompilationMode,
     pages: PageRange,
@@ -327,7 +319,7 @@ export class Template implements Disposable {
    */
   public export(
     jsonInputs?: Map<string, string>,
-    blobInputs?: Map<string, BlobWithMetadata>,
+    blobInputs?: Map<string, BlobInput>,
     exportOptions?: ExportFormat,
     compilationOptions?: CompilationMode,
     pages?: PageRange,
@@ -355,7 +347,7 @@ export class Template implements Disposable {
    */
   public exportAsync(
     jsonInputs?: Map<string, string>,
-    blobInputs?: Map<string, BlobWithMetadata>,
+    blobInputs?: Map<string, BlobInput>,
     exportOptions?: ExportFormat,
     compilationOptions?: CompilationMode,
     pages?: PageRange,
@@ -380,7 +372,7 @@ export class Template implements Disposable {
    */
   public exportPdf(
     jsonInputs?: Map<string, string>,
-    blobInputs?: Map<string, BlobWithMetadata>,
+    blobInputs?: Map<string, BlobInput>,
     compilationOptions?: CompilationMode,
     pages?: PageRange,
   ): Uint8Array {
@@ -405,7 +397,7 @@ export class Template implements Disposable {
    */
   public exportPdfAsync(
     jsonInputs?: Map<string, string>,
-    blobInputs?: Map<string, BlobWithMetadata>,
+    blobInputs?: Map<string, BlobInput>,
     compilationOptions?: CompilationMode,
     pages?: PageRange,
   ): Promise<Uint8Array> {
@@ -430,7 +422,7 @@ export class Template implements Disposable {
    */
   public exportPng(
     jsonInputs?: Map<string, string>,
-    blobInputs?: Map<string, BlobWithMetadata>,
+    blobInputs?: Map<string, BlobInput>,
     compilationOptions?: CompilationMode,
     pixelsPerPt = 1.0,
     pages?: PageRange,
@@ -457,7 +449,7 @@ export class Template implements Disposable {
    */
   public exportPngAsync(
     jsonInputs?: Map<string, string>,
-    blobInputs?: Map<string, BlobWithMetadata>,
+    blobInputs?: Map<string, BlobInput>,
     compilationOptions?: CompilationMode,
     pixelsPerPt = 1.0,
     pages?: PageRange,
@@ -481,7 +473,7 @@ export class Template implements Disposable {
    */
   public exportSvg(
     jsonInputs?: Map<string, string>,
-    blobInputs?: Map<string, BlobWithMetadata>,
+    blobInputs?: Map<string, BlobInput>,
     compilationOptions?: CompilationMode,
     pages?: PageRange,
   ): Uint8Array {
@@ -505,7 +497,7 @@ export class Template implements Disposable {
    */
   public exportSvgAsync(
     jsonInputs?: Map<string, string>,
-    blobInputs?: Map<string, BlobWithMetadata>,
+    blobInputs?: Map<string, BlobInput>,
     compilationOptions?: CompilationMode,
     pages?: PageRange,
   ): Promise<Uint8Array> {
@@ -521,7 +513,7 @@ export class Template implements Disposable {
   private exportWith(
     format: ExportFormat,
     jsonInputs?: Map<string, string>,
-    blobInputs?: Map<string, BlobWithMetadata>,
+    blobInputs?: Map<string, BlobInput>,
     compilationOptions?: CompilationMode,
     pages?: PageRange,
   ): Uint8Array {
@@ -544,7 +536,7 @@ export class Template implements Disposable {
   private async exportWithAsync(
     format: ExportFormat,
     jsonInputs?: Map<string, string>,
-    blobInputs?: Map<string, BlobWithMetadata>,
+    blobInputs?: Map<string, BlobInput>,
     compilationOptions?: CompilationMode,
     pages?: PageRange,
   ): Promise<Uint8Array> {
@@ -577,7 +569,7 @@ export class Template implements Disposable {
    */
   public compile(
     jsonInputs?: Map<string, string>,
-    blobInputs?: Map<string, BlobWithMetadata>,
+    blobInputs?: Map<string, BlobInput>,
     compilationOptions?: CompilationMode,
   ): CompiledDocument {
     const documentId = this.compileToDocumentId(
@@ -602,7 +594,7 @@ export class Template implements Disposable {
    */
   public async compileAsync(
     jsonInputs?: Map<string, string>,
-    blobInputs?: Map<string, BlobWithMetadata>,
+    blobInputs?: Map<string, BlobInput>,
     compilationOptions?: CompilationMode,
   ): Promise<CompiledDocument> {
     const documentId = await this.compileToDocumentIdAsync(
@@ -615,15 +607,13 @@ export class Template implements Disposable {
 
   private compileToDocumentId(
     jsonInputs?: Map<string, string>,
-    blobInputs?: Map<string, BlobWithMetadata>,
+    blobInputs?: Map<string, BlobInput>,
     compilationOptions?: CompilationMode,
   ): string {
     const documentId = compileTemplate(
       this.template,
       Object.fromEntries(jsonInputs ?? new Map<string, string>()),
-      Template.convertBlobWithMetadata(
-        blobInputs ?? new Map<string, BlobWithMetadata>(),
-      ),
+      Template.convertBlobInputs(blobInputs ?? new Map<string, BlobInput>()),
       Template.mapCompilationMode(
         compilationOptions ?? CompilationMode.Production,
       ),
@@ -634,15 +624,13 @@ export class Template implements Disposable {
 
   private async compileToDocumentIdAsync(
     jsonInputs?: Map<string, string>,
-    blobInputs?: Map<string, BlobWithMetadata>,
+    blobInputs?: Map<string, BlobInput>,
     compilationOptions?: CompilationMode,
   ): Promise<string> {
     const documentId = await compileTemplateAsync(
       this.template,
       Object.fromEntries(jsonInputs ?? new Map<string, string>()),
-      Template.convertBlobWithMetadata(
-        blobInputs ?? new Map<string, BlobWithMetadata>(),
-      ),
+      Template.convertBlobInputs(blobInputs ?? new Map<string, BlobInput>()),
       Template.mapCompilationMode(
         compilationOptions ?? CompilationMode.Production,
       ),
@@ -708,14 +696,17 @@ export class Template implements Disposable {
     this.dispose();
   }
 
-  private static convertBlobWithMetadata(
-    blobInputs: Map<string, BlobWithMetadata>,
+  private static convertBlobInputs(
+    blobInputs: Map<string, BlobInput>,
   ): Record<string, BlobWithMetadataNative> {
     return Object.fromEntries(
       Array.from(blobInputs.entries(), ([key, value]) => {
         const nativeValue = {
-          bytes: value.bytes,
-          meta: value.meta === undefined ? '{}' : JSON.stringify(value.meta),
+          bytes: value.data,
+          meta:
+            value.metadata === undefined
+              ? '{}'
+              : JSON.stringify(value.metadata),
         };
         return [key, nativeValue];
       }),

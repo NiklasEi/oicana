@@ -465,7 +465,7 @@ internal static class OicanaFfi
             IntPtr dataPtr = blobHandle.AddrOfPinnedObject();
             blobHandles.Add(blobHandle);
 
-            var blobInput = new FfiBlobInput() { key = key, data = new Buffer() { data = dataPtr, error = false, len = (uint)blob.Data.Length }, meta = blob.Meta?.ToString() ?? "{}" };
+            var blobInput = new FfiBlobInput() { key = key, data = new Buffer() { data = dataPtr, error = false, len = (uint)blob.Data.Length }, meta = blob.Metadata?.ToString() ?? "{}" };
             Marshal.StructureToPtr(blobInput, blobsInputsPtr + i * Marshal.SizeOf<FfiBlobInput>(), false);
             i++;
         }

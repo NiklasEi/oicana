@@ -1,7 +1,7 @@
-import { BlobInputDefinition, BlobWithMetadata } from './BlobInput.js';
+import { BlobInput, BlobInputDefinition, BlobMetadata } from './BlobInput.js';
 import { JsonInputDefinition } from './JsonInput.js';
 
-export { JsonInputDefinition, BlobInputDefinition, BlobWithMetadata };
+export { JsonInputDefinition, BlobInput, BlobInputDefinition, BlobMetadata };
 
 export interface Inputs {
   json: JsonInputDefinition[];

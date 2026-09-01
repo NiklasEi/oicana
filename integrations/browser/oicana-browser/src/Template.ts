@@ -16,8 +16,8 @@ import { CompiledDocument } from './CompiledDocument.js';
 import { type ExportFormat, Pdf, Png, Svg } from './ExportFormat.js';
 import type { ExportOnceResult } from './ExportOnceResult.js';
 import type {
+  BlobInput,
   BlobInputDefinition,
-  BlobWithMetadata,
   JsonInputDefinition,
 } from './inputs/index.js';
 import type { PageRange } from './PageRange.js';
@@ -47,7 +47,7 @@ export class Template implements Disposable {
   public constructor(
     template: Uint8Array,
     jsonInputs: Map<string, string>,
-    blobInputs: Map<string, BlobWithMetadata>,
+    blobInputs: Map<string, BlobInput>,
   );
 
   /**
@@ -61,7 +61,7 @@ export class Template implements Disposable {
   public constructor(
     template: Uint8Array,
     jsonInputs?: Map<string, string>,
-    blobInputs?: Map<string, BlobWithMetadata>,
+    blobInputs?: Map<string, BlobInput>,
     compilationOptions?: CompilationMode,
     limits?: ZipLimits,
   ) {
@@ -95,7 +95,7 @@ export class Template implements Disposable {
   public static exportOnce(
     template: Uint8Array,
     jsonInputs?: Map<string, string>,
-    blobInputs?: Map<string, BlobWithMetadata>,
+    blobInputs?: Map<string, BlobInput>,
     exportFormat?: ExportFormat,
     compilationOptions?: CompilationMode,
     pages?: PageRange,
@@ -127,7 +127,7 @@ export class Template implements Disposable {
    */
   public export(
     jsonInputs: Map<string, string>,
-    blobInputs: Map<string, BlobWithMetadata>,
+    blobInputs: Map<string, BlobInput>,
   ): Uint8Array<ArrayBuffer>;
 
   /**
@@ -138,7 +138,7 @@ export class Template implements Disposable {
    */
   public export(
     jsonInputs: Map<string, string>,
-    blobInputs: Map<string, BlobWithMetadata>,
+    blobInputs: Map<string, BlobInput>,
     exportFormat: ExportFormat,
   ): Uint8Array<ArrayBuffer>;
 
@@ -151,7 +151,7 @@ export class Template implements Disposable {
    */
   public export(
     jsonInputs: Map<string, string>,
-    blobInputs: Map<string, BlobWithMetadata>,
+    blobInputs: Map<string, BlobInput>,
     exportFormat: ExportFormat,
     compilationOptions: CompilationMode,
   ): Uint8Array<ArrayBuffer>;
@@ -166,7 +166,7 @@ export class Template implements Disposable {
    */
   public export(
     jsonInputs: Map<string, string>,
-    blobInputs: Map<string, BlobWithMetadata>,
+    blobInputs: Map<string, BlobInput>,
     exportFormat: ExportFormat,
     compilationOptions: CompilationMode,
     pages: PageRange,
@@ -187,7 +187,7 @@ export class Template implements Disposable {
    */
   public export(
     jsonInputs?: Map<string, string>,
-    blobInputs?: Map<string, BlobWithMetadata>,
+    blobInputs?: Map<string, BlobInput>,
     exportFormat?: ExportFormat,
     compilationOptions?: CompilationMode,
     pages?: PageRange,
@@ -212,7 +212,7 @@ export class Template implements Disposable {
    */
   public exportPdf(
     jsonInputs?: Map<string, string>,
-    blobInputs?: Map<string, BlobWithMetadata>,
+    blobInputs?: Map<string, BlobInput>,
     compilationOptions?: CompilationMode,
     pages?: PageRange,
   ): Uint8Array {
@@ -237,7 +237,7 @@ export class Template implements Disposable {
    */
   public exportPng(
     jsonInputs?: Map<string, string>,
-    blobInputs?: Map<string, BlobWithMetadata>,
+    blobInputs?: Map<string, BlobInput>,
     compilationOptions?: CompilationMode,
     pixelsPerPt = 1.0,
     pages?: PageRange,
@@ -261,7 +261,7 @@ export class Template implements Disposable {
    */
   public exportSvg(
     jsonInputs?: Map<string, string>,
-    blobInputs?: Map<string, BlobWithMetadata>,
+    blobInputs?: Map<string, BlobInput>,
     compilationOptions?: CompilationMode,
     pages?: PageRange,
   ): Uint8Array {
@@ -277,7 +277,7 @@ export class Template implements Disposable {
   private exportWith(
     format: ExportFormat,
     jsonInputs?: Map<string, string>,
-    blobInputs?: Map<string, BlobWithMetadata>,
+    blobInputs?: Map<string, BlobInput>,
     compilationOptions?: CompilationMode,
     pages?: PageRange,
   ): Uint8Array {
@@ -306,7 +306,7 @@ export class Template implements Disposable {
    */
   public compile(
     jsonInputs?: Map<string, string>,
-    blobInputs?: Map<string, BlobWithMetadata>,
+    blobInputs?: Map<string, BlobInput>,
     compilationOptions?: CompilationMode,
   ): CompiledDocument {
     const documentId = this.compileToDocumentId(
@@ -319,7 +319,7 @@ export class Template implements Disposable {
 
   private compileToDocumentId(
     jsonInputs?: Map<string, string>,
-    blobInputs?: Map<string, BlobWithMetadata>,
+    blobInputs?: Map<string, BlobInput>,
     compilationOptions?: CompilationMode,
   ): string {
     const documentId = compile_template(
