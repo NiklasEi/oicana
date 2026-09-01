@@ -22,6 +22,9 @@
 ### C#
 - `BlobInput.Meta` is now `BlobInput.Metadata`
 
+### Rust
+- `Template::init_with_limits` and `Template::init_with_fonts_and_limits` take custom `ZipLimits`
+
 ## v0.8.0
 
 - an unsupported `manifest_version` gets rejected by the CLI and by every integration
