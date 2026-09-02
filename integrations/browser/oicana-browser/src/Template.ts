@@ -9,18 +9,15 @@ import {
   remove_document,
   remove_world,
   set_validate_inputs,
-  inputs as wasmInputs,
+  manifest as wasmManifest,
 } from '@oicana/browser-wasm';
+import type { BlobInput } from './BlobInput.js';
 import { CompilationMode } from './CompilationMode.js';
 import { CompiledDocument } from './CompiledDocument.js';
 import { type ExportFormat, Pdf, Png, Svg } from './ExportFormat.js';
 import type { ExportOnceResult } from './ExportOnceResult.js';
-import type {
-  BlobInput,
-  BlobInputDefinition,
-  JsonInputDefinition,
-} from './inputs/index.js';
 import type { PageRange } from './PageRange.js';
+import type { TemplateManifest } from './TemplateManifest.js';
 import type { ZipLimits } from './ZipLimits.js';
 
 /**
@@ -341,10 +338,13 @@ export class Template implements Disposable {
   }
 
   /**
-   * Gather all input definitions of this template
+   * The template's manifest.
+   *
+   * The Typst package section and Oicana
+   * configuration with the input definitions.
    */
-  public inputs(): { inputs: (BlobInputDefinition | JsonInputDefinition)[] } {
-    return JSON.parse(wasmInputs(this.template));
+  public manifest(): TemplateManifest {
+    return JSON.parse(wasmManifest(this.template));
   }
 
   /**

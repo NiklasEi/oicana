@@ -3,6 +3,8 @@
 ## Upcoming
 
 - registering fonts by path accepts a directory and adds every font file in its tree, like the CLI's `--font-path` already did
+- `Template.inputs` is now `Template.manifest` in every integration and returns a typed manifest
+  - the Typst package section and the whole Oicana configuration, including the input definitions
 
 ### CLI
 - `pack` no longer writes directory entries for directories that end up with no packed content, for example a directory whose files are all excluded

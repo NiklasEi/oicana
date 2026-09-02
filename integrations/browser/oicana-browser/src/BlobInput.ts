@@ -8,11 +8,3 @@ export interface BlobInput {
   data: Uint8Array;
   metadata?: BlobMetadata;
 }
-
-export interface BlobInputDefinition {
-  key: string;
-  default: {
-    file: string;
-    meta?: BlobMetadata;
-  };
-}

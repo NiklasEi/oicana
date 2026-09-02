@@ -11,19 +11,20 @@ import {
   getSource,
   getWarnings,
   CompilationMode as NativeCompilationMode,
-  inputs as nativeInputs,
+  manifest as nativeManifest,
   registerTemplate,
   registerTemplateAsync,
   removeDocument,
   removeWorld,
   setValidateInputs,
 } from '@oicana/node-native';
+import type { BlobInput } from './BlobInput.js';
 import { CompilationMode } from './CompilationMode.js';
 import { CompiledDocument } from './CompiledDocument.js';
 import { type ExportFormat, Pdf, Png, Svg } from './ExportFormat.js';
 import type { ExportOnceResult } from './ExportOnceResult.js';
-import type { BlobInput } from './inputs/index.js';
 import { type PageRange, serializePageRange } from './PageRange.js';
+import type { TemplateManifest } from './TemplateManifest.js';
 import type { ZipLimits } from './ZipLimits.js';
 
 /**
@@ -648,10 +649,13 @@ export class Template implements Disposable {
   }
 
   /**
-   * The template's input definitions from its manifest, serialized as JSON.
+   * The template's manifest.
+   *
+   * The Typst package section und its Oicana
+   * configuration with the input definitions.
    */
-  public inputs(): string {
-    return nativeInputs(this.template);
+  public manifest(): TemplateManifest {
+    return JSON.parse(nativeManifest(this.template));
   }
 
   /**

@@ -1,8 +1,8 @@
 import { readFile, writeFile } from 'node:fs/promises';
 import { describe, expect, it } from 'vitest';
+import type { BlobInput } from './BlobInput.js';
 import { CompilationMode } from './CompilationMode.js';
 import { Png } from './ExportFormat.js';
-import type { BlobInput } from './inputs/index.js';
 import { PageRange } from './PageRange.js';
 import { Template } from './Template.js';
 
@@ -105,6 +105,43 @@ describe('e2e test template', () => {
       blobInputs as unknown as Map<string, BlobInput>,
       Png(1),
     );
+  });
+
+  it('exposes the typed manifest', async () => {
+    const templateFile = await readFile(
+      '../../../e2e-tests/template/oicana-e2e-test-x.y.z.zip',
+    );
+    const template = new Template(templateFile);
+
+    const manifest = template.manifest();
+
+    expect(manifest.package.name).toBe('oicana-e2e-test');
+    expect(manifest.package.version).toBe('0.1.0');
+    expect(manifest.oicana.manifestVersion).toBe(1);
+    expect(manifest.oicana.validateJsonInputsByDefault).toBe(true);
+    expect(manifest.oicana.export.pdf.standards).toEqual(['a-3b']);
+    expect(manifest.oicana.fonts.require).toEqual([]);
+
+    const keys = manifest.oicana.inputs.map((input) => input.key);
+    expect(keys).toContain('development-json');
+
+    const json = manifest.oicana.inputs.find(
+      (input) => input.key === 'development-json',
+    );
+    expect(json?.type).toBe('json');
+    if (json?.type !== 'json') throw new Error('expected a JSON input');
+    expect(json.schema).toBe('input.schema.json');
+    expect(json.development).toBe('development.json');
+    expect(json.default).toBeNull();
+    expect(json.validate).toBe(true);
+
+    const blob = manifest.oicana.inputs.find(
+      (input) => input.key === 'default-blob',
+    );
+    if (blob?.type !== 'blob') throw new Error('expected a blob input');
+    expect(blob.default?.file).toBe('default.txt');
+    expect(blob.default?.meta?.image_format).toBe('png');
+    expect(blob.development).toBeNull();
   });
 
   it('explicit development mode allows compile with empty inputs', async () => {

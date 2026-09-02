@@ -206,14 +206,14 @@ pub fn compile_template(
     Ok(result_id)
 }
 
-/// Load all input definitions for the given template.
+/// Load the manifest of the given template.
 ///
 /// Calling this method requires a previous call to [`register_template`] with the same template
 /// identifier.
 #[wasm_bindgen]
-pub fn inputs(template: String) -> Result<String, String> {
+pub fn manifest(template: String) -> Result<String, String> {
     init_logging();
-    oicana_ffi_core::inputs(&template).map_err(|error| error.to_string())
+    oicana_ffi_core::manifest(&template).map_err(|error| error.to_string())
 }
 
 /// Return the sizes (in points) of every page of a compiled document as a JSON
