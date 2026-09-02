@@ -17,7 +17,7 @@ export declare function clearFonts(): void
 
 export declare const enum CompilationMode {
   Production = 0,
-  Development = 1
+  Development = 1,
 }
 
 /**
@@ -26,7 +26,12 @@ export declare const enum CompilationMode {
  * Calling this method requires a previous call to [`register_template`] with the same template
  * identifier.
  */
-export declare function compileTemplate(template: string, jsonInputs: Record<string, string>, blobInputs: Record<string, BlobWithMetadata>, compilationMode: CompilationMode): string
+export declare function compileTemplate(
+  template: string,
+  jsonInputs: Record<string, string>,
+  blobInputs: Record<string, BlobWithMetadata>,
+  compilationMode: CompilationMode,
+): string
 
 /**
  * Compile the identified template with the given inputs on a background thread.
@@ -37,7 +42,12 @@ export declare function compileTemplate(template: string, jsonInputs: Record<str
  * Calling this method requires a previous call to [`register_template`] with the same template
  * identifier.
  */
-export declare function compileTemplateAsync(template: string, jsonInputs: Record<string, string>, blobInputs: Record<string, BlobWithMetadata>, compilationMode: CompilationMode): Promise<string>
+export declare function compileTemplateAsync(
+  template: string,
+  jsonInputs: Record<string, string>,
+  blobInputs: Record<string, BlobWithMetadata>,
+  compilationMode: CompilationMode,
+): Promise<string>
 
 /**
  * Configure automatic cache eviction after each compilation.
@@ -58,7 +68,7 @@ export declare function configureDiagnosticColor(color: DiagnosticColor): void
 /** Color mode for compilation diagnostics. */
 export declare const enum DiagnosticColor {
   None = 0,
-  Ansi = 1
+  Ansi = 1,
 }
 
 /**
@@ -83,7 +93,11 @@ export declare function evictCache(maxAge: number): void
  *
  * Make sure to call `removeDocument` with the documentId afterwards, to free the memory.
  */
-export declare function exportDocument(documentId: string, exportFormat: string, pageRange?: string | undefined | null): Buffer
+export declare function exportDocument(
+  documentId: string,
+  exportFormat: string,
+  pageRange?: string | undefined | null,
+): Buffer
 
 /**
  * Export the given document on a background thread.
@@ -96,7 +110,11 @@ export declare function exportDocument(documentId: string, exportFormat: string,
  *
  * Make sure to call `removeDocument` with the documentId afterwards, to free the memory.
  */
-export declare function exportDocumentAsync(documentId: string, exportFormat: string, pageRange?: string | undefined | null): Promise<Buffer>
+export declare function exportDocumentAsync(
+  documentId: string,
+  exportFormat: string,
+  pageRange?: string | undefined | null,
+): Promise<Buffer>
 
 /** Result of a one-shot export. */
 export interface ExportOnceResult {
@@ -112,7 +130,15 @@ export interface ExportOnceResult {
  * `page_range` is a JSON object `{ "start"?: number, "end"?: number }` with
  * 0-based, inclusive bounds. If not set, the whole document is exported.
  */
-export declare function exportTemplateOnce(files: Uint8Array, jsonInputs: Record<string, string>, blobInputs: Record<string, BlobWithMetadata>, compilationMode: CompilationMode, exportFormat: string, pageRange?: string | undefined | null, limits?: ZipLimits | undefined | null): ExportOnceResult
+export declare function exportTemplateOnce(
+  files: Uint8Array,
+  jsonInputs: Record<string, string>,
+  blobInputs: Record<string, BlobWithMetadata>,
+  compilationMode: CompilationMode,
+  exportFormat: string,
+  pageRange?: string | undefined | null,
+  limits?: ZipLimits | undefined | null,
+): ExportOnceResult
 
 /**
  * Compile and export the given template once on a background thread.
@@ -121,7 +147,15 @@ export declare function exportTemplateOnce(files: Uint8Array, jsonInputs: Record
  * warnings. Unlike [`export_template_once`], this does not block the Node.js
  * event loop.
  */
-export declare function exportTemplateOnceAsync(files: Uint8Array, jsonInputs: Record<string, string>, blobInputs: Record<string, BlobWithMetadata>, compilationMode: CompilationMode, exportFormat: string, pageRange?: string | undefined | null, limits?: ZipLimits | undefined | null): Promise<ExportOnceResult>
+export declare function exportTemplateOnceAsync(
+  files: Uint8Array,
+  jsonInputs: Record<string, string>,
+  blobInputs: Record<string, BlobWithMetadata>,
+  compilationMode: CompilationMode,
+  exportFormat: string,
+  pageRange?: string | undefined | null,
+  limits?: ZipLimits | undefined | null,
+): Promise<ExportOnceResult>
 
 /**
  * Load the source of the given file in the template.
@@ -184,7 +218,14 @@ export declare function registerFonts(fonts: Array<Uint8Array>): number
  * compile it once with the given inputs. The Typst [`typst::World`] will be cached and reused for
  * subsequent calls to the other methods with the same template identifier.
  */
-export declare function registerTemplate(template: string, files: Uint8Array, jsonInputs: Record<string, string>, blobInputs: Record<string, BlobWithMetadata>, compilationMode: CompilationMode, limits?: ZipLimits | undefined | null): string
+export declare function registerTemplate(
+  template: string,
+  files: Uint8Array,
+  jsonInputs: Record<string, string>,
+  blobInputs: Record<string, BlobWithMetadata>,
+  compilationMode: CompilationMode,
+  limits?: ZipLimits | undefined | null,
+): string
 
 /**
  * Register the given template on a background thread.
@@ -193,7 +234,14 @@ export declare function registerTemplate(template: string, files: Uint8Array, js
  * compilation. Unlike [`register_template`], this does not block the Node.js
  * event loop while the template is read and compiled.
  */
-export declare function registerTemplateAsync(template: string, files: Uint8Array, jsonInputs: Record<string, string>, blobInputs: Record<string, BlobWithMetadata>, compilationMode: CompilationMode, limits?: ZipLimits | undefined | null): Promise<string>
+export declare function registerTemplateAsync(
+  template: string,
+  files: Uint8Array,
+  jsonInputs: Record<string, string>,
+  blobInputs: Record<string, BlobWithMetadata>,
+  compilationMode: CompilationMode,
+  limits?: ZipLimits | undefined | null,
+): Promise<string>
 
 /** Remove the document from the cache. */
 export declare function removeDocument(documentId: string): void
