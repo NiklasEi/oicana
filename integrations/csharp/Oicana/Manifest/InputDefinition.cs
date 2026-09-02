@@ -13,12 +13,10 @@ public abstract class InputDefinition
     /// <summary>
     /// Key the input is supplied and used under.
     /// </summary>
-    [JsonPropertyName("key")]
     public required string Key { get; init; }
 
     /// <summary>
     /// Whether a value of this input is required for compilation.
     /// </summary>
-    [JsonPropertyName("required")]
     public required bool Required { get; init; }
 }

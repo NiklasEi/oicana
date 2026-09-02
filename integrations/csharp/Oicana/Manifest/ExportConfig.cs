@@ -1,5 +1,3 @@
-using System.Text.Json.Serialization;
-
 namespace Oicana.Manifest;
 
 /// <summary>
@@ -10,6 +8,5 @@ public sealed class ExportConfig
     /// <summary>
     /// PDF export configuration.
     /// </summary>
-    [JsonPropertyName("pdf")]
     public required PdfExportConfig Pdf { get; init; }
 }

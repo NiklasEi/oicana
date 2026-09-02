@@ -1,5 +1,4 @@
 using System.Text.Json;
-using System.Text.Json.Serialization;
 
 namespace Oicana.Manifest;
 
@@ -9,15 +8,21 @@ namespace Oicana.Manifest;
 public sealed class TemplateManifest
 {
     /// <summary>
+    /// The manifest is camelCase on the wire, the properties here are PascalCase.
+    /// </summary>
+    private static readonly JsonSerializerOptions Options = new()
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+    };
+
+    /// <summary>
     /// The Typst package section of the manifest.
     /// </summary>
-    [JsonPropertyName("package")]
     public required PackageInfo Package { get; init; }
 
     /// <summary>
     /// The Oicana section of the manifest.
     /// </summary>
-    [JsonPropertyName("oicana")]
     public required OicanaConfig Oicana { get; init; }
 
     /// <summary>
@@ -30,7 +35,7 @@ public sealed class TemplateManifest
     {
         try
         {
-            return JsonSerializer.Deserialize<TemplateManifest>(json)
+            return JsonSerializer.Deserialize<TemplateManifest>(json, Options)
                    ?? throw new OicanaException("The template manifest is empty");
         }
         catch (JsonException exception)
