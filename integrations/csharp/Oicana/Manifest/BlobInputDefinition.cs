@@ -7,6 +7,7 @@ public sealed class BlobInputDefinition : InputDefinition
 {
     /// <summary>
     /// Blob used when no value is supplied.
+    /// In development mode, <see cref="Development"/> takes precedence.
     /// </summary>
     public BlobFallback? Default { get; init; }
 

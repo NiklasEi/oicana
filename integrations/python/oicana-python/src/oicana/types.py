@@ -118,6 +118,7 @@ class JsonInputDefinition:
     #: Whether a value of this input is required for compilation.
     required: bool
     #: File in the template holding the value used when none is supplied.
+    #: In development mode, ``development`` takes precedence.
     default: str | None
     #: File in the template holding the value used in development mode when none is supplied.
     development: str | None
@@ -165,6 +166,7 @@ class BlobInputDefinition:
     #: Whether a value of this input is required for compilation.
     required: bool
     #: Blob used when no value is supplied.
+    #: In development mode, ``development`` takes precedence.
     default: BlobFallback | None
     #: Blob used in development mode when no value is supplied.
     development: BlobFallback | None

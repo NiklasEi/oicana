@@ -3424,6 +3424,7 @@ dependencies = [
  "oicana_world",
  "thiserror",
  "tmp-typst-custom-metadata",
+ "zip 6.0.0",
 ]
 
 [[package]]

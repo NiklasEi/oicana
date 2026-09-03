@@ -81,6 +81,8 @@ pub struct JsonInputDefinition {
     /// Whether a value of this input is required for compilation.
     pub required: bool,
     /// File in the template holding the value used when none is supplied.
+    ///
+    /// In development mode, [`Self::development`] takes precedence.
     pub default: Option<String>,
     /// File in the template holding the value used in development mode when none is supplied.
     pub development: Option<String>,
@@ -99,6 +101,8 @@ pub struct BlobInputDefinition {
     /// Whether a value of this input is required for compilation.
     pub required: bool,
     /// Blob used when no value is supplied.
+    ///
+    /// In development mode, [`Self::development`] takes precedence.
     pub default: Option<BlobFallback>,
     /// Blob used in development mode when no value is supplied.
     pub development: Option<BlobFallback>,

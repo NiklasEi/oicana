@@ -7,6 +7,7 @@ public sealed class JsonInputDefinition : InputDefinition
 {
     /// <summary>
     /// File in the template holding the value used when none is supplied.
+    /// In development mode, <see cref="Development"/> takes precedence.
     /// </summary>
     public string? Default { get; init; }
 

@@ -12,7 +12,8 @@ final readonly class BlobInputDefinition implements InputDefinition
     /**
      * @param string $key Key the input is supplied and used under
      * @param bool $required Whether a value of this input is required for compilation
-     * @param BlobFallback|null $default Blob used when no value is supplied
+     * @param BlobFallback|null $default Blob used when no value is supplied; in development mode the
+     *     development blob takes precedence
      * @param BlobFallback|null $development Blob used in development mode when no value is supplied
      */
     public function __construct(
