@@ -1,4 +1,4 @@
-use crate::Input;
+use crate::{Input, InputKind};
 use typst::foundations::{IntoValue, Str, Value};
 
 /// A JSON input.
@@ -24,6 +24,10 @@ impl JsonInput {
 impl Input for JsonInput {
     fn key(&self) -> Str {
         self.key.clone()
+    }
+
+    fn kind(&self) -> InputKind {
+        InputKind::Json
     }
 
     fn to_value(self) -> Value {

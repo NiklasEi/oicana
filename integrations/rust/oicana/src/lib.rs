@@ -74,7 +74,7 @@ use oicana_world::{
     fonts::FontSource,
     manifest::OicanaWorldManifestError,
     world::{OicanaWorld, WorldCreationError},
-    CompiledDocument, InputValidationError, TemplateCompilationFailure,
+    CompiledDocument, InputError, TemplateCompilationFailure,
 };
 use std::sync::atomic::{AtomicUsize, Ordering};
 use thiserror::Error;
@@ -266,9 +266,9 @@ pub enum TemplateInitializationError {
 /// An error that occurred during template compilation
 #[derive(Error, Debug)]
 pub enum CompileError {
-    /// A JSON input failed schema validation
+    /// An input was not declared in the manifest, or failed schema validation
     #[error(transparent)]
-    ValidationFailed(#[from] InputValidationError),
+    ValidationFailed(#[from] InputError),
 
     /// The Typst compilation failed
     #[error(transparent)]

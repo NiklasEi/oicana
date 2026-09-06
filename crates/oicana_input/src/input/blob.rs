@@ -1,4 +1,4 @@
-use crate::Input;
+use crate::{Input, InputKind};
 use typst::foundations::{Bytes, Dict, IntoValue, Str, Value};
 
 /// A blob input with its key and value.
@@ -137,6 +137,10 @@ impl From<Blob> for Dict {
 impl Input for BlobInput {
     fn key(&self) -> Str {
         self.key.clone()
+    }
+
+    fn kind(&self) -> InputKind {
+        InputKind::Blob
     }
 
     fn to_value(self) -> Value {

@@ -7,7 +7,7 @@ use jsonschema::Validator;
 use log::info;
 use oicana_files::TemplateFiles;
 use oicana_input::input_definition::InputDefinition;
-use oicana_input::TemplateInputs;
+use oicana_input::{ConflictingInput, InputKind, TemplateInputs};
 use oicana_template::manifest::ManifestValidationError;
 use oicana_template::manifest::TemplateManifest;
 use std::collections::HashMap;
@@ -110,6 +110,46 @@ fn build_validators<F: TemplateFiles>(
     Ok(validators)
 }
 
+/// Check the supplied inputs against the template manifest's input definitions.
+fn check_inputs(
+    manifest: &TemplateManifest,
+    inputs: &TemplateInputs,
+) -> Result<(), InputMismatchError> {
+    let definitions = &manifest.tool.oicana.inputs;
+    let conflicting = inputs.conflicts().to_vec();
+    let mut unknown = Vec::new();
+    let mut wrong_kind = Vec::new();
+
+    for (key, supplied) in inputs.kinds() {
+        if conflicting.iter().any(|conflict| conflict.key == key) {
+            continue;
+        }
+        match definitions.iter().find(|def| def.key() == key) {
+            None => unknown.push(key.to_owned()),
+            Some(definition) if definition.kind() != supplied => wrong_kind.push(WrongInputKind {
+                key: key.to_owned(),
+                declared: definition.kind(),
+                supplied,
+            }),
+            Some(_) => {}
+        }
+    }
+
+    if unknown.is_empty() && wrong_kind.is_empty() && conflicting.is_empty() {
+        return Ok(());
+    }
+
+    Err(InputMismatchError {
+        unknown,
+        wrong_kind,
+        conflicting,
+        declared: definitions
+            .iter()
+            .map(|definition| definition.key().to_owned())
+            .collect(),
+    })
+}
+
 impl<Files: TemplateFiles> OicanaWorld<Files> {
     /// Create a new Typst World.
     ///
@@ -131,6 +171,7 @@ impl<Files: TemplateFiles> OicanaWorld<Files> {
         manifest: TemplateManifest,
         host_fonts: &[FontSource],
     ) -> Result<Self, WorldCreationError> {
+        check_inputs(&manifest, &inputs)?;
         let library = Library::builder().with_inputs(inputs.to_dict()).build();
 
         let main_path = VirtualPath::new(manifest.package.entrypoint.as_str())?;
@@ -162,10 +203,12 @@ impl<Files: TemplateFiles> OicanaWorld<Files> {
         })
     }
 
-    /// Update the inputs of the World and validate JSON inputs against their schemas.
+    /// Update the inputs of the World.
     ///
-    /// If validation fails, the inputs are **not** applied.
-    pub fn update_inputs(&mut self, inputs: TemplateInputs) -> Result<(), InputValidationError> {
+    /// Rejects inputs the manifest does not declare and
+    /// validates JSON inputs against their schemas.
+    pub fn update_inputs(&mut self, inputs: TemplateInputs) -> Result<(), InputError> {
+        check_inputs(&self.manifest, &inputs)?;
         if self.validate_inputs {
             self.check_inputs_against_schemas(&inputs)?;
         }
@@ -266,6 +309,9 @@ pub enum WorldCreationError {
     /// The entrypoint configured in the manifest is not a valid path
     #[error("The entrypoint configured in the manifest is not a valid path: {0}")]
     InvalidEntrypoint(#[from] PathError),
+    /// The supplied inputs do not match the template's input definitions
+    #[error(transparent)]
+    InputMismatch(#[from] InputMismatchError),
     /// The template requires font families that are not available
     #[error(
         "The template requires font families that are not available: {}. \
@@ -273,6 +319,85 @@ pub enum WorldCreationError {
         .0.join(", ")
     )]
     MissingFonts(Vec<String>),
+}
+
+/// A supplied input whose kind does not match the kind its definition declares
+#[derive(Debug, PartialEq, Eq)]
+pub struct WrongInputKind {
+    /// The key of the mismatched input
+    pub key: String,
+    /// The kind the manifest declares for this key
+    pub declared: InputKind,
+    /// The kind that was supplied
+    pub supplied: InputKind,
+}
+
+/// The supplied inputs do not match the template's input definitions
+#[derive(Debug)]
+pub struct InputMismatchError {
+    /// Supplied keys that no input definition declares
+    pub unknown: Vec<String>,
+    /// Supplied inputs whose kind does not match their declaration
+    pub wrong_kind: Vec<WrongInputKind>,
+    /// Keys supplied as more than one kind of input
+    pub conflicting: Vec<ConflictingInput>,
+    /// The keys the manifest declares
+    pub declared: Vec<String>,
+}
+
+impl fmt::Display for InputMismatchError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let mut problems = Vec::new();
+        for key in &self.unknown {
+            problems.push(format!("The template declares no input for '{key}'."));
+        }
+        for wrong in &self.wrong_kind {
+            problems.push(format!(
+                "Input '{}' is declared as a {} input, but a {} value was supplied.",
+                wrong.key, wrong.declared, wrong.supplied
+            ));
+        }
+        for conflict in &self.conflicting {
+            problems.push(format!(
+                "Input '{}' was supplied as both a {} and a {} input.",
+                conflict.key, conflict.first, conflict.second
+            ));
+        }
+
+        write!(f, "{}", problems.join(" "))?;
+        if !self.unknown.is_empty() {
+            write!(
+                f,
+                " Declared inputs: {}",
+                if self.declared.is_empty() {
+                    "none".to_owned()
+                } else {
+                    quoted_list(&self.declared)
+                }
+            )?;
+        }
+        Ok(())
+    }
+}
+
+impl std::error::Error for InputMismatchError {}
+
+fn quoted_list(keys: &[String]) -> String {
+    keys.iter()
+        .map(|key| format!("'{key}'"))
+        .collect::<Vec<_>>()
+        .join(", ")
+}
+
+/// An input could not be applied to a template
+#[derive(Debug, Error)]
+pub enum InputError {
+    /// The supplied inputs do not match the template's input definitions
+    #[error(transparent)]
+    Mismatch(#[from] InputMismatchError),
+    /// A JSON input did not match its schema
+    #[error(transparent)]
+    Validation(#[from] InputValidationError),
 }
 
 /// A JSON input did not match its schema
@@ -388,13 +513,24 @@ pub fn evict_cache(max_age: usize) {
 #[cfg(test)]
 mod tests {
     use crate::manifest::{OicanaWorldFiles, OicanaWorldManifestError};
-    use crate::world::{OicanaWorld, WorldCreationError};
+    use crate::world::{
+        InputError, InputValidationError, OicanaWorld, WorldCreationError, WrongInputKind,
+    };
     use oicana_files::preloaded::PreloadedTemplate;
+    use oicana_input::InputKind;
     use oicana_input::TemplateInputs;
     use std::collections::HashMap;
     use std::path::PathBuf;
     use typst::diag::FileError;
     use typst::foundations::Duration;
+
+    /// Unwrap the schema-validation variant of an [`InputError`].
+    fn expect_validation(error: InputError) -> InputValidationError {
+        match error {
+            InputError::Validation(error) => error,
+            other => panic!("expected a schema validation error, got {other:?}"),
+        }
+    }
 
     #[test]
     fn can_build_world_with_minimal_template() {
@@ -667,6 +803,166 @@ mod tests {
     }
 
     #[test]
+    fn rejects_an_input_the_manifest_does_not_declare() {
+        use oicana_input::input::json::JsonInput;
+
+        let files = template_with_schema(schema_manifest(), "Test", simple_schema());
+        let manifest = files.manifest().unwrap();
+        let mut world = OicanaWorld::new(files, TemplateInputs::new(), manifest).unwrap();
+
+        let mut inputs = TemplateInputs::new();
+        inputs.with_input(JsonInput::new("dtaa", r#"{"name": "Alice"}"#));
+
+        let error = world.update_inputs(inputs).unwrap_err();
+        let InputError::Mismatch(error) = error else {
+            panic!("expected a mismatch, got {error:?}");
+        };
+        assert_eq!(error.unknown, vec!["dtaa".to_owned()]);
+        assert_eq!(error.declared, vec!["data".to_owned()]);
+        assert_eq!(
+            error.to_string(),
+            "The template declares no input for 'dtaa'. Declared inputs: 'data'"
+        );
+    }
+
+    #[test]
+    fn rejects_an_undeclared_input_at_world_creation() {
+        use oicana_input::input::json::JsonInput;
+
+        let files = template_with_schema(schema_manifest(), "Test", simple_schema());
+        let manifest = files.manifest().unwrap();
+
+        let mut inputs = TemplateInputs::new();
+        inputs.with_input(JsonInput::new("dtaa", r#"{"name": "Alice"}"#));
+
+        let error = OicanaWorld::new(files, inputs, manifest).unwrap_err();
+        assert!(
+            matches!(error, WorldCreationError::InputMismatch(_)),
+            "expected InputMismatch, got {error:?}"
+        );
+    }
+
+    #[test]
+    fn rejects_a_blob_value_for_a_key_declared_as_json() {
+        use oicana_input::input::blob::BlobInput;
+        use typst::foundations::Bytes;
+
+        let files = template_with_schema(schema_manifest(), "Test", simple_schema());
+        let manifest = files.manifest().unwrap();
+        let mut world = OicanaWorld::new(files, TemplateInputs::new(), manifest).unwrap();
+
+        let mut inputs = TemplateInputs::new();
+        inputs.with_input(BlobInput::new("data", Bytes::new([1u8, 2].as_slice())));
+
+        let error = world.update_inputs(inputs).unwrap_err();
+        let InputError::Mismatch(error) = error else {
+            panic!("expected a mismatch, got {error:?}");
+        };
+        assert!(error.unknown.is_empty());
+        assert_eq!(
+            error.wrong_kind,
+            vec![WrongInputKind {
+                key: "data".to_owned(),
+                declared: InputKind::Json,
+                supplied: InputKind::Blob,
+            }]
+        );
+        assert_eq!(
+            error.to_string(),
+            "Input 'data' is declared as a json input, but a blob value was supplied."
+        );
+    }
+
+    #[test]
+    fn rejects_a_json_value_for_a_key_declared_as_blob() {
+        use oicana_input::input::json::JsonInput;
+
+        let blob_manifest = r#"
+        [package]
+        name = "test"
+        version = "0.1.0"
+        entrypoint = "main.typ"
+
+        [tool.oicana]
+        manifest_version = 1
+
+        [[tool.oicana.inputs]]
+        type = "blob"
+        key = "logo"
+        "#;
+        let files = template_with(blob_manifest, "Test");
+        let manifest = files.manifest().unwrap();
+        let mut world = OicanaWorld::new(files, TemplateInputs::new(), manifest).unwrap();
+
+        let mut inputs = TemplateInputs::new();
+        inputs.with_input(JsonInput::new("logo", "{}"));
+
+        assert_eq!(
+            world.update_inputs(inputs).unwrap_err().to_string(),
+            "Input 'logo' is declared as a blob input, but a json value was supplied."
+        );
+    }
+
+    #[test]
+    fn rejects_a_key_supplied_as_two_kinds() {
+        use oicana_input::input::blob::BlobInput;
+        use oicana_input::input::json::JsonInput;
+        use typst::foundations::Bytes;
+
+        let files = template_with_schema(schema_manifest(), "Test", simple_schema());
+        let manifest = files.manifest().unwrap();
+        let mut world = OicanaWorld::new(files, TemplateInputs::new(), manifest).unwrap();
+
+        let mut inputs = TemplateInputs::new();
+        inputs.with_input(JsonInput::new("data", r#"{"name": "Alice"}"#));
+        inputs.with_input(BlobInput::new("data", Bytes::new([1u8].as_slice())));
+
+        assert_eq!(
+            world.update_inputs(inputs).unwrap_err().to_string(),
+            "Input 'data' was supplied as both a json and a blob input."
+        );
+    }
+
+    #[test]
+    fn reports_every_input_problem_at_once() {
+        use oicana_input::input::blob::BlobInput;
+        use oicana_input::input::json::JsonInput;
+        use typst::foundations::Bytes;
+
+        let files = template_with_schema(schema_manifest(), "Test", simple_schema());
+        let manifest = files.manifest().unwrap();
+        let mut world = OicanaWorld::new(files, TemplateInputs::new(), manifest).unwrap();
+
+        let mut inputs = TemplateInputs::new();
+        inputs.with_input(BlobInput::new("data", Bytes::new([1u8].as_slice())));
+        inputs.with_input(JsonInput::new("dtaa", "{}"));
+
+        let InputError::Mismatch(error) = world.update_inputs(inputs).unwrap_err() else {
+            panic!("expected a mismatch");
+        };
+        assert_eq!(error.unknown, vec!["dtaa".to_owned()]);
+        assert_eq!(error.wrong_kind.len(), 1);
+    }
+
+    #[test]
+    fn rejects_undeclared_inputs_even_with_schema_validation_disabled() {
+        use oicana_input::input::json::JsonInput;
+
+        let files = template_with_schema(schema_manifest(), "Test", simple_schema());
+        let manifest = files.manifest().unwrap();
+        let mut world = OicanaWorld::new(files, TemplateInputs::new(), manifest).unwrap();
+        world.validate_inputs = false;
+
+        let mut inputs = TemplateInputs::new();
+        inputs.with_input(JsonInput::new("dtaa", r#"{"name": "Alice"}"#));
+
+        assert!(matches!(
+            world.update_inputs(inputs),
+            Err(InputError::Mismatch(_))
+        ));
+    }
+
+    #[test]
     fn builds_world_with_schema() {
         let files = template_with_schema(schema_manifest(), "Test", simple_schema());
         let manifest = files.manifest().unwrap();
@@ -704,7 +1000,7 @@ mod tests {
 
         let result = world.update_inputs(inputs);
         assert!(result.is_err());
-        let err = result.unwrap_err();
+        let err = expect_validation(result.unwrap_err());
         assert_eq!(err.key, "data");
         assert!(!err.errors.is_empty());
         assert!(
@@ -727,7 +1023,7 @@ mod tests {
 
         let result = world.update_inputs(inputs);
         assert!(result.is_err());
-        let err = result.unwrap_err();
+        let err = expect_validation(result.unwrap_err());
         assert_eq!(err.key, "data");
     }
 
@@ -744,7 +1040,7 @@ mod tests {
 
         let result = world.update_inputs(inputs);
         assert!(result.is_err());
-        let err = result.unwrap_err();
+        let err = expect_validation(result.unwrap_err());
         assert!(err.errors[0].contains("Invalid JSON"));
     }
 
@@ -752,11 +1048,29 @@ mod tests {
     fn skips_validation_for_inputs_without_schema() {
         use oicana_input::input::json::JsonInput;
 
-        let files = template_with_schema(schema_manifest(), "Test", simple_schema());
+        let manifest_with_unschemad_input = r#"
+        [package]
+        name = "test"
+        version = "0.1.0"
+        entrypoint = "main.typ"
+
+        [tool.oicana]
+        manifest_version = 1
+
+        [[tool.oicana.inputs]]
+        type = "json"
+        key = "data"
+        schema = "data.schema.json"
+
+        [[tool.oicana.inputs]]
+        type = "json"
+        key = "other"
+        "#;
+        let files = template_with_schema(manifest_with_unschemad_input, "Test", simple_schema());
         let manifest = files.manifest().unwrap();
         let mut world = OicanaWorld::new(files, TemplateInputs::new(), manifest).unwrap();
 
-        // "other" has no schema defined, so any value should be accepted
+        // "other" is declared without a schema, so any value should be accepted
         let mut inputs = TemplateInputs::new();
         inputs.with_input(JsonInput::new("other", r#"literally anything"#));
 

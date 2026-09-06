@@ -3,6 +3,7 @@ pub mod blob;
 /// JSON input.
 pub mod json;
 
+use crate::InputKind;
 use blob::BlobInputDefinition;
 use json::JsonInputDefinition;
 use serde::{Deserialize, Serialize};
@@ -27,6 +28,14 @@ impl InputDefinition {
         match self {
             InputDefinition::Json(def) => &def.key,
             InputDefinition::Blob(def) => &def.key,
+        }
+    }
+
+    /// The kind of value this input expects.
+    pub fn kind(&self) -> InputKind {
+        match self {
+            InputDefinition::Json(_) => InputKind::Json,
+            InputDefinition::Blob(_) => InputKind::Blob,
         }
     }
 
