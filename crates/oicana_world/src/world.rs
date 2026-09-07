@@ -6,8 +6,7 @@ use chrono::{DateTime, Datelike, Local};
 use jsonschema::Validator;
 use log::info;
 use oicana_files::TemplateFiles;
-use oicana_input::input_definition::InputDefinition;
-use oicana_input::{ConflictingInput, InputKind, TemplateInputs};
+use oicana_input::{ConflictingInput, InputDefinition, InputKind, TemplateInputs};
 use oicana_template::manifest::ManifestValidationError;
 use oicana_template::manifest::TemplateManifest;
 use std::collections::HashMap;
@@ -517,8 +516,7 @@ mod tests {
         InputError, InputValidationError, OicanaWorld, WorldCreationError, WrongInputKind,
     };
     use oicana_files::preloaded::PreloadedTemplate;
-    use oicana_input::InputKind;
-    use oicana_input::TemplateInputs;
+    use oicana_input::{InputKind, TemplateInputs};
     use std::collections::HashMap;
     use std::path::PathBuf;
     use typst::diag::FileError;
@@ -804,7 +802,7 @@ mod tests {
 
     #[test]
     fn rejects_an_input_the_manifest_does_not_declare() {
-        use oicana_input::input::json::JsonInput;
+        use oicana_input::JsonInput;
 
         let files = template_with_schema(schema_manifest(), "Test", simple_schema());
         let manifest = files.manifest().unwrap();
@@ -827,7 +825,7 @@ mod tests {
 
     #[test]
     fn rejects_an_undeclared_input_at_world_creation() {
-        use oicana_input::input::json::JsonInput;
+        use oicana_input::JsonInput;
 
         let files = template_with_schema(schema_manifest(), "Test", simple_schema());
         let manifest = files.manifest().unwrap();
@@ -844,7 +842,7 @@ mod tests {
 
     #[test]
     fn rejects_a_blob_value_for_a_key_declared_as_json() {
-        use oicana_input::input::blob::BlobInput;
+        use oicana_input::BlobInput;
         use typst::foundations::Bytes;
 
         let files = template_with_schema(schema_manifest(), "Test", simple_schema());
@@ -875,7 +873,7 @@ mod tests {
 
     #[test]
     fn rejects_a_json_value_for_a_key_declared_as_blob() {
-        use oicana_input::input::json::JsonInput;
+        use oicana_input::JsonInput;
 
         let blob_manifest = r#"
         [package]
@@ -905,8 +903,8 @@ mod tests {
 
     #[test]
     fn rejects_a_key_supplied_as_two_kinds() {
-        use oicana_input::input::blob::BlobInput;
-        use oicana_input::input::json::JsonInput;
+        use oicana_input::BlobInput;
+        use oicana_input::JsonInput;
         use typst::foundations::Bytes;
 
         let files = template_with_schema(schema_manifest(), "Test", simple_schema());
@@ -925,8 +923,8 @@ mod tests {
 
     #[test]
     fn reports_every_input_problem_at_once() {
-        use oicana_input::input::blob::BlobInput;
-        use oicana_input::input::json::JsonInput;
+        use oicana_input::BlobInput;
+        use oicana_input::JsonInput;
         use typst::foundations::Bytes;
 
         let files = template_with_schema(schema_manifest(), "Test", simple_schema());
@@ -946,7 +944,7 @@ mod tests {
 
     #[test]
     fn rejects_undeclared_inputs_even_with_schema_validation_disabled() {
-        use oicana_input::input::json::JsonInput;
+        use oicana_input::JsonInput;
 
         let files = template_with_schema(schema_manifest(), "Test", simple_schema());
         let manifest = files.manifest().unwrap();
@@ -974,7 +972,7 @@ mod tests {
 
     #[test]
     fn validates_valid_json_input() {
-        use oicana_input::input::json::JsonInput;
+        use oicana_input::JsonInput;
 
         let files = template_with_schema(schema_manifest(), "Test", simple_schema());
         let manifest = files.manifest().unwrap();
@@ -989,7 +987,7 @@ mod tests {
 
     #[test]
     fn rejects_json_missing_required_field() {
-        use oicana_input::input::json::JsonInput;
+        use oicana_input::JsonInput;
 
         let files = template_with_schema(schema_manifest(), "Test", simple_schema());
         let manifest = files.manifest().unwrap();
@@ -1012,7 +1010,7 @@ mod tests {
 
     #[test]
     fn rejects_json_with_wrong_type() {
-        use oicana_input::input::json::JsonInput;
+        use oicana_input::JsonInput;
 
         let files = template_with_schema(schema_manifest(), "Test", simple_schema());
         let manifest = files.manifest().unwrap();
@@ -1029,7 +1027,7 @@ mod tests {
 
     #[test]
     fn rejects_invalid_json_syntax() {
-        use oicana_input::input::json::JsonInput;
+        use oicana_input::JsonInput;
 
         let files = template_with_schema(schema_manifest(), "Test", simple_schema());
         let manifest = files.manifest().unwrap();
@@ -1046,7 +1044,7 @@ mod tests {
 
     #[test]
     fn skips_validation_for_inputs_without_schema() {
-        use oicana_input::input::json::JsonInput;
+        use oicana_input::JsonInput;
 
         let manifest_with_unschemad_input = r#"
         [package]
@@ -1121,7 +1119,7 @@ mod tests {
 
     #[test]
     fn accepts_invalid_json_when_validation_disabled() {
-        use oicana_input::input::json::JsonInput;
+        use oicana_input::JsonInput;
 
         let files = template_with_schema(schema_manifest(), "Test", simple_schema());
         let manifest = files.manifest().unwrap();
@@ -1161,7 +1159,7 @@ mod tests {
 
     #[test]
     fn per_input_validate_false_accepts_invalid_json() {
-        use oicana_input::input::json::JsonInput;
+        use oicana_input::JsonInput;
 
         let manifest = r#"
         [package]
@@ -1189,7 +1187,7 @@ mod tests {
 
     #[test]
     fn per_input_validate_true_is_default_and_validates() {
-        use oicana_input::input::json::JsonInput;
+        use oicana_input::JsonInput;
 
         let files = template_with_schema(schema_manifest(), "Test", simple_schema());
         let manifest = files.manifest().unwrap();
@@ -1204,7 +1202,7 @@ mod tests {
 
     #[test]
     fn mixed_validate_flags_only_validates_enabled_inputs() {
-        use oicana_input::input::json::JsonInput;
+        use oicana_input::JsonInput;
 
         let manifest = r#"
         [package]
@@ -1246,7 +1244,7 @@ mod tests {
 
     #[test]
     fn manifest_validate_json_inputs_by_default_false_disables_validation_by_default() {
-        use oicana_input::input::json::JsonInput;
+        use oicana_input::JsonInput;
 
         let manifest = r#"
         [package]
@@ -1286,7 +1284,7 @@ mod tests {
 
     #[test]
     fn manifest_validate_json_inputs_by_default_false_can_be_overridden_at_runtime() {
-        use oicana_input::input::json::JsonInput;
+        use oicana_input::JsonInput;
 
         let manifest = r#"
         [package]

@@ -5,10 +5,13 @@ use serde::{Deserialize, Serialize};
 use std::fmt;
 use typst::foundations::{Dict, Str, Value};
 
-/// Input values.
-pub mod input;
-/// Definitions of inputs for Oicana templates.
-pub mod input_definition;
+mod input;
+mod input_definition;
+
+pub use input::{Blob, BlobInput, ImageFormat, JsonInput};
+pub use input_definition::{
+    BlobInputDefinition, FallbackBlobInput, InputDefinition, JsonInputDefinition,
+};
 
 /// The kind of an input.
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
@@ -200,8 +203,7 @@ impl From<CompilationConfig> for Dict {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::input::blob::BlobInput;
-    use crate::input::json::JsonInput;
+    use crate::{BlobInput, JsonInput};
     use typst::foundations::Bytes;
 
     #[test]

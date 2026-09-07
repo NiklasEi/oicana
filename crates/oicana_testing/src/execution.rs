@@ -10,7 +10,7 @@ use oicana::{CompileError, Template, TemplateInitializationError};
 use oicana_export::pdf::export_pdf;
 use oicana_export::png::{export_png, PngExportError};
 use oicana_files::native::{package_data_dir, NativeTemplate};
-use oicana_input::{input::json::JsonInput, input_definition::InputDefinition, TemplateInputs};
+use oicana_input::{InputDefinition, JsonInput, TemplateInputs};
 use oicana_template::manifest::TemplateManifest;
 use oicana_world::diagnostics::DiagnosticColor;
 use oicana_world::fonts::FontSource;

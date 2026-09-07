@@ -7,7 +7,7 @@
 
 use crate::manifest::{ManifestValidationError, TemplateManifest};
 use log::error;
-use oicana_input::input_definition::InputDefinition;
+use oicana_input::InputDefinition;
 use serde::{Deserialize, Serialize};
 use std::fmt::{Display, Formatter};
 use std::fs::read_to_string;
@@ -239,9 +239,9 @@ mod tests {
         validate_native_template, ExportConfig, FontConfig, OicanaConfig, PdfStandard,
         TemplateError,
     };
-    use oicana_input::input_definition::blob::{BlobInputDefinition, FallbackBlobInput};
-    use oicana_input::input_definition::json::JsonInputDefinition;
-    use oicana_input::input_definition::InputDefinition;
+    use oicana_input::InputDefinition;
+    use oicana_input::JsonInputDefinition;
+    use oicana_input::{BlobInputDefinition, FallbackBlobInput};
     use std::fs::File;
     use std::io::Write;
     use std::path::PathBuf;

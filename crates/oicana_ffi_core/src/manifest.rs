@@ -5,9 +5,9 @@
 //! and lists are always present, so a wrapper can rely on every key
 //! existing.
 
-use oicana_input::input_definition::blob::BlobInputDefinition as CoreBlobInputDefinition;
-use oicana_input::input_definition::json::JsonInputDefinition as CoreJsonInputDefinition;
-use oicana_input::input_definition::InputDefinition as CoreInputDefinition;
+use oicana_input::BlobInputDefinition as CoreBlobInputDefinition;
+use oicana_input::InputDefinition as CoreInputDefinition;
+use oicana_input::JsonInputDefinition as CoreJsonInputDefinition;
 use oicana_template::manifest::TemplateManifest;
 use oicana_template::OicanaConfig as CoreOicanaConfig;
 use serde::Serialize;
@@ -233,8 +233,8 @@ impl From<&CoreBlobInputDefinition> for BlobInputDefinition {
     }
 }
 
-impl From<&oicana_input::input_definition::blob::FallbackBlobInput> for BlobFallback {
-    fn from(fallback: &oicana_input::input_definition::blob::FallbackBlobInput) -> Self {
+impl From<&oicana_input::FallbackBlobInput> for BlobFallback {
+    fn from(fallback: &oicana_input::FallbackBlobInput) -> Self {
         BlobFallback {
             file: fallback.file.clone(),
             meta: fallback

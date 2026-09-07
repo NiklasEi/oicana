@@ -28,8 +28,7 @@ use oicana_export::PdfStandard;
 use oicana_files::packed::PackedTemplate;
 pub use oicana_files::packed::{NegativeZipLimit, ZipLimits};
 use oicana_files::TemplateFiles;
-use oicana_input::input::blob::{Blob, BlobInput};
-use oicana_input::input::json::JsonInput;
+use oicana_input::{Blob, BlobInput, JsonInput};
 use oicana_input::{CompilationConfig, TemplateInputs};
 use oicana_world::diagnostics::PlainDiagnostics;
 use oicana_world::fonts::FontSource;
@@ -1138,8 +1137,8 @@ mod tests {
         .expect_err("a json value for a blob input must fail the export");
         assert_eq!(
             error.to_string(),
-            "Input validation failed: input 'banner' is declared as a blob input, \
-             but a json value was supplied"
+            "Input validation failed: Input 'banner' is declared as a blob input, \
+             but a json value was supplied."
         );
 
         // The same key in both maps drops the JSON value silently. It is reported instead.
@@ -1161,7 +1160,7 @@ mod tests {
         .expect_err("one key supplied as two kinds must fail the export");
         assert_eq!(
             error.to_string(),
-            "Input validation failed: input 'banner' was supplied as both a json and a blob input"
+            "Input validation failed: Input 'banner' was supplied as both a json and a blob input."
         );
     }
 

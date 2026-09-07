@@ -23,7 +23,7 @@ use std::fs::File;
 
 use oicana::Template;
 use oicana::export::pdf::export_pdf;
-use oicana::input::input::json::JsonInput;
+use oicana::input::JsonInput;
 use oicana::input::{CompilationConfig, TemplateInputs};
 
 let mut template = Template::init(File::open("invoice-0.1.0.zip")?)?;
