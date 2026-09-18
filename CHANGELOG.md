@@ -25,6 +25,8 @@
 
 ### C#
 - `BlobInput.Meta` is now `BlobInput.Metadata`
+- `ITemplate` and `IOicanaService` extend `IDisposable` so callers can release their resources
+- `OicanaService.RegisterTemplate` now replaces an already registered id and disposes the old template
 
 ### Rust
 - `Template::init_with_limits` and `Template::init_with_fonts_and_limits` take custom `ZipLimits`

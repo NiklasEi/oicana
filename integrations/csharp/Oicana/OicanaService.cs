@@ -9,7 +9,7 @@ namespace Oicana;
 /// A service for using Oicana templates
 /// </summary>
 /// <remarks>
-/// This service is thread-save.
+/// This service is thread-safe.
 /// You most likely what to keep it around as a singleton.
 /// </remarks>
 public class OicanaService : IOicanaService
@@ -49,7 +49,24 @@ public class OicanaService : IOicanaService
         stopWatch.Start();
         var template = new Template(file);
         stopWatch.Stop();
-        _templates.TryAdd(id, template);
+        _templates.AddOrUpdate(id, template, (_, replaced) =>
+        {
+            _logger.LogInformation("Replacing Oicana template: {Id}", id);
+            replaced.Dispose();
+            return template;
+        });
         _logger.LogInformation("Registration of Oicana template '{Id}' took {time}ms", id, stopWatch.ElapsedMilliseconds);
+    }
+
+    /// <inheritdoc />
+    public void Dispose()
+    {
+        foreach (var id in _templates.Keys)
+        {
+            if (_templates.TryRemove(id, out var template))
+            {
+                template.Dispose();
+            }
+        }
     }
 }
