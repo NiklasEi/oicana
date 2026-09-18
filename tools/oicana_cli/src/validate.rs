@@ -215,8 +215,10 @@ fn validate_input_values(template_path: &Path, inputs: &[InputDefinition]) -> In
         if input.required() && !has_fallback(input) {
             issues.warnings.push(format!(
                 "Input '{}' is required but has no default or development value. \
-                 Compiling without a value for it will fail, including the warm-up \
-                 compilation that most integrations run when registering the template.",
+                 Compiling without a supplied value for it will fail, including the warm-up \
+                 compilation that most integrations run when registering the template. \
+                 Set a 'development' value that applies outside of production mode only, \
+                 or a 'default' which also applies in production.",
                 input.key(),
             ));
         }
