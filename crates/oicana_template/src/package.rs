@@ -69,7 +69,7 @@ where
 
     // Add template files
     let walk_dir = WalkDir::new(src_dir).follow_links(true);
-    let it = walk_dir.into_iter().filter_entry(|entry| {
+    let mut it = walk_dir.into_iter().filter_entry(|entry| {
         let relative = entry.path().strip_prefix(src_dir).unwrap();
         if let Some(excluded) = exclude {
             if relative == excluded {
@@ -81,20 +81,14 @@ where
             .is_ignore()
     });
 
-    add_dir_to_zip(
-        &mut zip,
-        &mut it.filter_map(|e| e.ok()),
-        src_dir,
-        Path::new(""),
-        options,
-    )?;
+    add_dir_to_zip(&mut zip, &mut it, src_dir, Path::new(""), options)?;
 
     // Add dependency directories
     for (source_dir, zip_prefix) in dependencies {
         let dep_walk = WalkDir::new(source_dir).follow_links(true);
         add_dir_to_zip(
             &mut zip,
-            &mut dep_walk.into_iter().filter_map(|e| e.ok()),
+            &mut dep_walk.into_iter(),
             source_dir,
             zip_prefix,
             options,
@@ -107,7 +101,7 @@ where
 
 fn add_dir_to_zip<T: Write + Seek>(
     zip: &mut ZipWriter<T>,
-    it: &mut dyn Iterator<Item = DirEntry>,
+    it: &mut dyn Iterator<Item = walkdir::Result<DirEntry>>,
     strip_prefix: &Path,
     zip_prefix: &Path,
     options: SimpleFileOptions,
@@ -115,6 +109,7 @@ fn add_dir_to_zip<T: Write + Seek>(
     let mut buffer = Vec::with_capacity(4096);
     let mut pending_dirs: Vec<PathBuf> = Vec::new();
     for entry in it {
+        let entry = entry?;
         let path = entry.path();
         let relative = path.strip_prefix(strip_prefix).unwrap();
         let name = zip_prefix.join(relative);
@@ -181,6 +176,9 @@ pub enum PackageError {
     /// A file path in the template is not valid UTF-8.
     #[error("File path {0} is not valid UTF-8")]
     InvalidFilePath(PathBuf),
+    /// A file or directory in the template could not be read.
+    #[error("failed to read template files: {0}")]
+    WalkDirectory(#[from] walkdir::Error),
     /// IO Error while packaging the template.
     #[error("i/o error: {0}")]
     Io(#[from] io::Error),
@@ -217,6 +215,21 @@ manifest_version = 1
         let dir = TempDir::new().unwrap();
         std::fs::write(dir.path().join("typst.toml"), manifest()).unwrap();
         std::fs::write(dir.path().join("main.typ"), "Hello").unwrap();
+        dir
+    }
+
+    fn create_template_with_default_excluded_content() -> TempDir {
+        let dir = create_simple_template();
+        for sub_dir in ["tests", "output", ".git", "assets"] {
+            std::fs::create_dir(dir.path().join(sub_dir)).unwrap();
+        }
+        std::fs::write(dir.path().join("tests").join("test.toml"), "").unwrap();
+        std::fs::write(dir.path().join("output").join("main.pdf"), "").unwrap();
+        std::fs::write(dir.path().join(".git").join("config"), "").unwrap();
+        std::fs::write(dir.path().join(".DS_Store"), "").unwrap();
+        std::fs::write(dir.path().join("demo-0.1.0.zip"), "").unwrap();
+        std::fs::write(dir.path().join("assets").join(".DS_Store"), "").unwrap();
+        std::fs::write(dir.path().join("assets").join("logo.svg"), "<svg/>").unwrap();
         dir
     }
 
@@ -271,13 +284,8 @@ manifest_version = 1
     }
 
     #[test]
-    fn excludes_test_directory() {
-        let dir = TempDir::new().unwrap();
-        std::fs::write(dir.path().join("typst.toml"), manifest()).unwrap();
-        std::fs::write(dir.path().join("main.typ"), "Hello").unwrap();
-        std::fs::create_dir(dir.path().join("tests")).unwrap();
-        std::fs::write(dir.path().join("tests").join("test.toml"), "").unwrap();
-
+    fn excludes_defaults_from_the_archive() {
+        let dir = create_template_with_default_excluded_content();
         let manifest = TemplateManifest::from_toml(
             &std::fs::read_to_string(dir.path().join("typst.toml")).unwrap(),
         )
@@ -288,10 +296,49 @@ manifest_version = 1
 
         buffer.set_position(0);
         let archive = zip::ZipArchive::new(buffer).unwrap();
-        let file_names: Vec<String> = archive.file_names().map(|s| s.to_string()).collect();
+        let names: Vec<&str> = archive.file_names().collect();
 
-        assert!(!file_names.iter().any(|name| name.starts_with("tests")));
-        assert!(file_names.contains(&"main.typ".to_string()));
+        assert!(names.contains(&"main.typ"), "{names:?}");
+        assert!(names.contains(&"assets/logo.svg"), "{names:?}");
+        for excluded in ["tests", "output", ".git", ".DS_Store", ".zip"] {
+            assert!(
+                !names.iter().any(|name| name.contains(excluded)),
+                "expected no {excluded} entry in {names:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn default_excludes_can_be_re_included() {
+        let dir = create_template_with_default_excluded_content();
+        let mut manifest = TemplateManifest::from_toml(
+            &std::fs::read_to_string(dir.path().join("typst.toml")).unwrap(),
+        )
+        .unwrap();
+        manifest.package.exclude = ["!/tests/", "!/output/", "!.git", "!.DS_Store", "!*.zip"]
+            .map(Into::into)
+            .to_vec();
+
+        let mut buffer = Cursor::new(Vec::new());
+        package(dir.path(), &mut buffer, &manifest, None).unwrap();
+
+        buffer.set_position(0);
+        let archive = zip::ZipArchive::new(buffer).unwrap();
+        let names: Vec<&str> = archive.file_names().collect();
+
+        for re_included in [
+            "tests/test.toml",
+            "output/main.pdf",
+            ".git/config",
+            ".DS_Store",
+            "demo-0.1.0.zip",
+            "assets/.DS_Store",
+        ] {
+            assert!(
+                names.contains(&re_included),
+                "expected {re_included} in {names:?}"
+            );
+        }
     }
 
     #[test]
@@ -517,5 +564,26 @@ manifest_version = 1
         let mut content = String::new();
         linked.read_to_string(&mut content).unwrap();
         assert_eq!(content, r#"{"key": "value"}"#);
+    }
+
+    #[test]
+    fn fails_on_a_symlink_that_cannot_be_read() {
+        let dir = TempDir::new().unwrap();
+        std::fs::write(dir.path().join("typst.toml"), manifest()).unwrap();
+        std::fs::write(dir.path().join("main.typ"), "Hello").unwrap();
+        symlink_file(
+            Path::new("does-not-exist.json"),
+            &dir.path().join("linked.json"),
+        );
+
+        let manifest = TemplateManifest::from_toml(
+            &std::fs::read_to_string(dir.path().join("typst.toml")).unwrap(),
+        )
+        .unwrap();
+
+        let mut buffer = Cursor::new(Vec::new());
+        let error = package(dir.path(), &mut buffer, &manifest, None)
+            .expect_err("A symlink that cannot be followed should fail the pack");
+        assert!(matches!(error, PackageError::WalkDirectory(_)));
     }
 }
