@@ -9,11 +9,7 @@ use std::{
 
 use log::{debug, trace};
 use oicana_input::{
-    input::{
-        blob::{Blob, BlobInput},
-        json::JsonInput,
-    },
-    CompilationConfig, CompilationMode, TemplateInputs,
+    Blob, BlobInput, CompilationConfig, CompilationMode, JsonInput, TemplateInputs,
 };
 use serde::{Deserialize, Deserializer, Serialize};
 use thiserror::Error;

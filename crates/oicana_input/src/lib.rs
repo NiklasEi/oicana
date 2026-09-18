@@ -2,12 +2,34 @@
 
 use log::warn;
 use serde::{Deserialize, Serialize};
+use std::fmt;
 use typst::foundations::{Dict, Str, Value};
 
-/// Input values.
-pub mod input;
-/// Definitions of inputs for Oicana templates.
-pub mod input_definition;
+mod input;
+mod input_definition;
+
+pub use input::{Blob, BlobInput, ImageFormat, JsonInput};
+pub use input_definition::{
+    BlobInputDefinition, FallbackBlobInput, InputDefinition, JsonInputDefinition,
+};
+
+/// The kind of an input.
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+pub enum InputKind {
+    /// A JSON input.
+    Json,
+    /// A blob input.
+    Blob,
+}
+
+impl fmt::Display for InputKind {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            InputKind::Json => write!(f, "json"),
+            InputKind::Blob => write!(f, "blob"),
+        }
+    }
+}
 
 /// An input value.
 pub trait Input {
@@ -16,14 +38,30 @@ pub trait Input {
     /// This is the identifier of the input definition this input value belongs to.
     fn key(&self) -> Str;
 
+    /// The kind of this input.
+    fn kind(&self) -> InputKind;
+
     /// Create a Typst value to be passed into the template.
     fn to_value(self) -> Value;
+}
+
+/// The same key was supplied as two different kinds of input.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ConflictingInput {
+    /// The key that was supplied twice.
+    pub key: String,
+    /// The kind supplied first.
+    pub first: InputKind,
+    /// The kind supplied second.
+    pub second: InputKind,
 }
 
 /// Combine template inputs.
 #[derive(Debug, Clone)]
 pub struct TemplateInputs {
     inputs: Dict,
+    kinds: Vec<(Str, InputKind)>,
+    conflicts: Vec<ConflictingInput>,
     config: CompilationConfig,
 }
 
@@ -38,6 +76,8 @@ impl TemplateInputs {
     pub fn new() -> Self {
         TemplateInputs {
             inputs: Dict::new(),
+            kinds: Vec::new(),
+            conflicts: Vec::new(),
             config: CompilationConfig::development(),
         }
     }
@@ -50,16 +90,36 @@ impl TemplateInputs {
 
     /// Add an input to the collection.
     pub fn with_input<I: Input>(&mut self, input: I) -> &mut Self {
-        if self.inputs.contains(&input.key()) {
-            warn!("An input is overwriting a previous input value!");
+        let key = input.key();
+        let kind = input.kind();
+        match self.kinds.iter().find(|(existing, _)| *existing == key) {
+            Some((_, previous)) if *previous != kind => {
+                self.conflicts.push(ConflictingInput {
+                    key: key.to_string(),
+                    first: *previous,
+                    second: kind,
+                });
+            }
+            Some(_) => warn!("An input is overwriting a previous input value!"),
+            None => self.kinds.push((key.clone(), kind)),
         }
-        self.inputs.insert(input.key(), input.to_value());
+        self.inputs.insert(key, input.to_value());
         self
     }
 
     /// Check if a value has been supplied for the given key.
     pub fn contains(&self, key: &str) -> bool {
         self.inputs.contains(&Str::from(key))
+    }
+
+    /// The key and kind of every supplied input, in the order they were added.
+    pub fn kinds(&self) -> impl Iterator<Item = (&str, InputKind)> {
+        self.kinds.iter().map(|(key, kind)| (key.as_str(), *kind))
+    }
+
+    /// Keys that were supplied as more than one kind of input.
+    pub fn conflicts(&self) -> &[ConflictingInput] {
+        &self.conflicts
     }
 
     /// Get the string value of an input by key, if it exists.
@@ -143,8 +203,7 @@ impl From<CompilationConfig> for Dict {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::input::blob::BlobInput;
-    use crate::input::json::JsonInput;
+    use crate::{BlobInput, JsonInput};
     use typst::foundations::Bytes;
 
     #[test]
@@ -168,6 +227,50 @@ mod tests {
         assert!(inputs.contains("data"));
         assert!(inputs.contains("blob1"));
         assert!(inputs.contains("blob2"));
+    }
+
+    #[test]
+    fn a_same_kind_duplicate_overwrites_without_conflict() {
+        let mut inputs = TemplateInputs::new();
+        inputs
+            .with_input(JsonInput::new("data", "1"))
+            .with_input(JsonInput::new("data", "2"));
+
+        assert!(
+            inputs.conflicts().is_empty(),
+            "re-supplying the same kind is a deliberate override"
+        );
+        assert_eq!(inputs.get_str_value("data").as_deref(), Some("2"));
+    }
+
+    #[test]
+    fn a_cross_kind_duplicate_is_recorded_as_a_conflict() {
+        let mut inputs = TemplateInputs::new();
+        inputs
+            .with_input(JsonInput::new("data", "1"))
+            .with_input(BlobInput::new("data", Bytes::new([1u8].as_slice())));
+
+        assert_eq!(
+            inputs.conflicts(),
+            [ConflictingInput {
+                key: "data".to_owned(),
+                first: InputKind::Json,
+                second: InputKind::Blob,
+            }]
+        );
+    }
+
+    #[test]
+    fn kinds_are_reported_in_insertion_order() {
+        let mut inputs = TemplateInputs::new();
+        inputs
+            .with_input(JsonInput::new("b", "1"))
+            .with_input(BlobInput::new("a", Bytes::new([1u8].as_slice())));
+
+        assert_eq!(
+            inputs.kinds().collect::<Vec<_>>(),
+            vec![("b", InputKind::Json), ("a", InputKind::Blob)]
+        );
     }
 
     #[test]

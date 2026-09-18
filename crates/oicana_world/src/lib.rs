@@ -15,7 +15,7 @@ pub mod manifest;
 pub mod world;
 
 pub use world::evict_cache;
-pub use world::InputValidationError;
+pub use world::{InputError, InputMismatchError, InputValidationError, WrongInputKind};
 
 /// A successfully compiled document with warning diagnostics.
 pub struct CompiledDocument {

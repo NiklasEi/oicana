@@ -1,7 +1,7 @@
 //! The manifest of a template is available to the host.
 
 use oicana::files::packed::PackedTemplate;
-use oicana::input::input_definition::InputDefinition;
+use oicana::input::InputDefinition;
 use oicana::template::PdfStandard;
 use oicana::Template;
 use std::io::{Cursor, Write};

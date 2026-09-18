@@ -3,7 +3,7 @@ use clap::Args;
 use console::{style, Emoji};
 use log::info;
 use oicana::export::pdf::validate_pdf_standards;
-use oicana::input::input_definition::InputDefinition;
+use oicana::input::InputDefinition;
 use oicana::template::validate_native_template;
 use std::path::Path;
 
@@ -274,7 +274,7 @@ fn compile_schema(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use oicana::input::input_definition::blob::{BlobInputDefinition, FallbackBlobInput};
+    use oicana::input::{BlobInputDefinition, FallbackBlobInput};
     use std::fs::File;
     use std::io::Write;
     use tempfile::tempdir;
@@ -299,16 +299,14 @@ mod tests {
             write!(f, "{value}").unwrap();
         }
 
-        let inputs = vec![InputDefinition::Json(
-            oicana::input::input_definition::json::JsonInputDefinition {
-                key: "data".to_string(),
-                required: true,
-                default: default_value.map(|_| "default.json".to_string()),
-                development: dev_value.map(|_| "dev.json".to_string()),
-                schema: Some("data.schema.json".to_string()),
-                validate: true,
-            },
-        )];
+        let inputs = vec![InputDefinition::Json(oicana::input::JsonInputDefinition {
+            key: "data".to_string(),
+            required: true,
+            default: default_value.map(|_| "default.json".to_string()),
+            development: dev_value.map(|_| "dev.json".to_string()),
+            schema: Some("data.schema.json".to_string()),
+            validate: true,
+        })];
 
         (dir, inputs)
     }
@@ -383,16 +381,14 @@ mod tests {
         let mut schema_file = File::create(dir.path().join("data.schema.json")).unwrap();
         write!(schema_file, "{SCHEMA}").unwrap();
 
-        let inputs = vec![InputDefinition::Json(
-            oicana::input::input_definition::json::JsonInputDefinition {
-                key: "data".to_string(),
-                required: true,
-                default: Some("nonexistent.json".to_string()),
-                development: None,
-                schema: Some("data.schema.json".to_string()),
-                validate: true,
-            },
-        )];
+        let inputs = vec![InputDefinition::Json(oicana::input::JsonInputDefinition {
+            key: "data".to_string(),
+            required: true,
+            default: Some("nonexistent.json".to_string()),
+            development: None,
+            schema: Some("data.schema.json".to_string()),
+            validate: true,
+        })];
 
         let errors = validate_input_values(dir.path(), &inputs).errors;
         assert_eq!(errors.len(), 1);
@@ -409,16 +405,14 @@ mod tests {
         let mut f = File::create(dir.path().join("default.json")).unwrap();
         write!(f, "not valid json {{").unwrap();
 
-        let inputs = vec![InputDefinition::Json(
-            oicana::input::input_definition::json::JsonInputDefinition {
-                key: "data".to_string(),
-                required: true,
-                default: Some("default.json".to_string()),
-                development: None,
-                schema: Some("data.schema.json".to_string()),
-                validate: true,
-            },
-        )];
+        let inputs = vec![InputDefinition::Json(oicana::input::JsonInputDefinition {
+            key: "data".to_string(),
+            required: true,
+            default: Some("default.json".to_string()),
+            development: None,
+            schema: Some("data.schema.json".to_string()),
+            validate: true,
+        })];
 
         let errors = validate_input_values(dir.path(), &inputs).errors;
         assert_eq!(errors.len(), 1);
@@ -432,16 +426,14 @@ mod tests {
         let mut f = File::create(dir.path().join("default.json")).unwrap();
         write!(f, "not even json").unwrap();
 
-        let inputs = vec![InputDefinition::Json(
-            oicana::input::input_definition::json::JsonInputDefinition {
-                key: "data".to_string(),
-                required: true,
-                default: Some("default.json".to_string()),
-                development: None,
-                schema: None,
-                validate: true,
-            },
-        )];
+        let inputs = vec![InputDefinition::Json(oicana::input::JsonInputDefinition {
+            key: "data".to_string(),
+            required: true,
+            default: Some("default.json".to_string()),
+            development: None,
+            schema: None,
+            validate: true,
+        })];
 
         let errors = validate_input_values(dir.path(), &inputs).errors;
         assert!(errors.is_empty(), "No schema means no validation");
@@ -454,16 +446,14 @@ mod tests {
         let mut f = File::create(dir.path().join("default.json")).unwrap();
         write!(f, r#"{{"name": "Alice"}}"#).unwrap();
 
-        let inputs = vec![InputDefinition::Json(
-            oicana::input::input_definition::json::JsonInputDefinition {
-                key: "data".to_string(),
-                required: true,
-                default: Some("default.json".to_string()),
-                development: None,
-                schema: Some("missing.schema.json".to_string()),
-                validate: true,
-            },
-        )];
+        let inputs = vec![InputDefinition::Json(oicana::input::JsonInputDefinition {
+            key: "data".to_string(),
+            required: true,
+            default: Some("default.json".to_string()),
+            development: None,
+            schema: Some("missing.schema.json".to_string()),
+            validate: true,
+        })];
 
         let errors = validate_input_values(dir.path(), &inputs).errors;
         assert_eq!(errors.len(), 1);
@@ -471,7 +461,7 @@ mod tests {
     }
 
     fn json_input(default: Option<&str>, development: Option<&str>) -> InputDefinition {
-        InputDefinition::Json(oicana::input::input_definition::json::JsonInputDefinition {
+        InputDefinition::Json(oicana::input::JsonInputDefinition {
             key: "data".to_string(),
             required: true,
             default: default.map(str::to_string),

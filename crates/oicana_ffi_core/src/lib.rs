@@ -28,13 +28,12 @@ use oicana_export::PdfStandard;
 use oicana_files::packed::PackedTemplate;
 pub use oicana_files::packed::{NegativeZipLimit, ZipLimits};
 use oicana_files::TemplateFiles;
-use oicana_input::input::blob::{Blob, BlobInput};
-use oicana_input::input::json::JsonInput;
+use oicana_input::{Blob, BlobInput, JsonInput};
 use oicana_input::{CompilationConfig, TemplateInputs};
 use oicana_world::diagnostics::PlainDiagnostics;
 use oicana_world::fonts::FontSource;
 use oicana_world::manifest::OicanaWorldFiles;
-use oicana_world::world::OicanaWorld;
+use oicana_world::world::{OicanaWorld, WorldCreationError};
 
 /// Diagnostic-output coloring (re-exported from `oicana_world`).
 pub use oicana_world::diagnostics::DiagnosticColor;
@@ -120,7 +119,7 @@ pub enum FfiError {
     #[error("World creation error: {0}")]
     WorldCreation(String),
 
-    /// Updating inputs on an existing world failed (typically schema validation).
+    /// Updating inputs on an existing world failed.
     #[error("Input validation failed: {0}")]
     InputValidation(String),
 
@@ -445,7 +444,7 @@ pub fn register_template(
     inputs.with_config(mode.into());
 
     let mut world = OicanaWorld::new_with_fonts(packed, inputs, manifest, &host_fonts())
-        .map_err(|error| FfiError::WorldCreation(error.to_string()))?;
+        .map_err(world_creation_error)?;
     world.color = current_diagnostic_color();
 
     let document = world
@@ -549,7 +548,7 @@ pub fn export_once(
     inputs.with_config(mode.into());
 
     let mut world = OicanaWorld::new_with_fonts(packed, inputs, manifest, &host_fonts())
-        .map_err(|error| FfiError::WorldCreation(error.to_string()))?;
+        .map_err(world_creation_error)?;
     world.color = current_diagnostic_color();
 
     let document = world
@@ -843,6 +842,13 @@ fn prepare_inputs(
     Ok(inputs)
 }
 
+fn world_creation_error(error: WorldCreationError) -> FfiError {
+    match error {
+        WorldCreationError::InputMismatch(error) => FfiError::InputValidation(error.to_string()),
+        error => FfiError::WorldCreation(error.to_string()),
+    }
+}
+
 /// Map the bare `String` error from [`export_pdf`] to an [`FfiError`].
 fn pdf_export_error(error: String) -> FfiError {
     FfiError::Export {
@@ -1048,6 +1054,113 @@ mod tests {
                     "fonts": { "require": [] }
                 }
             })
+        );
+    }
+
+    #[test]
+    fn an_undeclared_input_is_rejected_instead_of_silently_dropped() {
+        let files = std::fs::read("../../assets/templates/invoice-0.1.0.zip")
+            .expect("read test template fixture");
+        let template_id = format!("unknown-input-{}", Uuid::new_v4());
+
+        let typo = HashMap::from([("invoicee".to_owned(), r#"{"id":"1"}"#.to_owned())]);
+
+        let error = export_once(
+            &files,
+            typo.clone(),
+            HashMap::new(),
+            CompilationMode::Production,
+            ExportFormat::Pdf,
+            None,
+            None,
+        )
+        .expect_err("an undeclared input must fail the export");
+        assert!(
+            matches!(&error, FfiError::InputValidation(message) if message.contains("'invoicee'")),
+            "got: {error}"
+        );
+
+        let error = register_template(
+            &template_id,
+            &files,
+            typo.clone(),
+            HashMap::new(),
+            CompilationMode::Development,
+            None,
+        )
+        .expect_err("an undeclared input must fail registration");
+        assert!(
+            matches!(error, FfiError::InputValidation(_)),
+            "got: {error}"
+        );
+
+        let document_id = register_template(
+            &template_id,
+            &files,
+            HashMap::new(),
+            HashMap::new(),
+            CompilationMode::Development,
+            None,
+        )
+        .expect("register template");
+        remove_document(&document_id);
+
+        let error = compile_template(
+            &template_id,
+            typo,
+            HashMap::new(),
+            CompilationMode::Production,
+        )
+        .expect_err("an undeclared input must fail compilation");
+        assert!(
+            matches!(error, FfiError::InputValidation(_)),
+            "got: {error}"
+        );
+
+        remove_world(&template_id);
+    }
+
+    #[test]
+    fn an_input_of_the_wrong_kind_is_rejected() {
+        let files = std::fs::read("../../assets/templates/invoice-0.1.0.zip")
+            .expect("read test template fixture");
+
+        let error = export_once(
+            &files,
+            HashMap::from([("banner".to_owned(), "{}".to_owned())]),
+            HashMap::new(),
+            CompilationMode::Development,
+            ExportFormat::Pdf,
+            None,
+            None,
+        )
+        .expect_err("a json value for a blob input must fail the export");
+        assert_eq!(
+            error.to_string(),
+            "Input validation failed: Input 'banner' is declared as a blob input, \
+             but a json value was supplied."
+        );
+
+        // The same key in both maps drops the JSON value silently. It is reported instead.
+        let error = export_once(
+            &files,
+            HashMap::from([("banner".to_owned(), "{}".to_owned())]),
+            HashMap::from([(
+                "banner".to_owned(),
+                BlobWithMetadata {
+                    bytes: vec![1, 2, 3],
+                    meta: "{}".to_owned(),
+                },
+            )]),
+            CompilationMode::Development,
+            ExportFormat::Pdf,
+            None,
+            None,
+        )
+        .expect_err("one key supplied as two kinds must fail the export");
+        assert_eq!(
+            error.to_string(),
+            "Input validation failed: Input 'banner' was supplied as both a json and a blob input."
         );
     }
 
