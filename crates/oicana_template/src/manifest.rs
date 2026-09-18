@@ -107,9 +107,8 @@ impl TemplateManifest {
 
     /// Build a gitignore-style matcher from the Typst `package.exclude` patterns.
     ///
-    /// The test directory (configured via `tool.oicana.tests`) and the `output/`
-    /// directory are always excluded by default. User-supplied patterns extend
-    /// these defaults and can re-include the defaults with a leading `!`
+    /// The test directory (configured via `tool.oicana.tests`), the `output/` directory,
+    /// `.git`, `.DS_Store` and `*.zip` are excluded by default. User can re-include the defaults with a leading `!`
     /// (gitignore semantics: later patterns override earlier ones).
     pub fn build_exclude_matcher(&self) -> Gitignore {
         let mut builder = GitignoreBuilder::new("");
@@ -120,6 +119,15 @@ impl TemplateManifest {
         builder
             .add_line(None, "/output/")
             .expect("output directory exclude pattern should be valid");
+        builder
+            .add_line(None, ".git")
+            .expect("git exclude pattern should be valid");
+        builder
+            .add_line(None, ".DS_Store")
+            .expect("DS_Store exclude pattern should be valid");
+        builder
+            .add_line(None, "*.zip")
+            .expect("zip exclude pattern should be valid");
         for pattern in &self.package.exclude {
             if let Err(error) = builder.add_line(None, pattern.as_str()) {
                 log::warn!("Ignoring invalid exclude pattern '{pattern}': {error}");

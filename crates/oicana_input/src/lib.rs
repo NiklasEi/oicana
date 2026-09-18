@@ -174,7 +174,7 @@ impl CompilationConfig {
 
     /// Configuration for a production template compilation
     ///
-    /// This will prevent the template from using fallback input values
+    /// This will prevent the template from using development fallback values.
     pub fn production() -> Self {
         CompilationConfig {
             mode: CompilationMode::Production,
@@ -183,7 +183,7 @@ impl CompilationConfig {
 
     /// Configuration for a development template compilation
     ///
-    /// This will allow the template to use fallback input values
+    /// This will allow the template to use development fallback values.
     pub fn development() -> Self {
         CompilationConfig {
             mode: CompilationMode::Development,

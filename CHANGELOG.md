@@ -8,6 +8,8 @@
 
 ### CLI
 - `pack` no longer writes directory entries for directories that end up with no packed content, for example a directory whose files are all excluded
+- `pack` excludes `.git`, `.DS_Store` and `*.zip` by default
+- `pack` fails when a file cannot be read
 
 ### Java
 - A JVM that has not granted native access now fails with an `OicanaException` naming the required `--enable-native-access` flag
@@ -23,6 +25,8 @@
 
 ### C#
 - `BlobInput.Meta` is now `BlobInput.Metadata`
+- `ITemplate` and `IOicanaService` extend `IDisposable` so callers can release their resources
+- `OicanaService.RegisterTemplate` now replaces an already registered id and disposes the old template
 
 ### Rust
 - `Template::init_with_limits` and `Template::init_with_fonts_and_limits` take custom `ZipLimits`
