@@ -44,9 +44,9 @@ pub mod manifest;
 /// Compilation mode passed in from the calling language.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum CompilationMode {
-    /// Required inputs that are not provided cause compilation to fail.
+    /// Required inputs that are not provided fall back to default values or cause compilation to fail.
     Production,
-    /// Required inputs that are not provided fall back to development or default values.
+    /// Required inputs that are not provided fall back to development or default values before failing compilation.
     Development,
 }
 

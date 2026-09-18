@@ -11,7 +11,7 @@ namespace Oicana;
 /// <summary>
 /// An Oicana template
 /// </summary>
-public interface ITemplate
+public interface ITemplate : IDisposable
 {
     /// <summary>
     /// Warnings produced by the most recent compilation.
