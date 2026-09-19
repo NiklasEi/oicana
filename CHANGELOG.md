@@ -10,6 +10,7 @@
 - `pack` no longer writes directory entries for directories that end up with no packed content, for example a directory whose files are all excluded
 - `pack` excludes `.git`, `.DS_Store` and `*.zip` by default
 - `pack` fails when a file cannot be read
+- `pack` now finds `import` and `include` of packages at any nesting depth
 
 ### Java
 - A JVM that has not granted native access now fails with an `OicanaException` naming the required `--enable-native-access` flag
