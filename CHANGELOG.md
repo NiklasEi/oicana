@@ -34,7 +34,6 @@
 
 ### PHP
 - The installer detects musl and fails with an explanation
-- Linux integrations lowered the glibc requirement to 2.31 for PHP 8.3 and 8.4 and to 2.36 for PHP 8.5
 
 ### Rust
 - `Template::init_with_limits` and `Template::init_with_fonts_and_limits` take custom `ZipLimits`

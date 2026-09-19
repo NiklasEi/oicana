@@ -496,7 +496,7 @@ jobs:
       matrix:
         include:
           - os: ubuntu-latest
-            container: php:8.4-cli-bullseye
+            container: php:8.4-cli-bookworm
             target: x86_64-unknown-linux-gnu
             rust: 1.98.1
             lib: liboicana_php_native.so
@@ -530,12 +530,11 @@ jobs:
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
             target/
-      - name: Install build tooling in the PHP image
+      - name: Install libclang for bindgen
         if: matrix.container != ''
         run: |
           apt-get update
-          apt-mark hold libc6 libc6-dev libc-dev-bin
-          apt-get install -y --no-install-recommends gcc libclang-dev
+          apt-get install -y --no-install-recommends libclang-dev
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@master
         with:
@@ -560,7 +559,7 @@ jobs:
           RUSTFLAGS: ${{ matrix.flags }}
       - name: Assert glibc floor
         if: matrix.container != ''
-        run: ./.github/scripts/assert-glibc-floor.sh 2.31 ./target/${{ matrix.target }}/release/${{ matrix.lib }}
+        run: ./.github/scripts/assert-glibc-floor.sh 2.35 ./target/${{ matrix.target }}/release/${{ matrix.lib }}
       - name: Verify PHP extension loads
         run: |
           php -d extension=./target/${{ matrix.target }}/release/${{ matrix.lib }} -r "print_r(array_filter(get_defined_functions()['internal'], fn(\$f) => str_contains(\$f, 'oicana') || str_contains(\$f, 'register') || str_contains(\$f, 'compile')));"
