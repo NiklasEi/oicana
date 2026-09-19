@@ -30,7 +30,7 @@ jobs:
           cache: yarn
           cache-dependency-path: ${{ env.PROJECT_DIR }}/yarn.lock
       - name: Install
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@1.98.1
         with:
           components: clippy, rustfmt
       - name: Install dependencies
@@ -79,9 +79,8 @@ jobs:
           cache: yarn
           cache-dependency-path: ${{ env.PROJECT_DIR }}/yarn.lock
       - name: Install
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@1.98.1
         with:
-          toolchain: stable
           targets: ${{ matrix.settings.target }}
       - name: Cache cargo
         uses: actions/cache@v5

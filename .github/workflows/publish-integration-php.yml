@@ -89,35 +89,35 @@ jobs:
             arch: x64
             runner: ubuntu-latest
             target: x86_64-unknown-linux-gnu
-            rust: stable
+            rust: 1.98.1
             lib: liboicana_php_native.so
             flags: "-C link-arg=-Wl,-undefined,dynamic_lookup"
           - os: linux
             arch: arm64
             runner: ubuntu-24.04-arm
             target: aarch64-unknown-linux-gnu
-            rust: stable
+            rust: 1.98.1
             lib: liboicana_php_native.so
             flags: "-C link-arg=-Wl,-undefined,dynamic_lookup"
           - os: macos
             arch: x64
             runner: macos-15-intel
             target: x86_64-apple-darwin
-            rust: stable
+            rust: 1.98.1
             lib: liboicana_php_native.dylib
             flags: "-C link-arg=-Wl,-undefined,dynamic_lookup"
           - os: macos
             arch: arm64
             runner: macos-latest
             target: aarch64-apple-darwin
-            rust: stable
+            rust: 1.98.1
             lib: liboicana_php_native.dylib
             flags: "-C link-arg=-Wl,-undefined,dynamic_lookup"
           - os: windows
             arch: x64
             runner: windows-latest
             target: x86_64-pc-windows-msvc
-            rust: nightly
+            rust: nightly-2026-09-01
             lib: oicana_php_native.dll
             flags: ""
         php:

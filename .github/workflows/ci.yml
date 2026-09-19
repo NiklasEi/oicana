@@ -25,7 +25,7 @@ jobs:
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
             target/
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@1.98.1
         with:
           components: rustfmt, clippy
       - name: check format
@@ -64,7 +64,7 @@ jobs:
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
             target/
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@1.98.1
       - name: check
         run: cargo check --all-features --all-targets
 
@@ -87,7 +87,7 @@ jobs:
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
             target/
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@1.98.1
       - name: run tests
         run: cargo test --all-targets --all-features
 
@@ -188,7 +188,7 @@ jobs:
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
             target/
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@1.98.1
       - name: Setup dotnet
         uses: actions/setup-dotnet@v5
         with:
@@ -227,7 +227,7 @@ jobs:
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
             target/
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@1.98.1
       - name: Install uv
         uses: astral-sh/setup-uv@v7
       - name: Sync workspace dependencies
@@ -255,7 +255,7 @@ jobs:
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
             target/
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@1.98.1
         with:
           components: clippy
       - name: Setup PHP
@@ -310,7 +310,7 @@ jobs:
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
             target/
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@1.98.1
       - name: build oicana_csharp
         run: cargo build --release -p oicana_csharp
       - name: Upload liboicana_csharp
@@ -335,7 +335,7 @@ jobs:
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
             target/
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@1.98.1
       - uses: taiki-e/install-action@v2
         with:
           tool: wasm-pack
@@ -378,7 +378,7 @@ jobs:
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
             target/
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@1.98.1
       - name: Install dependencies
         run: yarn install
         working-directory: integrations/node/oicana-node-native
@@ -439,7 +439,7 @@ jobs:
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
             target/
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@1.98.1
       - name: Build and install ${{ matrix.tool_config.tool }}
         run: cargo install --force --path ${{ matrix.tool_config.path }}
       - name: Upload CLI tool binary
@@ -487,18 +487,18 @@ jobs:
         include:
           - os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
-            rust: stable
+            rust: 1.98.1
             lib: liboicana_php_native.so
             flags: "-C link-arg=-Wl,-undefined,dynamic_lookup"
           - os: macos-latest
             target: aarch64-apple-darwin
-            rust: stable
+            rust: 1.98.1
             lib: liboicana_php_native.dylib
             flags: "-C link-arg=-Wl,-undefined,dynamic_lookup"
           - os: windows-latest
             target: x86_64-pc-windows-msvc
             # ext-php-rs requires nightly Rust when on Windows.
-            rust: nightly
+            rust: nightly-2026-09-01
             lib: oicana_php_native.dll
             flags: ""
     runs-on: ${{ matrix.os }}
@@ -559,7 +559,7 @@ jobs:
       - build-node-native
     steps:
       - uses: actions/checkout@v6
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@1.98.1
       - uses: taiki-e/install-action@v2
         with:
           tool: typship
@@ -612,7 +612,7 @@ jobs:
       - build-browser-wasm
     steps:
       - uses: actions/checkout@v6
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@1.98.1
       - uses: taiki-e/install-action@v2
         with:
           tool: typship
@@ -719,7 +719,7 @@ jobs:
         if: matrix.libc == 'gnu'
         with:
           python-version: ${{ matrix.python-version }}
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@1.98.1
       - uses: taiki-e/install-action@v2
         with:
           tool: typship
@@ -800,7 +800,7 @@ jobs:
       - build-php-native
     steps:
       - uses: actions/checkout@v6
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@1.98.1
       - uses: taiki-e/install-action@v2
         with:
           tool: typship
@@ -888,7 +888,7 @@ jobs:
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
             target/
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@1.98.1
         with:
           components: clippy
       - name: Run clippy
@@ -919,7 +919,7 @@ jobs:
       - build-java-native
     steps:
       - uses: actions/checkout@v6
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@1.98.1
       - uses: taiki-e/install-action@v2
         with:
           tool: typship

@@ -75,9 +75,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
       - name: Install rust toolchain
-        uses: dtolnay/rust-toolchain@master
-        with:
-          toolchain: stable
+        uses: dtolnay/rust-toolchain@1.98.1
       - name: Build release
         run: cargo build --release -p ${{ env.LIB_NAME }}
       - uses: actions/upload-artifact@v7
@@ -93,9 +91,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
       - name: Install rust toolchain
-        uses: dtolnay/rust-toolchain@master
-        with:
-          toolchain: stable
+        uses: dtolnay/rust-toolchain@1.98.1
       - name: Build release
         run: cargo build --release -p ${{ env.LIB_NAME }}
       - uses: actions/upload-artifact@v7
@@ -131,9 +127,8 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
       - name: Install rust toolchain
-        uses: dtolnay/rust-toolchain@master
+        uses: dtolnay/rust-toolchain@1.98.1
         with:
-          toolchain: stable
           targets: x86_64-apple-darwin
       - name: Build release
         run: cargo build --release -p ${{ env.LIB_NAME }} --target=x86_64-apple-darwin
@@ -149,9 +144,8 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
       - name: Install rust toolchain
-        uses: dtolnay/rust-toolchain@master
+        uses: dtolnay/rust-toolchain@1.98.1
         with:
-          toolchain: stable
           targets: aarch64-apple-darwin
       - name: Build release
         run: cargo build --release -p ${{ env.LIB_NAME }} --target=aarch64-apple-darwin
@@ -167,9 +161,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
       - name: Install rust toolchain
-        uses: dtolnay/rust-toolchain@master
-        with:
-          toolchain: stable
+        uses: dtolnay/rust-toolchain@1.98.1
       - name: Build release
         run: cargo build --release -p ${{ env.LIB_NAME }}
       - uses: actions/upload-artifact@v7
