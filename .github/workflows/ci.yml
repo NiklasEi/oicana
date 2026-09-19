@@ -257,7 +257,7 @@ jobs:
             target/
       - uses: dtolnay/rust-toolchain@1.98.1
         with:
-          components: clippy
+          components: clippy, rustfmt
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
@@ -387,6 +387,8 @@ jobs:
             ~/.cargo/git/db/
             target/
       - uses: dtolnay/rust-toolchain@1.98.1
+        with:
+          components: rustfmt
       - name: Install dependencies
         run: yarn install
         working-directory: integrations/node/oicana-node-native
@@ -532,12 +534,12 @@ jobs:
         if: matrix.container != ''
         run: |
           apt-get update
-          apt-get install -y --no-install-recommends build-essential clang libclang-dev curl
+          apt-mark hold libc6 libc6-dev libc-dev-bin
+          apt-get install -y --no-install-recommends gcc libclang-dev
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@master
         with:
           toolchain: ${{ matrix.rust }}
-          components: rustfmt
       - run: rustup show
       - name: Setup PHP
         if: matrix.container == ''

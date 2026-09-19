@@ -138,13 +138,13 @@ jobs:
         if: matrix.platform.os == 'linux'
         run: |
           apt-get update
-          apt-get install -y --no-install-recommends build-essential clang libclang-dev curl
+          apt-mark hold libc6 libc6-dev libc-dev-bin
+          apt-get install -y --no-install-recommends gcc libclang-dev
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@master
         with:
           toolchain: ${{ matrix.platform.rust }}
           targets: ${{ matrix.platform.target }}
-          components: rustfmt
       - run: rustup show
       - name: Remove preinstalled macOS PHP so setup-php installs the requested build
         # macOS runners preinstall NTS PHP (Homebrew `php`/`php@X.Y`). setup-php

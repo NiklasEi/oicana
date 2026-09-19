@@ -31,8 +31,6 @@ jobs:
           cache-dependency-path: ${{ env.PROJECT_DIR }}/yarn.lock
       - name: Install
         uses: dtolnay/rust-toolchain@1.98.1
-        with:
-          components: clippy, rustfmt
       - name: Install dependencies
         run: yarn install
         working-directory: ${{ env.PROJECT_DIR }}
