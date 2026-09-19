@@ -2,7 +2,8 @@ name: publish csharp
 
 # This workflow builds and publishes the C# integration
 #
-# It requires the secret NUGET_TOKEN with rights to push to the nuget.org package
+# Publishing uses NuGet trusted publishing (OIDC). It requires the secret NUGET_USER with the
+# nuget.org account name.
 
 on:
   workflow_dispatch:
@@ -166,6 +167,9 @@ jobs:
 
   package-nuget:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
     needs: [validate-version, build-linux-x64, build-linux-arm64, build-windows, build-mac-x86, build-mac-arm, check-glibc]
     steps:
       - name: Checkout repository
@@ -201,7 +205,14 @@ jobs:
         with:
           name: oicana-csharp-nuget
           path: integrations/csharp/Oicana/bin/Release/Oicana.*.nupkg
+      - name: NuGet login (OIDC → temp API key)
+        uses: NuGet/login@v1
+        id: nuget-login
+        with:
+          user: ${{ secrets.NUGET_USER }}
       - name: push package to nuget.org
-        run: dotnet nuget push integrations/csharp/Oicana/bin/Release/Oicana.*.nupkg -s nuget.org -k $NUGET_TOKEN
-        env:
-          NUGET_TOKEN: ${{ secrets.NUGET_TOKEN }}
+        run: |
+          dotnet nuget push integrations/csharp/Oicana/bin/Release/Oicana.*.nupkg \
+            --source https://api.nuget.org/v3/index.json \
+            --api-key ${{ steps.nuget-login.outputs.NUGET_API_KEY }} \
+            --skip-duplicate
