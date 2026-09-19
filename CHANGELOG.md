@@ -15,6 +15,7 @@
 - A JVM that has not granted native access now fails with an `OicanaException` naming the required `--enable-native-access` flag
 - All jars got valid module names
 - Detect link error and point to musl as likely explanation
+- The Linux libraries are now built against glibc 2.28
 
 ### Node.js
 - `engines` declares the actual minimum of `^20.19.0 || >=22.12.0`; the package is ESM-only, so CommonJS callers such as NestJS need a Node version with `require(esm)`
@@ -27,6 +28,7 @@
 ### C#
 - `BlobInput.Meta` is now `BlobInput.Metadata`
 - Support `linux-arm64`
+- The Linux libraries are now built against glibc 2.28
 - `ITemplate` and `IOicanaService` extend `IDisposable` so callers can release their resources
 - `OicanaService.RegisterTemplate` now replaces an already registered id and disposes the old template
 
