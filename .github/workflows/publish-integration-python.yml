@@ -27,25 +27,25 @@ jobs:
     strategy:
       matrix:
         platform:
-          - runner: ubuntu-latest
+          - runner: ubuntu-24.04
             target: x86_64-unknown-linux-gnu
             manylinux: auto
-          - runner: ubuntu-latest
+          - runner: ubuntu-24.04
             target: aarch64-unknown-linux-gnu
             manylinux: auto
-          - runner: ubuntu-latest
+          - runner: ubuntu-24.04
             target: x86_64-unknown-linux-musl
             manylinux: musllinux_1_2
-          - runner: ubuntu-latest
+          - runner: ubuntu-24.04
             target: aarch64-unknown-linux-musl
             manylinux: musllinux_1_2
-          - runner: macos-latest
+          - runner: macos-26
             target: x86_64-apple-darwin
             manylinux: auto
-          - runner: macos-latest
+          - runner: macos-26
             target: aarch64-apple-darwin
             manylinux: auto
-          - runner: windows-latest
+          - runner: windows-2025
             target: x86_64-pc-windows-msvc
             manylinux: auto
     steps:
@@ -71,7 +71,7 @@ jobs:
   publish-native-to-pypi:
     if: ${{ github.event_name == 'push' || inputs.publish-native }}
     name: Publish oicana-native to PyPI
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: build-and-publish-native
     environment:
       name: pypi
@@ -95,7 +95,7 @@ jobs:
   publish-wrapper-to-pypi:
     if: ${{ (github.event_name == 'push' || inputs.publish-wrapper) && (success() || needs.publish-native-to-pypi.result == 'skipped') }}
     name: Publish oicana wrapper to PyPI
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: publish-native-to-pypi
     environment:
       name: pypi

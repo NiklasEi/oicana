@@ -24,7 +24,7 @@ env:
 jobs:
   validate-version:
     name: Validate version consistency
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     outputs:
       version: ${{ steps.version.outputs.VERSION }}
     steps:
@@ -86,7 +86,7 @@ jobs:
         platform:
           - os: linux
             arch: x64
-            runner: ubuntu-latest
+            runner: ubuntu-24.04
             target: x86_64-unknown-linux-gnu
             rust: 1.98.1
             lib: liboicana_php_native.so
@@ -100,7 +100,7 @@ jobs:
             flags: "-C link-arg=-Wl,-undefined,dynamic_lookup"
           - os: macos
             arch: x64
-            runner: macos-latest
+            runner: macos-26
             target: x86_64-apple-darwin
             rust: 1.98.1
             lib: liboicana_php_native.dylib
@@ -108,14 +108,14 @@ jobs:
             cross: true
           - os: macos
             arch: arm64
-            runner: macos-latest
+            runner: macos-26
             target: aarch64-apple-darwin
             rust: 1.98.1
             lib: liboicana_php_native.dylib
             flags: "-C link-arg=-Wl,-undefined,dynamic_lookup"
           - os: windows
             arch: x64
-            runner: windows-latest
+            runner: windows-2025
             target: x86_64-pc-windows-msvc
             rust: nightly-2026-09-01
             lib: oicana_php_native.dll
@@ -244,7 +244,7 @@ jobs:
     if: ${{ github.event_name == 'push' || inputs.publish-native }}
     name: Create GitHub Release
     needs: [validate-version, build-matrix]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     env:
       VERSION: ${{ needs.validate-version.outputs.version }}
     steps:
@@ -350,7 +350,7 @@ jobs:
     name: Update Composer Registry
     needs: create-release
     if: ${{ always() && needs.create-release.result == 'success' }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: Trigger Satis repository rebuild
         run: |
