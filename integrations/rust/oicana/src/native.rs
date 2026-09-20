@@ -8,18 +8,18 @@ use oicana_world::{fonts::FontSource, manifest::OicanaWorldFiles, world::OicanaW
 use crate::{Template, TemplateInitializationError};
 
 impl Template<NativeTemplate> {
-    /// Initialize the given template
-    pub fn init(path: &Path) -> Result<Self, TemplateInitializationError> {
-        Self::init_with_fonts(path, &[])
+    /// Open the template in the given directory.
+    pub fn open(path: &Path) -> Result<Self, TemplateInitializationError> {
+        Self::open_with_fonts(path, &[])
     }
 
-    /// Initialize the given template with additional fonts.
+    /// Open the template in the given directory with additional fonts.
     ///
     /// The fonts are available to the template on top of the ones it packs
     /// itself, but do not become part of it: a template relying on them only
     /// renders where an equivalent font is provided. Declare the families under
     /// `tool.oicana.fonts.require` in the manifest to have that checked here.
-    pub fn init_with_fonts(
+    pub fn open_with_fonts(
         path: &Path,
         fonts: &[FontSource],
     ) -> Result<Self, TemplateInitializationError> {

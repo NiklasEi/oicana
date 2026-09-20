@@ -38,6 +38,7 @@
 
 ### Rust
 - `Template::init_with_limits` and `Template::init_with_fonts_and_limits` take custom `ZipLimits`
+- Native Template constructors are now `Template::open` and `Template::open_with_fonts`
 
 ## v0.8.0
 
