@@ -1048,7 +1048,7 @@ mod tests {
                     ],
                     "validateJsonInputsByDefault": true,
                     "export": {
-                        "pdf": { "standards": ["a-3b"], "tagged": true }
+                        "pdf": { "standards": ["ua-1", "a-3b"], "tagged": true }
                     },
                     "fonts": { "require": [] }
                 }
