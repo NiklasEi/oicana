@@ -84,3 +84,13 @@
   error,
   "panicked with: \"Found unknown input type 'xml'. Should be \\\"json\\\" or \\\"blob\\\".\"",
 )
+
+#let missing-input-type(path) = {
+  assert.eq(path, "typst.toml")
+  return read("missing-input-type.toml", encoding: none)
+}
+#let error = catch(() => setup(missing-input-type));
+#assert.eq(
+  error,
+  "panicked with: \"The input 'data' needs a 'type' property of \\\"json\\\" or \\\"blob\\\".\"",
+)
