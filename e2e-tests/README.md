@@ -9,7 +9,7 @@ This directory contains end-to-end test related files.
 
 The Bruno test collection validates that all example services can successfully compile all example templates. This ensures that end users can clone and run the example services with confidence.
 
-The test collection is executed against the example services in CI pieplines in the service repositories.
+The test collection is executed against the example services in CI pipelines in the service repositories.
 
 ## Templates Tested
 

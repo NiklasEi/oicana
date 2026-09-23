@@ -651,7 +651,7 @@ export class Template implements Disposable {
   /**
    * The template's manifest.
    *
-   * The Typst package section und its Oicana
+   * The Typst package section and its Oicana
    * configuration with the input definitions.
    */
   public manifest(): TemplateManifest {
