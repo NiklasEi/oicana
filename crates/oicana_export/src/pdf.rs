@@ -90,7 +90,6 @@ pub fn export_pdf<Diagnostics: TemplateDiagnostics>(
 mod tests {
     use super::*;
     use oicana_files::preloaded::PreloadedTemplate;
-    use oicana_input::TemplateInputs;
     use oicana_world::manifest::OicanaWorldFiles;
     use oicana_world::world::OicanaWorld;
     use std::collections::HashMap;
@@ -129,7 +128,7 @@ mod tests {
 
     fn compile(template: PreloadedTemplate) -> (PagedDocument, OicanaWorld<PreloadedTemplate>) {
         let manifest = template.manifest().unwrap();
-        let mut world = OicanaWorld::new(template, TemplateInputs::new(), manifest).unwrap();
+        let mut world = OicanaWorld::new(template, manifest).unwrap();
         let compiled = world.compile().unwrap();
         (compiled.document, world)
     }

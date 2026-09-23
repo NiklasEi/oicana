@@ -33,7 +33,7 @@ use oicana_input::{CompilationConfig, TemplateInputs};
 use oicana_world::diagnostics::PlainDiagnostics;
 use oicana_world::fonts::FontSource;
 use oicana_world::manifest::OicanaWorldFiles;
-use oicana_world::world::{OicanaWorld, WorldCreationError};
+use oicana_world::world::OicanaWorld;
 
 /// Diagnostic-output coloring (re-exported from `oicana_world`).
 pub use oicana_world::diagnostics::DiagnosticColor;
@@ -443,9 +443,12 @@ pub fn register_template(
     let mut inputs = prepare_inputs(json_inputs, blob_inputs)?;
     inputs.with_config(mode.into());
 
-    let mut world = OicanaWorld::new_with_fonts(packed, inputs, manifest, &host_fonts())
-        .map_err(world_creation_error)?;
+    let mut world = OicanaWorld::new_with_fonts(packed, manifest, &host_fonts())
+        .map_err(|error| FfiError::WorldCreation(error.to_string()))?;
     world.color = current_diagnostic_color();
+    world
+        .update_inputs(inputs)
+        .map_err(|error| FfiError::InputValidation(error.to_string()))?;
 
     let document = world
         .compile()
@@ -547,9 +550,12 @@ pub fn export_once(
     let mut inputs = prepare_inputs(json_inputs, blob_inputs)?;
     inputs.with_config(mode.into());
 
-    let mut world = OicanaWorld::new_with_fonts(packed, inputs, manifest, &host_fonts())
-        .map_err(world_creation_error)?;
+    let mut world = OicanaWorld::new_with_fonts(packed, manifest, &host_fonts())
+        .map_err(|error| FfiError::WorldCreation(error.to_string()))?;
     world.color = current_diagnostic_color();
+    world
+        .update_inputs(inputs)
+        .map_err(|error| FfiError::InputValidation(error.to_string()))?;
 
     let document = world
         .compile()
@@ -842,13 +848,6 @@ fn prepare_inputs(
     Ok(inputs)
 }
 
-fn world_creation_error(error: WorldCreationError) -> FfiError {
-    match error {
-        WorldCreationError::InputMismatch(error) => FfiError::InputValidation(error.to_string()),
-        error => FfiError::WorldCreation(error.to_string()),
-    }
-}
-
 /// Map the bare `String` error from [`export_pdf`] to an [`FfiError`].
 fn pdf_export_error(error: String) -> FfiError {
     FfiError::Export {
@@ -1055,6 +1054,70 @@ mod tests {
                 }
             })
         );
+    }
+
+    #[test]
+    fn every_entry_point_validates_json_inputs_against_their_schema() {
+        let files = std::fs::read("../../assets/templates/invoice-0.1.0.zip")
+            .expect("read test template fixture");
+        let template_id = format!("schema-validation-{}", Uuid::new_v4());
+
+        let invalid = HashMap::from([("invoice".to_owned(), r#"{"garbage": true}"#.to_owned())]);
+
+        let schema_error = |error: &FfiError, entry_point: &str| {
+            assert!(
+                matches!(error, FfiError::InputValidation(message)
+                    if message.contains("failed schema validation")
+                        && message.contains("'invoice'")),
+                "{entry_point} must report a schema error, got: {error}"
+            );
+        };
+
+        let error = export_once(
+            &files,
+            invalid.clone(),
+            HashMap::new(),
+            CompilationMode::Production,
+            ExportFormat::Pdf,
+            None,
+            None,
+        )
+        .expect_err("a schema-violating input must fail the export");
+        schema_error(&error, "export_once");
+
+        let error = register_template(
+            &template_id,
+            &files,
+            invalid.clone(),
+            HashMap::new(),
+            CompilationMode::Development,
+            None,
+        )
+        .expect_err("a schema-violating input must fail registration");
+        schema_error(&error, "register_template");
+
+        let document_id = register_template(
+            &template_id,
+            &files,
+            HashMap::new(),
+            HashMap::new(),
+            CompilationMode::Development,
+            None,
+        )
+        .expect("register template");
+        remove_document(&document_id);
+
+        let compile_error = compile_template(
+            &template_id,
+            invalid,
+            HashMap::new(),
+            CompilationMode::Development,
+        )
+        .expect_err("a schema-violating input must fail compilation");
+        schema_error(&compile_error, "compile_template");
+        assert_eq!(error.to_string(), compile_error.to_string());
+
+        remove_world(&template_id);
     }
 
     #[test]
@@ -1368,6 +1431,49 @@ mod tests {
             writer.write_all(content.as_bytes()).unwrap();
         }
         writer.finish().unwrap().into_inner()
+    }
+
+    #[test]
+    fn the_compilation_mode_reaches_the_template() {
+        let files = minimal_template_zip(
+            "#if sys.inputs.at(\"oicana-config\").at(\"production\") { panic(\"was production\") }\nContent",
+        );
+
+        let result = export_once(
+            &files,
+            HashMap::new(),
+            HashMap::new(),
+            CompilationMode::Development,
+            ExportFormat::Svg,
+            None,
+            None,
+        )
+        .expect("development mode must not reach the production branch");
+        assert!(result.bytes.starts_with(b"<svg"));
+
+        let error = export_once(
+            &files,
+            HashMap::new(),
+            HashMap::new(),
+            CompilationMode::Production,
+            ExportFormat::Svg,
+            None,
+            None,
+        )
+        .expect_err("production mode must reach the production branch");
+        assert!(error.to_string().contains("was production"), "got: {error}");
+
+        let template_id = format!("mode-{}", Uuid::new_v4());
+        let error = register_template(
+            &template_id,
+            &files,
+            HashMap::new(),
+            HashMap::new(),
+            CompilationMode::Production,
+            None,
+        )
+        .expect_err("production mode must reach the production branch");
+        assert!(error.to_string().contains("was production"), "got: {error}");
     }
 
     #[test]

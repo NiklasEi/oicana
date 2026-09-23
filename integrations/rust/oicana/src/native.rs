@@ -1,7 +1,6 @@
 use std::path::{Path, PathBuf};
 
 use oicana_files::native::{package_data_dir, NativeTemplate};
-use oicana_input::TemplateInputs;
 use oicana_template::manifest::TemplateManifest;
 use oicana_world::{fonts::FontSource, manifest::OicanaWorldFiles, world::OicanaWorld};
 
@@ -29,7 +28,7 @@ impl Template<NativeTemplate> {
         );
         let manifest = files.manifest()?;
 
-        let world = OicanaWorld::new_with_fonts(files, TemplateInputs::new(), manifest, fonts)?;
+        let world = OicanaWorld::new_with_fonts(files, manifest, fonts)?;
 
         Ok(Template { world })
     }
@@ -66,7 +65,7 @@ impl Template<NativeTemplate> {
         fonts: &[FontSource],
     ) -> Result<Self, TemplateInitializationError> {
         let files = NativeTemplate::new(template_root, packages.to_path_buf());
-        let world = OicanaWorld::new_with_fonts(files, TemplateInputs::new(), manifest, fonts)?;
+        let world = OicanaWorld::new_with_fonts(files, manifest, fonts)?;
 
         Ok(Template { world })
     }
