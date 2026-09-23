@@ -48,7 +48,7 @@ def test_development() -> None:
         output_dir.mkdir(exist_ok=True)
         (output_dir / "development.png").write_bytes(image)
     finally:
-        template.cleanup()
+        template.close()
 
 
 def test_production() -> None:
@@ -78,7 +78,7 @@ def test_production() -> None:
         output_dir.mkdir(exist_ok=True)
         (output_dir / "production.png").write_bytes(image)
     finally:
-        template.cleanup()
+        template.close()
 
 
 def test_all_inputs() -> None:
@@ -120,7 +120,7 @@ def test_all_inputs() -> None:
         output_dir.mkdir(exist_ok=True)
         (output_dir / "all-inputs.png").write_bytes(image)
     finally:
-        template.cleanup()
+        template.close()
 
 
 def test_manifest() -> None:
@@ -154,7 +154,7 @@ def test_manifest() -> None:
         assert blob_input.default.meta["image_format"] == "png"
         assert blob_input.development is None
     finally:
-        template.cleanup()
+        template.close()
 
 
 def test_explicit_development_mode_allows_compile_with_empty_inputs() -> None:
@@ -168,7 +168,7 @@ def test_explicit_development_mode_allows_compile_with_empty_inputs() -> None:
             mode=CompilationMode.DEVELOPMENT,
         )
     finally:
-        template.cleanup()
+        template.close()
 
 
 def test_compile_defaults_to_production_mode() -> None:
@@ -180,7 +180,7 @@ def test_compile_defaults_to_production_mode() -> None:
         with pytest.raises(Exception, match="No value for the required input"):
             template.export(export={"format": "png", "pixelsPerPt": 1.0})
     finally:
-        template.cleanup()
+        template.close()
 
 
 def test_can_control_compilation_mode_when_registering() -> None:
@@ -203,7 +203,7 @@ def test_context_manager() -> None:
         assert len(image) > 0
 
 
-def test_compiled_document_handle_survives_template_cleanup() -> None:
+def test_compiled_document_handle_survives_template_close() -> None:
     """A compiled document handle stays usable for every format and page range
     after its originating template has been cleaned up."""
     template_bytes = template_file()
@@ -211,7 +211,7 @@ def test_compiled_document_handle_survives_template_cleanup() -> None:
 
     document = template.compile(mode=CompilationMode.DEVELOPMENT)
 
-    template.cleanup()
+    template.close()
 
     assert len(document.pages) > 0
     first_page = PageRange.single(0)

@@ -23,7 +23,7 @@ use Oicana\Manifest\TemplateManifest;
  *     );
  *     file_put_contents('output.pdf', $pdf);
  * } finally {
- *     $template->cleanup();
+ *     $template->close();
  * }
  * ```
  */
@@ -308,12 +308,12 @@ class Template
     }
 
     /**
-     * Clean up cached resources.
+     * Release the cached template. The instance must not be used afterward.
      *
      * This should be called when you're done with the template to free memory.
-     * It's automatically called by the destructor, but explicit cleanup is recommended.
+     * It's automatically called by the destructor, but calling it explicitly is recommended.
      */
-    public function cleanup(): void
+    public function close(): void
     {
         \OicanaInternal\remove_world($this->templateId);
     }
@@ -366,7 +366,7 @@ class Template
     public function __destruct()
     {
         try {
-            $this->cleanup();
+            $this->close();
         } catch (\Throwable $e) {
             // Best effort cleanup - don't throw in destructor
         }

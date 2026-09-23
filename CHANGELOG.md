@@ -36,6 +36,10 @@
 
 ### PHP
 - The installer detects musl and fails with an explanation
+- `Template::cleanup()` is now `Template::close()`, matching `CompiledDocument::close()`
+
+### Python
+- `Template.cleanup()` is now `Template.close()`, matching `CompiledDocument.close()`
 
 ### Rust
 - `Template::init_with_limits` and `Template::init_with_fonts_and_limits` take custom `ZipLimits`

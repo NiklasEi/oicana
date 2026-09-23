@@ -47,7 +47,7 @@ test('e2e development', function () {
             ->not->toBeEmpty()
             ->and($image)->toStartWith("\x89PNG");
     } finally {
-        $template->cleanup();
+        $template->close();
     }
 });
 
@@ -83,7 +83,7 @@ test('e2e production', function () {
             ->not->toBeEmpty()
             ->and($image)->toStartWith("\x89PNG");
     } finally {
-        $template->cleanup();
+        $template->close();
     }
 });
 
@@ -131,7 +131,7 @@ test('e2e all-inputs', function () {
             ->not->toBeEmpty()
             ->and($image)->toStartWith("\x89PNG");
     } finally {
-        $template->cleanup();
+        $template->close();
     }
 });
 
@@ -180,7 +180,7 @@ test('manifest exposes the package section and the Oicana config', function () {
         expect($meta['image_format'])->toBe('png');
         expect($blob->development)->toBeNull();
     } finally {
-        $template->cleanup();
+        $template->close();
     }
 });
 
@@ -196,7 +196,7 @@ test('explicit development mode allows compile with empty inputs', function () {
 
         expect($image)->not->toBeEmpty();
     } finally {
-        $template->cleanup();
+        $template->close();
     }
 });
 
@@ -208,7 +208,7 @@ test('compile defaults to production mode', function () {
         expect(fn() => $template->export(exportFormat: ExportFormat::png(pixelsPerPt: 1.0)))
             ->toThrow(Exception::class, 'No value for the required input');
     } finally {
-        $template->cleanup();
+        $template->close();
     }
 });
 
@@ -219,13 +219,13 @@ test('can control compilation mode when registering', function () {
         ->toThrow(Exception::class, 'No value for the required input');
 });
 
-test('compiled document handle survives template cleanup', function () {
+test('compiled document handle survives template close', function () {
     $templateBytes = file_get_contents(e2e_template_path());
     $template = new Template($templateBytes);
 
     $document = $template->compile(mode: CompilationMode::Development);
 
-    $template->cleanup();
+    $template->close();
 
     expect($document->pageCount())->toBeGreaterThan(0);
     $firstPage = PageRange::single(0);

@@ -23,7 +23,7 @@ test('template can be instantiated', function () {
 
     expect($template)->toBeInstanceOf(Template::class);
 
-    $template->cleanup();
+    $template->close();
 });
 
 test('template compiles to PDF in development mode', function () {
@@ -37,7 +37,7 @@ test('template compiles to PDF in development mode', function () {
             ->not->toBeEmpty()
             ->and($pdf)->toStartWith('%PDF');
     } finally {
-        $template->cleanup();
+        $template->close();
     }
 });
 
@@ -56,7 +56,7 @@ test('template compiles with JSON inputs', function () {
 
         expect($pdf)->not->toBeEmpty();
     } finally {
-        $template->cleanup();
+        $template->close();
     }
 });
 
@@ -79,7 +79,7 @@ test('template compiles with blob inputs', function () {
 
         expect($pdf)->not->toBeEmpty();
     } finally {
-        $template->cleanup();
+        $template->close();
     }
 });
 
@@ -97,7 +97,7 @@ test('blob inputs accept omitted and empty metadata', function () {
 
             expect(substr($pdf, 0, 4))->toBe('%PDF');
         } finally {
-            $template->cleanup();
+            $template->close();
         }
     }
 });
@@ -116,7 +116,7 @@ test('template exports to SVG', function () {
             ->not->toBeEmpty()
             ->and($svg)->toContain('<svg');
     } finally {
-        $template->cleanup();
+        $template->close();
     }
 });
 
@@ -134,7 +134,7 @@ test('template exports to PNG', function () {
             ->not->toBeEmpty()
             ->and($png)->toStartWith("\x89PNG");
     } finally {
-        $template->cleanup();
+        $template->close();
     }
 });
 
@@ -149,7 +149,7 @@ test('template provides input definitions', function () {
             ->and(array_map(fn ($input) => $input->key(), $inputs))
             ->toContain('development-blob');
     } finally {
-        $template->cleanup();
+        $template->close();
     }
 });
 
@@ -162,7 +162,7 @@ test('compilation modes work correctly', function () {
         $devPdf = $devTemplate->export(mode: CompilationMode::Development);
         expect($devPdf)->not->toBeEmpty();
     } finally {
-        $devTemplate->cleanup();
+        $devTemplate->close();
     }
 });
 
@@ -175,7 +175,7 @@ test('production mode requires all inputs', function () {
         expect(fn() => $template->export(mode: CompilationMode::Production))
             ->toThrow(Exception::class);
     } finally {
-        $template->cleanup();
+        $template->close();
     }
 });
 
@@ -188,7 +188,7 @@ test('compile defaults to production mode', function () {
         expect(fn() => $template->export())
             ->toThrow(Exception::class);
     } finally {
-        $template->cleanup();
+        $template->close();
     }
 });
 
@@ -219,7 +219,7 @@ test('binary-hostile blob data and binary export survive the FFI boundary', func
         );
         expect(substr($png, 0, 8))->toBe("\x89PNG\r\n\x1a\n");
     } finally {
-        $template->cleanup();
+        $template->close();
     }
 });
 
@@ -238,7 +238,7 @@ test('export surfaces warnings', function () {
             ->and($template->warnings())->not->toBeNull()
             ->and($template->warnings())->toContain('NonexistentFontTemplate');
     } finally {
-        $template->cleanup();
+        $template->close();
     }
 });
 
@@ -251,7 +251,7 @@ test('export without warnings leaves them null', function () {
 
         expect($template->warnings())->toBeNull();
     } finally {
-        $template->cleanup();
+        $template->close();
     }
 });
 
