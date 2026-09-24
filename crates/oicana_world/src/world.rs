@@ -109,8 +109,8 @@ fn build_validators<F: TemplateFiles>(
     Ok(validators)
 }
 
-/// Check the supplied inputs against the template manifest's input definitions.
-fn check_inputs(
+/// Check the supplied inputs against the input definitions the manifest declares.
+fn check_declarations(
     manifest: &TemplateManifest,
     inputs: &TemplateInputs,
 ) -> Result<(), InputMismatchError> {
@@ -149,33 +149,70 @@ fn check_inputs(
     })
 }
 
+/// Validate JSON inputs against their schemas.
+fn validate_against_schemas(
+    validators: &HashMap<String, Validator>,
+    inputs: &TemplateInputs,
+) -> Result<(), InputValidationError> {
+    for (key, validator) in validators {
+        let Some(json_str) = inputs.get_str_value(key) else {
+            continue;
+        };
+
+        let parsed: serde_json::Value =
+            serde_json::from_str(&json_str).map_err(|e| InputValidationError {
+                key: key.clone(),
+                errors: vec![format!("Invalid JSON: {e}")],
+            })?;
+
+        if !validator.is_valid(&parsed) {
+            let errors: Vec<String> = validator
+                .iter_errors(&parsed)
+                .map(|error| {
+                    let path = error.instance_path().to_string();
+                    if path.is_empty() {
+                        error.to_string()
+                    } else {
+                        format!("At {path}: {error}")
+                    }
+                })
+                .collect();
+
+            return Err(InputValidationError {
+                key: key.clone(),
+                errors,
+            });
+        }
+    }
+    Ok(())
+}
+
 impl<Files: TemplateFiles> OicanaWorld<Files> {
     /// Create a new Typst World.
     ///
     /// This will collect embedded fonts from Typst and fonts included in the template files.
     /// If JSON inputs have schemas defined in the manifest, the schemas are compiled at this
     /// point for fast validation during compilation.
-    pub fn new(
-        files: Files,
-        inputs: TemplateInputs,
-        manifest: TemplateManifest,
-    ) -> Result<Self, WorldCreationError> {
-        Self::new_with_fonts(files, inputs, manifest, &[])
+    pub fn new(files: Files, manifest: TemplateManifest) -> Result<Self, WorldCreationError> {
+        Self::new_with_fonts(files, manifest, &[])
     }
 
     /// Create a new Typst World with additional fonts provided by the host.
     pub fn new_with_fonts(
         files: Files,
-        inputs: TemplateInputs,
         manifest: TemplateManifest,
         host_fonts: &[FontSource],
     ) -> Result<Self, WorldCreationError> {
-        check_inputs(&manifest, &inputs)?;
-        let library = Library::builder().with_inputs(inputs.to_dict()).build();
-
         let main_path = VirtualPath::new(manifest.package.entrypoint.as_str())?;
         let main = FileId::new(RootedPath::new(VirtualRoot::Project, main_path));
         files.source(main)?;
+
+        let validate_inputs = manifest.tool.oicana.validate_json_inputs_by_default;
+        let validators = build_validators(&manifest, &files)?;
+
+        let library = Library::builder()
+            .with_inputs(TemplateInputs::new().to_dict())
+            .build();
 
         let mut searcher = FontCollection::new();
         searcher.collect(&files, host_fonts);
@@ -184,9 +221,6 @@ impl<Files: TemplateFiles> OicanaWorld<Files> {
         if !missing.is_empty() {
             return Err(WorldCreationError::MissingFonts(missing));
         }
-
-        let validate_inputs = manifest.tool.oicana.validate_json_inputs_by_default;
-        let validators = build_validators(&manifest, &files)?;
 
         Ok(Self {
             main,
@@ -207,50 +241,12 @@ impl<Files: TemplateFiles> OicanaWorld<Files> {
     /// Rejects inputs the manifest does not declare and
     /// validates JSON inputs against their schemas.
     pub fn update_inputs(&mut self, inputs: TemplateInputs) -> Result<(), InputError> {
-        check_inputs(&self.manifest, &inputs)?;
+        check_declarations(&self.manifest, &inputs)?;
         if self.validate_inputs {
-            self.check_inputs_against_schemas(&inputs)?;
+            validate_against_schemas(&self.validators, &inputs)?;
         }
         self.library = LazyHash::new(Library::builder().with_inputs(inputs.to_dict()).build());
         self.reset_time();
-        Ok(())
-    }
-
-    /// Validate JSON inputs against their compiled schemas.
-    fn check_inputs_against_schemas(
-        &self,
-        inputs: &TemplateInputs,
-    ) -> Result<(), InputValidationError> {
-        for (key, validator) in &self.validators {
-            let Some(json_str) = inputs.get_str_value(key) else {
-                continue;
-            };
-
-            let parsed: serde_json::Value =
-                serde_json::from_str(&json_str).map_err(|e| InputValidationError {
-                    key: key.clone(),
-                    errors: vec![format!("Invalid JSON: {e}")],
-                })?;
-
-            if !validator.is_valid(&parsed) {
-                let errors: Vec<String> = validator
-                    .iter_errors(&parsed)
-                    .map(|error| {
-                        let path = error.instance_path().to_string();
-                        if path.is_empty() {
-                            error.to_string()
-                        } else {
-                            format!("At {path}: {error}")
-                        }
-                    })
-                    .collect();
-
-                return Err(InputValidationError {
-                    key: key.clone(),
-                    errors,
-                });
-            }
-        }
         Ok(())
     }
 
@@ -308,9 +304,6 @@ pub enum WorldCreationError {
     /// The entrypoint configured in the manifest is not a valid path
     #[error("The entrypoint configured in the manifest is not a valid path: {0}")]
     InvalidEntrypoint(#[from] PathError),
-    /// The supplied inputs do not match the template's input definitions
-    #[error(transparent)]
-    InputMismatch(#[from] InputMismatchError),
     /// The template requires font families that are not available
     #[error(
         "The template requires font families that are not available: {}. \
@@ -550,7 +543,7 @@ mod tests {
         let files = PreloadedTemplate::new(files);
         let manifest = files.manifest().expect("should be able to parse manifest");
 
-        OicanaWorld::new(files, TemplateInputs::new(), manifest).expect("Failed to create world");
+        OicanaWorld::new(files, manifest).expect("Failed to create world");
     }
 
     #[test]
@@ -645,8 +638,7 @@ mod tests {
         let files = PreloadedTemplate::new(files);
         let manifest = files.manifest().expect("should be able to parse manifest");
 
-        let Err(WorldCreationError::FileError(file_error)) =
-            OicanaWorld::new(files, TemplateInputs::new(), manifest)
+        let Err(WorldCreationError::FileError(file_error)) = OicanaWorld::new(files, manifest)
         else {
             panic!("Created a world without main template file or with wrong error")
         };
@@ -683,7 +675,7 @@ mod tests {
             "#set page(width: 200pt, height: 100pt)\nHello, World!",
         );
         let manifest = files.manifest().unwrap();
-        let mut world = OicanaWorld::new(files, TemplateInputs::new(), manifest).unwrap();
+        let mut world = OicanaWorld::new(files, manifest).unwrap();
 
         let result = world.compile();
 
@@ -697,7 +689,7 @@ mod tests {
     fn compiles_multipage_template() {
         let files = template_with(simple_manifest(), "#set page(width: 200pt, height: 100pt)\nPage 1\n#pagebreak()\nPage 2\n#pagebreak()\nPage 3");
         let manifest = files.manifest().unwrap();
-        let mut world = OicanaWorld::new(files, TemplateInputs::new(), manifest).unwrap();
+        let mut world = OicanaWorld::new(files, manifest).unwrap();
 
         let compiled = world.compile().unwrap();
 
@@ -708,7 +700,7 @@ mod tests {
     fn fails_to_compile_invalid_template() {
         let files = template_with(simple_manifest(), "#invalid_typst_syntax #(");
         let manifest = files.manifest().unwrap();
-        let mut world = OicanaWorld::new(files, TemplateInputs::new(), manifest).unwrap();
+        let mut world = OicanaWorld::new(files, manifest).unwrap();
 
         let result = world.compile();
 
@@ -719,7 +711,7 @@ mod tests {
     fn compiles_empty_template() {
         let files = template_with(simple_manifest(), "");
         let manifest = files.manifest().unwrap();
-        let mut world = OicanaWorld::new(files, TemplateInputs::new(), manifest).unwrap();
+        let mut world = OicanaWorld::new(files, manifest).unwrap();
 
         let compiled = world.compile().unwrap();
 
@@ -733,7 +725,7 @@ mod tests {
             "#set text(font: \"NonexistentFont\")\nContent",
         );
         let manifest = files.manifest().unwrap();
-        let mut world = OicanaWorld::new(files, TemplateInputs::new(), manifest).unwrap();
+        let mut world = OicanaWorld::new(files, manifest).unwrap();
 
         let compiled = world.compile().unwrap();
 
@@ -755,7 +747,7 @@ mod tests {
             "Test",
         );
         let manifest = files.manifest().unwrap();
-        let world = OicanaWorld::new(files, TemplateInputs::new(), manifest).unwrap();
+        let world = OicanaWorld::new(files, manifest).unwrap();
 
         let returned_manifest = world.manifest();
 
@@ -806,7 +798,7 @@ mod tests {
 
         let files = template_with_schema(schema_manifest(), "Test", simple_schema());
         let manifest = files.manifest().unwrap();
-        let mut world = OicanaWorld::new(files, TemplateInputs::new(), manifest).unwrap();
+        let mut world = OicanaWorld::new(files, manifest).unwrap();
 
         let mut inputs = TemplateInputs::new();
         inputs.with_input(JsonInput::new("dtaa", r#"{"name": "Alice"}"#));
@@ -824,30 +816,13 @@ mod tests {
     }
 
     #[test]
-    fn rejects_an_undeclared_input_at_world_creation() {
-        use oicana_input::JsonInput;
-
-        let files = template_with_schema(schema_manifest(), "Test", simple_schema());
-        let manifest = files.manifest().unwrap();
-
-        let mut inputs = TemplateInputs::new();
-        inputs.with_input(JsonInput::new("dtaa", r#"{"name": "Alice"}"#));
-
-        let error = OicanaWorld::new(files, inputs, manifest).unwrap_err();
-        assert!(
-            matches!(error, WorldCreationError::InputMismatch(_)),
-            "expected InputMismatch, got {error:?}"
-        );
-    }
-
-    #[test]
     fn rejects_a_blob_value_for_a_key_declared_as_json() {
         use oicana_input::BlobInput;
         use typst::foundations::Bytes;
 
         let files = template_with_schema(schema_manifest(), "Test", simple_schema());
         let manifest = files.manifest().unwrap();
-        let mut world = OicanaWorld::new(files, TemplateInputs::new(), manifest).unwrap();
+        let mut world = OicanaWorld::new(files, manifest).unwrap();
 
         let mut inputs = TemplateInputs::new();
         inputs.with_input(BlobInput::new("data", Bytes::new([1u8, 2].as_slice())));
@@ -890,7 +865,7 @@ mod tests {
         "#;
         let files = template_with(blob_manifest, "Test");
         let manifest = files.manifest().unwrap();
-        let mut world = OicanaWorld::new(files, TemplateInputs::new(), manifest).unwrap();
+        let mut world = OicanaWorld::new(files, manifest).unwrap();
 
         let mut inputs = TemplateInputs::new();
         inputs.with_input(JsonInput::new("logo", "{}"));
@@ -909,7 +884,7 @@ mod tests {
 
         let files = template_with_schema(schema_manifest(), "Test", simple_schema());
         let manifest = files.manifest().unwrap();
-        let mut world = OicanaWorld::new(files, TemplateInputs::new(), manifest).unwrap();
+        let mut world = OicanaWorld::new(files, manifest).unwrap();
 
         let mut inputs = TemplateInputs::new();
         inputs.with_input(JsonInput::new("data", r#"{"name": "Alice"}"#));
@@ -929,7 +904,7 @@ mod tests {
 
         let files = template_with_schema(schema_manifest(), "Test", simple_schema());
         let manifest = files.manifest().unwrap();
-        let mut world = OicanaWorld::new(files, TemplateInputs::new(), manifest).unwrap();
+        let mut world = OicanaWorld::new(files, manifest).unwrap();
 
         let mut inputs = TemplateInputs::new();
         inputs.with_input(BlobInput::new("data", Bytes::new([1u8].as_slice())));
@@ -948,7 +923,7 @@ mod tests {
 
         let files = template_with_schema(schema_manifest(), "Test", simple_schema());
         let manifest = files.manifest().unwrap();
-        let mut world = OicanaWorld::new(files, TemplateInputs::new(), manifest).unwrap();
+        let mut world = OicanaWorld::new(files, manifest).unwrap();
         world.validate_inputs = false;
 
         let mut inputs = TemplateInputs::new();
@@ -964,7 +939,7 @@ mod tests {
     fn builds_world_with_schema() {
         let files = template_with_schema(schema_manifest(), "Test", simple_schema());
         let manifest = files.manifest().unwrap();
-        let world = OicanaWorld::new(files, TemplateInputs::new(), manifest).unwrap();
+        let world = OicanaWorld::new(files, manifest).unwrap();
 
         assert_eq!(world.validators.len(), 1);
         assert!(world.validators.contains_key("data"));
@@ -976,7 +951,7 @@ mod tests {
 
         let files = template_with_schema(schema_manifest(), "Test", simple_schema());
         let manifest = files.manifest().unwrap();
-        let mut world = OicanaWorld::new(files, TemplateInputs::new(), manifest).unwrap();
+        let mut world = OicanaWorld::new(files, manifest).unwrap();
 
         let mut inputs = TemplateInputs::new();
         inputs.with_input(JsonInput::new("data", r#"{"name": "Alice", "age": 30}"#));
@@ -991,7 +966,7 @@ mod tests {
 
         let files = template_with_schema(schema_manifest(), "Test", simple_schema());
         let manifest = files.manifest().unwrap();
-        let mut world = OicanaWorld::new(files, TemplateInputs::new(), manifest).unwrap();
+        let mut world = OicanaWorld::new(files, manifest).unwrap();
 
         let mut inputs = TemplateInputs::new();
         inputs.with_input(JsonInput::new("data", r#"{"age": 30}"#));
@@ -1014,7 +989,7 @@ mod tests {
 
         let files = template_with_schema(schema_manifest(), "Test", simple_schema());
         let manifest = files.manifest().unwrap();
-        let mut world = OicanaWorld::new(files, TemplateInputs::new(), manifest).unwrap();
+        let mut world = OicanaWorld::new(files, manifest).unwrap();
 
         let mut inputs = TemplateInputs::new();
         inputs.with_input(JsonInput::new("data", r#"{"name": 123}"#));
@@ -1031,7 +1006,7 @@ mod tests {
 
         let files = template_with_schema(schema_manifest(), "Test", simple_schema());
         let manifest = files.manifest().unwrap();
-        let mut world = OicanaWorld::new(files, TemplateInputs::new(), manifest).unwrap();
+        let mut world = OicanaWorld::new(files, manifest).unwrap();
 
         let mut inputs = TemplateInputs::new();
         inputs.with_input(JsonInput::new("data", r#"{not valid json}"#));
@@ -1066,7 +1041,7 @@ mod tests {
         "#;
         let files = template_with_schema(manifest_with_unschemad_input, "Test", simple_schema());
         let manifest = files.manifest().unwrap();
-        let mut world = OicanaWorld::new(files, TemplateInputs::new(), manifest).unwrap();
+        let mut world = OicanaWorld::new(files, manifest).unwrap();
 
         // "other" is declared without a schema, so any value should be accepted
         let mut inputs = TemplateInputs::new();
@@ -1080,7 +1055,7 @@ mod tests {
     fn no_validators_for_template_without_schemas() {
         let files = template_with(simple_manifest(), "Test");
         let manifest = files.manifest().unwrap();
-        let world = OicanaWorld::new(files, TemplateInputs::new(), manifest).unwrap();
+        let world = OicanaWorld::new(files, manifest).unwrap();
 
         assert!(world.validators.is_empty());
     }
@@ -1094,7 +1069,7 @@ mod tests {
         let files = PreloadedTemplate::new(files);
         let manifest = files.manifest().unwrap();
 
-        let result = OicanaWorld::new(files, TemplateInputs::new(), manifest);
+        let result = OicanaWorld::new(files, manifest);
         assert!(result.is_err());
         let err = result.unwrap_err();
         assert!(
@@ -1108,7 +1083,7 @@ mod tests {
         let files = template_with_schema(schema_manifest(), "Test", "not valid json {{{");
         let manifest = files.manifest().unwrap();
 
-        let result = OicanaWorld::new(files, TemplateInputs::new(), manifest);
+        let result = OicanaWorld::new(files, manifest);
         assert!(result.is_err());
         let err = result.unwrap_err();
         assert!(
@@ -1123,7 +1098,7 @@ mod tests {
 
         let files = template_with_schema(schema_manifest(), "Test", simple_schema());
         let manifest = files.manifest().unwrap();
-        let mut world = OicanaWorld::new(files, TemplateInputs::new(), manifest).unwrap();
+        let mut world = OicanaWorld::new(files, manifest).unwrap();
         world.validate_inputs = false;
 
         let mut inputs = TemplateInputs::new();
@@ -1152,7 +1127,7 @@ mod tests {
         "#;
         let files = template_with_schema(manifest, "Test", simple_schema());
         let manifest = files.manifest().unwrap();
-        let world = OicanaWorld::new(files, TemplateInputs::new(), manifest).unwrap();
+        let world = OicanaWorld::new(files, manifest).unwrap();
 
         assert!(world.validators.is_empty());
     }
@@ -1178,7 +1153,7 @@ mod tests {
         "#;
         let files = template_with_schema(manifest, "Test", simple_schema());
         let manifest = files.manifest().unwrap();
-        let mut world = OicanaWorld::new(files, TemplateInputs::new(), manifest).unwrap();
+        let mut world = OicanaWorld::new(files, manifest).unwrap();
 
         let mut inputs = TemplateInputs::new();
         inputs.with_input(JsonInput::new("data", r#"{"age": 30}"#));
@@ -1191,7 +1166,7 @@ mod tests {
 
         let files = template_with_schema(schema_manifest(), "Test", simple_schema());
         let manifest = files.manifest().unwrap();
-        let mut world = OicanaWorld::new(files, TemplateInputs::new(), manifest).unwrap();
+        let mut world = OicanaWorld::new(files, manifest).unwrap();
 
         assert_eq!(world.validators.len(), 1);
 
@@ -1227,7 +1202,7 @@ mod tests {
         "#;
         let files = template_with_schema(manifest, "Test", simple_schema());
         let manifest = files.manifest().unwrap();
-        let mut world = OicanaWorld::new(files, TemplateInputs::new(), manifest).unwrap();
+        let mut world = OicanaWorld::new(files, manifest).unwrap();
 
         assert_eq!(world.validators.len(), 1);
         assert!(world.validators.contains_key("validated"));
@@ -1263,7 +1238,7 @@ mod tests {
         "#;
         let files = template_with_schema(manifest, "Test", simple_schema());
         let manifest = files.manifest().unwrap();
-        let mut world = OicanaWorld::new(files, TemplateInputs::new(), manifest).unwrap();
+        let mut world = OicanaWorld::new(files, manifest).unwrap();
 
         assert_eq!(world.validators.len(), 1);
         assert!(!world.validate_inputs);
@@ -1277,7 +1252,7 @@ mod tests {
     fn manifest_validate_json_inputs_by_default_true_is_default() {
         let files = template_with_schema(schema_manifest(), "Test", simple_schema());
         let manifest = files.manifest().unwrap();
-        let world = OicanaWorld::new(files, TemplateInputs::new(), manifest).unwrap();
+        let world = OicanaWorld::new(files, manifest).unwrap();
 
         assert!(world.validate_inputs);
     }
@@ -1303,7 +1278,7 @@ mod tests {
         "#;
         let files = template_with_schema(manifest, "Test", simple_schema());
         let manifest = files.manifest().unwrap();
-        let mut world = OicanaWorld::new(files, TemplateInputs::new(), manifest).unwrap();
+        let mut world = OicanaWorld::new(files, manifest).unwrap();
 
         world.validate_inputs = true;
 
@@ -1336,7 +1311,7 @@ mod tests {
 
         let files = template_with(simple_manifest(), "Test");
         let manifest = files.manifest().unwrap();
-        let world = OicanaWorld::new(files, TemplateInputs::new(), manifest).unwrap();
+        let world = OicanaWorld::new(files, manifest).unwrap();
 
         let seconds = |seconds| Duration::construct(seconds, 0, 0, 0, 0);
 
@@ -1358,7 +1333,7 @@ mod tests {
 
         let files = template_with(simple_manifest(), "Test");
         let manifest = files.manifest().unwrap();
-        let mut world = OicanaWorld::new(files, TemplateInputs::new(), manifest).unwrap();
+        let mut world = OicanaWorld::new(files, manifest).unwrap();
 
         let stale = chrono::Local.with_ymd_and_hms(2000, 1, 2, 3, 4, 5).unwrap();
         world.now.set(stale).unwrap();

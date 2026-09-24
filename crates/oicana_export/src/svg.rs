@@ -32,7 +32,6 @@ pub fn export_svg(
 mod tests {
     use super::*;
     use oicana_files::preloaded::PreloadedTemplate;
-    use oicana_input::TemplateInputs;
     use oicana_world::manifest::OicanaWorldFiles;
     use oicana_world::world::OicanaWorld;
     use std::collections::HashMap;
@@ -83,7 +82,7 @@ manifest_version = 1
 
     fn compile(template: PreloadedTemplate) -> PagedDocument {
         let manifest = template.manifest().unwrap();
-        let mut world = OicanaWorld::new(template, TemplateInputs::new(), manifest).unwrap();
+        let mut world = OicanaWorld::new(template, manifest).unwrap();
         world.compile().unwrap().document
     }
 

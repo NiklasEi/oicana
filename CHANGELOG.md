@@ -5,6 +5,7 @@
 - registering fonts by path accepts a directory and adds every font file in its tree, like the CLI's `--font-path` already did
 - `Template.inputs` is now `Template.manifest` in every integration and returns a typed manifest
   - the Typst package section and the whole Oicana configuration, including the input definitions
+- JSON inputs are also validated against their schemas when a template is registered and when calling `exportOnce`
 
 ### CLI
 - `pack` no longer writes directory entries for directories that end up with no packed content, for example a directory whose files are all excluded
@@ -38,6 +39,8 @@
 
 ### Rust
 - `Template::init_with_limits` and `Template::init_with_fonts_and_limits` take custom `ZipLimits`
+- Native Template constructors are now `Template::open` and `Template::open_with_fonts`
+- `OicanaWorld::new` and `new_with_fonts` no longer take inputs; supply them through `update_inputs`
 
 ## v0.8.0
 

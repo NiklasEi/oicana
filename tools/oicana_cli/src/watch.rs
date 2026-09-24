@@ -32,7 +32,7 @@ pub fn watch(args: CompileArgs) -> anyhow::Result<()> {
         None => Path::new(".").to_owned(),
         Some(ref template) => Path::new(template).to_owned(),
     };
-    let mut template = Template::<NativeTemplate>::init_with_fonts(&path, &args.fonts.load())?;
+    let mut template = Template::open_with_fonts(&path, &args.fonts.load())?;
     template.set_diagnostic_color(diagnostic_color());
     let name = template.manifest().package.name.to_string();
 

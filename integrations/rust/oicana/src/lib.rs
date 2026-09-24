@@ -189,7 +189,7 @@ impl Template<PackedTemplate> {
         let files = PackedTemplate::new_with_limits(template, limits)?;
         let manifest = files.manifest()?;
 
-        let world = OicanaWorld::new_with_fonts(files, TemplateInputs::new(), manifest, fonts)?;
+        let world = OicanaWorld::new_with_fonts(files, manifest, fonts)?;
 
         Ok(Template { world })
     }

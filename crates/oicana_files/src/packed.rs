@@ -444,7 +444,7 @@ mod tests {
         assert!(files.source(project_file("/main.typ")).is_ok());
         assert!(files
             .file(package_file(
-                "@preview/oicana:0.1.1".parse().unwrap(),
+                "@preview/oicana:0.2.0".parse().unwrap(),
                 "/typst.toml"
             ))
             .is_ok());
@@ -477,7 +477,7 @@ mod tests {
 
         assert!(files
             .file(package_file(
-                "@preview/oicana:0.1.1".parse().unwrap(),
+                "@preview/oicana:0.2.0".parse().unwrap(),
                 "/typst.toml"
             ))
             .is_ok());
@@ -490,11 +490,17 @@ mod tests {
         let files =
             PackedTemplate::new(Cursor::new(template)).expect("Failed to parse template zip");
 
+        let mut found: Vec<String> = files
+            .fonts
+            .iter()
+            .map(|id| id.vpath().get_with_slash().to_owned())
+            .collect();
+        found.sort();
         assert_eq!(
-            files.fonts.iter().map(|id| id.vpath()).collect::<Vec<_>>(),
+            found,
             vec![
-                &VirtualPath::new("/fonts/NotoSansArabic-VariableFont_wdth,wght.ttf").unwrap(),
-                &VirtualPath::new("/fonts/InriaSerif-Regular.ttf").unwrap()
+                "/fonts/InriaSerif-Regular.ttf".to_owned(),
+                "/fonts/NotoSansArabic-Regular.ttf".to_owned(),
             ]
         )
     }
