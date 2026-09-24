@@ -4,7 +4,6 @@ using System.Text.Json.Nodes;
 using AwesomeAssertions;
 using Oicana.Inputs;
 using CompilationMode = Oicana.Config.CompilationMode;
-using CompilationOptions = Oicana.Config.CompilationOptions;
 using ExportFormat = Oicana.Config.ExportFormat;
 
 namespace Oicana.Test;
@@ -159,10 +158,8 @@ public class FontsTests : IDisposable
         using var template = new Template(PackTemplate(ManifestRequiring(TestFamily), "Content"));
 
         using var svg = template.Export(
-            new Dictionary<string, JsonNode>(),
-            new Dictionary<string, BlobInput>(),
-            ExportFormat.Svg(),
-            new CompilationOptions(CompilationMode.Development));
+            exportFormat: ExportFormat.Svg(),
+            mode: CompilationMode.Development);
         using var reader = new StreamReader(svg);
         reader.ReadToEnd().Should().Contain("<svg");
     }
@@ -176,10 +173,8 @@ public class FontsTests : IDisposable
             PackTemplate(PlainManifest, $"#set text(font: \"{TestFamily}\")\nContent"));
 
         using var svg = template.Export(
-            new Dictionary<string, JsonNode>(),
-            new Dictionary<string, BlobInput>(),
-            ExportFormat.Svg(),
-            new CompilationOptions(CompilationMode.Development));
+            exportFormat: ExportFormat.Svg(),
+            mode: CompilationMode.Development);
 
         template.Warnings.Should().BeNull();
     }
@@ -192,10 +187,8 @@ public class FontsTests : IDisposable
             PackTemplate(PlainManifest, $"#set text(font: \"{TestFamily}\")\nContent"));
 
         using var svg = template.Export(
-            new Dictionary<string, JsonNode>(),
-            new Dictionary<string, BlobInput>(),
-            ExportFormat.Svg(),
-            new CompilationOptions(CompilationMode.Development));
+            exportFormat: ExportFormat.Svg(),
+            mode: CompilationMode.Development);
 
         template.Warnings.Should().Contain(TestFamily);
     }

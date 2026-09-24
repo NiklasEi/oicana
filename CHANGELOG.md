@@ -18,6 +18,8 @@
 - All jars got valid module names
 - Detect link error and point to musl as likely explanation
 - The Linux libraries are now built against glibc 2.28
+- `configureAutomaticCacheEviction` and `evictCache` moved from `Template` to `Configuration`
+  - Call `Configuration.disableAutomaticCacheEviction()` to turn automatic eviction off
 
 ### Node.js
 - `engines` declares the actual minimum of `^20.19.0 || >=22.12.0`; the package is ESM-only, so CommonJS callers such as NestJS need a Node version with `require(esm)`
@@ -33,10 +35,16 @@
 - The Linux libraries are now built against glibc 2.28
 - `ITemplate` and `IOicanaService` extend `IDisposable` so callers can release their resources
 - `OicanaService.RegisterTemplate` now replaces an already registered id and disposes the old template
+- `CompilationOptions` is gone; the export and compile methods take a `CompilationMode` directly, defaulting to `Production`
+- `jsonInputs`, `blobInputs` and `exportFormat` are optional on every export and compile method, and on the `Template` constructor
+- `Configuration.DiagnosticsColoring(DiagnosticsColoring)` is now `Configuration.ConfigureDiagnosticColor(DiagnosticColor)`, and `DiagnosticColor` moved from `Oicana.Interop` to `Oicana.Config`
+- `Template.EvictCache` moved to `Configuration.EvictCache`
+- `Configuration.ConfigureAutomaticCacheEviction` takes a `long?`
 
 ### PHP
 - The installer detects musl and fails with an explanation
 - `Template::cleanup()` is now `Template::close()`, matching `CompiledDocument::close()`
+- `configureAutomaticCacheEviction` and `evictCache` moved from `Template` to `Configuration`
 
 ### Python
 - `Template.cleanup()` is now `Template.close()`, matching `CompiledDocument.close()`

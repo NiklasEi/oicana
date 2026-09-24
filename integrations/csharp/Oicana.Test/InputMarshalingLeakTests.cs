@@ -4,7 +4,6 @@ using AwesomeAssertions;
 using Oicana.Inputs;
 using Oicana.Interop;
 using CompilationMode = Oicana.Config.CompilationMode;
-using CompilationOptions = Oicana.Config.CompilationOptions;
 
 namespace Oicana.Test;
 
@@ -24,13 +23,13 @@ public class InputMarshalingLeakTests
                 Metadata = new JsonObject { ["comment"] = new string('y', 1_000_000) },
             },
         };
-        var options = new CompilationOptions(CompilationMode.Development);
+        var mode = CompilationMode.Development;
 
         var compileOnce = () =>
         {
             try
             {
-                OicanaFfi.CompileTemplate("leak-test-unregistered", jsonInputs, blobInputs, options);
+                OicanaFfi.CompileTemplate("leak-test-unregistered", jsonInputs, blobInputs, mode);
             }
             catch (OicanaException)
             {

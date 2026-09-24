@@ -105,10 +105,7 @@ public class StringFidelityTests
         var template = PackTemplate(MinimalManifest, mainTypst);
 
         using var registered = new Template(template);
-        using var document = registered.Compile(
-            new Dictionary<string, JsonNode>(),
-            new Dictionary<string, BlobInput>(),
-            new Oicana.Config.CompilationOptions(CompilationMode.Development));
+        using var document = registered.Compile(mode: CompilationMode.Development);
 
         document.Warnings.Should().NotBeNull();
         document.Warnings.Should().Contain("NonexistentFontFidelity");

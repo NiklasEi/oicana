@@ -32,11 +32,7 @@ var jsonInputs = new Dictionary<string, JsonNode>
         """{ "number": "2026-001", "customer": "Acme GmbH", "total": "€1,190.00" }""")!,
 };
 
-var pdf = template.Export(
-    jsonInputs,
-    new Dictionary<string, BlobInput>(),
-    ExportFormat.Pdf(),
-    new CompilationOptions(CompilationMode.Production));
+var pdf = template.ExportPdf(jsonInputs);
 ```
 
 `Export` returns a `Stream` you can hand to `Results.File` in a minimal API. `ExportPng` and `ExportSvg` produce the other formats, and `Template.ExportOnce` renders a one-off template without registering it.

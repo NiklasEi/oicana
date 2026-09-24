@@ -3,7 +3,6 @@ using Oicana.Interop;
 using Oicana.Manifest;
 using Oicana.Inputs;
 using CompilationMode = Oicana.Config.CompilationMode;
-using CompilationOptions = Oicana.Config.CompilationOptions;
 using ExportFormat = Oicana.Config.ExportFormat;
 using PageRange = Oicana.Config.PageRange;
 using ZipLimits = Oicana.Config.ZipLimits;
@@ -24,9 +23,7 @@ public class Template : ITemplate, IDisposable
     /// <summary>
     /// Prepare a template for fast compilation.
     ///
-    /// This will compile the document in development mode.
-    /// Your template should not have any required inputs that don't have
-    /// development or default values defined, otherwise registration will fail.
+    /// This will compile the document in development mode. If your template has required inputs without default or development values, use the constructor with inputs.
     ///
     /// This call can be expensive depending on the template.
     /// Reuse instances of this class if possible.
@@ -65,31 +62,37 @@ public class Template : ITemplate, IDisposable
     /// use <see cref="ExportOnce"/> instead.
     /// </summary>
     /// <param name="templateFile">The packed Oicana template to register.</param>
-    /// <param name="jsonInputs">Json inputs for the initial compilation (key -> JsonNode).</param>
-    /// <param name="blobInputs">Blob inputs for the initial compilation (key -> BlobInput).</param>
+    /// <param name="jsonInputs">Json inputs for the initial compilation (key -> JsonNode), or <c>null</c> for none.</param>
+    /// <param name="blobInputs">Blob inputs for the initial compilation (key -> BlobInput), or <c>null</c> for none.</param>
     /// <param name="compilationMode">Compilation mode to use for the initial template compilation during registration.</param>
     /// <param name="limits">Limits for reading the packed template zip, or <c>null</c> for the defaults.</param>
     /// <exception cref="OicanaException">If the initial template compilation fails.</exception>
-    public Template(byte[] templateFile, IDictionary<string, JsonNode> jsonInputs, IDictionary<string, BlobInput> blobInputs, CompilationMode compilationMode, ZipLimits? limits = null)
+    public Template(byte[] templateFile, IDictionary<string, JsonNode>? jsonInputs = null, IDictionary<string, BlobInput>? blobInputs = null, CompilationMode compilationMode = CompilationMode.Development, ZipLimits? limits = null)
     {
         _templateId = Guid.NewGuid().ToString();
-        using var documentIdStream = OicanaFfi.RegisterTemplate(_templateId, templateFile, jsonInputs, blobInputs, new CompilationOptions(compilationMode), limits);
+        using var documentIdStream = OicanaFfi.RegisterTemplate(_templateId, templateFile, jsonInputs ?? EmptyJsonInputs, blobInputs ?? EmptyBlobInputs, compilationMode, limits);
         var documentId = OicanaFfi.GetMessageFromStream(documentIdStream);
         Warnings = OicanaFfi.GetWarnings(documentId);
         OicanaFfi.RemoveDocument(documentId);
     }
 
+    private static readonly IDictionary<string, JsonNode> EmptyJsonInputs =
+        new Dictionary<string, JsonNode>();
+
+    private static readonly IDictionary<string, BlobInput> EmptyBlobInputs =
+        new Dictionary<string, BlobInput>();
+
     /// <inheritdoc />
     public string? Warnings { get; private set; }
 
     /// <inheritdoc />
-    public Stream Export(IDictionary<string, JsonNode> jsonInputs, IDictionary<string, BlobInput> blobInputs, ExportFormat exportFormat, CompilationOptions compilationOptions, PageRange? pages = null)
+    public Stream Export(IDictionary<string, JsonNode>? jsonInputs = null, IDictionary<string, BlobInput>? blobInputs = null, ExportFormat? exportFormat = null, CompilationMode mode = CompilationMode.Production, PageRange? pages = null)
     {
-        var documentId = OicanaFfi.CompileTemplate(_templateId, jsonInputs, blobInputs, compilationOptions);
+        var documentId = OicanaFfi.CompileTemplate(_templateId, jsonInputs ?? EmptyJsonInputs, blobInputs ?? EmptyBlobInputs, mode);
         Warnings = OicanaFfi.GetWarnings(documentId);
         try
         {
-            return OicanaFfi.ExportDocument(documentId, exportFormat, pages);
+            return OicanaFfi.ExportDocument(documentId, exportFormat ?? ExportFormat.Pdf(), pages);
         }
         finally
         {
@@ -98,27 +101,27 @@ public class Template : ITemplate, IDisposable
     }
 
     /// <inheritdoc />
-    public Stream ExportPdf(IDictionary<string, JsonNode> jsonInputs, IDictionary<string, BlobInput> blobInputs, CompilationOptions compilationOptions, PageRange? pages = null)
+    public Stream ExportPdf(IDictionary<string, JsonNode>? jsonInputs = null, IDictionary<string, BlobInput>? blobInputs = null, CompilationMode mode = CompilationMode.Production, PageRange? pages = null)
     {
-        return Export(jsonInputs, blobInputs, ExportFormat.Pdf(), compilationOptions, pages);
+        return Export(jsonInputs, blobInputs, ExportFormat.Pdf(), mode, pages);
     }
 
     /// <inheritdoc />
-    public Stream ExportPng(IDictionary<string, JsonNode> jsonInputs, IDictionary<string, BlobInput> blobInputs, CompilationOptions compilationOptions, float pixelsPerPt = 1.0f, PageRange? pages = null)
+    public Stream ExportPng(IDictionary<string, JsonNode>? jsonInputs = null, IDictionary<string, BlobInput>? blobInputs = null, CompilationMode mode = CompilationMode.Production, float pixelsPerPt = 1.0f, PageRange? pages = null)
     {
-        return Export(jsonInputs, blobInputs, ExportFormat.Png(pixelsPerPt), compilationOptions, pages);
+        return Export(jsonInputs, blobInputs, ExportFormat.Png(pixelsPerPt), mode, pages);
     }
 
     /// <inheritdoc />
-    public Stream ExportSvg(IDictionary<string, JsonNode> jsonInputs, IDictionary<string, BlobInput> blobInputs, CompilationOptions compilationOptions, PageRange? pages = null)
+    public Stream ExportSvg(IDictionary<string, JsonNode>? jsonInputs = null, IDictionary<string, BlobInput>? blobInputs = null, CompilationMode mode = CompilationMode.Production, PageRange? pages = null)
     {
-        return Export(jsonInputs, blobInputs, ExportFormat.Svg(), compilationOptions, pages);
+        return Export(jsonInputs, blobInputs, ExportFormat.Svg(), mode, pages);
     }
 
     /// <inheritdoc />
-    public CompiledDocument Compile(IDictionary<string, JsonNode> jsonInputs, IDictionary<string, BlobInput> blobInputs, CompilationOptions compilationOptions)
+    public CompiledDocument Compile(IDictionary<string, JsonNode>? jsonInputs = null, IDictionary<string, BlobInput>? blobInputs = null, CompilationMode mode = CompilationMode.Production)
     {
-        var documentId = OicanaFfi.CompileTemplate(_templateId, jsonInputs, blobInputs, compilationOptions);
+        var documentId = OicanaFfi.CompileTemplate(_templateId, jsonInputs ?? EmptyJsonInputs, blobInputs ?? EmptyBlobInputs, mode);
         var document = new CompiledDocument(documentId);
         Warnings = document.Warnings;
         return document;
@@ -129,7 +132,7 @@ public class Template : ITemplate, IDisposable
     /// </summary>
     /// <remarks>
     /// If you want to compile the same document multiple times with different input values,
-    /// create an instance of <see cref="Template"/> and use <see cref="Export(IDictionary{string, JsonNode}, IDictionary{string, BlobInput}, ExportFormat, CompilationOptions, PageRange)"/> instead.
+    /// create an instance of <see cref="Template"/> and use <see cref="Export"/> instead.
     ///
     /// <see cref="ExportOnce"/> does not cache the template or document and compiles from scratch, which is slower than exporting a prepared template.
     /// </remarks>
@@ -137,14 +140,14 @@ public class Template : ITemplate, IDisposable
     /// <param name="jsonInputs">Json inputs for the compilation (key -> JsonNode).</param>
     /// <param name="blobInputs">Blob inputs for the compilation (key -> BlobInput).</param>
     /// <param name="exportFormat">Format configuration for the document export.</param>
-    /// <param name="compilationOptions">Options for the template compilation.</param>
+    /// <param name="mode">Mode to compile the template in (defaults to <c>Production</c>).</param>
     /// <param name="pages">0-based, inclusive page range to export, or <c>null</c> for the whole document.</param>
     /// <param name="limits">Limits for reading the packed template zip, or <c>null</c> for the defaults.</param>
     /// <exception cref="OicanaException">If the template compilation fails.</exception>
     /// <returns>The exported document and any compilation warnings.</returns>
-    public static ExportOnceResult ExportOnce(byte[] templateFile, IDictionary<string, JsonNode> jsonInputs, IDictionary<string, BlobInput> blobInputs, ExportFormat exportFormat, CompilationOptions compilationOptions, PageRange? pages = null, ZipLimits? limits = null)
+    public static ExportOnceResult ExportOnce(byte[] templateFile, IDictionary<string, JsonNode>? jsonInputs = null, IDictionary<string, BlobInput>? blobInputs = null, ExportFormat? exportFormat = null, CompilationMode mode = CompilationMode.Production, PageRange? pages = null, ZipLimits? limits = null)
     {
-        return OicanaFfi.ExportTemplateOnce(templateFile, jsonInputs, blobInputs, compilationOptions, exportFormat, pages, limits);
+        return OicanaFfi.ExportTemplateOnce(templateFile, jsonInputs ?? EmptyJsonInputs, blobInputs ?? EmptyBlobInputs, mode, exportFormat ?? ExportFormat.Pdf(), pages, limits);
     }
 
     /// <inheritdoc />
@@ -175,19 +178,6 @@ public class Template : ITemplate, IDisposable
     public void SetValidateInputs(bool validate)
     {
         OicanaFfi.SetValidateInputs(_templateId, validate);
-    }
-
-    /// <summary>
-    /// Manually evict the cache with the given age threshold.
-    /// </summary>
-    /// <param name="maxAge">
-    /// Maximum age threshold for eviction.
-    /// Entries with age >= this value will be removed.
-    /// Calls with negative maxAge are ignored.
-    /// </param>
-    public static void EvictCache(long maxAge)
-    {
-        OicanaFfi.EvictCache(maxAge);
     }
 
     /// <inheritdoc/>

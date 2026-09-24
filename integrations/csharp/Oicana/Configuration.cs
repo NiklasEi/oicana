@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Text.Json;
 using Oicana.Interop;
+using DiagnosticColor = Oicana.Config.DiagnosticColor;
 
 namespace Oicana;
 
@@ -10,12 +11,12 @@ namespace Oicana;
 public static class Configuration
 {
     /// <summary>
-    /// Configure diagnostics coloring for Oicana.
+    /// Configure the coloring of compilation diagnostics.
     /// </summary>
-    /// <param name="coloring">Coloring for Oicana diagnostics.</param>
-    public static void DiagnosticsColoring(DiagnosticsColoring coloring)
+    /// <param name="color">Coloring for Oicana diagnostics.</param>
+    public static void ConfigureDiagnosticColor(DiagnosticColor color)
     {
-        OicanaFfi.Configure(coloring);
+        OicanaFfi.Configure(color);
     }
 
     /// <summary>
@@ -25,16 +26,29 @@ public static class Configuration
     /// and resets to 0 on cache hit. Entries with age >= maxAge are removed.
     /// </summary>
     /// <param name="maxAge">
-    /// Maximum age threshold, or -1 to disable:
-    ///   - -1 - Disables cache eviction (cache never cleared)
+    /// Maximum age threshold, or <c>null</c> to disable:
+    ///   - null - Disables cache eviction (cache never cleared)
     ///   - 0 - Clears all cache after every compilation
     ///   - 1 - Keeps only entries used since the last eviction
     ///   - n - Keeps entries used within the last n evictions
     /// Default is 10.
     /// </param>
-    public static void ConfigureAutomaticCacheEviction(long maxAge)
+    public static void ConfigureAutomaticCacheEviction(long? maxAge)
     {
         OicanaFfi.ConfigureAutomaticCacheEviction(maxAge);
+    }
+
+    /// <summary>
+    /// Evict the cache with the given age threshold.
+    /// </summary>
+    /// <param name="maxAge">
+    /// Maximum age threshold for eviction.
+    /// Entries with age >= this value will be removed.
+    /// Calls with negative maxAge are ignored.
+    /// </param>
+    public static void EvictCache(long maxAge)
+    {
+        OicanaFfi.EvictCache(maxAge);
     }
 
     /// <summary>

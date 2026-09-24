@@ -441,26 +441,6 @@ public class Template implements AutoCloseable {
     }
 
     /**
-     * Configure automatic cache eviction after each compilation.
-     *
-     * @param maxAge maximum age threshold. Use -1 to disable eviction, 0 to clear all,
-     *               or a positive value to keep entries used within the last n evictions.
-     *               Default is 10.
-     */
-    public static void configureAutomaticCacheEviction(int maxAge) {
-        OicanaNative.configureAutomaticCacheEviction(maxAge);
-    }
-
-    /**
-     * Manually evict the cache with the given age threshold.
-     *
-     * @param maxAge the age threshold for cache eviction
-     */
-    public static void evictCache(int maxAge) {
-        OicanaNative.evictCache(maxAge);
-    }
-
-    /**
      * Release native resources associated with this template.
      * After calling close(), this template instance should not be used.
      */

@@ -5,7 +5,6 @@ using AwesomeAssertions;
 using Oicana.Inputs;
 using Oicana.Interop;
 using CompilationMode = Oicana.Config.CompilationMode;
-using CompilationOptions = Oicana.Config.CompilationOptions;
 using ExportFormat = Oicana.Config.ExportFormat;
 using ZipLimits = Oicana.Config.ZipLimits;
 
@@ -47,10 +46,8 @@ public class ExportOnceTests
     {
         var result = Template.ExportOnce(
             _templateFile,
-            new Dictionary<string, JsonNode>(),
-            new Dictionary<string, BlobInput>(),
-            ExportFormat.Pdf(),
-            new CompilationOptions(CompilationMode.Development));
+            exportFormat: ExportFormat.Pdf(),
+            mode: CompilationMode.Development);
 
         using var memory = new MemoryStream();
         result.Document.CopyTo(memory);
@@ -68,10 +65,8 @@ public class ExportOnceTests
 
         var result = Template.ExportOnce(
             template,
-            new Dictionary<string, JsonNode>(),
-            new Dictionary<string, BlobInput>(),
-            ExportFormat.Svg(),
-            new CompilationOptions(CompilationMode.Development));
+            exportFormat: ExportFormat.Svg(),
+            mode: CompilationMode.Development);
 
         result.Warnings.Should().NotBeNull();
         result.Warnings.Should().Contain("NonexistentFontExportOnce");
@@ -82,10 +77,8 @@ public class ExportOnceTests
     {
         var act = () => Template.ExportOnce(
             _templateFile,
-            new Dictionary<string, JsonNode>(),
-            new Dictionary<string, BlobInput>(),
-            ExportFormat.Pdf(),
-            new CompilationOptions(CompilationMode.Development),
+            exportFormat: ExportFormat.Pdf(),
+            mode: CompilationMode.Development,
             limits: new ZipLimits { MaxEntries = 1 });
 
         act.Should().Throw<OicanaException>().WithMessage("*entries*");
@@ -96,9 +89,6 @@ public class ExportOnceTests
     {
         var act = () => new Template(
             _templateFile,
-            new Dictionary<string, JsonNode>(),
-            new Dictionary<string, BlobInput>(),
-            CompilationMode.Development,
             limits: new ZipLimits { MaxEntries = 1 });
 
         act.Should().Throw<OicanaException>().WithMessage("*entries*");

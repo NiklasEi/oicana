@@ -5,7 +5,6 @@ using AwesomeAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
 using Oicana.Inputs;
 using CompilationMode = Oicana.Config.CompilationMode;
-using CompilationOptions = Oicana.Config.CompilationOptions;
 
 namespace Oicana.Test;
 
@@ -44,10 +43,8 @@ public class OicanaServiceTests
     private static string ExportSvg(ITemplate template)
     {
         using var svg = template.Export(
-            new Dictionary<string, JsonNode>(),
-            new Dictionary<string, BlobInput>(),
-            Config.ExportFormat.Svg(),
-            new CompilationOptions(CompilationMode.Development));
+            exportFormat: Config.ExportFormat.Svg(),
+            mode: CompilationMode.Development);
         using var reader = new StreamReader(svg);
         return reader.ReadToEnd();
     }
