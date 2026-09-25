@@ -15,6 +15,8 @@ public interface ITemplate : IDisposable
 {
     /// <summary>
     /// Warnings produced by the most recent compilation.
+    /// Prefer <see cref="CompiledDocument.Warnings"/>, since every compilation
+    /// overwrites the warnings on the template.
     /// </summary>
     string? Warnings { get; }
 

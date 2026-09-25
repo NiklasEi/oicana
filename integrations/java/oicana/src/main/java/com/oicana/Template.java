@@ -80,6 +80,9 @@ public class Template implements AutoCloseable {
     /**
      * Warnings produced by the most recent compilation.
      *
+     * <p>Prefer {@link CompiledDocument#warnings()}, since every compilation
+     * overwrites the warnings on the template.
+     *
      * @return the warnings, or an empty Optional if there were none
      */
     public Optional<String> warnings() {

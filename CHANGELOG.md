@@ -6,6 +6,7 @@
 - `Template.inputs` is now `Template.manifest` in every integration and returns a typed manifest
   - the Typst package section and the whole Oicana configuration, including the input definitions
 - JSON inputs are also validated against their schemas when a template is registered and when calling `exportOnce`
+- For `tagged = false` or page ranges that don't cover a complete document, PDF exports will fail for standards that require tags: `ua-1`, `a-1a`, `a-2a`, `a-3a`
 
 ### CLI
 - `pack` no longer writes directory entries for directories that end up with no packed content, for example a directory whose files are all excluded

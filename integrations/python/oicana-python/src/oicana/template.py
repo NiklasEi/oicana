@@ -157,7 +157,11 @@ class Template:
 
     @property
     def warnings(self) -> str | None:
-        """Warnings from the most recent compilation, or ``None`` if there were none."""
+        """Warnings from the most recent compilation, or ``None`` if there were none.
+
+        Prefer ``CompiledDocument.warnings``, since every compilation
+        overwrites the warnings on the template.
+        """
         return self._last_warnings
 
     def export(

@@ -643,6 +643,9 @@ export class Template implements Disposable {
   /**
    * Warnings produced by the most recent compilation (constructor warm-up, or a
    * `compile()` / `export()` call), or `undefined` if there were none.
+   *
+   * Prefer {@link CompiledDocument.warnings}, since every compilation
+   * overwrites the warnings on the template.
    */
   public warnings(): string | undefined {
     return this.lastWarnings;
