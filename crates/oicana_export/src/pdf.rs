@@ -27,6 +27,18 @@ fn to_typst_standard(standard: oicana_template::PdfStandard) -> typst_pdf::PdfSt
     }
 }
 
+/// Whether the standard is only met by a tagged PDF.
+///
+/// Mirrors krilla's `requires_tagging`.
+fn requires_tagging(standard: oicana_template::PdfStandard) -> bool {
+    use oicana_template::PdfStandard::*;
+    match standard {
+        A_1a | A_2a | A_3a | Ua_1 => true,
+        V_1_4 | V_1_5 | V_1_6 | V_1_7 | V_2_0 | A_1b | A_2b | A_2u | A_3b | A_3u | A_4 | A_4f
+        | A_4e => false,
+    }
+}
+
 /// Check whether the given list of Oicana PDF standards forms a combination
 /// Typst can produce (at most one base version, at most one PDF/A standard
 /// and at most one PDF/UA standard, all sharing overlapping PDF versions).
@@ -44,6 +56,7 @@ pub fn validate_pdf_standards(standards: &[oicana_template::PdfStandard]) -> Res
 ///
 /// `tagged` requests an accessible, tagged PDF. Tagging is always disabled when
 /// exporting a subset of the pages, because Typst cannot tag partial exports.
+/// The export fails if tagging ends up disabled while the standards require it.
 pub fn export_pdf<Diagnostics: TemplateDiagnostics>(
     document: &PagedDocument,
     diagnostics: &Diagnostics,
@@ -65,6 +78,21 @@ pub fn export_pdf<Diagnostics: TemplateDiagnostics>(
     // Typst refuses to produce a tagged PDF when a page range is set. Only
     // pass the range and disable tagging when pages are actually skipped.
     let skips_pages = selected_count != page_count;
+    let tagged = tagged && !skips_pages;
+
+    if !tagged {
+        if let Some(standard) = standards.iter().find(|s| requires_tagging(**s)) {
+            return Err(if skips_pages {
+                format!(
+                    "PDF standard {standard} requires a tagged PDF, but a page range cannot be tagged. Export the whole document or choose different standards"
+                )
+            } else {
+                format!(
+                    "PDF standard {standard} requires a tagged PDF, but the template disables tagging"
+                )
+            });
+        }
+    }
 
     let options = PdfOptions {
         ident: Smart::Auto,
@@ -75,7 +103,7 @@ pub fn export_pdf<Diagnostics: TemplateDiagnostics>(
         } else {
             None
         },
-        tagged: tagged && !skips_pages,
+        tagged,
         standards: PdfStandards::new(&typst_standards)
             .map_err(|e| format!("Invalid combination of PDF standards: {}", e.message()))?,
         pretty: false,
@@ -125,6 +153,24 @@ mod tests {
         );
         PreloadedTemplate::new(files)
     }
+
+    fn accessible_template() -> PreloadedTemplate {
+        let mut files = HashMap::new();
+        files.insert("typst.toml".to_owned(), manifest().to_owned());
+        files.insert(
+            "main.typ".to_owned(),
+            "#set page(width: 200pt, height: 100pt)\n#set document(title: \"Test\", date: datetime(year: 2020,month: 10,day: 4))\n#set text(lang: \"en\")\nPage 1\n#pagebreak()\nPage 2\n#pagebreak()\nPage 3".to_owned(),
+        );
+        PreloadedTemplate::new(files)
+    }
+
+    const ALL_STANDARDS: [oicana_template::PdfStandard; 17] = {
+        use oicana_template::PdfStandard::*;
+        [
+            V_1_4, V_1_5, V_1_6, V_1_7, V_2_0, A_1b, A_1a, A_2b, A_2u, A_2a, A_3b, A_3u, A_3a, A_4,
+            A_4f, A_4e, Ua_1,
+        ]
+    };
 
     fn compile(template: PreloadedTemplate) -> (PagedDocument, OicanaWorld<PreloadedTemplate>) {
         let manifest = template.manifest().unwrap();
@@ -344,5 +390,66 @@ mod tests {
         ])
         .unwrap_err();
         assert!(err.contains("Invalid combination of PDF standards"));
+    }
+
+    #[test]
+    fn page_range_with_a_standard_requiring_tags_is_rejected() {
+        let (document, world) = compile(accessible_template());
+
+        for standard in ALL_STANDARDS.into_iter().filter(|s| requires_tagging(*s)) {
+            let err = export_pdf(
+                &document,
+                &world,
+                &[standard],
+                true,
+                Some(&PageRange::single(0)),
+            )
+            .unwrap_err();
+            assert!(err.contains("requires a tagged PDF"), "{standard}: {err}");
+            assert!(err.contains("page range"), "{standard}: {err}");
+        }
+    }
+
+    #[test]
+    fn untagged_export_with_a_standard_requiring_tags_is_rejected() {
+        let (document, world) = compile(accessible_template());
+
+        for standard in ALL_STANDARDS.into_iter().filter(|s| requires_tagging(*s)) {
+            let err = export_pdf(&document, &world, &[standard], false, None).unwrap_err();
+            assert!(
+                err.contains("template disables tagging"),
+                "{standard}: {err}"
+            );
+        }
+    }
+
+    #[test]
+    fn page_range_with_standards_not_requiring_tags_exports() {
+        let (document, world) = compile(accessible_template());
+
+        for standard in ALL_STANDARDS.into_iter().filter(|s| !requires_tagging(*s)) {
+            let result = export_pdf(
+                &document,
+                &world,
+                &[standard],
+                true,
+                Some(&PageRange::single(0)),
+            );
+            assert!(result.is_ok(), "{standard}: {}", result.unwrap_err());
+        }
+    }
+
+    #[test]
+    fn page_range_selecting_every_page_keeps_ua_1() {
+        let (document, world) = compile(accessible_template());
+
+        let result = export_pdf(
+            &document,
+            &world,
+            &[oicana_template::PdfStandard::Ua_1],
+            true,
+            Some(&PageRange::from(0)),
+        );
+        assert!(result.is_ok(), "{}", result.unwrap_err());
     }
 }
