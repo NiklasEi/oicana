@@ -6,6 +6,7 @@
 - `Template.inputs` is now `Template.manifest` in every integration and returns a typed manifest
   - the Typst package section and the whole Oicana configuration, including the input definitions
 - JSON inputs are also validated against their schemas when a template is registered and when calling `exportOnce`
+- compilations now fail for inputs the template does not declare, for inputs supplied as the wrong kind (json instead of blob or the other way around), and for a key supplied as both a json and a blob input
 - For `tagged = false` or page ranges that don't cover a complete document, PDF exports will fail for standards that require tags: `ua-1`, `a-1a`, `a-2a`, `a-3a`
 
 ### CLI
@@ -57,6 +58,7 @@
 - `Template::init_with_limits` and `Template::init_with_fonts_and_limits` take custom `ZipLimits`
 - Native Template constructors are now `Template::open` and `Template::open_with_fonts`
 - `OicanaWorld::new` and `new_with_fonts` no longer take inputs; supply them through `update_inputs`
+- The input types moved to the root of `oicana::input`
 
 ## v0.8.0
 
