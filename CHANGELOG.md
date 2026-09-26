@@ -14,6 +14,8 @@
 - `pack` excludes `.git`, `.DS_Store` and `*.zip` by default
 - `pack` fails when a file cannot be read
 - `pack` now finds `import` and `include` of packages at any nesting depth
+- `pack` leaves out the files a packaged dependency excludes in its own `typst.toml`
+- `compile` and `watch` fail for blob metadata (`-m`) without a matching blob (`-b`) and for badly formatted key-value pairs
 
 ### Java
 - A JVM that has not granted native access now fails with an `OicanaException` naming the required `--enable-native-access` flag
@@ -24,12 +26,14 @@
   - Call `Configuration.disableAutomaticCacheEviction()` to turn automatic eviction off
 
 ### Node.js
-- `engines` declares the actual minimum of `^20.19.0 || >=22.12.0`; the package is ESM-only, so CommonJS callers such as NestJS need a Node version with `require(esm)`
+- `engines` declares the actual minimum of `^20.19.0 || >=22.12.0`; the package is ESM-only, so CommonJS callers need a Node version with `require(esm)`
 - Publish a `linux-x64-musl` build
 - `BlobWithMetadata` is now `BlobInput`, its fields `bytes` and `meta` are now `data` and `metadata`
 
 ### Browser
 - `BlobWithMetadata` is now `BlobInput`, its fields `bytes` and `meta` are now `data` and `metadata`
+- Concurrent `initialize` calls share one download of the WASM module
+- The `Template` constructor that takes `ZipLimits` is now part of the type declarations
 
 ### C#
 - `BlobInput.Meta` is now `BlobInput.Metadata`
@@ -46,6 +50,7 @@
 ### PHP
 - The installer detects musl and fails with an explanation
 - The installer fails `composer install` when downloading or verifying the extension fails
+- The installer downloads through Composer, honoring Composer's proxy and certificate settings
 - `Template::cleanup()` is now `Template::close()`, matching `CompiledDocument::close()`
 - `configureAutomaticCacheEviction` and `evictCache` moved from `Template` to `Configuration`
 
@@ -60,6 +65,9 @@
 - Native Template constructors are now `Template::open` and `Template::open_with_fonts`
 - `OicanaWorld::new` and `new_with_fonts` no longer take inputs; supply them through `update_inputs`
 - The input types moved to the root of `oicana::input`
+- `TemplateInputs::new()` now uses production mode by default
+- `export_pdf` returns `PdfExportError`
+- `oicana::typst` re-exports `VirtualPath`, `RootedPath`, `VirtualRoot` and `PathError` to build the `FileId` that `Template::source` and `Template::file` take
 
 ## v0.8.0
 
