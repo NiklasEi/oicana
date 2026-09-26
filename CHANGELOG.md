@@ -45,6 +45,7 @@
 
 ### PHP
 - The installer detects musl and fails with an explanation
+- The installer fails `composer install` when downloading or verifying the extension fails
 - `Template::cleanup()` is now `Template::close()`, matching `CompiledDocument::close()`
 - `configureAutomaticCacheEviction` and `evictCache` moved from `Template` to `Configuration`
 

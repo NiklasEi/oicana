@@ -91,8 +91,8 @@ final class InstallerPlugin implements PluginInterface, EventSubscriberInterface
 
             $this->showActivationInstructions($io, $iniDir);
 
-        } catch (\Throwable $e) {
-            $io->writeError('<error>Failed to install Oicana extension: ' . $e->getMessage() . '</error>');
+        } catch (UnsupportedPlatformException $e) {
+            $io->writeError('<warning>Oicana extension not installed: ' . $e->getMessage() . '</warning>');
             $io->writeError('');
             $io->writeError('<comment>You can download the extension manually from:</comment>');
             $io->writeError('<comment>https://github.com/oicana/oicana/releases</comment>');

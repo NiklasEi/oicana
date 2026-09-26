@@ -12,6 +12,7 @@ final class PlatformDetector
     /**
      * Detect the current platform.
      *
+     * @throws UnsupportedPlatformException If there is no build for this platform
      * @throws \RuntimeException If platform cannot be detected
      */
     public function detect(): Platform
@@ -27,7 +28,7 @@ final class PlatformDetector
     /**
      * Detect operating system.
      *
-     * @throws \RuntimeException If OS is not supported
+     * @throws UnsupportedPlatformException If OS is not supported
      */
     private function detectOS(): string
     {
@@ -35,19 +36,19 @@ final class PlatformDetector
             'Windows' => 'windows',
             'Darwin' => 'macos',
             'Linux' => $this->detectLinux(),
-            default => throw new \RuntimeException('Unsupported OS: ' . PHP_OS_FAMILY),
+            default => throw new UnsupportedPlatformException('Unsupported OS: ' . PHP_OS_FAMILY),
         };
     }
 
     /**
      * Detect Linux, rejecting musl based systems.
      *
-     * @throws \RuntimeException If the system uses musl
+     * @throws UnsupportedPlatformException If the system uses musl
      */
     private function detectLinux(): string
     {
         if ($this->isMusl()) {
-            throw new \RuntimeException(
+            throw new UnsupportedPlatformException(
                 'Unsupported platform: there is no musl build of the Oicana extension, and this '
                 . 'system uses musl (Alpine and other musl based distributions).'
             );
@@ -57,17 +58,23 @@ final class PlatformDetector
     }
 
     /**
-     * Whether the C library is musl rather than glibc.
+     * Whether the running PHP links against musl rather than glibc.
      */
     private function isMusl(): bool
     {
-        return !empty(glob('/lib/ld-musl-*.so.1')) || !empty(glob('/lib/libc.musl-*.so.1'));
+        $maps = @file_get_contents('/proc/self/maps');
+        if ($maps !== false && $maps !== '') {
+            return str_contains($maps, '/ld-musl-');
+        }
+
+        $header = @file_get_contents(PHP_BINARY, false, null, 0, 4096);
+        return $header !== false && str_contains($header, '/ld-musl-');
     }
 
     /**
      * Detect CPU architecture.
      *
-     * @throws \RuntimeException If architecture is not supported
+     * @throws UnsupportedPlatformException If architecture is not supported
      */
     private function detectArchitecture(): string
     {
@@ -75,7 +82,7 @@ final class PlatformDetector
         return match (true) {
             str_contains($arch, 'x86_64') || str_contains($arch, 'amd64') || str_contains($arch, 'AMD64') => 'x64',
             str_contains($arch, 'aarch64') || str_contains($arch, 'arm64') => 'arm64',
-            default => throw new \RuntimeException('Unsupported architecture: ' . $arch),
+            default => throw new UnsupportedPlatformException('Unsupported architecture: ' . $arch),
         };
     }
 

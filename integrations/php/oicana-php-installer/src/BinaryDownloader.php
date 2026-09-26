@@ -24,6 +24,7 @@ final class BinaryDownloader
      * binary in `checksums.json` before being written to disk.
      *
      * @return string Absolute path to the downloaded binary
+     * @throws UnsupportedPlatformException If there is no build for this platform
      * @throws \RuntimeException If download fails or integrity verification fails
      */
     public function download(Platform $platform): string
@@ -100,7 +101,7 @@ final class BinaryDownloader
 
         $hash = $checksums['binaries'][$binaryName] ?? null;
         if (!is_string($hash) || $hash === '') {
-            throw new \RuntimeException(sprintf(
+            throw new UnsupportedPlatformException(sprintf(
                 "No checksum recorded for %s in checksums.json. " .
                 "This installer build cannot verify the binary; install via composer.oicana.com or " .
                 "download from GitHub Releases manually.",
