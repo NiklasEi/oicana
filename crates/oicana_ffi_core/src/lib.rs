@@ -1442,6 +1442,35 @@ mod tests {
     }
 
     #[test]
+    fn a_missing_entrypoint_is_named_in_the_error() {
+        use std::io::Write;
+        use zip::write::SimpleFileOptions;
+        use zip::{CompressionMethod, ZipWriter};
+
+        let mut writer = ZipWriter::new(Cursor::new(Vec::new()));
+        let options = SimpleFileOptions::default().compression_method(CompressionMethod::Stored);
+        writer.start_file("typst.toml", options).unwrap();
+        writer
+            .write_all(
+                b"[package]\nname = \"t\"\nversion = \"0.1.0\"\nentrypoint = \"missing.typ\"\n\n[tool.oicana]\nmanifest_version = 1\n",
+            )
+            .unwrap();
+        let files = writer.finish().unwrap().into_inner();
+
+        let error = register_template(
+            &format!("missing-entrypoint-{}", Uuid::new_v4()),
+            &files,
+            HashMap::new(),
+            HashMap::new(),
+            CompilationMode::Development,
+            None,
+        )
+        .expect_err("a template without its entrypoint must not register");
+
+        assert!(error.to_string().contains("missing.typ"), "got: {error}");
+    }
+
+    #[test]
     fn the_compilation_mode_reaches_the_template() {
         let files = minimal_template_zip(
             "#if sys.inputs.at(\"oicana-config\").at(\"production\") { panic(\"was production\") }\nContent",
