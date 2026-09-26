@@ -5,7 +5,6 @@ using AwesomeAssertions;
 using Oicana.Inputs;
 using Oicana.Interop;
 using CompilationMode = Oicana.Config.CompilationMode;
-using CompilationOptions = Oicana.Config.CompilationOptions;
 
 namespace Oicana.Test;
 
@@ -60,8 +59,7 @@ public class NonAsciiMarshalingTests
     {
         var act = () => template.Compile(
             new Dictionary<string, JsonNode> { [inputKey] = new JsonObject { ["text"] = NonAsciiText } },
-            new Dictionary<string, BlobInput>(),
-            new CompilationOptions(CompilationMode.Development));
+            mode: CompilationMode.Development);
 
         act.Should().Throw<OicanaException>()
             .Which.Message.Should().Contain($"ECHO<{NonAsciiText}>",

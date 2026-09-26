@@ -78,7 +78,7 @@
   }
   let input-definitions = if oicana-manifest.keys().contains("inputs") {
     manifest.tool.oicana.inputs
-  } else { (:) }
+  } else { () }
   let typst-inputs = if sys.inputs.keys().contains("oicana-inputs") {
     sys.inputs.at("oicana-inputs")
   } else { (:) }
@@ -115,6 +115,14 @@
       definition.required
     } else {
       true
+    }
+
+    if not definition.keys().contains("type") {
+      panic(
+        "The input '"
+          + key
+          + "' needs a 'type' property of \"json\" or \"blob\".",
+      )
     }
 
     if definition.type == "json" {

@@ -76,7 +76,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
       - name: Install rust toolchain
-        uses: dtolnay/rust-toolchain@1.98.1
+        uses: dtolnay/rust-toolchain@ce678459e9fc7500d337468f904b95f1b5c10b5e # 1.98.1
       - name: Build release
         run: cargo build --release -p ${{ env.LIB_NAME }}
       - uses: actions/upload-artifact@v7
@@ -91,7 +91,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
       - name: Install rust toolchain
-        uses: dtolnay/rust-toolchain@1.98.1
+        uses: dtolnay/rust-toolchain@ce678459e9fc7500d337468f904b95f1b5c10b5e # 1.98.1
       - name: Build release
         run: cargo build --release -p ${{ env.LIB_NAME }}
       - uses: actions/upload-artifact@v7
@@ -105,7 +105,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
       - name: Install rust toolchain
-        uses: dtolnay/rust-toolchain@1.98.1
+        uses: dtolnay/rust-toolchain@ce678459e9fc7500d337468f904b95f1b5c10b5e # 1.98.1
       - name: Build release
         run: cargo build --release -p ${{ env.LIB_NAME }}
       - uses: actions/upload-artifact@v7
@@ -119,7 +119,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
       - name: Install rust toolchain
-        uses: dtolnay/rust-toolchain@1.98.1
+        uses: dtolnay/rust-toolchain@ce678459e9fc7500d337468f904b95f1b5c10b5e # 1.98.1
         with:
           targets: x86_64-apple-darwin
       - name: Build release
@@ -135,7 +135,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
       - name: Install rust toolchain
-        uses: dtolnay/rust-toolchain@1.98.1
+        uses: dtolnay/rust-toolchain@ce678459e9fc7500d337468f904b95f1b5c10b5e # 1.98.1
         with:
           targets: aarch64-apple-darwin
       - name: Build release
@@ -206,7 +206,7 @@ jobs:
           name: oicana-csharp-nuget
           path: integrations/csharp/Oicana/bin/Release/Oicana.*.nupkg
       - name: NuGet login (OIDC → temp API key)
-        uses: NuGet/login@v1
+        uses: NuGet/login@8d196754b4036150537f80ac539e15c2f1028841 # v1
         id: nuget-login
         with:
           user: ${{ secrets.NUGET_USER }}

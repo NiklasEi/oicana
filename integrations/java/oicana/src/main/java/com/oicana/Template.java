@@ -80,6 +80,9 @@ public class Template implements AutoCloseable {
     /**
      * Warnings produced by the most recent compilation.
      *
+     * <p>Prefer {@link CompiledDocument#warnings()}, since every compilation
+     * overwrites the warnings on the template.
+     *
      * @return the warnings, or an empty Optional if there were none
      */
     public Optional<String> warnings() {
@@ -438,26 +441,6 @@ public class Template implements AutoCloseable {
     public void setValidateInputs(boolean validate) {
         ensureNotClosed();
         OicanaNative.setValidateInputs(this.templateId, validate);
-    }
-
-    /**
-     * Configure automatic cache eviction after each compilation.
-     *
-     * @param maxAge maximum age threshold. Use -1 to disable eviction, 0 to clear all,
-     *               or a positive value to keep entries used within the last n evictions.
-     *               Default is 10.
-     */
-    public static void configureAutomaticCacheEviction(int maxAge) {
-        OicanaNative.configureAutomaticCacheEviction(maxAge);
-    }
-
-    /**
-     * Manually evict the cache with the given age threshold.
-     *
-     * @param maxAge the age threshold for cache eviction
-     */
-    public static void evictCache(int maxAge) {
-        OicanaNative.evictCache(maxAge);
     }
 
     /**

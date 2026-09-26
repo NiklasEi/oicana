@@ -5,7 +5,6 @@ using Oicana.Inputs;
 using Oicana.Manifest;
 using Oicana.Interop;
 using CompilationMode = Oicana.Config.CompilationMode;
-using CompilationOptions = Oicana.Config.CompilationOptions;
 using ExportFormat = Oicana.Config.ExportFormat;
 using PageRange = Oicana.Config.PageRange;
 
@@ -21,11 +20,27 @@ public class E2ETests
     }
 
     [Fact]
+    public void OmittingInputsMatchesPassingEmptyOnes()
+    {
+        using var template = new Template(_templateFile);
+
+        using var omitted = template.ExportSvg(mode: CompilationMode.Development);
+        using var explicitlyEmpty = template.ExportSvg(
+            new Dictionary<string, JsonNode>(),
+            new Dictionary<string, BlobInput>(),
+            CompilationMode.Development);
+
+        using var omittedReader = new StreamReader(omitted);
+        using var emptyReader = new StreamReader(explicitlyEmpty);
+        omittedReader.ReadToEnd().Should().Be(emptyReader.ReadToEnd());
+    }
+
+    [Fact]
     public void Development()
     {
         var template = new Template(_templateFile);
 
-        var document = template.Export(new Dictionary<string, JsonNode>(), new Dictionary<string, BlobInput>(), ExportFormat.Png(1.0f), new CompilationOptions(CompilationMode.Development));
+        var document = template.Export(exportFormat: ExportFormat.Png(1.0f), mode: CompilationMode.Development);
         using var fileStream = File.Create("e2e/development.png");
         document.CopyTo(fileStream);
     }
@@ -53,7 +68,7 @@ public class E2ETests
         {
             ["development-json"] = JsonSerializer.Deserialize<JsonNode>("{ \"name\": \"Input\", \"foo\": [41, \"testing\"] }")!
         };
-        var document = template.Export(jsonInputs, blobInputs, ExportFormat.Png(1.0f), new CompilationOptions(CompilationMode.Production));
+        var document = template.Export(jsonInputs, blobInputs, ExportFormat.Png(1.0f), CompilationMode.Production);
         using var fileStream = File.Create("e2e/production.png");
         document.CopyTo(fileStream);
     }
@@ -107,7 +122,7 @@ public class E2ETests
             ["both-json"] = jsonData
         };
 
-        var document = template.Export(jsonInputs, blobInputs, ExportFormat.Png(1.0f), new CompilationOptions(CompilationMode.Production));
+        var document = template.Export(jsonInputs, blobInputs, ExportFormat.Png(1.0f), CompilationMode.Production);
         using var fileStream = File.Create("e2e/all-inputs.png");
         document.CopyTo(fileStream);
     }
@@ -116,7 +131,7 @@ public class E2ETests
     public void GetsReadableErrors()
     {
         var template = new Template(_templateFile);
-        Action act = () => template.Export(new Dictionary<string, JsonNode>(), new Dictionary<string, BlobInput>(), ExportFormat.Png(1.0f), new CompilationOptions(CompilationMode.Production));
+        Action act = () => template.Export(exportFormat: ExportFormat.Png(1.0f), mode: CompilationMode.Production);
 
         act.Should()
             .Throw<OicanaException>()
@@ -208,10 +223,7 @@ public class E2ETests
     {
         var template = new Template(_templateFile);
 
-        var document = template.Compile(
-            new Dictionary<string, JsonNode>(),
-            new Dictionary<string, BlobInput>(),
-            new CompilationOptions(CompilationMode.Development));
+        var document = template.Compile(mode: CompilationMode.Development);
 
         template.Dispose();
 

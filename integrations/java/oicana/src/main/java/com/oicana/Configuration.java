@@ -21,6 +21,33 @@ public final class Configuration {
     }
 
     /**
+     * Configure automatic cache eviction after each compilation.
+     *
+     * @param maxAge maximum age threshold. Use 0 to clear all, or a positive value to keep
+     *               entries used within the last n evictions. Default is 10.
+     *               Call {@link #disableAutomaticCacheEviction()} to turn eviction off.
+     */
+    public static void configureAutomaticCacheEviction(int maxAge) {
+        OicanaNative.configureAutomaticCacheEviction(maxAge);
+    }
+
+    /**
+     * Turn automatic cache eviction off.
+     */
+    public static void disableAutomaticCacheEviction() {
+        OicanaNative.configureAutomaticCacheEviction(-1);
+    }
+
+    /**
+     * Manually evict the cache with the given age threshold.
+     *
+     * @param maxAge the age threshold for cache eviction
+     */
+    public static void evictCache(int maxAge) {
+        OicanaNative.evictCache(maxAge);
+    }
+
+    /**
      * Make fonts available to every template registered from now on.
      *
      * @param fonts raw content of the font files; data that holds no font is ignored

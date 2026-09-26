@@ -51,7 +51,7 @@ try {
     );
     file_put_contents('invoice.pdf', $pdf);
 } finally {
-    $template->cleanup();
+    $template->close();
 }
 ```
 

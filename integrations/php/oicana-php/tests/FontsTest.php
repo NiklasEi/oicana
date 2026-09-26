@@ -91,6 +91,6 @@ test('a template requiring a registered family compiles', function () {
         $svg = $template->export(exportFormat: ExportFormat::svg(), mode: CompilationMode::Development);
         expect($svg)->toContain('<svg');
     } finally {
-        $template->cleanup();
+        $template->close();
     }
 });

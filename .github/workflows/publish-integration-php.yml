@@ -76,7 +76,7 @@ jobs:
     if: ${{ github.event_name == 'push' || inputs.publish-native }}
     name: Build ${{ matrix.platform.os }}-${{ matrix.platform.arch }}-php${{ matrix.php }}-${{ matrix.ts }}
     runs-on: ${{ matrix.platform.runner }}
-    container: ${{ matrix.platform.os == 'linux' && format('php:{0}-{1}-bookworm', matrix.php, matrix.ts == 'zts' && 'zts' || 'cli') || '' }}
+    container: ${{ matrix.platform.os == 'linux' && matrix.image || '' }}
     defaults:
       run:
         shell: bash
@@ -127,6 +127,25 @@ jobs:
         ts:
           - nts
           - zts
+        include:
+          - php: '8.3'
+            ts: nts
+            image: php:8.3-cli-bookworm@sha256:4687aec76c4a895b68b91bcd5e48f1ba7a3dea120f6de50bba7e1a93af5372dd
+          - php: '8.3'
+            ts: zts
+            image: php:8.3-zts-bookworm@sha256:47c9712b903c1ab59eb26f60208ba7d0d1ff600ce3045062d373caa96189432e
+          - php: '8.4'
+            ts: nts
+            image: php:8.4-cli-bookworm@sha256:f1d32fb402fffba0b3dd8ba8c0aca474c9e9f04395fa846eedea77c503257dee
+          - php: '8.4'
+            ts: zts
+            image: php:8.4-zts-bookworm@sha256:bfa70f01d6c3dd06ebedfd69ad5b7fc1cb3b04da76b55e1440d773f8bccbd428
+          - php: '8.5'
+            ts: nts
+            image: php:8.5-cli-bookworm@sha256:d551e79d694fd91c4fdf34c4adcc52dd2042a064b881e25c319b2533ead0682c
+          - php: '8.5'
+            ts: zts
+            image: php:8.5-zts-bookworm@sha256:09642c119d9f27e6e1a754dfd92626f6ebc60dbde9d4f66efe29820cae83f5e0
 
     steps:
       - uses: actions/checkout@v6
@@ -136,7 +155,7 @@ jobs:
           apt-get update
           apt-get install -y --no-install-recommends libclang-dev
       - name: Setup Rust
-        uses: dtolnay/rust-toolchain@master
+        uses: dtolnay/rust-toolchain@02cb101ec7c40f2c49e1d9714d64511d8e1b74de # master
         with:
           toolchain: ${{ matrix.platform.rust }}
           targets: ${{ matrix.platform.target }}
@@ -154,7 +173,7 @@ jobs:
           done
       - name: Setup PHP
         if: matrix.platform.os != 'linux'
-        uses: shivammathur/setup-php@v2
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2
         with:
           php-version: ${{ matrix.php }}
           extensions: mbstring
@@ -292,7 +311,7 @@ jobs:
 
       - name: Create Release
         if: steps.check_release.outputs.EXISTS == 'false'
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@de2c0eb89ae2a093876385947365aca7b0e5f844 # v1
         with:
           tag_name: oicana_php-v${{ env.VERSION }}
           name: PHP Integration v${{ env.VERSION }}
@@ -339,7 +358,7 @@ jobs:
 
       - name: Upload binaries to existing release
         if: steps.check_release.outputs.EXISTS == 'true'
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@de2c0eb89ae2a093876385947365aca7b0e5f844 # v1
         with:
           tag_name: oicana_php-v${{ env.VERSION }}
           files: binaries/*

@@ -6,7 +6,7 @@
 3. Integrations
   * bump browser
     * wasm in integrations/browser/oicana_browser_wasm/Cargo.toml
-    * wrapper und wasm dep in integrations/browser/oicana-browser/package.json
+    * wrapper and wasm dep in integrations/browser/oicana-browser/package.json
   * bump C# integration in integrations/csharp/Oicana/Oicana.csproj and integrations/csharp/oicana_csharp/Cargo.toml
   * bump Node.Js integration versions 
     * in integrations/node/oicana-node-native/Cargo.toml and integrations/node/oicana-node-native/package.json
@@ -53,7 +53,7 @@ Run `dist init` to update the config and workflow.
 
 ## C#
 
-The github workflow `.github/workflows/publish_csharp.yml` can be manually triggered or by pushign a tag in the form of `oicana_csharp-v[0-9]+.[0-9]+.[0-9]+*`.
+The github workflow `.github/workflows/publish_csharp.yml` can be manually triggered or by pushing a tag in the form of `oicana_csharp-v[0-9]+.[0-9]+.[0-9]+*`.
 It will build the native libraries for Linux, MacOS and Windows. Then all native libraries are
 included in the C# package and bundled into a `.nupkg` which will be archived by the workflow.
 

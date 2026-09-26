@@ -8,6 +8,10 @@ extend-ignore-identifiers-re = [
 temlpates = "templates"
 dependnecies = "dependencies"
 importign = "importing"
+exportign = "exporting"
+pushign = "pushing"
+pieplines = "pipelines"
+iamges = "images"
 PNGs = "PNGs"
 
 [files]

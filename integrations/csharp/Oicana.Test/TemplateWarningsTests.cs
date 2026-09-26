@@ -4,7 +4,6 @@ using System.Text.Json.Nodes;
 using AwesomeAssertions;
 using Oicana.Inputs;
 using CompilationMode = Oicana.Config.CompilationMode;
-using CompilationOptions = Oicana.Config.CompilationOptions;
 using ExportFormat = Oicana.Config.ExportFormat;
 
 namespace Oicana.Test;
@@ -50,9 +49,7 @@ public class TemplateWarningsTests
         template.Warnings.Should().NotBeNull();
 
         using var document = template.ExportSvg(
-            new Dictionary<string, JsonNode>(),
-            new Dictionary<string, BlobInput>(),
-            new CompilationOptions(CompilationMode.Development));
+            mode: CompilationMode.Development);
 
         template.Warnings.Should().NotBeNull();
         template.Warnings.Should().Contain("NonexistentFontTemplate");
@@ -67,9 +64,7 @@ public class TemplateWarningsTests
         template.Warnings.Should().BeNull();
 
         using var document = template.ExportSvg(
-            new Dictionary<string, JsonNode>(),
-            new Dictionary<string, BlobInput>(),
-            new CompilationOptions(CompilationMode.Development));
+            mode: CompilationMode.Development);
 
         template.Warnings.Should().BeNull();
     }

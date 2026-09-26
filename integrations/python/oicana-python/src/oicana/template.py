@@ -157,7 +157,11 @@ class Template:
 
     @property
     def warnings(self) -> str | None:
-        """Warnings from the most recent compilation, or ``None`` if there were none."""
+        """Warnings from the most recent compilation, or ``None`` if there were none.
+
+        Prefer ``CompiledDocument.warnings``, since every compilation
+        overwrites the warnings on the template.
+        """
         return self._last_warnings
 
     def export(
@@ -419,8 +423,8 @@ class Template:
         """
         _set_validate_inputs(self._template_id, validate)
 
-    def cleanup(self) -> None:
-        """Clean up cached resources."""
+    def close(self) -> None:
+        """Release the cached template. The instance must not be used after."""
         remove_world(self._template_id)
 
     def __enter__(self) -> Template:
@@ -428,13 +432,13 @@ class Template:
         return self
 
     def __exit__(self, *args: object) -> None:
-        """Context manager exit with cleanup."""
-        self.cleanup()
+        """Context manager exit; releases the template."""
+        self.close()
 
     def __del__(self) -> None:
         """Destructor cleanup."""
         try:
-            self.cleanup()
+            self.close()
         except Exception:
             pass  # Best effort cleanup
 

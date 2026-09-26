@@ -643,6 +643,9 @@ export class Template implements Disposable {
   /**
    * Warnings produced by the most recent compilation (constructor warm-up, or a
    * `compile()` / `export()` call), or `undefined` if there were none.
+   *
+   * Prefer {@link CompiledDocument.warnings}, since every compilation
+   * overwrites the warnings on the template.
    */
   public warnings(): string | undefined {
     return this.lastWarnings;
@@ -651,7 +654,7 @@ export class Template implements Disposable {
   /**
    * The template's manifest.
    *
-   * The Typst package section und its Oicana
+   * The Typst package section and its Oicana
    * configuration with the input definitions.
    */
   public manifest(): TemplateManifest {

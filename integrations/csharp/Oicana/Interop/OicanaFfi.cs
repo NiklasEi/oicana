@@ -22,13 +22,13 @@ internal static class OicanaFfi
     /// <param name="templateFile">The packed Oicana template to compile.</param>
     /// <param name="jsonInputs">Json inputs for the compilation (key -> JsonNode).</param>
     /// <param name="blobInputs">Blob inputs for the compilation (key -> BlobInput).</param>
-    /// <param name="compilationOptions">Options for the template compilation.</param>
+    /// <param name="compilationMode">Mode to compile the template in.</param>
     /// <param name="exportFormat">Format configuration for the document export.</param>
     /// <param name="pages">0-based, inclusive page range to export, or <c>null</c> for the whole document.</param>
     /// <param name="limits">Limits for reading the packed template zip, or <c>null</c> to use the defaults.</param>
     /// <exception cref="OicanaException">If the template compilation fails.</exception>
     /// <returns>The exported document and any compilation warnings.</returns>
-    public static ExportOnceResult ExportTemplateOnce(byte[] templateFile, IDictionary<string, JsonNode> jsonInputs, IDictionary<string, BlobInput> blobInputs, Oicana.Config.CompilationOptions compilationOptions, Oicana.Config.ExportFormat exportFormat, Oicana.Config.PageRange? pages = null, Oicana.Config.ZipLimits? limits = null)
+    public static ExportOnceResult ExportTemplateOnce(byte[] templateFile, IDictionary<string, JsonNode> jsonInputs, IDictionary<string, BlobInput> blobInputs, Oicana.Config.CompilationMode compilationMode, Oicana.Config.ExportFormat exportFormat, Oicana.Config.PageRange? pages = null, Oicana.Config.ZipLimits? limits = null)
     {
         GCHandle fileHandle = GCHandle.Alloc(templateFile, GCHandleType.Pinned);
         try
@@ -39,7 +39,7 @@ internal static class OicanaFfi
             PreparedInputs preparedInputs = PrepareInputs(jsonInputs, blobInputs);
             try
             {
-                var buffers = OicanaFfiInternal.unsafe_export_template_once(fileBuffer, preparedInputs.JsonInputs, preparedInputs.BlobInputs, ConvertCompileOptions(compilationOptions), ConvertExportFormat(exportFormat), ConvertPageRange(pages), ConvertZipLimits(limits));
+                var buffers = OicanaFfiInternal.unsafe_export_template_once(fileBuffer, preparedInputs.JsonInputs, preparedInputs.BlobInputs, ConvertCompilationOptions(compilationMode), ConvertExportFormat(exportFormat), ConvertPageRange(pages), ConvertZipLimits(limits));
                 var warnings = GetStringFromBuffer(buffers.warnings);
                 var document = HandleBuffer(buffers.document);
                 return new ExportOnceResult(document, warnings.Length == 0 ? null : warnings);
@@ -61,15 +61,15 @@ internal static class OicanaFfi
     /// <param name="templateId">Identifier of the template for the internal cache.</param>
     /// <param name="jsonInputs">Json inputs for the compilation (key -> JsonNode).</param>
     /// <param name="blobInputs">Blob inputs for the compilation (key -> BlobInput).</param>
-    /// <param name="compilationOptions">Options for the template compilation.</param>
+    /// <param name="compilationMode">Mode to compile the template in.</param>
     /// <exception cref="OicanaException">If the template compilation fails.</exception>
     /// <returns>Stream containing the compiled template exported as the given <see cref="ExportTarget"/>.</returns>
-    public static String CompileTemplate(string templateId, IDictionary<string, JsonNode> jsonInputs, IDictionary<string, BlobInput> blobInputs, Oicana.Config.CompilationOptions compilationOptions)
+    public static String CompileTemplate(string templateId, IDictionary<string, JsonNode> jsonInputs, IDictionary<string, BlobInput> blobInputs, Oicana.Config.CompilationMode compilationMode)
     {
         PreparedInputs preparedInputs = PrepareInputs(jsonInputs, blobInputs);
         try
         {
-            var buffer = OicanaFfiInternal.unsafe_compile_template(templateId, preparedInputs.JsonInputs, preparedInputs.BlobInputs, ConvertCompileOptions(compilationOptions));
+            var buffer = OicanaFfiInternal.unsafe_compile_template(templateId, preparedInputs.JsonInputs, preparedInputs.BlobInputs, ConvertCompilationOptions(compilationMode));
             return HandleStringBuffer(buffer);
         }
         finally
@@ -85,11 +85,11 @@ internal static class OicanaFfi
     /// <param name="templateFile">The packed Oicana template to compile.</param>
     /// <param name="jsonInputs">Json inputs for the compilation (key -> JsonNode).</param>
     /// <param name="blobInputs">Blob inputs for the compilation (key -> BlobInput).</param>
-    /// <param name="compilationOptions">Options for the template compilation.</param>
+    /// <param name="compilationMode">Mode to compile the template in.</param>
     /// <param name="limits">Limits for reading the packed template zip, or <c>null</c> for the defaults.</param>
     /// <exception cref="OicanaException">If the template compilation fails.</exception>
     /// <returns>Stream containing the compiled template exported as the given <see cref="ExportTarget"/>.</returns>
-    public static Stream RegisterTemplate(string templateId, byte[] templateFile, IDictionary<string, JsonNode> jsonInputs, IDictionary<string, BlobInput> blobInputs, Oicana.Config.CompilationOptions compilationOptions, Oicana.Config.ZipLimits? limits = null)
+    public static Stream RegisterTemplate(string templateId, byte[] templateFile, IDictionary<string, JsonNode> jsonInputs, IDictionary<string, BlobInput> blobInputs, Oicana.Config.CompilationMode compilationMode, Oicana.Config.ZipLimits? limits = null)
     {
         GCHandle fileHandle = GCHandle.Alloc(templateFile, GCHandleType.Pinned);
         try
@@ -100,7 +100,7 @@ internal static class OicanaFfi
             PreparedInputs preparedInputs = PrepareInputs(jsonInputs, blobInputs);
             try
             {
-                var buffer = OicanaFfiInternal.unsafe_register_template(templateId, fileBuffer, preparedInputs.JsonInputs, preparedInputs.BlobInputs, ConvertCompileOptions(compilationOptions), ConvertZipLimits(limits));
+                var buffer = OicanaFfiInternal.unsafe_register_template(templateId, fileBuffer, preparedInputs.JsonInputs, preparedInputs.BlobInputs, ConvertCompilationOptions(compilationMode), ConvertZipLimits(limits));
                 return HandleBuffer(buffer);
             }
             finally
@@ -165,15 +165,16 @@ internal static class OicanaFfi
     /// Default: 10
     /// </summary>
     /// <param name="maxAge">
-    /// Maximum age threshold, or -1 to disable:
-    ///   - `-1` - Disables cache eviction (cache never cleared)
+    /// Maximum age threshold, or <c>null</c> to disable:
+    ///   - `null` - Disables cache eviction (cache never cleared)
     ///   - `0` - Clears all cache after every compilation
     ///   - `1` - Keeps only entries used since the last eviction
     ///   - `n` - Keeps entries used within the last n evictions
     /// </param>
-    public static void ConfigureAutomaticCacheEviction(long maxAge)
+    public static void ConfigureAutomaticCacheEviction(long? maxAge)
     {
-        OicanaFfiInternal.configure_automatic_cache_eviction(maxAge);
+        // The C ABI carries a bare long, so absence travels as a negative sentinel.
+        OicanaFfiInternal.configure_automatic_cache_eviction(maxAge ?? -1);
     }
 
     /// <summary>
@@ -320,12 +321,12 @@ internal static class OicanaFfi
     /// Configure Oicana.
     /// </summary>
     /// <param name="coloring">Coloring for Oicana diagnostics.</param>
-    public static void Configure(DiagnosticsColoring coloring)
+    public static void Configure(Oicana.Config.DiagnosticColor coloring)
     {
         DiagnosticColor color;
         switch (coloring)
         {
-            case DiagnosticsColoring.Ansi:
+            case Oicana.Config.DiagnosticColor.Ansi:
                 {
                     color = DiagnosticColor.Ansi;
                 }
@@ -389,12 +390,12 @@ internal static class OicanaFfi
         throw new ArgumentException($"The compilation mode {nameof(compilationMode)} is not supported.");
     }
 
-    internal static Oicana.Interop.CompilationOptions ConvertCompileOptions(
-        Oicana.Config.CompilationOptions compilationOptions)
+    internal static Oicana.Interop.CompilationOptions ConvertCompilationOptions(
+        Oicana.Config.CompilationMode mode)
     {
         return new CompilationOptions()
         {
-            mode = ConvertCompilationMode(compilationOptions.CompilationMode),
+            mode = ConvertCompilationMode(mode),
         };
     }
 

@@ -6,6 +6,8 @@
 - `Template.inputs` is now `Template.manifest` in every integration and returns a typed manifest
   - the Typst package section and the whole Oicana configuration, including the input definitions
 - JSON inputs are also validated against their schemas when a template is registered and when calling `exportOnce`
+- compilations now fail for inputs the template does not declare, for inputs supplied as the wrong kind (json instead of blob or the other way around), and for a key supplied as both a json and a blob input
+- For `tagged = false` or page ranges that don't cover a complete document, PDF exports will fail for standards that require tags: `ua-1`, `a-1a`, `a-2a`, `a-3a`
 
 ### CLI
 - `pack` no longer writes directory entries for directories that end up with no packed content, for example a directory whose files are all excluded
@@ -18,6 +20,8 @@
 - All jars got valid module names
 - Detect link error and point to musl as likely explanation
 - The Linux libraries are now built against glibc 2.28
+- `configureAutomaticCacheEviction` and `evictCache` moved from `Template` to `Configuration`
+  - Call `Configuration.disableAutomaticCacheEviction()` to turn automatic eviction off
 
 ### Node.js
 - `engines` declares the actual minimum of `^20.19.0 || >=22.12.0`; the package is ESM-only, so CommonJS callers such as NestJS need a Node version with `require(esm)`
@@ -33,14 +37,28 @@
 - The Linux libraries are now built against glibc 2.28
 - `ITemplate` and `IOicanaService` extend `IDisposable` so callers can release their resources
 - `OicanaService.RegisterTemplate` now replaces an already registered id and disposes the old template
+- `CompilationOptions` is gone; the export and compile methods take a `CompilationMode` directly, defaulting to `Production`
+- `jsonInputs`, `blobInputs` and `exportFormat` are optional on every export and compile method, and on the `Template` constructor
+- `Configuration.DiagnosticsColoring(DiagnosticsColoring)` is now `Configuration.ConfigureDiagnosticColor(DiagnosticColor)`, and `DiagnosticColor` moved from `Oicana.Interop` to `Oicana.Config`
+- `Template.EvictCache` moved to `Configuration.EvictCache`
+- `Configuration.ConfigureAutomaticCacheEviction` takes a `long?`
 
 ### PHP
 - The installer detects musl and fails with an explanation
+- `Template::cleanup()` is now `Template::close()`, matching `CompiledDocument::close()`
+- `configureAutomaticCacheEviction` and `evictCache` moved from `Template` to `Configuration`
+
+### Python
+- `Template.cleanup()` is now `Template.close()`, matching `CompiledDocument.close()`
+
+### Typst package
+- Better error message for input definition without a `type`
 
 ### Rust
 - `Template::init_with_limits` and `Template::init_with_fonts_and_limits` take custom `ZipLimits`
 - Native Template constructors are now `Template::open` and `Template::open_with_fonts`
 - `OicanaWorld::new` and `new_with_fonts` no longer take inputs; supply them through `update_inputs`
+- The input types moved to the root of `oicana::input`
 
 ## v0.8.0
 
@@ -120,7 +138,7 @@
 
 ### PHP
 - Performance improvements
-- Expose exportOnce for exportign a template without caching it or the document
+- Expose exportOnce for exporting a template without caching it or the document
 - Allow setting the limits when reading a packed template
 - Expose setter for the diagnostic coloring
 
@@ -133,22 +151,22 @@
 ### Java
 - Fixed JSON encoding
 - Catch panics in `configureAutomaticCacheEviction` and `evictCache`
-- Expose exportOnce for exportign a template without caching it or the document
+- Expose exportOnce for exporting a template without caching it or the document
 - Allow setting the limits when reading a packed template
 - Expose setter for the diagnostic coloring
 
 ### Node.js
 - Method for async template registration
 - Complete methods on `Template` with `inputs`, `source`, and `file`
-- Expose exportOnce for exportign a template without caching it or the document
+- Expose exportOnce for exporting a template without caching it or the document
 - Allow setting the limits when reading a packed template
 
 ### Browser
-- Expose exportOnce for exportign a template without caching it or the document
+- Expose exportOnce for exporting a template without caching it or the document
 - Allow setting the limits when reading a packed template
 
 ### Python
-- Expose exportOnce for exportign a template without caching it or the document
+- Expose exportOnce for exporting a template without caching it or the document
 - Allow setting the limits when reading a packed template
 - Expose setter for the diagnostic coloring
 
