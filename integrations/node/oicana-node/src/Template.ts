@@ -83,7 +83,7 @@ export class Template implements Disposable {
   /**
    * Register a template with the given template file and inputs
    * @param template - the packed Oicana template file
-   * @param jsonInputs  -for the initial compilation to warm up the cache (defaults to empty map)
+   * @param jsonInputs - for the initial compilation to warm up the cache (defaults to empty map)
    * @param blobInputs - for the initial compilation to warm up the cache (defaults to empty map)
    * @param compilationOptions - for the initial compilation to warm up the cache (defaults to Development)
    * @param limits - for reading the template zip (defaults apply when omitted)
