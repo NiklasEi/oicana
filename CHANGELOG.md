@@ -36,9 +36,13 @@
 - `BlobWithMetadata` is now `BlobInput`, its fields `bytes` and `meta` are now `data` and `metadata`
 - Concurrent `initialize` calls share one download of the WASM module
 - The `Template` constructor that takes `ZipLimits` is now part of the type declarations
+- All export methods, `ExportOnceResult.document` and `Template.file` return `Uint8Array<ArrayBuffer>`
+- Perf: Blob input data is copied into WASM in one go
 
 ### C#
 - `BlobInput.Meta` is now `BlobInput.Metadata`
+- Fixed handling of JSON inputs holding plain strings
+- `PageRange.Single` and `PageRange.Of` now reject negative page indices
 - Support `linux-arm64`
 - The Linux libraries are now built against glibc 2.28
 - `ITemplate` and `IOicanaService` extend `IDisposable` so callers can release their resources
