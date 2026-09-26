@@ -16,7 +16,7 @@ public final class Configuration {
      *
      * @param color the color mode to use
      */
-    public static void setDiagnosticColor(DiagnosticColor color) {
+    public static void configureDiagnosticColor(DiagnosticColor color) {
         OicanaNative.configureDiagnosticColor(color == DiagnosticColor.ANSI);
     }
 

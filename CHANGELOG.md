@@ -24,6 +24,8 @@
 - The Linux libraries are now built against glibc 2.28
 - `configureAutomaticCacheEviction` and `evictCache` moved from `Template` to `Configuration`
   - Call `Configuration.disableAutomaticCacheEviction()` to turn automatic eviction off
+- `Configuration.setDiagnosticColor` is now `Configuration.configureDiagnosticColor`
+- `ExportOnceResult.warnings()` returns an `Optional<String>` instead of a nullable `String`
 
 ### Node.js
 - `engines` declares the actual minimum of `^20.19.0 || >=22.12.0`; the package is ESM-only, so CommonJS callers need a Node version with `require(esm)`
@@ -53,6 +55,7 @@
 - The installer downloads through Composer, honoring Composer's proxy and certificate settings
 - `Template::cleanup()` is now `Template::close()`, matching `CompiledDocument::close()`
 - `configureAutomaticCacheEviction` and `evictCache` moved from `Template` to `Configuration`
+- `Configuration::setDiagnosticColor` is now `Configuration::configureDiagnosticColor`
 
 ### Python
 - `Template.cleanup()` is now `Template.close()`, matching `CompiledDocument.close()`

@@ -16,7 +16,7 @@ final class Configuration
     /**
      * Configure the coloring of compilation diagnostics like warnings and errors.
      */
-    public static function setDiagnosticColor(DiagnosticColor $color): void
+    public static function configureDiagnosticColor(DiagnosticColor $color): void
     {
         \OicanaInternal\configure_diagnostic_color($color === DiagnosticColor::Ansi);
     }
