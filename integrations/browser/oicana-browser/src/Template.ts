@@ -115,7 +115,10 @@ export class Template implements Disposable {
       pages,
       limits,
     );
-    return { document: result.data, warnings: result.warnings };
+    return {
+      document: result.data as Uint8Array<ArrayBuffer>,
+      warnings: result.warnings,
+    };
   }
 
   /**
@@ -196,7 +199,7 @@ export class Template implements Disposable {
     exportFormat?: ExportFormat,
     compilationOptions?: CompilationMode,
     pages?: PageRange,
-  ): Uint8Array {
+  ): Uint8Array<ArrayBuffer> {
     return this.exportWith(
       exportFormat ?? Pdf,
       jsonInputs,
@@ -220,7 +223,7 @@ export class Template implements Disposable {
     blobInputs?: Map<string, BlobInput>,
     compilationOptions?: CompilationMode,
     pages?: PageRange,
-  ): Uint8Array {
+  ): Uint8Array<ArrayBuffer> {
     return this.exportWith(
       Pdf,
       jsonInputs,
@@ -246,7 +249,7 @@ export class Template implements Disposable {
     compilationOptions?: CompilationMode,
     pixelsPerPt = 1.0,
     pages?: PageRange,
-  ): Uint8Array {
+  ): Uint8Array<ArrayBuffer> {
     return this.exportWith(
       Png(pixelsPerPt),
       jsonInputs,
@@ -269,7 +272,7 @@ export class Template implements Disposable {
     blobInputs?: Map<string, BlobInput>,
     compilationOptions?: CompilationMode,
     pages?: PageRange,
-  ): Uint8Array {
+  ): Uint8Array<ArrayBuffer> {
     return this.exportWith(
       Svg,
       jsonInputs,
@@ -285,14 +288,18 @@ export class Template implements Disposable {
     blobInputs?: Map<string, BlobInput>,
     compilationOptions?: CompilationMode,
     pages?: PageRange,
-  ): Uint8Array {
+  ): Uint8Array<ArrayBuffer> {
     const documentId = this.compileToDocumentId(
       jsonInputs,
       blobInputs,
       compilationOptions,
     );
     try {
-      return export_document(documentId, format, pages);
+      return export_document(
+        documentId,
+        format,
+        pages,
+      ) as Uint8Array<ArrayBuffer>;
     } finally {
       remove_document(documentId);
     }
@@ -365,8 +372,8 @@ export class Template implements Disposable {
   /**
    * Get the raw file from the template
    */
-  public file(path: string): Uint8Array {
-    return get_file(this.template, path);
+  public file(path: string): Uint8Array<ArrayBuffer> {
+    return get_file(this.template, path) as Uint8Array<ArrayBuffer>;
   }
 
   /**
