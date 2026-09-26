@@ -21,7 +21,7 @@ use typst_layout::PagedDocument;
 use uuid::Uuid;
 
 pub use oicana_export::pages::PageRange;
-use oicana_export::pdf::export_pdf;
+use oicana_export::pdf::{export_pdf, PdfExportError};
 use oicana_export::png::{export_png, PngExportError};
 use oicana_export::svg::{export_svg, SvgExportError};
 use oicana_export::PdfStandard;
@@ -176,7 +176,7 @@ pub enum FfiError {
     ExportFormatParse(String),
 
     /// The `page_range` JSON could not be parsed into a [`PageRange`].
-    #[error("Failed to parse page range: {0}")]
+    #[error("Invalid page range: {0}")]
     PageRangeParse(String),
 }
 
@@ -184,7 +184,7 @@ impl From<PngExportError> for FfiError {
     fn from(error: PngExportError) -> Self {
         FfiError::Export {
             format: "PNG",
-            error: format!("{error:?}"),
+            error: error.to_string(),
         }
     }
 }
@@ -193,7 +193,7 @@ impl From<SvgExportError> for FfiError {
     fn from(error: SvgExportError) -> Self {
         FfiError::Export {
             format: "SVG",
-            error: format!("{error:?}"),
+            error: error.to_string(),
         }
     }
 }
@@ -413,9 +413,11 @@ pub fn parse_page_range(json: Option<&str>) -> Result<Option<PageRange>, FfiErro
     let Some(json) = json else {
         return Ok(None);
     };
-    serde_json::from_str(json)
-        .map(Some)
-        .map_err(|error| FfiError::PageRangeParse(error.to_string()))
+    serde_json::from_str(json).map(Some).map_err(|error| {
+        FfiError::PageRangeParse(format!(
+            "{json}. Pages are 0-based indices and cannot be negative ({error})"
+        ))
+    })
 }
 
 /// Register a template under the given identifier.
@@ -849,10 +851,10 @@ fn prepare_inputs(
 }
 
 /// Map the bare `String` error from [`export_pdf`] to an [`FfiError`].
-fn pdf_export_error(error: String) -> FfiError {
+fn pdf_export_error(error: PdfExportError) -> FfiError {
     FfiError::Export {
         format: "PDF",
-        error,
+        error: error.to_string(),
     }
 }
 
@@ -952,6 +954,12 @@ mod tests {
             parse_page_range(Some("{}")).unwrap(),
             Some(PageRange::default())
         );
+    }
+
+    #[test]
+    fn explains_a_negative_page_index() {
+        let err = parse_page_range(Some(r#"{"start":-1}"#)).unwrap_err();
+        assert!(err.to_string().contains("cannot be negative"));
     }
 
     #[test]
