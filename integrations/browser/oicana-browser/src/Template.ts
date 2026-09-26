@@ -61,6 +61,14 @@ export class Template implements Disposable {
     blobInputs?: Map<string, BlobInput>,
     compilationOptions?: CompilationMode,
     limits?: ZipLimits,
+  );
+
+  public constructor(
+    template: Uint8Array,
+    jsonInputs?: Map<string, string>,
+    blobInputs?: Map<string, BlobInput>,
+    compilationOptions?: CompilationMode,
+    limits?: ZipLimits,
   ) {
     this.template = crypto.randomUUID();
     const documentId = register_template(
