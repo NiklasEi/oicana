@@ -2,7 +2,6 @@
 
 use oicana::files::packed::PackedTemplate;
 use oicana::input::InputDefinition;
-use oicana::template::PdfStandard;
 use oicana::Template;
 use std::io::{Cursor, Write};
 use zip::write::SimpleFileOptions;
@@ -59,7 +58,7 @@ fn exposes_the_package_section_and_the_oicana_config() {
     assert_eq!(manifest.package.version.to_string(), "0.1.0");
     assert_eq!(manifest.tool.oicana.manifest_version, 1);
     assert!(manifest.tool.oicana.validate_json_inputs_by_default);
-    assert_eq!(manifest.pdf_standards(), [PdfStandard::A_3b]);
+    assert!(manifest.pdf_standards().is_empty());
     assert!(manifest.pdf_tagged());
     assert!(manifest.required_font_families().is_empty());
 

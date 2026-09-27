@@ -50,7 +50,7 @@ class E2eTest {
             assertEquals("0.1.0", manifest.packageInfo().version());
             assertEquals(1, manifest.oicana().manifestVersion());
             assertTrue(manifest.oicana().validateJsonInputsByDefault());
-            assertEquals(java.util.List.of("a-3b"), manifest.oicana().export().pdf().standards());
+            assertEquals(java.util.List.of(), manifest.oicana().export().pdf().standards());
             assertEquals(java.util.List.of(), manifest.oicana().fonts().require());
 
             InputDefinition json = manifest.oicana().inputs().stream()

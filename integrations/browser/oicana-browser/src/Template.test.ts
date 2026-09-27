@@ -119,7 +119,7 @@ describe('e2e test template', () => {
     expect(manifest.package.version).toBe('0.1.0');
     expect(manifest.oicana.manifestVersion).toBe(1);
     expect(manifest.oicana.validateJsonInputsByDefault).toBe(true);
-    expect(manifest.oicana.export.pdf.standards).toEqual(['a-3b']);
+    expect(manifest.oicana.export.pdf.standards).toEqual([]);
     expect(manifest.oicana.fonts.require).toEqual([]);
 
     const keys = manifest.oicana.inputs.map((input) => input.key);

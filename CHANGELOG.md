@@ -7,9 +7,12 @@
   - the Typst package section and the whole Oicana configuration, including the input definitions
 - JSON inputs are also validated against their schemas when a template is registered and when calling `exportOnce`
 - compilations now fail for inputs the template does not declare, for inputs supplied as the wrong kind (json instead of blob or the other way around), and for a key supplied as both a json and a blob input
+- PDF exports no longer default to PDF/A-3b. Without `standards` in `[tool.oicana.export.pdf]`, templates export a plain PDF
+  - Add `standards = ["a-3b"]` to keep the previous behavior
 - For `tagged = false` or page ranges that don't cover a complete document, PDF exports will fail for standards that require tags: `ua-1`, `a-1a`, `a-2a`, `a-3a`
 
 ### CLI
+- `new` writes `standards = ["a-3b"]` into the manifest of the generated template
 - `pack` no longer writes directory entries for directories that end up with no packed content, for example a directory whose files are all excluded
 - `pack` excludes `.git`, `.DS_Store` and `*.zip` by default
 - `pack` fails when a file cannot be read

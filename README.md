@@ -115,7 +115,7 @@ tagged = true
 
 Standards combine as long as the combination is producible: at most one base version, at most one PDF/A standard, and at most one PDF/UA standard, all sharing overlapping PDF versions. `oicana validate` rejects the rest.
 
-The defaults are `standards = ["a-3b"]` and `tagged = true`. Tagging is skipped automatically when a page range omits pages, because Typst cannot tag a partial document.
+The defaults are a plain PDF without a standard and `tagged = true`. Tagging is skipped automatically when a page range omits pages, because Typst cannot tag a partial document.
 
 On top of comparing snapshots, `oicana test` exports every test document under the configured standards, so a template that cannot be produced in its declared standard fails the suite. Set `pdf = false` on a single test or a whole collection to skip the export.
 

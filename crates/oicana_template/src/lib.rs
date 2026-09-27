@@ -219,9 +219,7 @@ pub struct PdfExportConfig {
     /// PDF/A standards are geared towards archival use and maximum compatibility
     /// with current and future PDF tooling. PDF/UA standards ensure universal
     /// accessibility.
-    ///
-    /// Defaults to `["a-3b"]` (PDF/A-3b) if not specified.
-    #[serde(default = "default_pdf_standards")]
+    #[serde(default)]
     pub standards: Vec<PdfStandard>,
     /// Whether to produce a tagged (accessible) PDF.
     ///
@@ -236,15 +234,11 @@ pub struct PdfExportConfig {
 impl Default for PdfExportConfig {
     fn default() -> Self {
         Self {
-            standards: default_pdf_standards(),
+            standards: Vec::new(),
             tagged: default_true(),
             unknown_fields: UnknownFields::new(),
         }
     }
-}
-
-fn default_pdf_standards() -> Vec<PdfStandard> {
-    vec![PdfStandard::A_3b]
 }
 
 #[cfg(test)]
@@ -421,7 +415,7 @@ mod tests {
     }
 
     #[test]
-    fn defaults_pdf_standards_to_a3b() {
+    fn defaults_pdf_standards_to_none() {
         let template = tempdir().unwrap();
         {
             let path = template.path().join("typst.toml");
@@ -444,7 +438,7 @@ mod tests {
         let result = validate_native_template(template.path());
         let config = result.unwrap().tool.oicana;
 
-        assert_eq!(config.export.pdf.standards, vec![PdfStandard::A_3b]);
+        assert!(config.export.pdf.standards.is_empty());
     }
 
     #[test]

@@ -149,7 +149,7 @@ public class E2ETests
         manifest.Package.Version.Should().Be("0.1.0");
         manifest.Oicana.ManifestVersion.Should().Be(1);
         manifest.Oicana.ValidateJsonInputsByDefault.Should().BeTrue();
-        manifest.Oicana.Export.Pdf.Standards.Should().Equal("a-3b");
+        manifest.Oicana.Export.Pdf.Standards.Should().BeEmpty();
         manifest.Oicana.Fonts.Require.Should().BeEmpty();
 
         var inputKeys = manifest.Oicana.Inputs.Select(input => input.Key).ToList();

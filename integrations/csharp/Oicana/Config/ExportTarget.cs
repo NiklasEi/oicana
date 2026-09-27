@@ -8,7 +8,7 @@ public enum ExportTarget
     /// <summary>
     /// Export to a PDF file.
     ///
-    /// The exported standard is PDF/A-3b by default
+    /// The PDF standards are configured in the template manifest
     /// </summary>
     Pdf = 0,
     /// <summary>
