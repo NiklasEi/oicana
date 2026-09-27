@@ -15,6 +15,7 @@
 - `pack` fails when a file cannot be read
 - `pack` now finds `import` and `include` of packages at any nesting depth
 - `pack` leaves out the files a packaged dependency excludes in its own `typst.toml`
+- `pack` runs important validation and refuses to write an archive that cannot work for any inputs: a missing or excluded entrypoint, a missing, excluded or invalid schema of a validated JSON input, or invalid PDF standards
 - `compile` and `watch` fail for blob metadata (`-m`) without a matching blob (`-b`) and for badly formatted key-value pairs
 - `validate` rejects `tagged = false` combined with a standard that requires tags (`ua-1`, `a-1a`, `a-2a`, `a-3a`)
 

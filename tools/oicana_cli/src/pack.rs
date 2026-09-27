@@ -1,3 +1,4 @@
+use crate::checks::{check_entrypoint, check_pdf_export, check_schemas, SchemaSelection};
 use crate::target::TargetArgs;
 use anyhow::Context;
 use clap::Args;
@@ -50,6 +51,27 @@ pub fn pack(args: PackArgs) -> anyhow::Result<()> {
     for template in templates {
         info!("Packing template '{}'.", template.manifest.package.name);
         template.manifest.validate_at(&template.path)?;
+
+        let mut errors: Vec<String> = check_entrypoint(&template.path, &template.manifest)
+            .err()
+            .into_iter()
+            .collect();
+        errors.extend(
+            check_schemas(
+                &template.path,
+                &template.manifest,
+                SchemaSelection::Validated,
+            )
+            .errors,
+        );
+        errors.extend(check_pdf_export(&template.manifest));
+        if !errors.is_empty() {
+            anyhow::bail!(
+                "Template '{}' has fatal issues:\n  - {}",
+                template.manifest.package.name,
+                errors.join("\n  - ")
+            );
+        }
 
         let files = NativeTemplate::new(&template.path, packages.clone());
 
