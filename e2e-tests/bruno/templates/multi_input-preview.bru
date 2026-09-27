@@ -19,24 +19,19 @@ script:pre-request {
   const inputOne = JSON.parse(fs.readFileSync(path.join(fixtureDir, 'multi-input-one.json'), 'utf8'));
   const inputTwo = JSON.parse(fs.readFileSync(path.join(fixtureDir, 'multi-input-two.json'), 'utf8'));
 
-  // Set the request body
+  // Set the request body; input "three" falls back to its default value
   req.setBody({
     jsonInputs: [
       {
-        key: "json_one",
+        key: "one",
         value: inputOne
       },
       {
-        key: "json_two",
+        key: "two",
         value: inputTwo
       }
     ],
-    blobInputs: [
-      {
-        key: "logo",
-        blobId: "00000000-0000-0000-0000-000000000000"
-      }
-    ]
+    blobInputs: []
   });
 }
 

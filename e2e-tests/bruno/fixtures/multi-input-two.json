@@ -1,3 +1,11 @@
 {
-  "subtitle": "Second Input"
+  "description": "Second input:",
+  "rows": [
+    {
+      "name": "Bob",
+      "one": "C",
+      "two": "B",
+      "three": "no show"
+    }
+  ]
 }
