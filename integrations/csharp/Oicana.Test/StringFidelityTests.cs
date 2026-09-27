@@ -53,7 +53,7 @@ public class StringFidelityTests
             "the source snippet shows the raw literal with double backslashes");
         message.Should().NotContain("Failed to read error message",
             "the diagnostic must not be replaced by the fallback message");
-        message.Should().StartWith("Compilation failed:");
+        message.Should().StartWith("Warm-up compilation failed:");
     }
 
     [Fact]

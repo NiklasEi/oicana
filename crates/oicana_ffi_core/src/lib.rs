@@ -127,6 +127,10 @@ pub enum FfiError {
     #[error("Compilation failed: {0}")]
     Compilation(String),
 
+    /// The warm-up compilation while registering a template failed.
+    #[error("Warm-up compilation failed: {0}")]
+    WarmUp(String),
+
     /// Encoding the compiled document to the requested format failed.
     #[error("Failed to encode {format}: {error}")]
     Export {
@@ -454,7 +458,7 @@ pub fn register_template(
 
     let document = world
         .compile()
-        .map_err(|error| FfiError::Compilation(error.to_string()))?;
+        .map_err(|error| FfiError::WarmUp(error.to_string()))?;
 
     let pdf_standards = world.manifest().pdf_standards().to_vec();
     let pdf_tagged = world.manifest().pdf_tagged();
@@ -1439,6 +1443,24 @@ mod tests {
             writer.write_all(content.as_bytes()).unwrap();
         }
         writer.finish().unwrap().into_inner()
+    }
+
+    #[test]
+    fn a_failing_warm_up_is_named_in_the_error() {
+        let files = minimal_template_zip("#panic(\"broken\")");
+
+        let error = register_template(
+            &format!("failing-warm-up-{}", Uuid::new_v4()),
+            &files,
+            HashMap::new(),
+            HashMap::new(),
+            CompilationMode::Development,
+            None,
+        )
+        .expect_err("a template failing its warm-up must not register");
+
+        assert!(matches!(error, FfiError::WarmUp(_)), "got: {error}");
+        assert!(error.to_string().contains("broken"), "got: {error}");
     }
 
     #[test]
