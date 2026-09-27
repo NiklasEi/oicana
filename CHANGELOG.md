@@ -72,6 +72,7 @@
 
 ### Typst package
 - Better error message for input definition without a `type`
+- The error for a missing required input no longer suggests a development value in production mode
 
 ### Rust
 - `Template::init_with_limits` and `Template::init_with_fonts_and_limits` take custom `ZipLimits`
