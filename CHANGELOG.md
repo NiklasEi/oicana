@@ -18,6 +18,7 @@
 - `pack` runs important validation and refuses to write an archive that cannot work for any inputs: a missing or excluded entrypoint, a missing, excluded or invalid schema of a validated JSON input, or invalid PDF standards
 - `compile` and `watch` fail for blob metadata (`-m`) without a matching blob (`-b`) and for badly formatted key-value pairs
 - `validate` rejects `tagged = false` combined with a standard that requires tags (`ua-1`, `a-1a`, `a-2a`, `a-3a`)
+- `validate` warns about unknown keys in `[tool.oicana]`
 
 ### Java
 - A JVM that has not granted native access now fails with an `OicanaException` naming the required `--enable-native-access` flag
@@ -82,6 +83,8 @@
 - `TemplateInputs::new()` now uses production mode by default
 - `export_pdf` returns `PdfExportError`
 - `oicana::typst` re-exports `VirtualPath`, `RootedPath`, `VirtualRoot` and `PathError` to build the `FileId` that `Template::source` and `Template::file` take
+- The manifest config and input definition types collect unknown keys in a public `unknown_fields` map
+    - `JsonInputDefinition` is no longer `Eq`
 
 ## v0.8.0
 

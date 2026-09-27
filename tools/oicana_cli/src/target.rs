@@ -256,6 +256,7 @@ entrypoint = \"main.typ\"
                     tests: PathBuf::from("tests"),
                     export: oicana::template::ExportConfig::default(),
                     fonts: oicana::template::FontConfig::default(),
+                    unknown_fields: Default::default(),
                 },
             ),
         };

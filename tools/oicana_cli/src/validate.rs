@@ -1,6 +1,6 @@
 use crate::checks::{
     check_entrypoint, check_fallback_values, check_pdf_export, check_schemas, missing_fallbacks,
-    SchemaSelection,
+    unknown_keys, SchemaSelection,
 };
 use crate::target::TargetArgs;
 use clap::Args;
@@ -58,7 +58,8 @@ pub fn validate(args: ValidateArgs) -> anyhow::Result<()> {
                     &schemas.validators,
                 ));
                 errors.extend(check_pdf_export(&manifest));
-                let warnings = missing_fallbacks(inputs);
+                let mut warnings = missing_fallbacks(inputs);
+                warnings.extend(unknown_keys(&manifest));
 
                 warning_count += warnings.len();
                 for warning in &warnings {

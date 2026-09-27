@@ -1,5 +1,6 @@
 use crate::{OicanaConfig, PdfStandard};
 use ignore::gitignore::{Gitignore, GitignoreBuilder};
+use oicana_input::InputDefinition;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::path::{Component, Path};
@@ -24,7 +25,7 @@ pub struct TemplateManifest {
     pub template: Option<TemplateInfo>,
     /// Tool section of the manifest.
     pub tool: ToolSection,
-    /// All parsed but unknown fields, this can be used for validation.
+    /// All parsed but unknown fields
     #[serde(flatten, skip_serializing)]
     pub unknown_fields: UnknownFields,
 }
@@ -151,6 +152,46 @@ impl TemplateManifest {
         self.tool.oicana.export.pdf.tagged
     }
 
+    /// Unknown keys in the `[tool.oicana]` section
+    pub fn unknown_oicana_keys(&self) -> Vec<String> {
+        let config = &self.tool.oicana;
+        let mut sections = vec![
+            ("tool.oicana".to_owned(), &config.unknown_fields),
+            (
+                "tool.oicana.export".to_owned(),
+                &config.export.unknown_fields,
+            ),
+            (
+                "tool.oicana.export.pdf".to_owned(),
+                &config.export.pdf.unknown_fields,
+            ),
+            ("tool.oicana.fonts".to_owned(), &config.fonts.unknown_fields),
+        ];
+        for (index, input) in config.inputs.iter().enumerate() {
+            let path = format!("tool.oicana.inputs[{index}]");
+            match input {
+                InputDefinition::Json(def) => sections.push((path, &def.unknown_fields)),
+                InputDefinition::Blob(def) => {
+                    for (label, fallback) in
+                        [("default", &def.default), ("development", &def.development)]
+                    {
+                        if let Some(fallback) = fallback {
+                            sections.push((format!("{path}.{label}"), &fallback.unknown_fields));
+                        }
+                    }
+                    sections.push((path, &def.unknown_fields));
+                }
+            }
+        }
+
+        let mut unknown: Vec<String> = sections
+            .into_iter()
+            .flat_map(|(path, fields)| fields.keys().map(move |key| format!("{path}.{key}")))
+            .collect();
+        unknown.sort();
+        unknown
+    }
+
     /// Font families this template expects its host to provide.
     pub fn required_font_families(&self) -> &[String] {
         &self.tool.oicana.fonts.require
@@ -269,6 +310,7 @@ mod tests {
                 tests: PathBuf::from("tests"),
                 export: ExportConfig::default(),
                 fonts: FontConfig::default(),
+                unknown_fields: Default::default(),
             },
         );
 
@@ -304,6 +346,7 @@ mod tests {
                 tests: PathBuf::from("tests"),
                 export: ExportConfig::default(),
                 fonts: FontConfig::default(),
+                unknown_fields: Default::default(),
             },
         );
 
@@ -326,6 +369,7 @@ mod tests {
                 tests: PathBuf::from("custom_tests"),
                 export: ExportConfig::default(),
                 fonts: FontConfig::default(),
+                unknown_fields: Default::default(),
             },
         );
 
@@ -346,6 +390,7 @@ mod tests {
                 tests: PathBuf::from("tests"),
                 export: ExportConfig::default(),
                 fonts: FontConfig::default(),
+                unknown_fields: Default::default(),
             },
         );
 
@@ -369,6 +414,7 @@ mod tests {
                 tests: PathBuf::from("custom_tests"),
                 export: ExportConfig::default(),
                 fonts: FontConfig::default(),
+                unknown_fields: Default::default(),
             },
         );
 
@@ -387,6 +433,7 @@ mod tests {
                 tests,
                 export: ExportConfig::default(),
                 fonts: FontConfig::default(),
+                unknown_fields: Default::default(),
             },
         )
     }
@@ -465,5 +512,100 @@ mod tests {
 
         let empty_root = tempfile::tempdir().unwrap();
         assert_eq!(manifest.validate_at(empty_root.path()), Ok(()));
+    }
+
+    const PACKAGE: &str =
+        "[package]\nname = \"test\"\nversion = \"0.1.0\"\nentrypoint = \"main.typ\"\n";
+
+    #[test]
+    fn all_known_oicana_keys_are_not_reported() {
+        let manifest = format!(
+            r#"{PACKAGE}
+[tool.oicana]
+manifest_version = 1
+validate_json_inputs_by_default = false
+tests = "checks"
+
+[tool.oicana.fonts]
+require = ["Libertinus Serif"]
+
+[tool.oicana.export.pdf]
+standards = ["ua-1"]
+tagged = true
+
+[[tool.oicana.inputs]]
+type = "json"
+key = "data"
+required = false
+default = "default.json"
+development = "dev.json"
+schema = "data.schema.json"
+validate = false
+
+[[tool.oicana.inputs]]
+type = "blob"
+key = "logo"
+required = false
+default = {{ file = "logo.png", meta = {{ image_format = "png", nested = {{ any = 1 }} }} }}
+development = {{ file = "dev.png" }}
+"#
+        );
+
+        assert_eq!(
+            TemplateManifest::from_toml(&manifest)
+                .unwrap()
+                .unknown_oicana_keys(),
+            Vec::<String>::new()
+        );
+    }
+
+    #[test]
+    fn misspelled_oicana_keys_are_reported() {
+        let manifest = format!(
+            r#"{PACKAGE}
+[tool.oicana]
+manifest_version = 1
+validate_json_input_by_default = false
+
+[tool.oicana.export.pdf]
+standard = ["ua-1"]
+
+[[tool.oicana.inputs]]
+type = "json"
+key = "data"
+developement = "dev.json"
+
+[[tool.oicana.inputs]]
+type = "blob"
+key = "logo"
+requried = false
+default = {{ file = "logo.png", metadata = {{ image_format = "png" }} }}
+"#
+        );
+
+        assert_eq!(
+            TemplateManifest::from_toml(&manifest)
+                .unwrap()
+                .unknown_oicana_keys(),
+            [
+                "tool.oicana.export.pdf.standard",
+                "tool.oicana.inputs[0].developement",
+                "tool.oicana.inputs[1].default.metadata",
+                "tool.oicana.inputs[1].requried",
+                "tool.oicana.validate_json_input_by_default",
+            ]
+        );
+    }
+
+    #[test]
+    fn other_tool_sections_are_not_checked() {
+        let manifest = format!(
+            "{PACKAGE}\n[tool.oicana]\nmanifest_version = 1\n\n[tool.other]\nanything = true\n"
+        );
+
+        assert!(TemplateManifest::from_toml(&manifest)
+            .unwrap()
+            .unknown_oicana_keys()
+            .is_empty());
     }
 }
