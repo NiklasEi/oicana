@@ -2,6 +2,7 @@
 //!
 //! Among other things, this CLI can validate and package Oicana templates.
 
+mod checks;
 mod compile;
 mod fonts;
 mod new;
