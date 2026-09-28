@@ -22,7 +22,7 @@ The tests validate all 8 example templates:
 5. **dependency** - Template with Typst package dependencies
 6. **invoice** - Invoice generation with structured data
 7. **invoice_zugferd** - ZUGFeRD-compliant invoice (PDF/A-3b)
-8. **multi_input** - Template demonstrating multiple JSON and blob inputs
+8. **multi_input** - Template demonstrating multiple JSON inputs
 
 Each template is tested with both:
 - **compile** endpoint (generates PDF)

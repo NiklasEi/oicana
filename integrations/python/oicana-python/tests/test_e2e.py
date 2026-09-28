@@ -134,7 +134,7 @@ def test_manifest() -> None:
         assert manifest.package.version == "0.1.0"
         assert manifest.oicana.manifest_version == 1
         assert manifest.oicana.validate_json_inputs_by_default
-        assert manifest.oicana.export.pdf.standards == ["a-3b"]
+        assert manifest.oicana.export.pdf.standards == []
         assert manifest.oicana.fonts.require == []
 
         json_input = next(

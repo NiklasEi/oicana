@@ -14,6 +14,7 @@ use std::fs::read_to_string;
 use std::io;
 use std::path::PathBuf;
 use thiserror::Error;
+use typst::syntax::package::UnknownFields;
 
 /// Manifest of an Oicana template.
 pub mod manifest;
@@ -80,6 +81,9 @@ pub struct OicanaConfig {
     /// Font configuration for this template.
     #[serde(default)]
     pub fonts: FontConfig,
+    /// All parsed but unknown fields
+    #[serde(flatten, skip_serializing)]
+    pub unknown_fields: UnknownFields,
 }
 
 fn default_true() -> bool {
@@ -100,6 +104,9 @@ pub struct FontConfig {
     /// with the template satisfy the requirement as well.
     #[serde(default = "Vec::new")]
     pub require: Vec<String>,
+    /// All parsed but unknown fields
+    #[serde(flatten, skip_serializing)]
+    pub unknown_fields: UnknownFields,
 }
 
 /// Configuration for exporting compiled documents.
@@ -108,6 +115,9 @@ pub struct ExportConfig {
     /// PDF export configuration.
     #[serde(default)]
     pub pdf: PdfExportConfig,
+    /// All parsed but unknown fields
+    #[serde(flatten, skip_serializing)]
+    pub unknown_fields: UnknownFields,
 }
 
 /// A PDF standard that Typst can enforce conformance with.
@@ -209,28 +219,26 @@ pub struct PdfExportConfig {
     /// PDF/A standards are geared towards archival use and maximum compatibility
     /// with current and future PDF tooling. PDF/UA standards ensure universal
     /// accessibility.
-    ///
-    /// Defaults to `["a-3b"]` (PDF/A-3b) if not specified.
-    #[serde(default = "default_pdf_standards")]
+    #[serde(default)]
     pub standards: Vec<PdfStandard>,
     /// Whether to produce a tagged (accessible) PDF.
     ///
     /// Defaults to `true`.
     #[serde(default = "default_true")]
     pub tagged: bool,
+    /// All parsed but unknown fields
+    #[serde(flatten, skip_serializing)]
+    pub unknown_fields: UnknownFields,
 }
 
 impl Default for PdfExportConfig {
     fn default() -> Self {
         Self {
-            standards: default_pdf_standards(),
+            standards: Vec::new(),
             tagged: default_true(),
+            unknown_fields: UnknownFields::new(),
         }
     }
-}
-
-fn default_pdf_standards() -> Vec<PdfStandard> {
-    vec![PdfStandard::A_3b]
 }
 
 #[cfg(test)]
@@ -279,6 +287,7 @@ mod tests {
             tests: PathBuf::from("tests"),
             export: ExportConfig::default(),
             fonts: FontConfig::default(),
+            unknown_fields: Default::default(),
         };
         assert_eq!(result.unwrap().tool.oicana, expected);
     }
@@ -406,7 +415,7 @@ mod tests {
     }
 
     #[test]
-    fn defaults_pdf_standards_to_a3b() {
+    fn defaults_pdf_standards_to_none() {
         let template = tempdir().unwrap();
         {
             let path = template.path().join("typst.toml");
@@ -429,7 +438,7 @@ mod tests {
         let result = validate_native_template(template.path());
         let config = result.unwrap().tool.oicana;
 
-        assert_eq!(config.export.pdf.standards, vec![PdfStandard::A_3b]);
+        assert!(config.export.pdf.standards.is_empty());
     }
 
     #[test]
@@ -484,6 +493,7 @@ mod tests {
                     development: None,
                     schema: Some("invoice.schema.json".to_string()),
                     validate: true,
+                    unknown_fields: Default::default(),
                 }),
                 InputDefinition::Blob(BlobInputDefinition {
                     key: "logo".to_string(),
@@ -497,8 +507,10 @@ mod tests {
 
                             table
                         })),
+                        unknown_fields: Default::default(),
                     }),
                     development: None,
+                    unknown_fields: Default::default(),
                 }),
                 InputDefinition::Json(JsonInputDefinition {
                     key: "test".to_string(),
@@ -507,11 +519,13 @@ mod tests {
                     development: None,
                     schema: None,
                     validate: true,
+                    unknown_fields: Default::default(),
                 }),
             ],
             validate_json_inputs_by_default: true,
             export: ExportConfig::default(),
             fonts: FontConfig::default(),
+            unknown_fields: Default::default(),
         };
         assert_eq!(result.unwrap().tool.oicana, expected);
     }

@@ -601,7 +601,7 @@ pub enum CompilationTarget {
     /// Export to a PDF file.
     ///
     /// The exported standard can be configured in the template manifest
-    /// via [tool.oicana.export.pdf] section. Defaults to PDF/A-3b.
+    /// via [tool.oicana.export.pdf] section.
     Pdf,
     /// Export to a png image.
     ///

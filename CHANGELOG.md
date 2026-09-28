@@ -7,9 +7,13 @@
   - the Typst package section and the whole Oicana configuration, including the input definitions
 - JSON inputs are also validated against their schemas when a template is registered and when calling `exportOnce`
 - compilations now fail for inputs the template does not declare, for inputs supplied as the wrong kind (json instead of blob or the other way around), and for a key supplied as both a json and a blob input
+- Better error messages for a failing warm-up compilation during template registration
+- PDF exports no longer default to PDF/A-3b. Without `standards` in `[tool.oicana.export.pdf]`, templates export a plain PDF
+  - Add `standards = ["a-3b"]` to keep the previous behavior
 - For `tagged = false` or page ranges that don't cover a complete document, PDF exports will fail for standards that require tags: `ua-1`, `a-1a`, `a-2a`, `a-3a`
 
 ### CLI
+- `new` writes `standards = ["a-3b"]` into the manifest of the generated template
 - `pack` no longer writes directory entries for directories that end up with no packed content, for example a directory whose files are all excluded
 - `pack` excludes `.git`, `.DS_Store` and `*.zip` by default
 - `pack` fails when a file cannot be read
@@ -18,6 +22,7 @@
 - `pack` runs important validation and refuses to write an archive that cannot work for any inputs: a missing or excluded entrypoint, a missing, excluded or invalid schema of a validated JSON input, or invalid PDF standards
 - `compile` and `watch` fail for blob metadata (`-m`) without a matching blob (`-b`) and for badly formatted key-value pairs
 - `validate` rejects `tagged = false` combined with a standard that requires tags (`ua-1`, `a-1a`, `a-2a`, `a-3a`)
+- `validate` warns about unknown keys in `[tool.oicana]`
 
 ### Java
 - A JVM that has not granted native access now fails with an `OicanaException` naming the required `--enable-native-access` flag
@@ -72,6 +77,7 @@
 
 ### Typst package
 - Better error message for input definition without a `type`
+- The error for a missing required input no longer suggests a development value in production mode
 
 ### Rust
 - `Template::init_with_limits` and `Template::init_with_fonts_and_limits` take custom `ZipLimits`
@@ -81,6 +87,8 @@
 - `TemplateInputs::new()` now uses production mode by default
 - `export_pdf` returns `PdfExportError`
 - `oicana::typst` re-exports `VirtualPath`, `RootedPath`, `VirtualRoot` and `PathError` to build the `FileId` that `Template::source` and `Template::file` take
+- The manifest config and input definition types collect unknown keys in a public `unknown_fields` map
+    - `JsonInputDefinition` is no longer `Eq`
 
 ## v0.8.0
 

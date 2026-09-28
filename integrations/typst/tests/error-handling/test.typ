@@ -1,4 +1,4 @@
-#import "../../src/lib.typ": setup
+#import "../../src/lib.typ": missing-input-message, setup
 
 /// Tries to read manifest file first
 #let no-manifest(path) = {
@@ -93,4 +93,17 @@
 #assert.eq(
   error,
   "panicked with: \"The input 'data' needs a 'type' property of \\\"json\\\" or \\\"blob\\\".\"",
+)
+
+#assert.eq(
+  missing-input-message("data", (development: "dev.json"), false),
+  "No value for the required input 'data' was supplied. Pass a value or set a default/development value in your typst.toml.",
+)
+#assert.eq(
+  missing-input-message("data", (:), true),
+  "No value for the required input 'data' was supplied. Pass a value or set a default value in your typst.toml.",
+)
+#assert.eq(
+  missing-input-message("data", (development: "dev.json"), true),
+  "No value for the required input 'data' was supplied. Pass a value or set a default value in your typst.toml. Its development value is ignored in production mode.",
 )

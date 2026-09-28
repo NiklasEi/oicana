@@ -200,6 +200,15 @@ pub fn missing_fallbacks(inputs: &[InputDefinition]) -> Vec<String> {
         .collect()
 }
 
+/// Warn about keys in the `[tool.oicana]` section of `typst.toml` that Oicana ignores.
+pub fn unknown_keys(manifest: &TemplateManifest) -> Vec<String> {
+    manifest
+        .unknown_oicana_keys()
+        .into_iter()
+        .map(|key| format!("Unknown key '{key}' in typst.toml is ignored. Is it a typo?"))
+        .collect()
+}
+
 /// Whether the input has a `default` or `development` value configured.
 fn has_fallback(input: &InputDefinition) -> bool {
     match input {
@@ -450,6 +459,7 @@ manifest_version = 1
             development: development.map(str::to_string),
             schema: None,
             validate: true,
+            unknown_fields: Default::default(),
         })
     }
 
@@ -457,12 +467,14 @@ manifest_version = 1
         let fallback = |file: &str| FallbackBlobInput {
             file: file.to_string(),
             meta: None,
+            unknown_fields: Default::default(),
         };
         InputDefinition::Blob(BlobInputDefinition {
             key: "logo".to_string(),
             required: true,
             default: default.map(fallback),
             development: development.map(fallback),
+            unknown_fields: Default::default(),
         })
     }
 
@@ -585,6 +597,17 @@ manifest_version = 1
 
         let errors = check_fallback_values(dir.path(), &inputs, &HashMap::new());
         assert!(errors.is_empty(), "got: {errors:?}");
+    }
+
+    #[test]
+    fn unknown_oicana_keys_warn() {
+        let warnings = unknown_keys(&manifest(
+            "\n[tool.oicana.export.pdf]\nstandard = [\"ua-1\"]\n",
+        ));
+        assert_eq!(
+            warnings,
+            ["Unknown key 'tool.oicana.export.pdf.standard' in typst.toml is ignored. Is it a typo?"]
+        );
     }
 
     #[test]

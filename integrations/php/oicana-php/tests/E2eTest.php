@@ -146,7 +146,7 @@ test('manifest exposes the package section and the Oicana config', function () {
         expect($manifest->package->version)->toBe('0.1.0');
         expect($manifest->oicana->manifestVersion)->toBe(1);
         expect($manifest->oicana->validateJsonInputsByDefault)->toBeTrue();
-        expect($manifest->oicana->export->pdf->standards)->toBe(['a-3b']);
+        expect($manifest->oicana->export->pdf->standards)->toBe([]);
         expect($manifest->oicana->fonts->require)->toBe([]);
 
         $json = null;

@@ -3,6 +3,24 @@
 
 #let version = version(0, 2, 0)
 
+/// Error message for a required input that resolved to no value.
+#let missing-input-message(key, definition, production) = {
+  let message = "No value for the required input '" + key + "' was supplied. "
+  if not production {
+    (
+      message
+        + "Pass a value or set a default/development value in your typst.toml."
+    )
+  } else if definition.keys().contains("development") {
+    (
+      message
+        + "Pass a value or set a default value in your typst.toml. Its development value is ignored in production mode."
+    )
+  } else {
+    message + "Pass a value or set a default value in your typst.toml."
+  }
+}
+
 /// Method to simplify reading Oicana inputs in Typst projects.
 /// Pass a read function to `setup` to allow it to read project files:
 /// ```typst
@@ -137,11 +155,7 @@
         json(read-project-file(definition.default))
       }
       if json-input == none and is-required {
-        panic(
-          "No value for the required input '"
-            + key
-            + "' was supplied. Pass a value or set a default/development value in your typst.toml.",
-        )
+        panic(missing-input-message(key, definition, oicana-config.production))
       }
       input.insert(key, json-input)
     } else if definition.type == "blob" {
@@ -173,11 +187,7 @@
         default
       }
       if resolved == none and is-required {
-        panic(
-          "No value for the required input '"
-            + key
-            + "' was supplied. Pass a value or set a default/development value in your typst.toml.",
-        )
+        panic(missing-input-message(key, definition, oicana-config.production))
       }
       input.insert(key, resolved)
     } else {

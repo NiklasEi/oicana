@@ -1,5 +1,6 @@
 use crate::InputKind;
 use serde::{Deserialize, Serialize};
+use typst::syntax::package::UnknownFields;
 
 /// Oicana template inputs that can be defined in the manifest.
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
@@ -42,7 +43,7 @@ impl InputDefinition {
 }
 
 /// An input for JSON values.
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct JsonInputDefinition {
     /// The key of the input.
     ///
@@ -69,6 +70,9 @@ pub struct JsonInputDefinition {
     /// for this input during template initialization.
     #[serde(default = "default_true")]
     pub validate: bool,
+    /// All parsed but unknown fields
+    #[serde(flatten, skip_serializing)]
+    pub unknown_fields: UnknownFields,
 }
 
 /// A blob input that can be defined in an Oicana template manifest.
@@ -90,6 +94,9 @@ pub struct BlobInputDefinition {
     pub default: Option<FallbackBlobInput>,
     /// Value for this input in development mode, when no value is supplied.
     pub development: Option<FallbackBlobInput>,
+    /// All parsed but unknown fields
+    #[serde(flatten, skip_serializing)]
+    pub unknown_fields: UnknownFields,
 }
 
 /// Default value of a blob input.
@@ -99,8 +106,58 @@ pub struct FallbackBlobInput {
     pub file: String,
     /// Meta information of the default blob.
     pub meta: Option<toml::Value>,
+    /// All parsed but unknown fields
+    #[serde(flatten, skip_serializing)]
+    pub unknown_fields: UnknownFields,
 }
 
 fn default_true() -> bool {
     true
+}
+
+#[cfg(test)]
+mod tests {
+    use super::InputDefinition;
+
+    #[derive(serde::Deserialize)]
+    struct Inputs {
+        inputs: Vec<InputDefinition>,
+    }
+
+    #[test]
+    fn unknown_fields_are_collected() {
+        let Inputs { inputs } = toml::from_str(
+            r#"
+[[inputs]]
+type = "json"
+key = "data"
+dev = "dev.json"
+
+[[inputs]]
+type = "blob"
+key = "logo"
+mandatory = false
+default = { file = "logo.png", metadata = { image_format = "png" } }
+"#,
+        )
+        .unwrap();
+
+        let [InputDefinition::Json(json), InputDefinition::Blob(blob)] = &inputs[..] else {
+            panic!("expected a json and a blob input, got {inputs:?}");
+        };
+        assert_eq!(json.unknown_fields.keys().collect::<Vec<_>>(), ["dev"]);
+        assert_eq!(
+            blob.unknown_fields.keys().collect::<Vec<_>>(),
+            ["mandatory"]
+        );
+        assert_eq!(
+            blob.default
+                .as_ref()
+                .unwrap()
+                .unknown_fields
+                .keys()
+                .collect::<Vec<_>>(),
+            ["metadata"]
+        );
+    }
 }

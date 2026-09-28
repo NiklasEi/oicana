@@ -61,6 +61,9 @@ entrypoint = "main.typ"
 
 [tool.oicana]
 manifest_version = 1
+
+[tool.oicana.export.pdf]
+standards = ["a-3b"]
 "#,
     );
 
@@ -87,6 +90,7 @@ mod tests {
         assert!(toml.contains(r#"entrypoint = "main.typ""#));
         assert!(toml.contains("[tool.oicana]"));
         assert!(toml.contains("manifest_version = 1"));
+        assert!(toml.contains(r#"standards = ["a-3b"]"#));
 
         let main = fs::read_to_string(dir.join("main.typ")).unwrap();
         assert!(main.contains("Hello"));
