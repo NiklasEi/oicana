@@ -45,7 +45,7 @@ pub const PACK_AFTER_HELP: &str = color_print::cstr!("\
 ");
 
 pub fn pack(args: PackArgs) -> anyhow::Result<()> {
-    let templates = args.target.get_targets()?;
+    let templates = args.target.get_targets()?.templates;
     let out = Path::new(&args.out_dir);
     let packages = package_data_dir().context("Failed to find data directory for packages")?;
 

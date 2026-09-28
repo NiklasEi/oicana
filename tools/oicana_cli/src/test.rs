@@ -50,7 +50,7 @@ pub fn test(args: TestArgs) -> anyhow::Result<()> {
         style("[1/3]").bold().dim(),
         LOOKING_GLASS
     );
-    let mut templates = args.target.get_targets()?;
+    let mut templates = args.target.get_targets()?.templates;
     templates.sort_by_key(|template| template.manifest.package.name.clone());
 
     println!(
@@ -206,7 +206,7 @@ fn watch_tests(args: TestArgs) -> anyhow::Result<()> {
         style("[1/2]").bold().dim(),
         LOOKING_GLASS
     );
-    let mut templates = args.target.get_targets()?;
+    let mut templates = args.target.get_targets()?.templates;
     templates.sort_by_key(|template| template.manifest.package.name.clone());
 
     println!(
