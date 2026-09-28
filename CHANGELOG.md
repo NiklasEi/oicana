@@ -24,6 +24,7 @@
 - `compile` and `watch` fail for blob metadata (`-m`) without a matching blob (`-b`) and for badly formatted key-value pairs
 - `validate` rejects `tagged = false` combined with a standard that requires tags (`ua-1`, `a-1a`, `a-2a`, `a-3a`)
 - `validate` warns about unknown keys in `[tool.oicana]`
+- `pack` warns about `import` and `include` with a computed source, since packages imported that way are not packed
 
 ### Java
 - A JVM that has not granted native access now fails with an `OicanaException` naming the required `--enable-native-access` flag
