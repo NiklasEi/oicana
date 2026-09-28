@@ -11,6 +11,7 @@
 - PDF exports no longer default to PDF/A-3b. Without `standards` in `[tool.oicana.export.pdf]`, templates export a plain PDF
   - Add `standards = ["a-3b"]` to keep the previous behavior
 - For `tagged = false` or page ranges that don't cover a complete document, PDF exports will fail for standards that require tags: `ua-1`, `a-1a`, `a-2a`, `a-3a`
+- Exported PDFs name `Oicana <version>` as their creator
 
 ### CLI
 - `new` writes `standards = ["a-3b"]` into the manifest of the generated template
