@@ -131,12 +131,12 @@ mod tests {
 [[inputs]]
 type = "json"
 key = "data"
-developement = "dev.json"
+dev = "dev.json"
 
 [[inputs]]
 type = "blob"
 key = "logo"
-requried = false
+mandatory = false
 default = { file = "logo.png", metadata = { image_format = "png" } }
 "#,
         )
@@ -147,9 +147,9 @@ default = { file = "logo.png", metadata = { image_format = "png" } }
         };
         assert_eq!(
             json.unknown_fields.keys().collect::<Vec<_>>(),
-            ["developement"]
+            ["dev"]
         );
-        assert_eq!(blob.unknown_fields.keys().collect::<Vec<_>>(), ["requried"]);
+        assert_eq!(blob.unknown_fields.keys().collect::<Vec<_>>(), ["mandatory"]);
         assert_eq!(
             blob.default
                 .as_ref()

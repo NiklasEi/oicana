@@ -14,7 +14,7 @@
   } else if definition.keys().contains("development") {
     (
       message
-        + "Pass a value or set a default value in your typst.toml. Development values are ignored in production mode."
+        + "Pass a value or set a default value in your typst.toml. Its development value is ignored in production mode."
     )
   } else {
     message + "Pass a value or set a default value in your typst.toml."

@@ -560,7 +560,7 @@ development = {{ file = "dev.png" }}
     }
 
     #[test]
-    fn misspelled_oicana_keys_are_reported() {
+    fn unknown_oicana_keys_are_reported() {
         let manifest = format!(
             r#"{PACKAGE}
 [tool.oicana]
@@ -573,12 +573,12 @@ standard = ["ua-1"]
 [[tool.oicana.inputs]]
 type = "json"
 key = "data"
-developement = "dev.json"
+dev = "dev.json"
 
 [[tool.oicana.inputs]]
 type = "blob"
 key = "logo"
-requried = false
+mandatory = false
 default = {{ file = "logo.png", metadata = {{ image_format = "png" }} }}
 "#
         );
@@ -589,9 +589,9 @@ default = {{ file = "logo.png", metadata = {{ image_format = "png" }} }}
                 .unknown_oicana_keys(),
             [
                 "tool.oicana.export.pdf.standard",
-                "tool.oicana.inputs[0].developement",
+                "tool.oicana.inputs[0].dev",
                 "tool.oicana.inputs[1].default.metadata",
-                "tool.oicana.inputs[1].requried",
+                "tool.oicana.inputs[1].mandatory",
                 "tool.oicana.validate_json_input_by_default",
             ]
         );
