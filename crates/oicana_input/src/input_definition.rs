@@ -145,11 +145,11 @@ default = { file = "logo.png", metadata = { image_format = "png" } }
         let [InputDefinition::Json(json), InputDefinition::Blob(blob)] = &inputs[..] else {
             panic!("expected a json and a blob input, got {inputs:?}");
         };
+        assert_eq!(json.unknown_fields.keys().collect::<Vec<_>>(), ["dev"]);
         assert_eq!(
-            json.unknown_fields.keys().collect::<Vec<_>>(),
-            ["dev"]
+            blob.unknown_fields.keys().collect::<Vec<_>>(),
+            ["mandatory"]
         );
-        assert_eq!(blob.unknown_fields.keys().collect::<Vec<_>>(), ["mandatory"]);
         assert_eq!(
             blob.default
                 .as_ref()
