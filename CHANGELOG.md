@@ -39,6 +39,7 @@
 - `engines` declares the actual minimum of `^20.19.0 || >=22.12.0`; the package is ESM-only, so CommonJS callers need a Node version with `require(esm)`
 - Publish a `linux-x64-musl` build
 - `BlobWithMetadata` is now `BlobInput`, its fields `bytes` and `meta` are now `data` and `metadata`
+- Async exports and compilations keep running when their document or template is disposed
 
 ### Browser
 - `BlobWithMetadata` is now `BlobInput`, its fields `bytes` and `meta` are now `data` and `metadata`
