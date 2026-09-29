@@ -246,7 +246,7 @@ pub fn export_template_once_async(
 
 /// Background task compiling a template on the libuv thread pool.
 pub struct CompileTemplateTask {
-  template: oicana_ffi_core::TemplateHandle,
+  template: std::result::Result<oicana_ffi_core::TemplateHandle, oicana_ffi_core::FfiError>,
   json_inputs: HashMap<String, String>,
   blob_inputs: HashMap<String, oicana_ffi_core::BlobWithMetadata>,
   compilation_mode: oicana_ffi_core::CompilationMode,
@@ -260,6 +260,8 @@ impl Task for CompileTemplateTask {
     catch_panic(|| {
       self
         .template
+        .as_ref()
+        .map_err(|error| Error::from_reason(error.to_string()))?
         .compile(
           std::mem::take(&mut self.json_inputs),
           std::mem::take(&mut self.blob_inputs),
@@ -287,13 +289,13 @@ pub fn compile_template_async(
   json_inputs: HashMap<String, String>,
   blob_inputs: HashMap<String, BlobWithMetadata>,
   compilation_mode: CompilationMode,
-) -> Result<AsyncTask<CompileTemplateTask>> {
-  Ok(AsyncTask::new(CompileTemplateTask {
-    template: oicana_ffi_core::lookup_template(&template).map_err(into_napi_err)?,
+) -> AsyncTask<CompileTemplateTask> {
+  AsyncTask::new(CompileTemplateTask {
+    template: oicana_ffi_core::lookup_template(&template),
     json_inputs,
     blob_inputs: into_core_blobs(blob_inputs),
     compilation_mode: compilation_mode.into(),
-  }))
+  })
 }
 
 /// Load the manifest of the given template.
@@ -353,9 +355,14 @@ pub fn export_document(
 
 /// Background task exporting a compiled document on the libuv thread pool.
 pub struct ExportDocumentTask {
-  document: oicana_ffi_core::DocumentHandle,
-  format: oicana_ffi_core::ExportFormat,
-  pages: Option<oicana_ffi_core::PageRange>,
+  prepared: std::result::Result<
+    (
+      oicana_ffi_core::DocumentHandle,
+      oicana_ffi_core::ExportFormat,
+      Option<oicana_ffi_core::PageRange>,
+    ),
+    oicana_ffi_core::FfiError,
+  >,
 }
 
 impl Task for ExportDocumentTask {
@@ -364,9 +371,12 @@ impl Task for ExportDocumentTask {
 
   fn compute(&mut self) -> Result<Self::Output> {
     catch_panic(|| {
-      self
-        .document
-        .export(self.format, self.pages.take())
+      let (document, format, pages) = self
+        .prepared
+        .as_mut()
+        .map_err(|error| Error::from_reason(error.to_string()))?;
+      document
+        .export(*format, pages.take())
         .map_err(into_napi_err)
     })
   }
@@ -390,12 +400,15 @@ pub fn export_document_async(
   document_id: String,
   export_format: String,
   page_range: Option<String>,
-) -> Result<AsyncTask<ExportDocumentTask>> {
-  Ok(AsyncTask::new(ExportDocumentTask {
-    document: oicana_ffi_core::lookup_document(&document_id).map_err(into_napi_err)?,
-    format: oicana_ffi_core::parse_export_format(&export_format).map_err(into_napi_err)?,
-    pages: oicana_ffi_core::parse_page_range(page_range.as_deref()).map_err(into_napi_err)?,
-  }))
+) -> AsyncTask<ExportDocumentTask> {
+  let prepared = (|| {
+    Ok((
+      oicana_ffi_core::lookup_document(&document_id)?,
+      oicana_ffi_core::parse_export_format(&export_format)?,
+      oicana_ffi_core::parse_page_range(page_range.as_deref())?,
+    ))
+  })();
+  AsyncTask::new(ExportDocumentTask { prepared })
 }
 
 /// Remove the document from the cache.
