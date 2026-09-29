@@ -7,6 +7,9 @@ use typst_pdf::{PdfOptions, PdfStandards};
 
 use crate::pages::PageRange;
 
+/// The `/Creator` of exported PDFs.
+const CREATOR: &str = concat!("Oicana ", env!("CARGO_PKG_VERSION"));
+
 fn to_typst_standard(standard: oicana_template::PdfStandard) -> typst_pdf::PdfStandard {
     match standard {
         oicana_template::PdfStandard::V_1_4 => typst_pdf::PdfStandard::V_1_4,
@@ -128,7 +131,7 @@ pub fn export_pdf<Diagnostics: TemplateDiagnostics>(
 
     let options = PdfOptions {
         ident: Smart::Auto,
-        creator: Smart::Auto,
+        creator: Smart::Custom(Some(CREATOR.to_owned())),
         timestamp: None,
         page_ranges: if skips_pages {
             pages.map(PageRanges::from)
@@ -162,7 +165,7 @@ mod tests {
         name = "test"
         version = "0.1.0"
         entrypoint = "main.typ"
-        
+
         [tool.oicana]
         manifest_version = 1
         "#
@@ -228,6 +231,22 @@ mod tests {
         assert_eq!(&pdf[0..4], b"%PDF");
         let end = String::from_utf8_lossy(&pdf[pdf.len() - 10..]);
         assert!(end.contains("%%EOF"));
+    }
+
+    #[test]
+    fn names_oicana_as_creator() {
+        let (document, world) = compile(simple_template());
+        let pdf = export_pdf(
+            &document,
+            &world,
+            &[oicana_template::PdfStandard::A_3b],
+            true,
+            None,
+        )
+        .unwrap();
+
+        let pdf = String::from_utf8_lossy(&pdf);
+        assert!(pdf.contains(CREATOR));
     }
 
     #[test]

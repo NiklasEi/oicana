@@ -11,6 +11,7 @@
 - PDF exports no longer default to PDF/A-3b. Without `standards` in `[tool.oicana.export.pdf]`, templates export a plain PDF
   - Add `standards = ["a-3b"]` to keep the previous behavior
 - For `tagged = false` or page ranges that don't cover a complete document, PDF exports will fail for standards that require tags: `ua-1`, `a-1a`, `a-2a`, `a-3a`
+- Exported PDFs name `Oicana <version>` as their creator
 
 ### CLI
 - `new` writes `standards = ["a-3b"]` into the manifest of the generated template
@@ -23,6 +24,8 @@
 - `compile` and `watch` fail for blob metadata (`-m`) without a matching blob (`-b`) and for badly formatted key-value pairs
 - `validate` rejects `tagged = false` combined with a standard that requires tags (`ua-1`, `a-1a`, `a-2a`, `a-3a`)
 - `validate` warns about unknown keys in `[tool.oicana]`
+- `pack` warns about `import` and `include` with a computed source, since packages imported that way are not packed
+- With `-a`, templates with a broken manifest are skipped with a warning instead of aborting commands by default.
 
 ### Java
 - A JVM that has not granted native access now fails with an `OicanaException` naming the required `--enable-native-access` flag
@@ -38,6 +41,7 @@
 - `engines` declares the actual minimum of `^20.19.0 || >=22.12.0`; the package is ESM-only, so CommonJS callers need a Node version with `require(esm)`
 - Publish a `linux-x64-musl` build
 - `BlobWithMetadata` is now `BlobInput`, its fields `bytes` and `meta` are now `data` and `metadata`
+- Async exports and compilations keep running when their document or template is disposed
 
 ### Browser
 - `BlobWithMetadata` is now `BlobInput`, its fields `bytes` and `meta` are now `data` and `metadata`

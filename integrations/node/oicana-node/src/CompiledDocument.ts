@@ -77,14 +77,12 @@ export class CompiledDocument implements Disposable {
    * @param format - export format specification
    * @param pages - 0-based, inclusive page range (defaults to the whole document)
    */
-  public exportAsync(
+  public async exportAsync(
     format: ExportFormat = Pdf,
     pages?: PageRange,
   ): Promise<Uint8Array> {
     if (this.documentId === undefined) {
-      return Promise.reject(
-        new Error('CompiledDocument has already been disposed'),
-      );
+      throw new Error('CompiledDocument has already been disposed');
     }
     return exportDocumentAsync(
       this.documentId,

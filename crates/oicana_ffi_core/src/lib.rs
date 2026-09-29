@@ -71,7 +71,7 @@ pub struct BlobWithMetadata {
 }
 
 /// Export format and parameters for a single document export.
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Clone, Copy, Deserialize)]
 #[serde(tag = "format")]
 pub enum ExportFormat {
     /// PNG export with configurable resolution.
@@ -489,39 +489,64 @@ pub fn compile_template(
     blob_inputs: HashMap<String, BlobWithMetadata>,
     mode: CompilationMode,
 ) -> Result<String, FfiError> {
-    let shared = get_world(template_id)?;
+    lookup_template(template_id)?.compile(json_inputs, blob_inputs, mode)
+}
 
-    let mut inputs = prepare_inputs(json_inputs, blob_inputs)?;
-    inputs.with_config(mode.into());
+/// A registered template, kept alive independently of [`remove_world`].
+pub struct TemplateHandle {
+    template_id: String,
+    world: SharedWorld,
+}
 
-    let mut world = write_world(&shared);
-    world
-        .update_inputs(inputs)
-        .map_err(|error| FfiError::InputValidation(error.to_string()))?;
+/// Resolve a registered template into a [`TemplateHandle`].
+pub fn lookup_template(template_id: &str) -> Result<TemplateHandle, FfiError> {
+    Ok(TemplateHandle {
+        template_id: template_id.to_owned(),
+        world: get_world(template_id)?,
+    })
+}
 
-    let document = world
-        .compile()
-        .map_err(|error| FfiError::Compilation(error.to_string()))?;
+impl TemplateHandle {
+    /// Compile the template with the given inputs. Returns the document ID of
+    /// the new compilation.
+    pub fn compile(
+        &self,
+        json_inputs: HashMap<String, String>,
+        blob_inputs: HashMap<String, BlobWithMetadata>,
+        mode: CompilationMode,
+    ) -> Result<String, FfiError> {
+        let mut inputs = prepare_inputs(json_inputs, blob_inputs)?;
+        inputs.with_config(mode.into());
 
-    let pdf_standards = world.manifest().pdf_standards().to_vec();
-    let pdf_tagged = world.manifest().pdf_tagged();
-    // We can free the lock on the world early.
-    drop(world);
+        let mut world = write_world(&self.world);
+        world
+            .update_inputs(inputs)
+            .map_err(|error| FfiError::InputValidation(error.to_string()))?;
 
-    let result_id = new_document_id(template_id);
-    store_warnings(&result_id, document.warnings);
-    DOCUMENT_CACHE.insert(
-        result_id.clone(),
-        Arc::new(CachedDocument {
-            document: document.document,
-            pdf_standards,
-            pdf_tagged,
-        }),
-    );
+        let document = world
+            .compile()
+            .map_err(|error| FfiError::Compilation(error.to_string()))?;
 
-    auto_evict();
+        let pdf_standards = world.manifest().pdf_standards().to_vec();
+        let pdf_tagged = world.manifest().pdf_tagged();
+        // We can free the lock on the world early.
+        drop(world);
 
-    Ok(result_id)
+        let result_id = new_document_id(&self.template_id);
+        store_warnings(&result_id, document.warnings);
+        DOCUMENT_CACHE.insert(
+            result_id.clone(),
+            Arc::new(CachedDocument {
+                document: document.document,
+                pdf_standards,
+                pdf_tagged,
+            }),
+        );
+
+        auto_evict();
+
+        Ok(result_id)
+    }
 }
 
 /// Export result bytes with their compilation warnings.
@@ -598,49 +623,67 @@ pub fn export_document(
     format: ExportFormat,
     pages: Option<PageRange>,
 ) -> Result<Vec<u8>, FfiError> {
-    let shared = if matches!(format, ExportFormat::Pdf) {
-        let template_id = template_id_from_document_id(document_id)?;
-        WORLD_CACHE
-            .get(template_id)
-            .map(|entry| Arc::clone(entry.value()))
-    } else {
-        None
-    };
-    let world = shared.as_ref().and_then(|world| try_read_world(world));
+    lookup_document(document_id)?.export(format, pages)
+}
 
+/// A compiled document, kept alive independently of [`remove_document`] and
+/// [`remove_world`].
+pub struct DocumentHandle {
+    cached: Arc<CachedDocument>,
+    world: Option<SharedWorld>,
+}
+
+/// Resolve a compiled document into a [`DocumentHandle`].
+pub fn lookup_document(document_id: &str) -> Result<DocumentHandle, FfiError> {
+    let template_id = template_id_from_document_id(document_id)?;
+    let world = WORLD_CACHE
+        .get(template_id)
+        .map(|entry| Arc::clone(entry.value()));
     let Some(cached) = DOCUMENT_CACHE
         .get(document_id)
         .map(|entry| Arc::clone(entry.value()))
     else {
         return Err(FfiError::DocumentNotFound(document_id.to_owned()));
     };
+    Ok(DocumentHandle { cached, world })
+}
 
-    Ok(match format {
-        ExportFormat::Png { pixels_per_pt } => {
-            export_png(&cached.document, pixels_per_pt, pages.as_ref())?
-        }
-        ExportFormat::Pdf => {
-            // Fall back to plain (span-less) diagnostics when the world is not available.
-            match world.as_deref() {
-                Some(world) => export_pdf(
-                    &cached.document,
-                    world,
-                    &cached.pdf_standards,
-                    cached.pdf_tagged,
-                    pages.as_ref(),
-                ),
-                None => export_pdf(
-                    &cached.document,
-                    &PlainDiagnostics,
-                    &cached.pdf_standards,
-                    cached.pdf_tagged,
-                    pages.as_ref(),
-                ),
+impl DocumentHandle {
+    /// Export the document in the given format.
+    pub fn export(
+        &self,
+        format: ExportFormat,
+        pages: Option<PageRange>,
+    ) -> Result<Vec<u8>, FfiError> {
+        let cached = &self.cached;
+        Ok(match format {
+            ExportFormat::Png { pixels_per_pt } => {
+                export_png(&cached.document, pixels_per_pt, pages.as_ref())?
             }
-            .map_err(pdf_export_error)?
-        }
-        ExportFormat::Svg => export_svg(&cached.document, pages.as_ref())?,
-    })
+            ExportFormat::Pdf => {
+                let world = self.world.as_ref().and_then(|world| try_read_world(world));
+                // Fall back to plain (span-less) diagnostics when the world is not available.
+                match world.as_deref() {
+                    Some(world) => export_pdf(
+                        &cached.document,
+                        world,
+                        &cached.pdf_standards,
+                        cached.pdf_tagged,
+                        pages.as_ref(),
+                    ),
+                    None => export_pdf(
+                        &cached.document,
+                        &PlainDiagnostics,
+                        &cached.pdf_standards,
+                        cached.pdf_tagged,
+                        pages.as_ref(),
+                    ),
+                }
+                .map_err(pdf_export_error)?
+            }
+            ExportFormat::Svg => export_svg(&cached.document, pages.as_ref())?,
+        })
+    }
 }
 
 /// Size of a single document page, in typographic points (pt).
@@ -1396,6 +1439,38 @@ mod tests {
         assert!(export_document(&doc_id, ExportFormat::Svg, None).is_ok());
 
         remove_document(&doc_id);
+    }
+
+    #[test]
+    fn handles_outlive_removal() {
+        let files = std::fs::read("../../assets/templates/table-0.1.0.zip")
+            .expect("read test template fixture");
+        let template_id = format!("handle-test-{}", Uuid::new_v4());
+
+        let doc_id = register_template(
+            &template_id,
+            &files,
+            HashMap::new(),
+            HashMap::new(),
+            CompilationMode::Development,
+            None,
+        )
+        .expect("register template");
+
+        let template = lookup_template(&template_id).expect("look up template");
+        let document = lookup_document(&doc_id).expect("look up document");
+        remove_document(&doc_id);
+        remove_world(&template_id);
+
+        let pdf = document
+            .export(ExportFormat::Pdf, None)
+            .expect("export after the document was removed");
+        assert_eq!(&pdf[0..4], b"%PDF");
+
+        let new_doc_id = template
+            .compile(HashMap::new(), HashMap::new(), CompilationMode::Development)
+            .expect("compile after the template was removed");
+        remove_document(&new_doc_id);
     }
 
     #[test]

@@ -224,6 +224,35 @@ describe('e2e test template', () => {
     template.dispose();
   });
 
+  it('async work survives disposing mid-flight', async () => {
+    const templateFile = await readFile(
+      '../../../e2e-tests/template/oicana-e2e-test-x.y.z.zip',
+    );
+    const template = new Template(templateFile);
+
+    const exportPdf = async () => {
+      using document = await template.compileAsync(
+        new Map(),
+        new Map(),
+        CompilationMode.Development,
+      );
+      return document.exportPdfAsync();
+    };
+    const pdf = await exportPdf();
+    expect(new TextDecoder().decode(pdf.slice(0, 4))).toBe('%PDF');
+
+    const png = template.exportPngAsync(
+      new Map(),
+      new Map(),
+      CompilationMode.Development,
+      1,
+    );
+    template.dispose();
+    expect(Array.from((await png).slice(0, 4))).toEqual([
+      0x89, 0x50, 0x4e, 0x47,
+    ]);
+  });
+
   it('async export rejects with compilation errors', async () => {
     const templateFile = await readFile(
       '../../../e2e-tests/template/oicana-e2e-test-x.y.z.zip',

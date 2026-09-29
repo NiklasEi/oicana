@@ -1,5 +1,6 @@
 use anyhow::bail;
 use clap::Args;
+use console::style;
 use log::{debug, trace};
 use oicana::template::manifest::TemplateManifest;
 use oicana_testing::{
@@ -24,9 +25,18 @@ pub struct TargetArgs {
     all: bool,
 }
 
+/// The templates a command runs on.
+pub struct Targets {
+    /// Template directories
+    pub templates: Vec<TemplateDir>,
+    /// Directories skipped
+    pub skipped: usize,
+}
+
 impl TargetArgs {
-    pub fn get_targets(&self) -> anyhow::Result<Vec<TemplateDir>> {
+    pub fn get_targets(&self) -> anyhow::Result<Targets> {
         let mut templates = vec![];
+        let mut skipped = 0;
         let path = match self.template {
             None => Path::new("."),
             Some(ref template) => Path::new(template),
@@ -41,11 +51,20 @@ impl TargetArgs {
                     continue;
                 }
                 trace!("checking {:?}", dir_entry.path());
-                if let Some(manifest) = is_path_oicana_template(dir_entry.path())? {
-                    templates.push(TemplateDir {
+                match is_path_oicana_template(dir_entry.path()) {
+                    Ok(Some(manifest)) => templates.push(TemplateDir {
                         path: dir_entry.into_path(),
                         manifest,
-                    });
+                    }),
+                    Ok(None) => {}
+                    Err(error) => {
+                        skipped += 1;
+                        eprintln!(
+                            "{}: Skipping {:?}: {error}",
+                            style("Warning").yellow().for_stderr(),
+                            dir_entry.path()
+                        );
+                    }
                 }
             }
         } else if let Some(manifest) = is_path_oicana_template(path)? {
@@ -64,7 +83,7 @@ impl TargetArgs {
         }
         debug!("Targeting templates: {templates:?}");
 
-        Ok(templates)
+        Ok(Targets { templates, skipped })
     }
 }
 
@@ -159,7 +178,7 @@ mod tests {
     use tempfile::{tempdir, TempDir};
     use typst::syntax::package::PackageInfo;
 
-    use super::{is_path_oicana_template, TemplateDir};
+    use super::{is_path_oicana_template, TargetArgs, TemplateDir};
 
     fn default_package_info() -> PackageInfo {
         PackageInfo::new("test-package", "0.1.0".parse().unwrap(), "main.typ")
@@ -200,6 +219,32 @@ entrypoint = \"main.typ\"
 
         let manifest = is_path_oicana_template(tempdir.path()).unwrap().unwrap();
         assert_eq!(manifest.package.name, "test-package");
+    }
+
+    #[test]
+    fn all_skips_templates_with_a_broken_manifest() {
+        let tempdir = tempdir().unwrap();
+        for (name, manifest_version) in [("good", "1"), ("bad", "\"oops\"")] {
+            let dir = tempdir.path().join(name);
+            std::fs::create_dir(&dir).unwrap();
+            write(
+                dir.join("typst.toml"),
+                format!(
+                    "{PACKAGE_SECTION}\n[tool.oicana]\nmanifest_version = {manifest_version}\n"
+                ),
+            )
+            .unwrap();
+        }
+        let args = TargetArgs {
+            template: Some(tempdir.path().to_string_lossy().into_owned()),
+            all: true,
+        };
+
+        let targets = args.get_targets().unwrap();
+
+        assert_eq!(targets.templates.len(), 1);
+        assert!(targets.templates[0].path.ends_with("good"));
+        assert_eq!(targets.skipped, 1);
     }
 
     #[test]

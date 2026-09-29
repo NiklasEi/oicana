@@ -28,11 +28,12 @@ pub const VALIDATE_AFTER_HELP: &str = color_print::cstr!("\
 ");
 
 pub fn validate(args: ValidateArgs) -> anyhow::Result<()> {
-    let templates = args.target.get_targets()?;
+    let targets = args.target.get_targets()?;
+    let templates = targets.templates;
 
     let mut all_passed = true;
     let mut passed_count = 0;
-    let mut warning_count = 0;
+    let mut warning_count = targets.skipped;
     let template_count = templates.len();
 
     for template in templates {
