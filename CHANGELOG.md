@@ -74,6 +74,7 @@
 - `configureAutomaticCacheEviction` and `evictCache` moved from `Template` to `Configuration`
 - `Configuration::setDiagnosticColor` is now `Configuration::configureDiagnosticColor`
 - Failures throw `Oicana\OicanaException`, a `\RuntimeException`, instead of a plain `\Exception`
+- The printed `PHP_INI_SCAN_DIR` appends to an existing value instead of replacing it
 
 ### Python
 - `Template.cleanup()` is now `Template.close()`, matching `CompiledDocument.close()`
