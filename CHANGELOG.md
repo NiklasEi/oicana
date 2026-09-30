@@ -27,6 +27,7 @@
 - `pack` warns about `import` and `include` with a computed source, since packages imported that way are not packed
 - With `-a`, templates with a broken manifest are skipped with a warning instead of aborting commands by default.
 - `validate` and `pack` reject manifests that declare several inputs with the same key
+- Do not include dependencies from files that are excluded for packing
 
 ### Java
 - A JVM that has not granted native access now fails with an `OicanaException` naming the required `--enable-native-access` flag

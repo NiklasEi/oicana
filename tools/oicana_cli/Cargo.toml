@@ -35,6 +35,7 @@ rayon = { workspace = true }
 
 chrono = { workspace = true }
 walkdir = { workspace = true }
+ignore = { workspace = true }
 anyhow = { workspace = true }
 thiserror = { workspace = true }
 color-print = { workspace = true }
