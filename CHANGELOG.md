@@ -36,6 +36,7 @@
   - Call `Configuration.disableAutomaticCacheEviction()` to turn automatic eviction off
 - `Configuration.setDiagnosticColor` is now `Configuration.configureDiagnosticColor`
 - `ExportOnceResult.warnings()` returns an `Optional<String>` instead of a nullable `String`
+- The manifest records no longer carry Gson annotations, so Gson stays an internal dependency
 
 ### Node.js
 - `engines` declares the actual minimum of `^20.19.0 || >=22.12.0`; the package is ESM-only, so CommonJS callers need a Node version with `require(esm)`
