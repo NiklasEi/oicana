@@ -28,6 +28,7 @@
 - With `-a`, templates with a broken manifest are skipped with a warning instead of aborting commands by default.
 - `new` rejects a `--version` that is not a valid package version
 - `validate` and `pack` reject manifests that declare several inputs with the same key
+- Errors about unreadable input and metadata files name the file
 - Piping the output into a command that exits early, like `head`, no longer panics
 
 ### Java
