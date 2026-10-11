@@ -549,7 +549,7 @@ jobs:
             target/
       - uses: dtolnay/rust-toolchain@1.98.1
       - name: Build and install ${{ matrix.tool_config.tool }}
-        run: cargo install --force --path ${{ matrix.tool_config.path }}
+        run: cargo install --locked --force --path ${{ matrix.tool_config.path }}
       - name: Upload CLI tool binary
         uses: actions/upload-artifact@v7
         with:
@@ -574,7 +574,7 @@ jobs:
             target/
       - uses: dtolnay/rust-toolchain@1.98.1
       - name: Build and install uniffi-bindgen
-        run: cargo install --force --path tools/uniffi-bindgen
+        run: cargo install --locked --force --path tools/uniffi-bindgen
       - name: Upload uniffi-bindgen
         uses: actions/upload-artifact@v7
         with:
