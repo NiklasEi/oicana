@@ -151,12 +151,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@ce678459e9fc7500d337468f904b95f1b5c10b5e # 1.98.1
-      - uses: taiki-e/install-action@9983c65e42da123ff25d1f78505eb6de315aa172 # v2
-        with:
-          tool: typship
-      - name: Install local Typst Oicana package
-        run: typship install local
-        working-directory: ./integrations/typst
+      - uses: ./.github/actions/install-typst-package
       - name: Pack
         run: cargo run --release -p oicana_cli -- pack e2e-tests/template -o e2e-tests/template -n '{template}-x.y.z.zip'
       - uses: actions/upload-artifact@v7

@@ -1,0 +1,20 @@
+name: 'Install the Oicana Typst package'
+description: 'Copy integrations/typst into the @local namespace of the Typst package directory'
+
+runs:
+  using: 'composite'
+  steps:
+  - name: Install @local/oicana
+    shell: bash
+    run: |
+      case "${{ runner.os }}" in
+        Linux) data="${XDG_DATA_HOME:-$HOME/.local/share}" ;;
+        macOS) data="$HOME/Library/Application Support" ;;
+        Windows) data="$(cygpath -u "$APPDATA")" ;;
+      esac
+      version=$(sed -n 's/^version = "\(.*\)"/\1/p' integrations/typst/typst.toml | head -n1)
+      target="$data/typst/packages/local/oicana/$version"
+      rm -rf "$target"
+      mkdir -p "$target"
+      cp -R integrations/typst/. "$target"
+      echo "Installed @local/oicana:$version to $target"
