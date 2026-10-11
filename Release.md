@@ -25,7 +25,7 @@
     * integrations/java/oicana-java-native/Cargo.toml
     * integrations/java/build.gradle.kts (version in `subprojects` block)
   * Go: `version` in integrations/go/cmd/oicana-install/main.go
-  * Ruby: integrations/ruby/lib/oicana/version.rb
+  * Ruby: integrations/ruby/lib/oicana/version.rb (prereleases use a dot: `0.10.0.rc.1` for `0.10.0-rc.1`)
   * Typst package
     * Bump version in integrations/typst/typst.toml
     * Bump code version and version in docs in integrations/typst/src/lib.typ
@@ -121,9 +121,12 @@ Then it triggers publishing for the relevant integrations.
 
 ## Go
 
-The Go module tags are `integrations/go/v0.0.0`. The native release creates the tag
-after its GitHub release exists, because the installer `cmd/oicana-install` downloads the native libraries from the
-`oicana_uniffi-v*` release of its own version. The Go module proxy fetches the tagged source.
+The Go module is `go.oicana.com/oicana`. The website serves its `go-import` meta tag on the domain alias
+`go.oicana.com` (see `netlify.toml` and `public/go/oicana.html` in the website repository), which points the go command
+at the `integrations/go` subdirectory of this repository. The module tags are therefore `integrations/go/v0.0.0`. The
+native release creates the tag after its GitHub release exists, because the installer `cmd/oicana-install` downloads
+the native libraries from the `oicana_uniffi-v*` release of its own version. The Go module proxy fetches the tagged
+source.
 
 ## Ruby
 

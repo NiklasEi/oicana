@@ -29,11 +29,13 @@ jobs:
         run: |
           VERSION="${{ inputs.version }}"
           GEM_VERSION=$(sed -n 's/^  VERSION = "\(.*\)"/\1/p' integrations/ruby/lib/oicana/version.rb)
-          if [[ "$GEM_VERSION" != "$VERSION" ]]; then
-            echo "::error::lib/oicana/version.rb has version $GEM_VERSION, expected $VERSION"
+          # RubyGems separates prereleases with a dot: 0.1.0-rc.1 is 0.1.0.rc.1
+          if [[ "$GEM_VERSION" != "${VERSION//-/.}" ]]; then
+            echo "::error::lib/oicana/version.rb has version $GEM_VERSION, expected ${VERSION//-/.}"
             exit 1
           fi
           echo "VERSION=${VERSION}" >> "$GITHUB_ENV"
+          echo "GEM_VERSION=${GEM_VERSION}" >> "$GITHUB_ENV"
 
       - name: Download the native libraries
         run: |
@@ -80,10 +82,10 @@ jobs:
               *) library=liboicana_uniffi.so ;;
             esac
             gunzip -c "${libraries[0]}" > "lib/oicana/native/$library"
-            OICANA_PLATFORM="${platforms[$target]}" gem build oicana.gemspec --output "../../gems/oicana-$VERSION-${platforms[$target]}.gem"
+            OICANA_PLATFORM="${platforms[$target]}" gem build oicana.gemspec --output "../../gems/oicana-$GEM_VERSION-${platforms[$target]}.gem"
           done
           rm -rf lib/oicana/native
-          gem build oicana.gemspec --output "../../gems/oicana-$VERSION.gem"
+          gem build oicana.gemspec --output "../../gems/oicana-$GEM_VERSION.gem"
 
       - name: Report gem sizes
         run: |
@@ -102,6 +104,13 @@ jobs:
 
       - name: Push gems to rubygems.org
         run: |
+          # A re-run after a partial failure skips the gems that are already published
           for gem in gems/*.gem; do
-            gem push "$gem"
+            if ! output=$(gem push "$gem" 2>&1); then
+              if [[ "$output" != *"Repushing of gem versions is not allowed"* ]]; then
+                echo "$output"
+                exit 1
+              fi
+            fi
+            echo "$output"
           done

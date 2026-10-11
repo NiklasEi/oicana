@@ -30,8 +30,8 @@
   - For smaller deployments, reference `Oicana.Core` and only the native packages you need
 
 ### Go
-- New integration: the module `github.com/oicana/oicana/integrations/go` links the native library statically through cgo
-  - `go run github.com/oicana/oicana/integrations/go/cmd/oicana-install` downloads the library and prints the `CGO_LDFLAGS` that link it
+- New integration: the module `go.oicana.com/oicana` links the native library statically through cgo
+  - `go run go.oicana.com/oicana/cmd/oicana-install` downloads the library and prints the `CGO_LDFLAGS` that link it
 
 ### Ruby
 - New integration: the `oicana` gem, with platform gems that bring the native library

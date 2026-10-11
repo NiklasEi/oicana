@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"sync"
 
-	ffi "github.com/oicana/oicana/integrations/go/internal/oicana_uniffi"
+	ffi "go.oicana.com/oicana/internal/oicana_uniffi"
 )
 
 // Template is a packed Oicana template, ready to be compiled repeatedly.

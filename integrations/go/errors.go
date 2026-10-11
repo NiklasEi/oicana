@@ -4,7 +4,7 @@ import (
 	"errors"
 	"strings"
 
-	ffi "github.com/oicana/oicana/integrations/go/internal/oicana_uniffi"
+	ffi "go.oicana.com/oicana/internal/oicana_uniffi"
 )
 
 // Kinds of errors returned by this package. Check for them with [errors.Is].

@@ -262,7 +262,8 @@ class OicanaTest < Minitest::Test
   end
 
   def test_native_version
-    assert_equal Oicana::VERSION, Oicana.native_version
+    # The native library uses the Cargo form of prereleases (0.1.0-rc.1), the gem RubyGems' (0.1.0.rc.1)
+    assert_equal Oicana::VERSION, Oicana.native_version.tr("-", ".")
   end
 
   def test_bulk_writes_are_patched_in

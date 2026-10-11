@@ -1,8 +1,8 @@
 // Command oicana-install downloads the native Oicana library for this platform and
 // prints the CGO_LDFLAGS that link it. Run it inside a module that requires
-// github.com/oicana/oicana/integrations/go, so that it matches the version in go.mod:
+// go.oicana.com/oicana, so that it matches the version in go.mod:
 //
-//	export CGO_LDFLAGS="$(go run github.com/oicana/oicana/integrations/go/cmd/oicana-install)"
+//	export CGO_LDFLAGS="$(go run go.oicana.com/oicana/cmd/oicana-install)"
 //
 // It installs the native library of its own version, verifies it against the SHA256SUMS
 // of the release, and caches it in the user cache directory.
@@ -27,7 +27,7 @@ import (
 )
 
 // version is the Oicana release this installer belongs to.
-const version = "0.9.0"
+const version = "0.10.0-rc.1"
 
 const (
 	staticLibrary = "liboicana_uniffi.a"

@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	ffi "github.com/oicana/oicana/integrations/go/internal/oicana_uniffi"
+	ffi "go.oicana.com/oicana/internal/oicana_uniffi"
 )
 
 // CompilationMode decides which fallback values a template uses for inputs without a value.

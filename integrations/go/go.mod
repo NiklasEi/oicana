@@ -1,3 +1,3 @@
-module github.com/oicana/oicana/integrations/go
+module go.oicana.com/oicana
 
 go 1.22

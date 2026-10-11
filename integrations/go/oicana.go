@@ -6,7 +6,7 @@
 package oicana
 
 import (
-	ffi "github.com/oicana/oicana/integrations/go/internal/oicana_uniffi"
+	ffi "go.oicana.com/oicana/internal/oicana_uniffi"
 )
 
 // ExportOnce compiles a packed template and exports it without caching anything.

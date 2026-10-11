@@ -11,17 +11,17 @@ Oicana compiles PDFs in process through a statically linked native library inste
 ## Installation
 
 ```bash
-go get github.com/oicana/oicana/integrations/go
+go get go.oicana.com/oicana
 ```
 
 The package links the native Oicana library through cgo, so it needs a C toolchain (MinGW-w64 on Windows). The installer downloads the library for your platform, verifies its checksum, caches it, and prints the `CGO_LDFLAGS` that link it:
 
 ```bash
-export CGO_LDFLAGS="$(go run github.com/oicana/oicana/integrations/go/cmd/oicana-install)"
+export CGO_LDFLAGS="$(go run go.oicana.com/oicana/cmd/oicana-install)"
 go build ./...
 ```
 
-In PowerShell, use `$env:CGO_LDFLAGS = go run github.com/oicana/oicana/integrations/go/cmd/oicana-install`. Run it inside your module, so that it installs the library matching the version in your `go.mod`.
+In PowerShell, use `$env:CGO_LDFLAGS = go run go.oicana.com/oicana/cmd/oicana-install`. Run it inside your module, so that it installs the library matching the version in your `go.mod`.
 
 Supported platforms are Linux (x64 and arm64, glibc 2.28 or newer, or musl), macOS (x64 and arm64), and Windows x64. On musl, the built program needs `libgcc_s` at runtime (`apk add libgcc` on Alpine).
 
@@ -34,7 +34,7 @@ import (
 	"log"
 	"os"
 
-	oicana "github.com/oicana/oicana/integrations/go"
+	oicana "go.oicana.com/oicana"
 )
 
 func main() {

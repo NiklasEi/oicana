@@ -57,8 +57,9 @@ jobs:
           fi
 
           RUBY_VERSION=$(sed -n 's/^  VERSION = "\(.*\)"/\1/p' integrations/ruby/lib/oicana/version.rb)
-          if [[ "$RUBY_VERSION" != "$VERSION" ]]; then
-            ERRORS+=("the Ruby gem has version $RUBY_VERSION")
+          # RubyGems separates prereleases with a dot: 0.1.0-rc.1 is 0.1.0.rc.1
+          if [[ "$RUBY_VERSION" != "${VERSION//-/.}" ]]; then
+            ERRORS+=("the Ruby gem has version $RUBY_VERSION, expected ${VERSION//-/.}")
           fi
 
           if [[ ${#ERRORS[@]} -gt 0 ]]; then
