@@ -2,7 +2,7 @@ name: native release
 
 # Builds oicana_uniffi for every target once and packages it for the UniFFI integrations.
 #
-# An oicana_uniffi-v<version> tag publishes the archives and SHA256SUMS as the GitHub release of that
+# An oicana_uniffi-v<version> tag publishes the compressed libraries and SHA256SUMS as the GitHub release of that
 # tag, which CD workflows for the integrations can download from.
 
 on:
@@ -90,7 +90,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     container: ${{ matrix.container }}
     env:
-      ARCHIVE: oicana_uniffi-${{ needs.validate-version.outputs.version }}-${{ matrix.target }}${{ contains(matrix.target, 'windows') && '.zip' || '.tar.gz' }}
+      ASSET: oicana_uniffi-${{ needs.validate-version.outputs.version }}-${{ matrix.target }}
     defaults:
       run:
         shell: bash
@@ -124,29 +124,24 @@ jobs:
             echo "::error::expected an x86_64 library but got ${archs}"
             exit 1
           fi
-      - name: Strip and package
+      - name: Strip and compress
         run: |
+          # Every library is its own asset, so Go and Ruby only download what they use
           strip="$(rustc --print sysroot)/lib/rustlib/$(rustc -vV | sed -n 's/^host: //p')/bin/llvm-strip"
           mkdir dist
-          for file in ${{ matrix.files }} link-flags.txt; do
-            cp "build/$file" dist/
+          for file in ${{ matrix.files }}; do
             case "$file" in
-              *.a) "$strip" --strip-debug "dist/$file" ;;
-              *.so) "$strip" --strip-all "dist/$file" ;;
-              *.dylib) "$strip" -x "dist/$file" ;;
+              *.a) "$strip" --strip-debug "build/$file"; cp build/link-flags.txt "dist/$ASSET.link-flags.txt" ;;
+              *.so) "$strip" --strip-all "build/$file" ;;
+              *.dylib) "$strip" -x "build/$file" ;;
             esac
+            gzip -9 -c "build/$file" > "dist/$ASSET.${file##*.}.gz"
           done
-          cd dist
-          if [[ "$ARCHIVE" == *.zip ]]; then
-            7z a -tzip "../$ARCHIVE" ./*
-          else
-            tar -czf "../$ARCHIVE" ./*
-          fi
-          ls -l
+          ls -l dist
       - uses: actions/upload-artifact@v7
         with:
           name: oicana-uniffi-${{ matrix.target }}
-          path: ${{ env.ARCHIVE }}
+          path: dist/*
           if-no-files-found: error
 
   pack-e2e-template:
@@ -193,19 +188,23 @@ jobs:
       - uses: actions/download-artifact@v8
         with:
           name: oicana-uniffi-${{ matrix.target }}
-          path: archive
+          path: assets
       - uses: actions/download-artifact@v8
         with:
           name: e2e-template
           path: e2e-tests/template
-      - name: Extract
+      - name: Decompress
         run: |
           mkdir native
-          if compgen -G "archive/*.zip" > /dev/null; then
-            7z x -onative archive/*.zip
-          else
-            tar -xzf archive/*.tar.gz -C native
-          fi
+          for asset in assets/*; do
+            case "$asset" in
+              *.a.gz) gunzip -c "$asset" > native/liboicana_uniffi.a ;;
+              *.so.gz) gunzip -c "$asset" > native/liboicana_uniffi.so ;;
+              *.dylib.gz) gunzip -c "$asset" > native/liboicana_uniffi.dylib ;;
+              *.dll.gz) gunzip -c "$asset" > native/oicana_uniffi.dll ;;
+              *.link-flags.txt) cp "$asset" native/link-flags.txt ;;
+            esac
+          done
           ls -l native
           # pwd -W gives a Windows path for the MinGW linker and for Ruby on Windows
           echo "NATIVE=$(cd native && (pwd -W 2>/dev/null || pwd))" >> "$GITHUB_ENV"
@@ -262,10 +261,10 @@ jobs:
         run: |
           sha256sum oicana_uniffi-* > SHA256SUMS
           cat SHA256SUMS
-          echo "| Archive | Size |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Asset | Size |" >> "$GITHUB_STEP_SUMMARY"
           echo "|---|---|" >> "$GITHUB_STEP_SUMMARY"
-          for archive in oicana_uniffi-*; do
-            echo "| $archive | $(du -h "$archive" | cut -f1) |" >> "$GITHUB_STEP_SUMMARY"
+          for asset in oicana_uniffi-*; do
+            echo "| $asset | $(du -h "$asset" | cut -f1) |" >> "$GITHUB_STEP_SUMMARY"
           done
       - uses: actions/upload-artifact@v7
         with:

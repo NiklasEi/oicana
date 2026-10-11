@@ -9,21 +9,17 @@
 package main
 
 import (
-	"archive/tar"
-	"archive/zip"
 	"bufio"
 	"bytes"
 	"compress/gzip"
 	"crypto/sha256"
 	"encoding/hex"
-	"errors"
 	"flag"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
 	"os/exec"
-	"path"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -105,12 +101,9 @@ func isMusl() bool {
 	return err == nil && strings.Contains(string(machine), "musl")
 }
 
-func archiveName(target string) string {
-	extension := ".tar.gz"
-	if strings.Contains(target, "windows") {
-		extension = ".zip"
-	}
-	return fmt.Sprintf("oicana_uniffi-%s-%s%s", version, target, extension)
+// assetPrefix is the start of the names of the release assets for target.
+func assetPrefix(target string) string {
+	return fmt.Sprintf("oicana_uniffi-%s-%s", version, target)
 }
 
 // install returns the directory holding the native library for target, downloading it
@@ -122,23 +115,18 @@ func install(baseURL, cacheDir, target string) (string, error) {
 	}
 
 	releaseURL := fmt.Sprintf("%s/oicana_uniffi-v%s", baseURL, version)
-	name := archiveName(target)
 	sums, err := download(releaseURL + "/SHA256SUMS")
 	if err != nil {
 		return "", err
 	}
-	expected, err := checksum(sums, name)
+	prefix := assetPrefix(target)
+	flags, err := downloadVerified(releaseURL, sums, prefix+".link-flags.txt")
 	if err != nil {
 		return "", err
 	}
-	fmt.Fprintf(os.Stderr, "Downloading %s\n", name)
-	archive, err := download(releaseURL + "/" + name)
+	library, err := downloadVerified(releaseURL, sums, prefix+".a.gz")
 	if err != nil {
 		return "", err
-	}
-	actual := sha256.Sum256(archive)
-	if hex.EncodeToString(actual[:]) != expected {
-		return "", fmt.Errorf("checksum mismatch for %s, refusing to install it", name)
 	}
 
 	if err := os.MkdirAll(cacheDir, 0o755); err != nil {
@@ -149,18 +137,11 @@ func install(baseURL, cacheDir, target string) (string, error) {
 		return "", err
 	}
 	defer os.RemoveAll(staging)
-	if strings.HasSuffix(name, ".zip") {
-		err = extractZip(archive, staging)
-	} else {
-		err = extractTarGz(archive, staging)
+	if err := gunzip(library, filepath.Join(staging, staticLibrary)); err != nil {
+		return "", fmt.Errorf("failed to decompress %s.a.gz: %w", prefix, err)
 	}
-	if err != nil {
-		return "", fmt.Errorf("failed to extract %s: %w", name, err)
-	}
-	for _, required := range []string{staticLibrary, linkFlagsFile} {
-		if _, err := os.Stat(filepath.Join(staging, required)); err != nil {
-			return "", fmt.Errorf("%s does not contain %s", name, required)
-		}
+	if err := os.WriteFile(filepath.Join(staging, linkFlagsFile), flags, 0o644); err != nil {
+		return "", err
 	}
 	if err := os.Rename(staging, dir); err != nil {
 		// Another installer may have finished first.
@@ -170,6 +151,25 @@ func install(baseURL, cacheDir, target string) (string, error) {
 		return "", err
 	}
 	return dir, nil
+}
+
+// downloadVerified downloads a release asset and checks it against the SHA256SUMS of the
+// release.
+func downloadVerified(releaseURL string, sums []byte, name string) ([]byte, error) {
+	expected, err := checksum(sums, name)
+	if err != nil {
+		return nil, err
+	}
+	fmt.Fprintf(os.Stderr, "Downloading %s\n", name)
+	data, err := download(releaseURL + "/" + name)
+	if err != nil {
+		return nil, err
+	}
+	actual := sha256.Sum256(data)
+	if hex.EncodeToString(actual[:]) != expected {
+		return nil, fmt.Errorf("checksum mismatch for %s, refusing to install it", name)
+	}
+	return data, nil
 }
 
 var client = &http.Client{Timeout: 10 * time.Minute}
@@ -198,66 +198,20 @@ func checksum(sums []byte, name string) (string, error) {
 	return "", fmt.Errorf("no checksum for %s in SHA256SUMS; the platform may not be supported", name)
 }
 
-// writeFile writes a regular file of an archive. Archives are flat, so entries in
-// directories are rejected.
-func writeFile(dir, name string, content io.Reader) error {
-	if name != path.Base(name) || name == ".." || name == "." {
-		return fmt.Errorf("unexpected entry %q", name)
-	}
-	file, err := os.Create(filepath.Join(dir, name))
+func gunzip(data []byte, path string) error {
+	reader, err := gzip.NewReader(bytes.NewReader(data))
 	if err != nil {
 		return err
 	}
-	if _, err := io.Copy(file, content); err != nil {
+	file, err := os.Create(path)
+	if err != nil {
+		return err
+	}
+	if _, err := io.Copy(file, reader); err != nil {
 		file.Close()
 		return err
 	}
 	return file.Close()
-}
-
-func extractTarGz(archive []byte, dir string) error {
-	compressed, err := gzip.NewReader(bytes.NewReader(archive))
-	if err != nil {
-		return err
-	}
-	reader := tar.NewReader(compressed)
-	for {
-		header, err := reader.Next()
-		if errors.Is(err, io.EOF) {
-			return nil
-		}
-		if err != nil {
-			return err
-		}
-		if header.Typeflag != tar.TypeReg {
-			continue
-		}
-		if err := writeFile(dir, header.Name, reader); err != nil {
-			return err
-		}
-	}
-}
-
-func extractZip(archive []byte, dir string) error {
-	reader, err := zip.NewReader(bytes.NewReader(archive), int64(len(archive)))
-	if err != nil {
-		return err
-	}
-	for _, entry := range reader.File {
-		if !entry.Mode().IsRegular() {
-			continue
-		}
-		content, err := entry.Open()
-		if err != nil {
-			return err
-		}
-		err = writeFile(dir, entry.Name, content)
-		content.Close()
-		if err != nil {
-			return err
-		}
-	}
-	return nil
 }
 
 // ldflags builds the CGO_LDFLAGS that link the static library in dir.

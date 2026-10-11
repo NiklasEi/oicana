@@ -63,23 +63,26 @@ jobs:
           )
           mkdir ../../gems
           for target in "${!platforms[@]}"; do
-            rm -rf lib/oicana/native extracted
-            mkdir -p lib/oicana/native extracted
-            archive=$(ls "../../natives/oicana_uniffi-$VERSION-$target".*)
-            if [[ "$archive" == *.zip ]]; then
-              unzip -q "$archive" -d extracted
-            else
-              tar -xzf "$archive" -C extracted
-            fi
-            libraries=(extracted/*.so extracted/*.dylib extracted/*.dll)
+            rm -rf lib/oicana/native
+            mkdir -p lib/oicana/native
+            libraries=()
+            for extension in so dylib dll; do
+              candidate="../../natives/oicana_uniffi-$VERSION-$target.$extension.gz"
+              if [ -f "$candidate" ]; then libraries+=("$candidate"); fi
+            done
             if [ "${#libraries[@]}" -ne 1 ]; then
-              echo "::error::Expected one native library in $archive, found ${#libraries[@]}"
+              echo "::error::Expected one shared library for $target, found ${#libraries[@]}"
               exit 1
             fi
-            cp "${libraries[0]}" lib/oicana/native/
+            case "${libraries[0]}" in
+              *.dll.gz) library=oicana_uniffi.dll ;;
+              *.dylib.gz) library=liboicana_uniffi.dylib ;;
+              *) library=liboicana_uniffi.so ;;
+            esac
+            gunzip -c "${libraries[0]}" > "lib/oicana/native/$library"
             OICANA_PLATFORM="${platforms[$target]}" gem build oicana.gemspec --output "../../gems/oicana-$VERSION-${platforms[$target]}.gem"
           done
-          rm -rf lib/oicana/native extracted
+          rm -rf lib/oicana/native
           gem build oicana.gemspec --output "../../gems/oicana-$VERSION.gem"
 
       - name: Report gem sizes

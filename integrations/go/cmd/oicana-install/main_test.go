@@ -1,7 +1,6 @@
 package main
 
 import (
-	"archive/tar"
 	"bytes"
 	"compress/gzip"
 	"crypto/sha256"
@@ -16,21 +15,11 @@ import (
 
 const target = "x86_64-unknown-linux-gnu"
 
-func tarGz(t *testing.T, files map[string]string) []byte {
+func gz(t *testing.T, content string) []byte {
 	t.Helper()
 	var buffer bytes.Buffer
 	compressed := gzip.NewWriter(&buffer)
-	archive := tar.NewWriter(compressed)
-	for name, content := range files {
-		header := &tar.Header{Name: name, Mode: 0o644, Size: int64(len(content)), Typeflag: tar.TypeReg}
-		if err := archive.WriteHeader(header); err != nil {
-			t.Fatal(err)
-		}
-		if _, err := archive.Write([]byte(content)); err != nil {
-			t.Fatal(err)
-		}
-	}
-	if err := archive.Close(); err != nil {
+	if _, err := compressed.Write([]byte(content)); err != nil {
 		t.Fatal(err)
 	}
 	if err := compressed.Close(); err != nil {
@@ -39,26 +28,44 @@ func tarGz(t *testing.T, files map[string]string) []byte {
 	return buffer.Bytes()
 }
 
-func serve(t *testing.T, archive []byte, sum [32]byte) (*httptest.Server, *int) {
+// serve serves the release assets and lists the given checksums in SHA256SUMS.
+func serve(t *testing.T, assets map[string][]byte, sums map[string][32]byte) (*httptest.Server, *int) {
 	t.Helper()
 	downloads := 0
 	release := "/oicana_uniffi-v" + version + "/"
 	mux := http.NewServeMux()
 	mux.HandleFunc(release+"SHA256SUMS", func(w http.ResponseWriter, _ *http.Request) {
-		fmt.Fprintf(w, "%x  %s\n", sum, archiveName(target))
+		for name, sum := range sums {
+			fmt.Fprintf(w, "%x  %s\n", sum, name)
+		}
 	})
-	mux.HandleFunc(release+archiveName(target), func(w http.ResponseWriter, _ *http.Request) {
-		downloads++
-		w.Write(archive)
-	})
+	for name, content := range assets {
+		mux.HandleFunc(release+name, func(w http.ResponseWriter, _ *http.Request) {
+			downloads++
+			w.Write(content)
+		})
+	}
 	server := httptest.NewServer(mux)
 	t.Cleanup(server.Close)
 	return server, &downloads
 }
 
+func release(t *testing.T, library, flags string) (map[string][]byte, map[string][32]byte) {
+	t.Helper()
+	assets := map[string][]byte{
+		assetPrefix(target) + ".a.gz":           gz(t, library),
+		assetPrefix(target) + ".link-flags.txt": []byte(flags),
+	}
+	sums := map[string][32]byte{}
+	for name, content := range assets {
+		sums[name] = sha256.Sum256(content)
+	}
+	return assets, sums
+}
+
 func TestInstall(t *testing.T) {
-	archive := tarGz(t, map[string]string{staticLibrary: "library", linkFlagsFile: "-lm -lc\n"})
-	server, downloads := serve(t, archive, sha256.Sum256(archive))
+	assets, sums := release(t, "library", "-lm -lc\n")
+	server, downloads := serve(t, assets, sums)
 	cache := t.TempDir()
 
 	for range 2 {
@@ -73,31 +80,37 @@ func TestInstall(t *testing.T) {
 		if want := filepath.ToSlash(filepath.Join(cache, target, staticLibrary)) + " -lm -lc"; flags != want {
 			t.Fatalf("got %q, want %q", flags, want)
 		}
+		library, err := os.ReadFile(filepath.Join(dir, staticLibrary))
+		if err != nil || string(library) != "library" {
+			t.Fatalf("expected the decompressed library, got %q, %v", library, err)
+		}
 	}
-	if *downloads != 1 {
-		t.Fatalf("expected one download, got %d", *downloads)
+	if *downloads != 2 {
+		t.Fatalf("expected two downloads, got %d", *downloads)
 	}
 }
 
 func TestInstallRejectsChecksumMismatch(t *testing.T) {
-	archive := tarGz(t, map[string]string{staticLibrary: "library", linkFlagsFile: ""})
-	server, _ := serve(t, archive, sha256.Sum256([]byte("other")))
+	assets, sums := release(t, "library", "")
+	sums[assetPrefix(target)+".a.gz"] = sha256.Sum256([]byte("other"))
+	server, _ := serve(t, assets, sums)
 	cache := t.TempDir()
 
 	if _, err := install(server.URL, cache, target); err == nil || !strings.Contains(err.Error(), "checksum mismatch") {
 		t.Fatalf("expected a checksum mismatch, got %v", err)
 	}
 	if _, err := os.Stat(filepath.Join(cache, target)); !os.IsNotExist(err) {
-		t.Fatal("a rejected archive must not be installed")
+		t.Fatal("a rejected library must not be installed")
 	}
 }
 
-func TestInstallRejectsNestedEntries(t *testing.T) {
-	archive := tarGz(t, map[string]string{"../" + staticLibrary: "library", linkFlagsFile: ""})
-	server, _ := serve(t, archive, sha256.Sum256(archive))
+func TestInstallRejectsUnknownTarget(t *testing.T) {
+	assets, sums := release(t, "library", "")
+	server, _ := serve(t, assets, sums)
 
-	if _, err := install(server.URL, t.TempDir(), target); err == nil {
-		t.Fatal("expected nested entries to be rejected")
+	if _, err := install(server.URL, t.TempDir(), "riscv64gc-unknown-linux-gnu"); err == nil ||
+		!strings.Contains(err.Error(), "no checksum") {
+		t.Fatalf("expected a missing checksum, got %v", err)
 	}
 }
 

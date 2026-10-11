@@ -116,7 +116,7 @@ The CD pipeline validates version consistency, builds JNI native libraries for 5
 
 The native `oicana_uniffi` libraries are shared between some integrations. Push a tag like `oicana_uniffi-v0.0.0-rc.1` to
 trigger `.github/workflows/native-release.yml`. It builds every target, runs the relevant integration tests,
-and publishes the archives with a `SHA256SUMS` file as the GitHub release of the tag.
+and publishes each library as a separate gzip-compressed asset with a `SHA256SUMS` file as the GitHub release of the tag.
 Then it triggers publishing for the relevant integrations.
 
 ## Go
