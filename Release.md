@@ -31,7 +31,7 @@
     * Bump code version and version in docs in integrations/typst/src/lib.typ
 4. Run `cargo publish --workspace` to publish the rust integration and CLI to crates.io
 5.
-  * tag Go and Ruby natives `oicana_uniffi-v*` => will trigger CD pipeline, which also tags Go and publishes Ruby
+  * tag Go and Ruby natives `oicana_uniffi-v*` => will trigger CD pipeline, which also tags Go and Ruby and publishes Ruby
   * tag CLI version `oicana_cli-v*` => will trigger CD pipeline
   * tag crates version `oicana_rust-v*`
   * tag C# version `oicana_csharp-v*` => will trigger CD pipeline
@@ -127,9 +127,9 @@ after its GitHub release exists, because the installer `cmd/oicana-install` down
 
 ## Ruby
 
-The native release dispatches `.github/workflows/publish-integration-ruby.yml`, which can also be triggered manually
-with a version input. It builds one gem per platform from the `oicana_uniffi-v*` release of the same version and pushes
-them to rubygems.org with trusted publishing.
+The native release tags the commit `oicana_ruby-v0.0.0` and dispatches `.github/workflows/publish-integration-ruby.yml`,
+which can also be triggered manually with a version input. It builds one gem per platform from the `oicana_uniffi-v*`
+release of the same version and pushes them to rubygems.org with trusted publishing.
 
 ## Crates
 
