@@ -149,25 +149,38 @@ fn check_declarations(
     })
 }
 
-/// Validate JSON inputs against their schemas.
+/// Parse every supplied JSON input.
+fn parse_json_inputs(
+    inputs: &TemplateInputs,
+) -> Result<HashMap<String, serde_json::Value>, InvalidJsonInput> {
+    inputs
+        .kinds()
+        .filter(|(_, kind)| *kind == InputKind::Json)
+        .filter_map(|(key, _)| Some((key, inputs.get_str_value(key)?)))
+        .map(|(key, json_str)| {
+            serde_json::from_str(&json_str)
+                .map(|parsed| (key.to_owned(), parsed))
+                .map_err(|e| InvalidJsonInput {
+                    key: key.to_owned(),
+                    message: e.to_string(),
+                })
+        })
+        .collect()
+}
+
+/// Validate parsed JSON inputs against their schemas.
 fn validate_against_schemas(
     validators: &HashMap<String, Validator>,
-    inputs: &TemplateInputs,
+    parsed_inputs: &HashMap<String, serde_json::Value>,
 ) -> Result<(), InputValidationError> {
     for (key, validator) in validators {
-        let Some(json_str) = inputs.get_str_value(key) else {
+        let Some(parsed) = parsed_inputs.get(key) else {
             continue;
         };
 
-        let parsed: serde_json::Value =
-            serde_json::from_str(&json_str).map_err(|e| InputValidationError {
-                key: key.clone(),
-                errors: vec![format!("Invalid JSON: {e}")],
-            })?;
-
-        if !validator.is_valid(&parsed) {
+        if !validator.is_valid(parsed) {
             let errors: Vec<String> = validator
-                .iter_errors(&parsed)
+                .iter_errors(parsed)
                 .map(|error| {
                     let path = error.instance_path().to_string();
                     if path.is_empty() {
@@ -238,12 +251,13 @@ impl<Files: TemplateFiles> OicanaWorld<Files> {
 
     /// Update the inputs of the World.
     ///
-    /// Rejects inputs the manifest does not declare and
-    /// validates JSON inputs against their schemas.
+    /// Rejects inputs the manifest does not declare and JSON inputs that are not valid JSON.
+    /// Validates JSON inputs against their schemas.
     pub fn update_inputs(&mut self, inputs: TemplateInputs) -> Result<(), InputError> {
         check_declarations(&self.manifest, &inputs)?;
+        let parsed_inputs = parse_json_inputs(&inputs)?;
         if self.validate_inputs {
-            validate_against_schemas(&self.validators, &inputs)?;
+            validate_against_schemas(&self.validators, &parsed_inputs)?;
         }
         self.library = LazyHash::new(Library::builder().with_inputs(inputs.to_dict()).build());
         self.reset_time();
@@ -399,9 +413,22 @@ pub enum InputError {
     /// The supplied inputs do not match the template's input definitions
     #[error(transparent)]
     Mismatch(#[from] InputMismatchError),
+    /// A JSON input is not valid JSON
+    #[error(transparent)]
+    InvalidJson(#[from] InvalidJsonInput),
     /// A JSON input did not match its schema
     #[error(transparent)]
     Validation(#[from] InputValidationError),
+}
+
+/// A JSON input is not valid JSON
+#[derive(Debug, Error)]
+#[error("Input '{key}' is not valid JSON: {message}")]
+pub struct InvalidJsonInput {
+    /// The key of the input
+    pub key: String,
+    /// The parser error
+    pub message: String,
 }
 
 /// A JSON input did not match its schema
@@ -1026,10 +1053,45 @@ mod tests {
         let mut inputs = TemplateInputs::new();
         inputs.with_input(JsonInput::new("data", r#"{not valid json}"#));
 
-        let result = world.update_inputs(inputs);
-        assert!(result.is_err());
-        let err = expect_validation(result.unwrap_err());
-        assert!(err.errors[0].contains("Invalid JSON"));
+        let InputError::InvalidJson(err) = world.update_inputs(inputs).unwrap_err() else {
+            panic!("expected invalid JSON");
+        };
+        assert_eq!(err.key, "data");
+    }
+
+    #[test]
+    fn rejects_invalid_json_without_schema_or_with_validation_disabled() {
+        use oicana_input::JsonInput;
+
+        let manifest = r#"
+        [package]
+        name = "test"
+        version = "0.1.0"
+        entrypoint = "main.typ"
+
+        [tool.oicana]
+        manifest_version = 1
+
+        [[tool.oicana.inputs]]
+        type = "json"
+        key = "data"
+        "#;
+        let files = template_with(manifest, "Test");
+        let manifest = files.manifest().unwrap();
+        let mut world = OicanaWorld::new(files, manifest).unwrap();
+        world.validate_inputs = false;
+
+        let mut inputs = TemplateInputs::new();
+        inputs.with_input(JsonInput::new("data", "not json"));
+
+        let error = world.update_inputs(inputs).unwrap_err();
+        assert!(matches!(error, InputError::InvalidJson(_)), "{error:?}");
+        assert!(
+            error
+                .to_string()
+                .starts_with("Input 'data' is not valid JSON"),
+            "{error}"
+        );
     }
 
     #[test]
@@ -1058,9 +1120,9 @@ mod tests {
         let manifest = files.manifest().unwrap();
         let mut world = OicanaWorld::new(files, manifest).unwrap();
 
-        // "other" is declared without a schema, so any value should be accepted
+        // "other" is declared without a schema, so any valid JSON should be accepted
         let mut inputs = TemplateInputs::new();
-        inputs.with_input(JsonInput::new("other", r#"literally anything"#));
+        inputs.with_input(JsonInput::new("other", r#"["some", "json"]"#));
 
         let result = world.update_inputs(inputs);
         assert!(result.is_ok());
@@ -1108,7 +1170,7 @@ mod tests {
     }
 
     #[test]
-    fn accepts_invalid_json_when_validation_disabled() {
+    fn accepts_schema_violations_when_validation_disabled() {
         use oicana_input::JsonInput;
 
         let files = template_with_schema(schema_manifest(), "Test", simple_schema());
@@ -1148,7 +1210,7 @@ mod tests {
     }
 
     #[test]
-    fn per_input_validate_false_accepts_invalid_json() {
+    fn per_input_validate_false_accepts_schema_violations() {
         use oicana_input::JsonInput;
 
         let manifest = r#"

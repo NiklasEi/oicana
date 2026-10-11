@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Improved error handling for JSON inputs that are not valid JSON
+
 ### Browser
 - `@oicana/browser` now bundles the WASM module, so `@oicana/browser-wasm` is no longer needed
   - Uninstall `@oicana/browser-wasm` and import the module URL from `@oicana/browser/oicana.wasm` instead
