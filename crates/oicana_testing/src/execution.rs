@@ -155,6 +155,11 @@ impl TestRunner {
                     debug!("Fuzzing the input '{}' with {}", fuzzed_input.key, value);
 
                     self.run_with_inputs(inputs, &test.snapshot, test.pdf)
+                        .map_err(|error| TestExecutionError::FuzzedInput {
+                            key: fuzzed_input.key.clone(),
+                            value: value.to_string(),
+                            error: Box::new(error),
+                        })
                 })
                 .map(|res| res.map(|vec| vec.into_iter()))
                 .collect::<Result<Vec<_>, _>>()
@@ -347,6 +352,71 @@ mod tests {
 
         run_template(&dir, false).expect("Test should pass when the PDF export is disabled");
     }
+
+    #[test]
+    fn names_the_fuzzed_value_of_a_failing_sample() {
+        let dir = tempdir().unwrap();
+        fs::write(
+            dir.path().join("typst.toml"),
+            r#"
+            [package]
+            name = "fuzzed"
+            version = "0.1.0"
+            entrypoint = "main.typ"
+
+            [tool.oicana]
+            manifest_version = 1
+
+            [[tool.oicana.inputs]]
+            type = "json"
+            key = "data"
+            schema = "data.schema.json"
+            "#,
+        )
+        .unwrap();
+        fs::write(
+            dir.path().join("data.schema.json"),
+            r#"{"type": "boolean"}"#,
+        )
+        .unwrap();
+        fs::write(dir.path().join("main.typ"), "#panic(\"always fails\")").unwrap();
+        let manifest_content = fs::read_to_string(dir.path().join("typst.toml")).unwrap();
+        let manifest = TemplateManifest::from_toml(&manifest_content).unwrap();
+        let mut runner = TestRunnerContext::new()
+            .unwrap()
+            .get_runner(dir.path(), &manifest)
+            .unwrap();
+
+        let error = runner
+            .run(Test {
+                inputs: TemplateInputs::new(),
+                fuzzed_inputs: Some(crate::FuzzJson {
+                    samples: 1,
+                    key: "data".to_owned(),
+                }),
+                name: "fuzzed".to_owned(),
+                snapshot: Snapshot::None,
+                pdf: false,
+                collection: dir.path().to_path_buf(),
+                descriptor: "fuzzed".to_owned(),
+            })
+            .unwrap_err();
+
+        let TestExecutionError::FuzzedInput {
+            ref key, ref value, ..
+        } = error
+        else {
+            panic!("Unexpected error: {error}");
+        };
+        assert_eq!(key, "data");
+        assert!(value == "true" || value == "false", "{value}");
+        let message = error.to_string();
+        assert!(message.contains("always fails"), "{message}");
+        assert!(
+            message.contains(&format!("The fuzzed input 'data' had the value: {value}")),
+            "{message}"
+        );
+    }
 }
 
 /// Errors that can be produced when executing tests
@@ -373,6 +443,16 @@ pub enum TestExecutionError {
         standards: String,
         /// Diagnostics of the failed export
         diagnostics: String,
+    },
+    /// The test failed for a generated value of a fuzzed input
+    #[error("{error}\nThe fuzzed input '{key}' had the value: {value}")]
+    FuzzedInput {
+        /// The key of the fuzzed input
+        key: String,
+        /// The generated JSON value
+        value: String,
+        /// Why the test failed
+        error: Box<TestExecutionError>,
     },
     /// Failure during fuzzing setup
     #[error("{0}")]

@@ -7,6 +7,7 @@
 
 ### CLI
 - `oicana pack` no longer warns about imports with a computed source, since it was mostly false positives
+- A failing fuzzed test names the generated input value
 
 ### Browser
 - `@oicana/browser` now bundles the WASM module, so `@oicana/browser-wasm` is no longer needed
