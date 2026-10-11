@@ -24,11 +24,14 @@
   * Java:
     * integrations/java/oicana-java-native/Cargo.toml
     * integrations/java/build.gradle.kts (version in `subprojects` block)
+  * Go: `version` in integrations/go/cmd/oicana-install/main.go
+  * Ruby: integrations/ruby/lib/oicana/version.rb (prereleases use a dot: `0.10.0.rc.1` for `0.10.0-rc.1`)
   * Typst package
     * Bump version in integrations/typst/typst.toml
     * Bump code version and version in docs in integrations/typst/src/lib.typ
 4. Run `cargo publish --workspace` to publish the rust integration and CLI to crates.io
 5.
+  * tag Go and Ruby natives `oicana_uniffi-v*` => will trigger CD pipeline, which also tags Go and Ruby and publishes Ruby
   * tag CLI version `oicana_cli-v*` => will trigger CD pipeline
   * tag crates version `oicana_rust-v*`
   * tag C# version `oicana_csharp-v*` => will trigger CD pipeline
@@ -108,6 +111,28 @@ Push a tag `oicana_java-v0.0.0-rc.1` or manually trigger .github/workflows/publi
 The CD pipeline validates version consistency, builds JNI native libraries for 5 platforms, and publishes 6 artifacts to Maven Central via the Sonatype Central Portal:
 - `com.oicana:oicana` (API JAR)
 - `com.oicana:oicana-{platform}` (native JARs per platform)
+
+## Native libraries
+
+The native `oicana_uniffi` libraries are shared between some integrations. Push a tag like `oicana_uniffi-v0.0.0-rc.1` to
+trigger `.github/workflows/native-release.yml`. It builds every target, runs the relevant integration tests,
+and publishes each library as a separate gzip-compressed asset with a `SHA256SUMS` file as the GitHub release of the tag.
+Then it triggers publishing for the relevant integrations.
+
+## Go
+
+The Go module is `go.oicana.com/oicana`. The website serves its `go-import` meta tag on the domain alias
+`go.oicana.com` (see `netlify.toml` and `public/go/oicana.html` in the website repository), which points the go command
+at the `integrations/go` subdirectory of this repository. The module tags are therefore `integrations/go/v0.0.0`. The
+native release creates the tag after its GitHub release exists, because the installer `cmd/oicana-install` downloads
+the native libraries from the `oicana_uniffi-v*` release of its own version. The Go module proxy fetches the tagged
+source.
+
+## Ruby
+
+The native release tags the commit `oicana_ruby-v0.0.0` and dispatches `.github/workflows/publish-integration-ruby.yml`,
+which can also be triggered manually with a version input. It builds one gem per platform from the `oicana_uniffi-v*`
+release of the same version, plus a generic gem without a native library, and pushes them to rubygems.org with trusted publishing.
 
 ## Crates
 

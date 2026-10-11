@@ -8,6 +8,9 @@
 ### CLI
 - `oicana pack` no longer warns about imports with a computed source, since it was mostly false positives
 - A failing fuzzed test names the generated input value
+- Fuzzing tests support many more JSON Schema features
+  - String formats like `date`, `date-time`, `email`, `uri` and `uuid` get realistic values, and `pattern` is respected
+  - `not`, `prefixItems`, `uniqueItems`, `contains`, `patternProperties` and `unevaluated*` are supported
 
 ### PHP
 - JSON inputs accept objects
@@ -25,6 +28,13 @@
 - The `Oicana` package is split into `Oicana.Core` and one `Oicana.Native.<rid>` package per platform
   - `Oicana` depends on all of them, so existing installs keep working without changes
   - For smaller deployments, reference `Oicana.Core` and only the native packages you need
+
+### Go
+- New integration: the module `go.oicana.com/oicana` links the native library statically through cgo
+  - `go run go.oicana.com/oicana/cmd/oicana-install` downloads the library and prints the `CGO_LDFLAGS` that link it
+
+### Ruby
+- New integration: the `oicana` gem, with platform gems that bring the native library
 
 ## v0.9.0
 

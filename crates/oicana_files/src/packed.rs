@@ -171,7 +171,16 @@ impl PackedTemplate {
         let mut bytes = HashMap::new();
         let mut fonts = vec![];
         let mut packages = HashSet::new();
-        let paths: Vec<String> = archive.file_names().map(|path| path.to_owned()).collect();
+        let paths: Vec<String> = archive
+            .file_names()
+            .filter_map(|path| match path {
+                Ok(path) => Some(path.into_owned()),
+                Err(error) => {
+                    warn!("Failed to decode a zip path: {error}");
+                    None
+                }
+            })
+            .collect();
         for path in &paths {
             let file_result = archive.by_name(path);
             let content = match file_result {

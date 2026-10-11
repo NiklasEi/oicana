@@ -1,0 +1,3 @@
+# Evaluated inside the generated module before it attaches any function, see lib/oicana/native.rb
+[bindings.ruby]
+cdylib_path = "::Oicana::Native.prepare(self)"
