@@ -36,7 +36,7 @@ class Template
      * Initialize template and register it with the native extension.
      *
      * @param string $template Template zip file bytes
-     * @param array<string, string|array<mixed>> $jsonInputs JSON inputs (key => JSON string or array)
+     * @param array<string, string|array<mixed>|object> $jsonInputs JSON strings, or arrays and objects to encode
      * @param array<string, BlobInput> $blobInputs blob inputs
      * @param CompilationMode $mode Compilation mode
      * @param ZipLimits|null $limits Limits for reading the template zip (defaults apply when null)
@@ -88,7 +88,7 @@ class Template
     /**
      * Compile template and export to the given format.
      *
-     * @param array<string, string|array<mixed>> $jsonInputs JSON inputs (key => JSON string or array)
+     * @param array<string, string|array<mixed>|object> $jsonInputs JSON strings, or arrays and objects to encode
      * @param array<string, BlobInput> $blobInputs Blob inputs
      * @param ExportFormat|null $exportFormat Export format configuration (defaults to PDF)
      * @param CompilationMode $mode Compilation mode
@@ -132,7 +132,7 @@ class Template
      * Compile template and export to PDF in a single call.
      * Tagging will be automatically turned off when exporting a subset of pages.
      *
-     * @param array<string, string|array<mixed>> $jsonInputs JSON inputs (key => JSON string or array)
+     * @param array<string, string|array<mixed>|object> $jsonInputs JSON strings, or arrays and objects to encode
      * @param array<string, BlobInput> $blobInputs Blob inputs
      * @param CompilationMode $mode Compilation mode
      * @param PageRange|null $pages 0-based, inclusive page range (defaults to the whole document)
@@ -152,7 +152,7 @@ class Template
      * Compile template and export to PNG in a single call.
      * Multiple pages are merged into a single, vertically stacked image.
      *
-     * @param array<string, string|array<mixed>> $jsonInputs JSON inputs (key => JSON string or array)
+     * @param array<string, string|array<mixed>|object> $jsonInputs JSON strings, or arrays and objects to encode
      * @param array<string, BlobInput> $blobInputs Blob inputs
      * @param CompilationMode $mode Compilation mode
      * @param float $pixelsPerPt Resolution in pixels per point (defaults to 1.0)
@@ -173,7 +173,7 @@ class Template
     /**
      * Compile template and export to SVG in a single call.
      *
-     * @param array<string, string|array<mixed>> $jsonInputs JSON inputs (key => JSON string or array)
+     * @param array<string, string|array<mixed>|object> $jsonInputs JSON strings, or arrays and objects to encode
      * @param array<string, BlobInput> $blobInputs Blob inputs
      * @param CompilationMode $mode Compilation mode
      * @param PageRange|null $pages 0-based, inclusive page range (defaults to the whole document)
@@ -196,7 +196,7 @@ class Template
      * exported one or more times without re-compiling. Call
      * {@see CompiledDocument::close()} when done to free it.
      *
-     * @param array<string, string|array<mixed>> $jsonInputs JSON inputs (key => JSON string or array)
+     * @param array<string, string|array<mixed>|object> $jsonInputs JSON strings, or arrays and objects to encode
      * @param array<string, BlobInput> $blobInputs Blob inputs
      * @param CompilationMode $mode Compilation mode
      * @return CompiledDocument A handle to the compiled document
@@ -230,7 +230,7 @@ class Template
      * create an instance of Template and use export() instead.
      *
      * @param string $templateBytes Template zip file bytes
-     * @param array<string, string|array<mixed>> $jsonInputs JSON inputs (key => JSON string or array)
+     * @param array<string, string|array<mixed>|object> $jsonInputs JSON strings, or arrays and objects to encode
      * @param array<string, BlobInput> $blobInputs Blob inputs
      * @param ExportFormat|null $exportFormat Export format configuration (defaults to PDF)
      * @param CompilationMode $mode Compilation mode
@@ -343,18 +343,29 @@ class Template
     }
 
     /**
-     * Encode array values in jsonInputs to JSON strings.
+     * Encode non-string values in jsonInputs to JSON strings.
      *
-     * @param array<string, string|array<mixed>> $jsonInputs
+     * @param array<string, string|array<mixed>|object> $jsonInputs
      * @return array<string, string>
+     * @throws OicanaException If a value cannot be encoded as JSON
      */
     private static function encodeJsonInputs(array $jsonInputs): array
     {
         $encoded = [];
         foreach ($jsonInputs as $key => $value) {
-            $encoded[$key] = is_array($value)
-                ? json_encode($value, JSON_THROW_ON_ERROR)
-                : $value;
+            if (is_string($value)) {
+                $encoded[$key] = $value;
+                continue;
+            }
+            try {
+                $encoded[$key] = json_encode($value, JSON_THROW_ON_ERROR);
+            } catch (\JsonException $e) {
+                throw new OicanaException(
+                    "JSON input '{$key}' could not be encoded: {$e->getMessage()}",
+                    0,
+                    $e
+                );
+            }
         }
         return $encoded;
     }

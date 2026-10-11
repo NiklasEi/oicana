@@ -61,6 +61,41 @@ test('template compiles with JSON inputs', function () {
     }
 });
 
+test('template compiles with object JSON inputs', function () {
+    $templateBytes = file_get_contents(e2e_template_path());
+    $template = new Template($templateBytes);
+
+    $jsonContent = file_get_contents(assets_path('inputs/input.json'));
+    assert(is_string($jsonContent));
+    $decoded = json_decode($jsonContent);
+    assert(is_object($decoded));
+
+    try {
+        $pdf = $template->export(
+            jsonInputs: ['development-json' => $decoded],
+            mode: CompilationMode::Development
+        );
+
+        expect($pdf)->toStartWith('%PDF');
+    } finally {
+        $template->close();
+    }
+});
+
+test('unencodable JSON inputs throw an oicana exception', function () {
+    $templateBytes = file_get_contents(e2e_template_path());
+    $template = new Template($templateBytes);
+
+    try {
+        expect(fn () => $template->export(
+            jsonInputs: ['development-json' => ['value' => INF]],
+            mode: CompilationMode::Development
+        ))->toThrow(OicanaException::class, "JSON input 'development-json' could not be encoded");
+    } finally {
+        $template->close();
+    }
+});
+
 test('template compiles with blob inputs', function () {
     $templateBytes = file_get_contents(e2e_template_path());
     $template = new Template($templateBytes);
