@@ -121,7 +121,7 @@ Then it triggers publishing for the relevant integrations.
 
 ## Go
 
-The Go modules tags are `integrations/go/v0.0.0`. The native release creates the tag
+The Go module tags are `integrations/go/v0.0.0`. The native release creates the tag
 after its GitHub release exists, because the installer `cmd/oicana-install` downloads the native libraries from the
 `oicana_uniffi-v*` release of its own version. The Go module proxy fetches the tagged source.
 
