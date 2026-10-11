@@ -3,6 +3,10 @@
 ## Unreleased
 
 - Improved error handling for JSON inputs that are not valid JSON
+- Improved error for missing packages in a template
+
+### CLI
+- `oicana pack` no longer warns about imports with a computed source, since it was mostly false positives
 
 ### Browser
 - `@oicana/browser` now bundles the WASM module, so `@oicana/browser-wasm` is no longer needed
