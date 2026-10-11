@@ -1,12 +1,12 @@
 use crate::TemplateFiles;
 use log::warn;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::io::{Read, Seek};
 use std::str::FromStr;
 use std::sync::{Mutex, PoisonError};
 use std::{str, vec};
 use thiserror::Error;
-use typst::diag::{FileError, FileResult};
+use typst::diag::{eco_format, FileError, FileResult, PackageError};
 use typst::foundations::Bytes;
 use typst::syntax::package::{PackageSpec, PackageVersion};
 use typst::syntax::{FileId, RootedPath, Source, VirtualPath, VirtualRoot};
@@ -144,6 +144,7 @@ pub struct PackedTemplate {
     source: Mutex<HashMap<FileId, Source>>,
     bytes: Mutex<HashMap<FileId, Bytes>>,
     fonts: Vec<FileId>,
+    packages: HashSet<PackageSpec>,
 }
 
 impl PackedTemplate {
@@ -169,6 +170,7 @@ impl PackedTemplate {
         let mut source = HashMap::new();
         let mut bytes = HashMap::new();
         let mut fonts = vec![];
+        let mut packages = HashSet::new();
         let paths: Vec<String> = archive.file_names().map(|path| path.to_owned()).collect();
         for path in &paths {
             let file_result = archive.by_name(path);
@@ -213,14 +215,13 @@ impl PackedTemplate {
                             continue;
                         }
                     };
-                    let id = FileId::new(RootedPath::new(
-                        VirtualRoot::Package(PackageSpec {
-                            version,
-                            name: package.into(),
-                            namespace: namespace.into(),
-                        }),
-                        vpath,
-                    ));
+                    let spec = PackageSpec {
+                        version,
+                        name: package.into(),
+                        namespace: namespace.into(),
+                    };
+                    packages.insert(spec.clone());
+                    let id = FileId::new(RootedPath::new(VirtualRoot::Package(spec), vpath));
                     if is_font(path) {
                         fonts.push(id);
                     }
@@ -261,7 +262,21 @@ impl PackedTemplate {
             source: Mutex::new(source),
             bytes: Mutex::new(bytes),
             fonts,
+            packages,
         })
+    }
+
+    fn not_found(&self, id: FileId) -> FileError {
+        match id.root() {
+            VirtualRoot::Package(spec) if !self.packages.contains(spec) => {
+                FileError::Package(PackageError::Other(Some(eco_format!(
+                    "{spec} is not part of the template archive. \
+                     `oicana pack` only bundles packages imported with a string literal, \
+                     like `#import \"{spec}\"`"
+                ))))
+            }
+            _ => FileError::NotFound(id.vpath().get_with_slash().into()),
+        }
     }
 }
 
@@ -307,19 +322,13 @@ impl TemplateFiles for PackedTemplate {
     fn source(&self, id: FileId) -> FileResult<Source> {
         // The maps are never structurally modified after construction, so a
         // poisoned lock cannot mean inconsistent data.
-        let mut map = self.source.lock().unwrap_or_else(PoisonError::into_inner);
-        Ok(map
-            .get_mut(&id)
-            .ok_or(FileError::NotFound(id.vpath().get_with_slash().into()))?
-            .clone())
+        let map = self.source.lock().unwrap_or_else(PoisonError::into_inner);
+        map.get(&id).cloned().ok_or_else(|| self.not_found(id))
     }
 
     fn file(&self, id: FileId) -> FileResult<Bytes> {
-        let mut map = self.bytes.lock().unwrap_or_else(PoisonError::into_inner);
-        Ok(map
-            .get_mut(&id)
-            .ok_or(FileError::NotFound(id.vpath().get_with_slash().into()))?
-            .clone())
+        let map = self.bytes.lock().unwrap_or_else(PoisonError::into_inner);
+        map.get(&id).cloned().ok_or_else(|| self.not_found(id))
     }
 
     fn font_files(&self) -> &Vec<FileId> {
@@ -333,7 +342,7 @@ mod tests {
     use crate::TemplateFiles;
     use std::fs::read;
     use std::io::{Cursor, Write};
-    use typst::diag::EcoString;
+    use typst::diag::{EcoString, FileError};
     use typst::syntax::package::{PackageManifest, PackageSpec};
     use typst::syntax::{FileId, RootedPath, VirtualPath, VirtualRoot};
     use zip::write::SimpleFileOptions;
@@ -448,6 +457,31 @@ mod tests {
                 "/typst.toml"
             ))
             .is_ok());
+    }
+
+    #[test]
+    fn names_packages_missing_from_the_archive() {
+        let template =
+            read("../../assets/templates/table-0.1.0.zip").expect("Failed to read template zip");
+        let files =
+            PackedTemplate::new(Cursor::new(template)).expect("Failed to parse template zip");
+
+        let missing_package = package_file("@preview/missing:1.0.0".parse().unwrap(), "/lib.typ");
+        let error = files.source(missing_package).unwrap_err().to_string();
+        assert!(
+            error.contains("@preview/missing:1.0.0 is not part of the template archive"),
+            "{error}"
+        );
+
+        let packed_package = package_file("@preview/oicana:0.2.0".parse().unwrap(), "/missing.typ");
+        assert!(matches!(
+            files.file(packed_package),
+            Err(FileError::NotFound(_))
+        ));
+        assert!(matches!(
+            files.source(project_file("/missing.typ")),
+            Err(FileError::NotFound(_))
+        ));
     }
 
     #[test]

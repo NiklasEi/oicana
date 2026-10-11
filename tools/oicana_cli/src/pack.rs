@@ -12,14 +12,13 @@ use oicana::template::package::{dependency_exclude_matcher, package_with_depende
 use std::collections::HashSet;
 use std::ffi::OsStr;
 use std::fs::{create_dir_all, File};
-use std::ops::Range;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
-use typst::syntax::ast::{AstNode, ModuleImport, ModuleInclude};
+use typst::syntax::ast::{ModuleImport, ModuleInclude};
 
 static PACKAGE: Emoji<'_, '_> = Emoji("📦", "");
 use typst::syntax::package::PackageSpec;
-use typst::syntax::{ast, FileId, LinkedNode, RootedPath, VirtualPath, VirtualRoot};
+use typst::syntax::{ast, FileId, RootedPath, SyntaxNode, VirtualPath, VirtualRoot};
 
 #[derive(Debug, Args)]
 pub struct PackArgs {
@@ -79,12 +78,6 @@ pub fn pack(args: PackArgs) -> anyhow::Result<()> {
 
         let exclude_matcher = template.manifest.build_exclude_matcher();
         let dependencies = collect_dependencies(&template.path, &exclude_matcher, &files)?;
-        for dynamic_import in &dependencies.dynamic_imports {
-            let warning = style("Warning").yellow();
-            println!(
-                "{warning}: {dynamic_import} is not a string literal. A package imported this way is not packed and fails at runtime."
-            );
-        }
 
         create_dir_all(out)?;
         let out_file_path = out.join(
@@ -109,7 +102,7 @@ pub fn pack(args: PackArgs) -> anyhow::Result<()> {
             out_file,
             &exclude_matcher,
             exclude.as_deref(),
-            &dependencies.packages,
+            &dependencies,
         )?;
 
         println!(
@@ -139,26 +132,18 @@ fn warn_if_template_exceeds_default_limits(out_file_path: &Path) {
     }
 }
 
-/// Package dependencies of a template.
-struct Dependencies {
-    /// `(source_dir, zip_prefix)` pairs.
-    packages: Vec<(PathBuf, PathBuf)>,
-    /// Imports and includes whose source is computed, so they cannot be resolved
-    /// before compilation.
-    dynamic_imports: Vec<String>,
-}
-
 /// Collect all package dependencies by scanning imports in (to be packed) `.typ` files.
+///
+/// Returns a list of `(source_dir, zip_prefix)` pairs where `source_dir` is the
+/// package's location on disk and `zip_prefix` is the path it should have in the zip
+/// (e.g. `.dependencies/preview/pkg/0.1.0`).
 fn collect_dependencies(
     root: &Path,
     exclude_matcher: &Gitignore,
     files: &NativeTemplate,
-) -> anyhow::Result<Dependencies> {
+) -> anyhow::Result<Vec<(PathBuf, PathBuf)>> {
     let mut collected = HashSet::new();
-    let mut dependencies = Dependencies {
-        packages: Vec::new(),
-        dynamic_imports: Vec::new(),
-    };
+    let mut result = Vec::new();
 
     scan_imports(
         root,
@@ -166,10 +151,10 @@ fn collect_dependencies(
         &VirtualRoot::Project,
         files,
         &mut collected,
-        &mut dependencies,
+        &mut result,
     )?;
 
-    Ok(dependencies)
+    Ok(result)
 }
 
 fn scan_imports(
@@ -178,7 +163,7 @@ fn scan_imports(
     virtual_root: &VirtualRoot,
     files: &NativeTemplate,
     collected: &mut HashSet<PackageSpec>,
-    dependencies: &mut Dependencies,
+    result: &mut Vec<(PathBuf, PathBuf)>,
 ) -> anyhow::Result<()> {
     let walk = walkdir::WalkDir::new(dir)
         .into_iter()
@@ -203,24 +188,7 @@ fn scan_imports(
             .source(fid)
             .context(format!("Can't read source file {}", path.display()))?;
 
-        let mut sources = Vec::new();
-        collect_import_sources(&LinkedNode::new(source.root()), &mut sources);
-        for import_source in sources {
-            let literal = match import_source {
-                ImportSource::Literal(literal) => literal,
-                ImportSource::Dynamic(range) => {
-                    let line = source
-                        .lines()
-                        .byte_to_line(range.start)
-                        .map_or(String::new(), |line| format!(":{}", line + 1));
-                    dependencies.dynamic_imports.push(format!(
-                        "The import source `{}` in {}{line}",
-                        &source.text()[range],
-                        path.display()
-                    ));
-                    continue;
-                }
-            };
+        for literal in imported_literals(source.root()) {
             let Ok(spec) = PackageSpec::from_str(literal.as_str()) else {
                 continue;
             };
@@ -236,9 +204,7 @@ fn scan_imports(
                 ".dependencies/{}/{}/{}",
                 spec.namespace, spec.name, spec.version
             ));
-            dependencies
-                .packages
-                .push((package_dir.clone(), zip_prefix));
+            result.push((package_dir.clone(), zip_prefix));
 
             scan_imports(
                 &package_dir,
@@ -246,7 +212,7 @@ fn scan_imports(
                 &VirtualRoot::Package(spec),
                 files,
                 collected,
-                dependencies,
+                result,
             )?;
         }
     }
@@ -254,33 +220,22 @@ fn scan_imports(
     Ok(())
 }
 
-/// The source of an `import` or `include`.
-enum ImportSource {
-    Literal(String),
-    /// A computed source, with its byte range in the file.
-    Dynamic(Range<usize>),
+fn imported_literals(node: &SyntaxNode) -> Vec<String> {
+    let mut found = Vec::new();
+    collect_imported_literals(node, &mut found);
+    found
 }
 
-fn collect_import_sources(node: &LinkedNode, found: &mut Vec<ImportSource>) {
+fn collect_imported_literals(node: &SyntaxNode, found: &mut Vec<String>) {
     let source = node
         .cast::<ModuleImport>()
         .map(|import| import.source())
         .or_else(|| node.cast::<ModuleInclude>().map(|include| include.source()));
-    match source {
-        Some(ast::Expr::Str(literal)) => {
-            found.push(ImportSource::Literal(literal.get().to_string()));
-        }
-        Some(expression) => {
-            let range = node
-                .children()
-                .find(|child| child.span() == expression.span())
-                .map_or(node.range(), |child| child.range());
-            found.push(ImportSource::Dynamic(range));
-        }
-        None => {}
+    if let Some(ast::Expr::Str(literal)) = source {
+        found.push(literal.get().to_string());
     }
     for child in node.children() {
-        collect_import_sources(&child, found);
+        collect_imported_literals(child, found);
     }
 }
 
@@ -330,9 +285,7 @@ entrypoint = "package.typ"
         }
         let files = NativeTemplate::new(&temp_template, temp_packages);
 
-        let deps = collect_dependencies(&temp_template, &Gitignore::empty(), &files)
-            .unwrap()
-            .packages;
+        let deps = collect_dependencies(&temp_template, &Gitignore::empty(), &files).unwrap();
         assert!(deps.is_empty());
         assert_eq!(
             temp_template.join(".dependencies").try_exists().ok(),
@@ -356,9 +309,7 @@ entrypoint = "package.typ"
         let mut builder = ignore::gitignore::GitignoreBuilder::new("");
         builder.add_line(None, "drafts/").unwrap();
         let files = NativeTemplate::new(&temp_template, temp_packages);
-        let deps = collect_dependencies(&temp_template, &builder.build().unwrap(), &files)
-            .unwrap()
-            .packages;
+        let deps = collect_dependencies(&temp_template, &builder.build().unwrap(), &files).unwrap();
 
         assert!(deps.is_empty());
     }
@@ -390,9 +341,7 @@ entrypoint = "package.typ"
         manifest.write_all(b"exclude = [\"examples\"]\n").unwrap();
 
         let files = NativeTemplate::new(&temp_template, temp_packages);
-        let deps = collect_dependencies(&temp_template, &Gitignore::empty(), &files)
-            .unwrap()
-            .packages;
+        let deps = collect_dependencies(&temp_template, &Gitignore::empty(), &files).unwrap();
 
         assert_eq!(deps.len(), 1);
     }
@@ -417,9 +366,7 @@ entrypoint = "package.typ"
         create_mock_package(&temp_packages, &spec, "Some package content");
 
         let files = NativeTemplate::new(&temp_template, temp_packages);
-        let deps = collect_dependencies(&temp_template, &Gitignore::empty(), &files)
-            .unwrap()
-            .packages;
+        let deps = collect_dependencies(&temp_template, &Gitignore::empty(), &files).unwrap();
 
         assert_eq!(deps.len(), 1);
         assert_eq!(deps[0].1, PathBuf::from(".dependencies/local/test/0.1.0"));
@@ -447,9 +394,7 @@ entrypoint = "package.typ"
         create_mock_package(&temp_packages, &spec, "Some package content");
 
         let files = NativeTemplate::new(&temp_template, temp_packages);
-        let deps = collect_dependencies(&temp_template, &Gitignore::empty(), &files)
-            .unwrap()
-            .packages;
+        let deps = collect_dependencies(&temp_template, &Gitignore::empty(), &files).unwrap();
 
         assert_eq!(deps.len(), 1, "the package should be packed once: {deps:?}");
     }
@@ -472,34 +417,9 @@ entrypoint = "package.typ"
         create_mock_package(&temp_packages, &second, "#import \"@local/first:0.1.0\": *");
 
         let files = NativeTemplate::new(&temp_template, temp_packages);
-        let deps = collect_dependencies(&temp_template, &Gitignore::empty(), &files)
-            .unwrap()
-            .packages;
+        let deps = collect_dependencies(&temp_template, &Gitignore::empty(), &files).unwrap();
 
         assert_eq!(deps.len(), 2, "both packages exactly once: {deps:?}");
-    }
-
-    #[test]
-    fn reports_imports_with_a_computed_source() {
-        let tempdir = tempdir().unwrap();
-        let temp_template = tempdir.path().join("template");
-        create_dir_all(&temp_template).unwrap();
-        File::create(temp_template.join("test.typ"))
-            .unwrap()
-            .write_all(
-                b"#let p = \"@local/\" + \"test:0.1.0\"\n#import p: *\n#import \"other.typ\"",
-            )
-            .unwrap();
-
-        let files = NativeTemplate::new(&temp_template, tempdir.path().join("cache"));
-        let dependencies =
-            collect_dependencies(&temp_template, &Gitignore::empty(), &files).unwrap();
-
-        assert!(dependencies.packages.is_empty());
-        assert_eq!(dependencies.dynamic_imports.len(), 1);
-        let reported = &dependencies.dynamic_imports[0];
-        assert!(reported.contains("`p`"), "{reported}");
-        assert!(reported.ends_with("test.typ:2"), "{reported}");
     }
 
     #[test]
@@ -524,9 +444,7 @@ entrypoint = "package.typ"
             create_mock_package(&temp_packages, &spec, "Some package content");
 
             let files = NativeTemplate::new(&temp_template, temp_packages);
-            let deps = collect_dependencies(&temp_template, &Gitignore::empty(), &files)
-                .unwrap()
-                .packages;
+            let deps = collect_dependencies(&temp_template, &Gitignore::empty(), &files).unwrap();
 
             assert_eq!(deps.len(), 1, "expected a dependency for {markup:?}");
             assert_eq!(deps[0].1, PathBuf::from(".dependencies/local/test/0.1.0"));
@@ -559,9 +477,7 @@ entrypoint = "package.typ"
         create_mock_package(&temp_packages, &spec2, "Some other package content");
 
         let files = NativeTemplate::new(&temp_template, temp_packages);
-        let deps = collect_dependencies(&temp_template, &Gitignore::empty(), &files)
-            .unwrap()
-            .packages;
+        let deps = collect_dependencies(&temp_template, &Gitignore::empty(), &files).unwrap();
 
         assert_eq!(deps.len(), 2);
         let zip_prefixes: HashSet<_> = deps.iter().map(|(_, p)| p.clone()).collect();
