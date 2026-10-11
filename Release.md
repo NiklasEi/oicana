@@ -129,7 +129,7 @@ after its GitHub release exists, because the installer `cmd/oicana-install` down
 
 The native release tags the commit `oicana_ruby-v0.0.0` and dispatches `.github/workflows/publish-integration-ruby.yml`,
 which can also be triggered manually with a version input. It builds one gem per platform from the `oicana_uniffi-v*`
-release of the same version and pushes them to rubygems.org with trusted publishing.
+release of the same version, plus a generic gem without a native library, and pushes them to rubygems.org with trusted publishing.
 
 ## Crates
 

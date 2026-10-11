@@ -33,7 +33,7 @@ JSON inputs take Strings holding JSON, or any value `JSON.generate` accepts. Blo
 
 ## Running in a web service
 
-Creating a `Template` compiles it once to warm up the Typst cache, so do it at startup, not per request. A template is safe to use from multiple threads, and native calls release the GVL. Templates and compiled documents are freed by the garbage collector, or right away with `close`.
+Creating a `Template` compiles it once to warm up the Typst cache, so create it once per process, not per request. Oicana cannot compile in a process forked after its parent compiled, so with forking servers and job runners like Puma in cluster mode or Solid Queue, create templates on first use instead of during boot. A template is safe to use from multiple threads, and native calls release the GVL. Templates and compiled documents are freed by the garbage collector, or right away with `close`.
 
 ## Licensing
 

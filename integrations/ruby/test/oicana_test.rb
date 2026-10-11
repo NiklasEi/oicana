@@ -140,6 +140,29 @@ class OicanaTest < Minitest::Test
     end
   end
 
+  def test_forked_child_fails_instead_of_hanging
+    skip "fork is not available" unless Process.respond_to?(:fork)
+
+    template = Oicana::Template.new(e2e_template)
+    pid = fork do
+      Oicana::Template.new(e2e_template)
+      exit!(1)
+    rescue Oicana::Error => e
+      exit!(e.message.include?("forked process") ? 0 : 2)
+    end
+    deadline = Process.clock_gettime(Process::CLOCK_MONOTONIC) + 30
+    status = nil
+    until (status = Process.wait2(pid, Process::WNOHANG)&.last)
+      if Process.clock_gettime(Process::CLOCK_MONOTONIC) > deadline
+        Process.kill(:KILL, pid)
+        flunk "the forked child hung"
+      end
+      sleep 0.05
+    end
+    assert_equal 0, status.exitstatus
+    template.close
+  end
+
   def test_compiled_document_outlives_template
     template = Oicana::Template.new(e2e_template)
     document = template.compile(mode: :development)

@@ -40,9 +40,16 @@ module Oicana
   }.freeze
   private_constant :ERRORS
 
+  @compiling_pid = nil
+
   # @api private
   # Runs the block and translates errors of the generated bindings.
   def self.translate_errors
+    if @compiling_pid && @compiling_pid != Process.pid
+      raise Error, "Oicana cannot be used in a forked process after the parent process #{@compiling_pid} " \
+                   "used it. Create templates after forking, for example lazily on first use."
+    end
+    @compiling_pid = Process.pid
     yield
   rescue OicanaUniffi::OicanaError::InvalidTemplate, OicanaUniffi::OicanaError::InvalidInput,
          OicanaUniffi::OicanaError::Compilation, OicanaUniffi::OicanaError::FileNotFound,

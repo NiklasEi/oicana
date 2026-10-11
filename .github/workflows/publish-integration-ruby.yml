@@ -80,6 +80,7 @@ jobs:
             OICANA_PLATFORM="${platforms[$target]}" gem build oicana.gemspec --output "../../gems/oicana-$VERSION-${platforms[$target]}.gem"
           done
           rm -rf lib/oicana/native extracted
+          gem build oicana.gemspec --output "../../gems/oicana-$VERSION.gem"
 
       - name: Report gem sizes
         run: |
