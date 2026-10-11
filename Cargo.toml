@@ -119,8 +119,8 @@ console = { version = "0.16", default-features = false, features = ["ansi-parsin
 openssl = "0.10.72"
 image = "0.25.8"
 oxipng = { version = "10.1.1", default-features = false, features = ["parallel"] }
-json_schema_fuzz = "0.5.0"
-json_schema_ast = "0.5.0"
+json_schema_fuzz = "0.4.3"
+json_schema_ast = "0.4.3"
 jsonschema = { version = "0.58", default-features = false }
 rand = "0.10"
 uuid = "1.18.1"

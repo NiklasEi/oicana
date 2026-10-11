@@ -2890,16 +2890,13 @@ dependencies = [
 
 [[package]]
 name = "json_schema_ast"
-version = "0.5.0"
+version = "0.4.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a3c6bfd63a69e541ca79cd6b114b97cd9d648af3b7dc343caa35a2cc6b3ec3cf"
+checksum = "bb8c4719bf8b88d880c3382669b04f9318fdf7bd89c288ddfab2d32d5a4f7cc3"
 dependencies = [
+ "fancy-regex 0.17.0",
  "jsonschema 0.45.1",
- "num-bigint",
- "num-rational",
- "num-traits",
  "percent-encoding",
- "serde",
  "serde_json",
  "thiserror",
  "url",
@@ -2907,9 +2904,9 @@ dependencies = [
 
 [[package]]
 name = "json_schema_fuzz"
-version = "0.5.0"
+version = "0.4.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "61744f088a221d8900d172b2f74542107a98babbb4f738295441dc3fa2e61ccb"
+checksum = "d6550fe829d78dcd1b43af91b8d9c2801959e2ffaed134701aab3b427dd1d823"
 dependencies = [
  "chrono",
  "fake",
@@ -2937,7 +2934,6 @@ dependencies = [
  "getrandom 0.3.4",
  "idna",
  "itoa",
- "num-bigint",
  "num-cmp",
  "num-traits",
  "percent-encoding",
