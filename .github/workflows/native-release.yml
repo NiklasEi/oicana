@@ -1,0 +1,312 @@
+name: native release
+
+# Builds oicana_uniffi for every target once and packages it for the UniFFI integrations.
+#
+# An oicana_uniffi-v<version> tag publishes the archives and SHA256SUMS as the GitHub release of that
+# tag, which CD workflows for the integrations can download from.
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to build (e.g. 0.1.0-rc.1)'
+        type: string
+        required: true
+  push:
+    tags:
+      - 'oicana_uniffi-v[0-9]+.[0-9]+.[0-9]+*'
+
+permissions:
+  contents: read
+
+jobs:
+  validate-version:
+    name: Validate version consistency
+    runs-on: ubuntu-24.04
+    outputs:
+      version: ${{ steps.version.outputs.VERSION }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Determine and validate version
+        id: version
+        run: |
+          if [[ "${{ github.ref_name }}" == oicana_uniffi-v* ]]; then
+            VERSION="${{ github.ref_name }}"
+            VERSION="${VERSION#oicana_uniffi-v}"
+          elif [[ -n "${{ inputs.version }}" ]]; then
+            VERSION="${{ inputs.version }}"
+          else
+            echo "::error::Version must be provided via tag or workflow input"
+            exit 1
+          fi
+          echo "VERSION=${VERSION}" >> $GITHUB_OUTPUT
+          echo "Building version: ${VERSION}"
+
+          ERRORS=()
+
+          # oicana_uniffi inherits the workspace version.
+          CRATE_VERSION=$(sed -n '/^\[workspace.package\]/,/^\[/s/^version = "\(.*\)"/\1/p' Cargo.toml)
+          if [[ "$CRATE_VERSION" != "$VERSION" ]]; then
+            ERRORS+=("the workspace (oicana_uniffi) has version $CRATE_VERSION")
+          fi
+
+          GO_VERSION=$(sed -n 's/^const version = "\(.*\)"/\1/p' integrations/go/cmd/oicana-install/main.go)
+          if [[ "$GO_VERSION" != "$VERSION" ]]; then
+            ERRORS+=("the Go installer has version $GO_VERSION")
+          fi
+
+          RUBY_VERSION=$(sed -n 's/^  VERSION = "\(.*\)"/\1/p' integrations/ruby/lib/oicana/version.rb)
+          if [[ "$RUBY_VERSION" != "$VERSION" ]]; then
+            ERRORS+=("the Ruby gem has version $RUBY_VERSION")
+          fi
+
+          if [[ ${#ERRORS[@]} -gt 0 ]]; then
+            echo "::error::Version mismatch for ${VERSION}:"
+            for err in "${ERRORS[@]}"; do
+              echo "::error::  - $err"
+            done
+            exit 1
+          fi
+
+          echo "All version sources match: ${VERSION}"
+
+  build:
+    name: Build ${{ matrix.target }}
+    needs: validate-version
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { target: x86_64-unknown-linux-gnu, os: ubuntu-24.04, container: 'quay.io/pypa/manylinux_2_28_x86_64:2026.09.14-1', files: liboicana_uniffi.so liboicana_uniffi.a }
+          - { target: aarch64-unknown-linux-gnu, os: ubuntu-24.04-arm, container: 'quay.io/pypa/manylinux_2_28_aarch64:2026.09.14-1', files: liboicana_uniffi.so liboicana_uniffi.a }
+          - { target: x86_64-unknown-linux-musl, os: ubuntu-24.04, zig: true, files: liboicana_uniffi.so liboicana_uniffi.a }
+          - { target: aarch64-unknown-linux-musl, os: ubuntu-24.04, zig: true, files: liboicana_uniffi.so liboicana_uniffi.a }
+          - { target: x86_64-apple-darwin, os: macos-26, files: liboicana_uniffi.dylib liboicana_uniffi.a }
+          - { target: aarch64-apple-darwin, os: macos-26, files: liboicana_uniffi.dylib liboicana_uniffi.a }
+          - { target: x86_64-pc-windows-msvc, os: windows-2025, files: oicana_uniffi.dll }
+          - { target: aarch64-pc-windows-msvc, os: windows-2025, files: oicana_uniffi.dll }
+          - { target: x86_64-pc-windows-gnu, os: windows-2025, files: liboicana_uniffi.a }
+    runs-on: ${{ matrix.os }}
+    container: ${{ matrix.container }}
+    env:
+      ARCHIVE: oicana_uniffi-${{ needs.validate-version.outputs.version }}-${{ matrix.target }}${{ contains(matrix.target, 'windows') && '.zip' || '.tar.gz' }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@ce678459e9fc7500d337468f904b95f1b5c10b5e # 1.98.1
+        with:
+          targets: ${{ matrix.target }}
+          components: llvm-tools
+      - uses: mlugg/setup-zig@d1434d08867e3ee9daa34448df10607b98908d29 # v2
+        if: matrix.zig
+        with:
+          version: 0.14.1
+      - uses: taiki-e/install-action@9983c65e42da123ff25d1f78505eb6de315aa172 # v2
+        if: matrix.zig
+        with:
+          tool: cargo-zigbuild
+      - name: Build oicana_uniffi
+        run: ./.github/scripts/build-uniffi.sh build ${{ matrix.target }}
+        env:
+          CARGO: ${{ matrix.zig && 'cargo-zigbuild' || 'cargo' }}
+          RUSTFLAGS: ${{ matrix.zig && '-C target-feature=-crt-static' || '' }}
+      - name: Assert glibc floor
+        if: matrix.container != ''
+        run: ./.github/scripts/assert-glibc-floor.sh 2.28 build/liboicana_uniffi.so
+      - name: Verify architecture of the cross-compiled macOS library
+        if: matrix.target == 'x86_64-apple-darwin'
+        run: |
+          archs="$(lipo -archs build/liboicana_uniffi.dylib)"
+          if [ "${archs}" != "x86_64" ]; then
+            echo "::error::expected an x86_64 library but got ${archs}"
+            exit 1
+          fi
+      - name: Strip and package
+        run: |
+          strip="$(rustc --print sysroot)/lib/rustlib/$(rustc -vV | sed -n 's/^host: //p')/bin/llvm-strip"
+          mkdir dist
+          for file in ${{ matrix.files }} link-flags.txt; do
+            cp "build/$file" dist/
+            case "$file" in
+              *.a) "$strip" --strip-debug "dist/$file" ;;
+              *.so) "$strip" --strip-all "dist/$file" ;;
+              *.dylib) "$strip" -x "dist/$file" ;;
+            esac
+          done
+          cd dist
+          if [[ "$ARCHIVE" == *.zip ]]; then
+            7z a -tzip "../$ARCHIVE" ./*
+          else
+            tar -czf "../$ARCHIVE" ./*
+          fi
+          ls -l
+      - uses: actions/upload-artifact@v7
+        with:
+          name: oicana-uniffi-${{ matrix.target }}
+          path: ${{ env.ARCHIVE }}
+          if-no-files-found: error
+
+  pack-e2e-template:
+    name: Pack the e2e template
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@ce678459e9fc7500d337468f904b95f1b5c10b5e # 1.98.1
+      - uses: taiki-e/install-action@9983c65e42da123ff25d1f78505eb6de315aa172 # v2
+        with:
+          tool: typship
+      - name: Install local Typst Oicana package
+        run: typship install local
+        working-directory: ./integrations/typst
+      - name: Pack
+        run: cargo run --release -p oicana_cli -- pack e2e-tests/template -o e2e-tests/template -n '{template}-x.y.z.zip'
+      - uses: actions/upload-artifact@v7
+        with:
+          name: e2e-template
+          path: e2e-tests/template/oicana-e2e-test-x.y.z.zip
+          if-no-files-found: error
+
+  smoke-test:
+    name: Smoke test ${{ matrix.target }}
+    needs: [validate-version, build, pack-e2e-template]
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { target: x86_64-unknown-linux-gnu, os: ubuntu-24.04, go: true, ruby: true, library: liboicana_uniffi.so }
+          - { target: aarch64-unknown-linux-gnu, os: ubuntu-24.04-arm, go: true, ruby: true, library: liboicana_uniffi.so }
+          - { target: x86_64-unknown-linux-musl, os: ubuntu-24.04, alpine: true }
+          - { target: aarch64-unknown-linux-musl, os: ubuntu-24.04-arm, alpine: true }
+          - { target: aarch64-apple-darwin, os: macos-26, go: true, ruby: true, library: liboicana_uniffi.dylib }
+          - { target: x86_64-pc-windows-msvc, os: windows-2025, ruby: true, library: oicana_uniffi.dll }
+          - { target: aarch64-pc-windows-msvc, os: windows-11-arm, ruby: true, library: oicana_uniffi.dll }
+          - { target: x86_64-pc-windows-gnu, os: windows-2025, go: true }
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/download-artifact@v8
+        with:
+          name: oicana-uniffi-${{ matrix.target }}
+          path: archive
+      - uses: actions/download-artifact@v8
+        with:
+          name: e2e-template
+          path: e2e-tests/template
+      - name: Extract
+        run: |
+          mkdir native
+          if compgen -G "archive/*.zip" > /dev/null; then
+            7z x -onative archive/*.zip
+          else
+            tar -xzf archive/*.tar.gz -C native
+          fi
+          ls -l native
+          # pwd -W gives a Windows path for the MinGW linker and for Ruby on Windows
+          echo "NATIVE=$(cd native && (pwd -W 2>/dev/null || pwd))" >> "$GITHUB_ENV"
+      - uses: actions/setup-go@v6
+        if: matrix.go
+        with:
+          go-version: stable
+          cache: false
+      - name: Go tests
+        if: matrix.go
+        run: CGO_LDFLAGS="$NATIVE/liboicana_uniffi.a $(cat "$NATIVE/link-flags.txt")" go test ./...
+        working-directory: ./integrations/go
+      - uses: ruby/setup-ruby@762794c140bbeda0f1224786aa33b4b46783a6c1 # v1.326.0
+        if: matrix.ruby
+        with:
+          ruby-version: '3.4'
+      - name: Ruby tests
+        if: matrix.ruby
+        run: |
+          gem install ffi minitest --no-document
+          OICANA_LIBRARY_PATH="$NATIVE/${{ matrix.library }}" ruby -Ilib -Itest test/oicana_test.rb
+        working-directory: ./integrations/ruby
+      - name: Go and Ruby tests in Alpine
+        if: matrix.alpine
+        run: |
+          docker run --rm -v "$PWD:/io" -w /io/integrations/go \
+            golang:1.25-alpine@sha256:1ae0735f00daffa3aaf1363a5184c0d2dc55c78e3db4ec70241cdac97bf84b59 sh -ec '
+            apk add --no-cache gcc musl-dev
+            CGO_LDFLAGS="/io/native/liboicana_uniffi.a $(cat /io/native/link-flags.txt)" go test -buildvcs=false ./...
+          '
+          docker run --rm -v "$PWD:/io" -w /io/integrations/ruby -e OICANA_LIBRARY_PATH=/io/native/liboicana_uniffi.so \
+            ruby:3.4-alpine@sha256:50133d02799e7da49a1e0bd16d865701622fd61d150a8cd3463edf0016504af5 sh -ec '
+            apk add --no-cache libgcc
+            gem install ffi minitest --no-document
+            ruby -Ilib -Itest test/oicana_test.rb
+          '
+
+  release:
+    name: Release
+    needs: [validate-version, build, smoke-test]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    env:
+      VERSION: ${{ needs.validate-version.outputs.version }}
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: oicana-uniffi-*
+          path: release
+          merge-multiple: true
+      - name: Checksums and sizes
+        working-directory: release
+        run: |
+          sha256sum oicana_uniffi-* > SHA256SUMS
+          cat SHA256SUMS
+          echo "| Archive | Size |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|---|---|" >> "$GITHUB_STEP_SUMMARY"
+          for archive in oicana_uniffi-*; do
+            echo "| $archive | $(du -h "$archive" | cut -f1) |" >> "$GITHUB_STEP_SUMMARY"
+          done
+      - uses: actions/upload-artifact@v7
+        with:
+          name: native-release
+          path: release/*
+      - name: Create release
+        if: github.event_name == 'push'
+        uses: softprops/action-gh-release@de2c0eb89ae2a093876385947365aca7b0e5f844 # v1
+        with:
+          tag_name: oicana_uniffi-v${{ env.VERSION }}
+          name: oicana_uniffi v${{ env.VERSION }}
+          body: |
+            Native oicana_uniffi libraries for the Go and Ruby integrations of Oicana v${{ env.VERSION }}.
+            Verify downloads against `SHA256SUMS`.
+          files: release/*
+          prerelease: ${{ contains(env.VERSION, '-') }}
+
+  release-integrations:
+    name: Release Go and Ruby
+    needs: [validate-version, release]
+    if: github.event_name == 'push'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+      actions: write
+    env:
+      VERSION: ${{ needs.validate-version.outputs.version }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Tag the Go module
+        run: |
+          # A re-run after a partial failure finds the tag already in place.
+          tag="integrations/go/v$VERSION"
+          existing=$(gh api "repos/${{ github.repository }}/git/ref/tags/$tag" --jq .object.sha 2>/dev/null || true)
+          if [ -z "$existing" ]; then
+            gh api "repos/${{ github.repository }}/git/refs" -f ref="refs/tags/$tag" -f sha="$GITHUB_SHA"
+          elif [ "$existing" != "$GITHUB_SHA" ]; then
+            echo "::error::$tag already points to $existing"
+            exit 1
+          fi
+      - name: Publish the Ruby gems
+        run: |
+          gh workflow run publish-integration-ruby.yml --repo "${{ github.repository }}" \
+            --ref "$GITHUB_REF_NAME" -f version="$VERSION"

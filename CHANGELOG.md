@@ -26,6 +26,13 @@
   - `Oicana` depends on all of them, so existing installs keep working without changes
   - For smaller deployments, reference `Oicana.Core` and only the native packages you need
 
+### Go
+- New integration: the module `github.com/oicana/oicana/integrations/go` links the native library statically through cgo
+  - `go run github.com/oicana/oicana/integrations/go/cmd/oicana-install` downloads the library and prints the `CGO_LDFLAGS` that link it
+
+### Ruby
+- New integration: the `oicana` gem, with platform gems that bring the native library
+
 ## v0.9.0
 
 - registering fonts by path accepts a directory and adds every font file in its tree, like the CLI's `--font-path` already did

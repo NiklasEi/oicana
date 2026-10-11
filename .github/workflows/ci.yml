@@ -239,6 +239,68 @@ jobs:
         run: uv run mypy src/oicana
         working-directory: integrations/python/oicana-python
 
+  check-go-integration:
+    runs-on: ubuntu-latest
+    needs:
+      - build-uniffi-bindgen-go
+      - build-uniffi
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@1.98.1
+      - uses: actions/setup-go@v6
+        with:
+          go-version: stable
+          cache: false
+      - name: check format
+        run: test -z "$(gofmt -l .)" || { gofmt -d .; exit 1; }
+        working-directory: ./integrations/go
+      - name: vet
+        run: go vet ./...
+        working-directory: ./integrations/go
+      - uses: ./.github/actions/install-tool
+        with:
+          tool: "uniffi-bindgen-go"
+      - uses: actions/download-artifact@v8
+        with:
+          name: oicana_uniffi_x86_64-unknown-linux-gnu
+          path: target/uniffi
+      - name: create bindings
+        run: uniffi-bindgen-go target/uniffi/liboicana_uniffi.so --out-dir integrations/go/internal
+      - name: validate no changes
+        run: |
+          if [ -n "$(git status --porcelain './integrations/go/')" ]; then
+            echo "::error::Generated Go bindings are out of date! Update them and check in any changes."
+            git --no-pager diff --color=always './integrations/go/'
+            exit 1
+          fi
+
+  check-ruby-integration:
+    runs-on: ubuntu-latest
+    needs:
+      - build-uniffi-bindgen
+      - build-uniffi
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@1.98.1
+      - uses: ./.github/actions/install-tool
+        with:
+          tool: "uniffi-bindgen"
+      - uses: actions/download-artifact@v8
+        with:
+          name: oicana_uniffi_x86_64-unknown-linux-gnu
+          path: target/uniffi
+      - name: create bindings
+        run: |
+          uniffi-bindgen generate --library target/uniffi/liboicana_uniffi.so --language ruby --metadata-no-deps \
+            --config integrations/ruby/uniffi.toml --out-dir integrations/ruby/lib/oicana
+      - name: validate no changes
+        run: |
+          if [ -n "$(git status --porcelain './integrations/ruby/')" ]; then
+            echo "::error::Generated Ruby bindings are out of date! Update them and check in any changes."
+            git --no-pager diff --color=always './integrations/ruby/'
+            exit 1
+          fi
+
   check-php-integration:
     runs-on: ubuntu-latest
     steps:
@@ -298,12 +360,6 @@ jobs:
             zig: true
             lib: liboicana_csharp.so
             artifact: linux-musl-x64
-          # Temporary: only built in the publish workflow otherwise; remove before merging
-          - os: ubuntu-latest
-            target: aarch64-unknown-linux-musl
-            zig: true
-            lib: liboicana_csharp.so
-            artifact: linux-musl-arm64
           - os: macos-latest
             lib: liboicana_csharp.dylib
             artifact: osx-arm64
@@ -484,6 +540,109 @@ jobs:
         with:
           name: ${{ matrix.tool_config.tool }}_${{ runner.os }}
           path: ~/.cargo/bin/${{ matrix.tool_config.bin }}${{ matrix.bin_ext }}
+          if-no-files-found: error
+
+  build-uniffi-bindgen:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/cache@v5
+        with:
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+          path: |
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+      - uses: dtolnay/rust-toolchain@1.98.1
+      - name: Build and install uniffi-bindgen
+        run: cargo install --force --path tools/uniffi-bindgen
+      - name: Upload uniffi-bindgen
+        uses: actions/upload-artifact@v7
+        with:
+          name: uniffi-bindgen_${{ runner.os }}
+          path: ~/.cargo/bin/uniffi-bindgen
+          if-no-files-found: error
+
+  build-uniffi-bindgen-go:
+    runs-on: ubuntu-latest
+    env:
+      VERSION: v0.7.1+v0.31.0
+    steps:
+      - uses: actions/cache@v5
+        id: cache
+        with:
+          key: ${{ runner.os }}-uniffi-bindgen-go-${{ env.VERSION }}
+          path: ~/.cargo/bin/uniffi-bindgen-go
+      - uses: dtolnay/rust-toolchain@1.98.1
+        if: steps.cache.outputs.cache-hit != 'true'
+      - name: Build and install uniffi-bindgen-go
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: cargo install --locked --git https://github.com/NordSecurity/uniffi-bindgen-go --tag "$VERSION" uniffi-bindgen-go
+      - name: Upload uniffi-bindgen-go
+        uses: actions/upload-artifact@v7
+        with:
+          name: uniffi-bindgen-go_${{ runner.os }}
+          path: ~/.cargo/bin/uniffi-bindgen-go
+          if-no-files-found: error
+
+  build-uniffi:
+    name: Build oicana_uniffi (${{ matrix.target }})
+    strategy:
+      matrix:
+        include:
+          - { os: ubuntu-latest, target: x86_64-unknown-linux-gnu }
+          - { os: ubuntu-latest, target: x86_64-unknown-linux-musl, zig: true }
+          - { os: macos-latest, target: aarch64-apple-darwin }
+          - { os: windows-latest, target: x86_64-pc-windows-msvc }
+          - { os: windows-latest, target: x86_64-pc-windows-gnu }
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/cache@v5
+        with:
+          key: ${{ runner.os }}-uniffi-${{ matrix.target }}-cargo-${{ hashFiles('**/Cargo.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-uniffi-${{ matrix.target }}-cargo-
+          path: |
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+      - uses: dtolnay/rust-toolchain@1.98.1
+        with:
+          targets: ${{ matrix.target }}
+          components: llvm-tools
+      - uses: mlugg/setup-zig@v2
+        if: matrix.zig
+        with:
+          version: 0.14.1
+      - uses: taiki-e/install-action@v2
+        if: matrix.zig
+        with:
+          tool: cargo-zigbuild
+      - name: build oicana_uniffi
+        run: ./.github/scripts/build-uniffi.sh target/uniffi ${{ matrix.target }}
+        env:
+          CARGO: ${{ matrix.zig && 'cargo-zigbuild' || 'cargo' }}
+          RUSTFLAGS: ${{ matrix.zig && '-C target-feature=-crt-static' || '' }}
+      - name: strip debug info from the static library
+        run: |
+          if [ -f target/uniffi/liboicana_uniffi.a ]; then
+            "$(rustc --print sysroot)/lib/rustlib/$(rustc -vV | sed -n 's/^host: //p')/bin/llvm-strip" \
+              --strip-debug target/uniffi/liboicana_uniffi.a
+          fi
+          ls -l target/uniffi
+      - name: Upload oicana_uniffi
+        uses: actions/upload-artifact@v7
+        with:
+          name: oicana_uniffi_${{ matrix.target }}
+          path: target/uniffi/
           if-no-files-found: error
 
   build-python-native:
@@ -752,6 +911,129 @@ jobs:
         run: docker run --rm -v "$PWD:/io" -w /io/integrations/csharp mcr.microsoft.com/dotnet/sdk:8.0-alpine dotnet test
       - name: compare test output
         run: test-compare e2e-tests/template integrations/csharp/Oicana.Test/bin/Debug/net8.0/e2e/
+
+  e2e-test-go-integration:
+    name: Go E2E (${{ matrix.target }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: ubuntu-latest, target: x86_64-unknown-linux-gnu }
+          - { os: ubuntu-latest, target: x86_64-unknown-linux-musl, alpine: true }
+          - { os: macos-latest, target: aarch64-apple-darwin }
+          - { os: windows-latest, target: x86_64-pc-windows-gnu }
+    runs-on: ${{ matrix.os }}
+    needs:
+      - build-tools
+      - build-uniffi
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-go@v6
+        if: '!matrix.alpine'
+        with:
+          go-version: stable
+          cache: false
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: typship
+      - name: Install local Typst Oicana package
+        run: typship install local
+        working-directory: ./integrations/typst
+      - uses: ./.github/actions/install-tool
+        with:
+          tool: "oicana-cli"
+          bin: "oicana"
+      - uses: ./.github/actions/install-tool
+        with:
+          tool: "test-compare"
+      - name: pack e2e template
+        run: oicana pack -n '{template}-x.y.z.zip'
+        working-directory: ./e2e-tests/template
+      - uses: actions/download-artifact@v8
+        with:
+          name: oicana_uniffi_${{ matrix.target }}
+          path: target/uniffi
+      - name: test go integration
+        if: '!matrix.alpine'
+        run: |
+          # pwd -W gives a Windows path for the MinGW linker
+          native="$(cd ../../target/uniffi && (pwd -W 2>/dev/null || pwd))"
+          CGO_LDFLAGS="$native/liboicana_uniffi.a $(cat "$native/link-flags.txt")" go test ./...
+        working-directory: ./integrations/go
+      - name: test go integration in Alpine (musl)
+        if: matrix.alpine
+        run: |
+          docker run --rm -v "$PWD:/io" -w /io/integrations/go golang:1.25-alpine sh -ec '
+            apk add --no-cache gcc musl-dev
+            CGO_LDFLAGS="/io/target/uniffi/liboicana_uniffi.a $(cat /io/target/uniffi/link-flags.txt)" go test -buildvcs=false ./...
+          '
+      - name: compare test output
+        run: test-compare e2e-tests/template integrations/go/testOutput/
+
+  e2e-test-ruby-integration:
+    name: Ruby E2E (${{ matrix.target }}${{ matrix.ruby && format(' / ruby {0}', matrix.ruby) || '' }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: ubuntu-latest, target: x86_64-unknown-linux-gnu, ruby: '3.2', lib: liboicana_uniffi.so }
+          - { os: ubuntu-latest, target: x86_64-unknown-linux-gnu, ruby: '3.4', lib: liboicana_uniffi.so }
+          - { os: ubuntu-latest, target: x86_64-unknown-linux-musl, alpine: true, lib: liboicana_uniffi.so }
+          - { os: macos-latest, target: aarch64-apple-darwin, ruby: '3.4', lib: liboicana_uniffi.dylib }
+          - { os: windows-latest, target: x86_64-pc-windows-msvc, ruby: '3.4', lib: oicana_uniffi.dll }
+    runs-on: ${{ matrix.os }}
+    needs:
+      - build-tools
+      - build-uniffi
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v6
+      - uses: ruby/setup-ruby@v1
+        if: '!matrix.alpine'
+        with:
+          ruby-version: ${{ matrix.ruby }}
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: typship
+      - name: Install local Typst Oicana package
+        run: typship install local
+        working-directory: ./integrations/typst
+      - uses: ./.github/actions/install-tool
+        with:
+          tool: "oicana-cli"
+          bin: "oicana"
+      - uses: ./.github/actions/install-tool
+        with:
+          tool: "test-compare"
+      - name: pack e2e template
+        run: oicana pack -n '{template}-x.y.z.zip'
+        working-directory: ./e2e-tests/template
+      - uses: actions/download-artifact@v8
+        with:
+          name: oicana_uniffi_${{ matrix.target }}
+          path: target/uniffi
+      - name: test ruby integration
+        if: '!matrix.alpine'
+        run: |
+          gem install ffi minitest --no-document
+          OICANA_LIBRARY_PATH="$GITHUB_WORKSPACE/target/uniffi/${{ matrix.lib }}" ruby -Ilib -Itest test/oicana_test.rb
+        working-directory: ./integrations/ruby
+      - name: test ruby integration in Alpine (musl)
+        if: matrix.alpine
+        run: |
+          docker run --rm -v "$PWD:/io" -w /io/integrations/ruby \
+            -e OICANA_LIBRARY_PATH=/io/target/uniffi/${{ matrix.lib }} ruby:3.4-alpine sh -ec '
+            apk add --no-cache libgcc
+            gem install ffi minitest --no-document
+            ruby -Ilib -Itest test/oicana_test.rb
+          '
+      - name: compare test output
+        run: test-compare e2e-tests/template integrations/ruby/test/testOutput/
 
   e2e-test-python-integration:
     name: Python E2E (${{ matrix.libc }} / ${{ matrix.os }}${{ matrix.python-version && format(' / py{0}', matrix.python-version) || '' }})
@@ -1137,17 +1419,24 @@ jobs:
         check-browser-wrapper,
         check-csharp-integration,
         check-python-integration,
+        check-go-integration,
+        check-ruby-integration,
         check-php-integration,
         build-csharp,
         build-browser-wasm,
         build-node-native,
         build-tools,
+        build-uniffi-bindgen,
+        build-uniffi-bindgen-go,
+        build-uniffi,
         build-python-native,
         build-php-native,
         build-java-native,
         e2e-test-node-integration,
         e2e-test-browser-integration,
         e2e-test-csharp-integration,
+        e2e-test-go-integration,
+        e2e-test-ruby-integration,
         e2e-test-python-integration,
         e2e-test-php-integration,
         e2e-test-java-integration,
