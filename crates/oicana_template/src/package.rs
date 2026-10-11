@@ -348,7 +348,11 @@ manifest_version = 1
 
         buffer.set_position(0);
         let archive = zip::ZipArchive::new(buffer).unwrap();
-        let names: Vec<&str> = archive.file_names().collect();
+        let names: Vec<String> = archive
+            .file_names()
+            .map(|name| name.unwrap().into_owned())
+            .collect();
+        let names: Vec<&str> = names.iter().map(String::as_str).collect();
         assert!(names.contains(&".dependencies/preview/dep/0.1.0/lib.typ"));
         assert!(names.contains(&".dependencies/preview/dep/0.1.0/typst.toml"));
         assert!(!names
@@ -369,7 +373,11 @@ manifest_version = 1
 
         buffer.set_position(0);
         let archive = zip::ZipArchive::new(buffer).unwrap();
-        let names: Vec<&str> = archive.file_names().collect();
+        let names: Vec<String> = archive
+            .file_names()
+            .map(|name| name.unwrap().into_owned())
+            .collect();
+        let names: Vec<&str> = names.iter().map(String::as_str).collect();
 
         assert!(names.contains(&"main.typ"), "{names:?}");
         assert!(names.contains(&"assets/logo.svg"), "{names:?}");
@@ -397,7 +405,11 @@ manifest_version = 1
 
         buffer.set_position(0);
         let archive = zip::ZipArchive::new(buffer).unwrap();
-        let names: Vec<&str> = archive.file_names().collect();
+        let names: Vec<String> = archive
+            .file_names()
+            .map(|name| name.unwrap().into_owned())
+            .collect();
+        let names: Vec<&str> = names.iter().map(String::as_str).collect();
 
         for re_included in [
             "tests/test.toml",
@@ -451,7 +463,10 @@ manifest_version = 1
 
         buffer.set_position(0);
         let archive = zip::ZipArchive::new(buffer).unwrap();
-        let names: Vec<String> = archive.file_names().map(|name| name.to_owned()).collect();
+        let names: Vec<String> = archive
+            .file_names()
+            .map(|name| name.unwrap().into_owned())
+            .collect();
 
         assert!(
             !names.iter().any(|name| name.starts_with("docs")),
@@ -524,7 +539,7 @@ manifest_version = 1
 
         for i in 0..archive.len() {
             let entry = archive.by_index(i).unwrap();
-            let name = entry.name().to_string();
+            let name = entry.name().unwrap().into_owned();
             all_paths.push(name.clone());
 
             if name.contains('\\') {

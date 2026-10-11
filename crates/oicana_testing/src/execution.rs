@@ -5,6 +5,8 @@ use std::{
 };
 
 use image::{GenericImageView, ImageError};
+use json_schema_ast::SchemaDocument;
+use json_schema_fuzz::{GenerationConfig, ValueGenerator};
 use log::{debug, error};
 use oicana::{CompileError, Template, TemplateInitializationError};
 use oicana_export::pdf::export_pdf;
@@ -16,7 +18,6 @@ use oicana_world::diagnostics::DiagnosticColor;
 use oicana_world::fonts::FontSource;
 use oicana_world::CompiledDocument;
 use oxipng::PngError;
-use rand::thread_rng;
 use thiserror::Error;
 
 use crate::{Snapshot, SnapshotMode, Test};
@@ -109,14 +110,14 @@ impl TestRunner {
                     fuzzed_input.key
                 )));
             };
-            let Some(schema_path) = &fuzzed_json_input.schema else {
+            let Some(schema_path) = fuzzed_json_input.schema.clone() else {
                 return Err(TestExecutionError::FuzzingSetup(format!(
                     "Fuzzed json input '{}' has no schema configured in the manifest!",
                     fuzzed_input.key
                 )));
             };
             let schema = {
-                let schema_file = match File::open(self.template_path.join(schema_path)) {
+                let schema_file = match File::open(self.template_path.join(&schema_path)) {
                     Ok(file) => file,
                     Err(error) => {
                         return Err(TestExecutionError::FuzzingSetup(format!(
@@ -134,7 +135,7 @@ impl TestRunner {
                         )));
                     }
                 };
-                match json_schema_ast::build_and_resolve_schema(&schema) {
+                match SchemaDocument::from_json(&schema) {
                     Ok(schema) => schema,
                     Err(error) => {
                         return Err(TestExecutionError::FuzzingSetup(format!(
@@ -145,11 +146,18 @@ impl TestRunner {
                 }
             };
 
-            let mut rng = thread_rng();
+            let mut rng = rand::rng();
+            let config = GenerationConfig::new(u8::MAX);
 
             return (0..fuzzed_input.samples)
                 .map(|_| {
-                    let value = json_schema_fuzz::generate_value(&schema, &mut rng, u8::MAX);
+                    let value =
+                        ValueGenerator::generate(&schema, config, &mut rng).map_err(|error| {
+                            TestExecutionError::FuzzingSetup(format!(
+                                "Failed to generate a value for '{}' from schema '{}': {}",
+                                fuzzed_input.key, schema_path, error
+                            ))
+                        })?;
                     let mut inputs = test.inputs.clone();
                     inputs.with_input(JsonInput::new(fuzzed_input.key.clone(), value.to_string()));
                     debug!("Fuzzing the input '{}' with {}", fuzzed_input.key, value);

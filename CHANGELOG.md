@@ -8,6 +8,9 @@
 ### CLI
 - `oicana pack` no longer warns about imports with a computed source, since it was mostly false positives
 - A failing fuzzed test names the generated input value
+- Fuzzing tests support many more JSON Schema features
+  - String formats like `date`, `date-time`, `email`, `uri` and `uuid` get realistic values, and `pattern` is respected
+  - `not`, `prefixItems`, `uniqueItems`, `contains`, `patternProperties` and `unevaluated*` are supported
 
 ### PHP
 - JSON inputs accept objects
