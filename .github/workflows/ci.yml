@@ -13,6 +13,7 @@ env:
 
 jobs:
   lint-crates:
+    if: false # Temporary: debugging the Go E2E jobs; remove before merging
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
@@ -37,6 +38,7 @@ jobs:
         run: cargo clippy --all-targets --all-features -- -Dwarnings
 
   audit-crates:
+    if: false # Temporary: debugging the Go E2E jobs; remove before merging
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -49,6 +51,7 @@ jobs:
         run: cargo audit
 
   check-crates:
+    if: false # Temporary: debugging the Go E2E jobs; remove before merging
     strategy:
       matrix:
         os: [windows-latest, ubuntu-latest, macos-latest]
@@ -72,6 +75,7 @@ jobs:
         run: cargo check --all-features --all-targets
 
   test-crates:
+    if: false # Temporary: debugging the Go E2E jobs; remove before merging
     strategy:
       matrix:
         os: [windows-latest, ubuntu-latest, macos-latest]
@@ -97,6 +101,7 @@ jobs:
         run: cargo test --doc --all-features
 
   check-node-native-integration:
+    if: false # Temporary: debugging the Go E2E jobs; remove before merging
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -117,6 +122,7 @@ jobs:
         working-directory: integrations/node/oicana-node-native
 
   check-node-wrapper:
+    if: false # Temporary: debugging the Go E2E jobs; remove before merging
     runs-on: ubuntu-latest
     needs:
       - build-node-native
@@ -148,6 +154,7 @@ jobs:
         working-directory: integrations/node/oicana-node
 
   check-browser-wrapper:
+    if: false # Temporary: debugging the Go E2E jobs; remove before merging
     runs-on: ubuntu-latest
     needs:
       - build-browser-wasm
@@ -173,6 +180,7 @@ jobs:
         working-directory: integrations/browser/oicana-browser
 
   check-csharp-integration:
+    if: false # Temporary: debugging the Go E2E jobs; remove before merging
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -209,6 +217,7 @@ jobs:
           fi
 
   check-python-integration:
+    if: false # Temporary: debugging the Go E2E jobs; remove before merging
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -240,6 +249,7 @@ jobs:
         working-directory: integrations/python/oicana-python
 
   check-go-integration:
+    if: false # Temporary: debugging the Go E2E jobs; remove before merging
     runs-on: ubuntu-latest
     needs:
       - build-uniffi-bindgen-go
@@ -275,6 +285,7 @@ jobs:
           fi
 
   check-ruby-integration:
+    if: false # Temporary: debugging the Go E2E jobs; remove before merging
     runs-on: ubuntu-latest
     needs:
       - build-uniffi-bindgen
@@ -302,6 +313,7 @@ jobs:
           fi
 
   check-php-integration:
+    if: false # Temporary: debugging the Go E2E jobs; remove before merging
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -348,6 +360,7 @@ jobs:
         working-directory: integrations/php/oicana-php-native
 
   build-csharp:
+    if: false # Temporary: debugging the Go E2E jobs; remove before merging
     strategy:
       matrix:
         include:
@@ -417,6 +430,7 @@ jobs:
           if-no-files-found: error
 
   build-browser-wasm:
+    if: false # Temporary: debugging the Go E2E jobs; remove before merging
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -446,6 +460,7 @@ jobs:
           if-no-files-found: error
 
   build-node-native:
+    if: false # Temporary: debugging the Go E2E jobs; remove before merging
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
@@ -543,6 +558,7 @@ jobs:
           if-no-files-found: error
 
   build-uniffi-bindgen:
+    if: false # Temporary: debugging the Go E2E jobs; remove before merging
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -567,6 +583,7 @@ jobs:
           if-no-files-found: error
 
   build-uniffi-bindgen-go:
+    if: false # Temporary: debugging the Go E2E jobs; remove before merging
     runs-on: ubuntu-latest
     env:
       VERSION: v0.7.1+v0.31.0
@@ -646,6 +663,7 @@ jobs:
           if-no-files-found: error
 
   build-python-native:
+    if: false # Temporary: debugging the Go E2E jobs; remove before merging
     name: Build oicana-native (${{ matrix.platform.target }})
     runs-on: ${{ matrix.platform.os }}
     strategy:
@@ -678,6 +696,7 @@ jobs:
           if-no-files-found: error
 
   build-php-native:
+    if: false # Temporary: debugging the Go E2E jobs; remove before merging
     strategy:
       matrix:
         include:
@@ -759,6 +778,7 @@ jobs:
           if-no-files-found: error
 
   e2e-test-node-integration:
+    if: false # Temporary: debugging the Go E2E jobs; remove before merging
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
@@ -812,6 +832,7 @@ jobs:
         run: test-compare e2e-tests/template integrations/node/oicana-node/testOutput/
 
   e2e-test-browser-integration:
+    if: false # Temporary: debugging the Go E2E jobs; remove before merging
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
@@ -856,6 +877,7 @@ jobs:
         run: test-compare e2e-tests/template integrations/browser/oicana-browser/testOutput/
 
   e2e-test-csharp-integration:
+    if: false # Temporary: debugging the Go E2E jobs; remove before merging
     name: C# E2E (${{ matrix.artifact }})
     strategy:
       fail-fast: false
@@ -974,6 +996,7 @@ jobs:
         run: test-compare e2e-tests/template integrations/go/testOutput/
 
   e2e-test-ruby-integration:
+    if: false # Temporary: debugging the Go E2E jobs; remove before merging
     name: Ruby E2E (${{ matrix.target }}${{ matrix.ruby && format(' / ruby {0}', matrix.ruby) || '' }})
     strategy:
       fail-fast: false
@@ -1036,6 +1059,7 @@ jobs:
         run: test-compare e2e-tests/template integrations/ruby/test/testOutput/
 
   e2e-test-python-integration:
+    if: false # Temporary: debugging the Go E2E jobs; remove before merging
     name: Python E2E (${{ matrix.libc }} / ${{ matrix.os }}${{ matrix.python-version && format(' / py{0}', matrix.python-version) || '' }})
     strategy:
       fail-fast: false
@@ -1124,6 +1148,7 @@ jobs:
         run: test-compare e2e-tests/template integrations/python/oicana-python/tests/testOutput/
 
   e2e-test-php-integration:
+    if: false # Temporary: debugging the Go E2E jobs; remove before merging
     strategy:
       matrix:
         include:
@@ -1200,6 +1225,7 @@ jobs:
         run: test-compare e2e-tests/template integrations/php/oicana-php/tests/testOutput/
 
   build-java-native:
+    if: false # Temporary: debugging the Go E2E jobs; remove before merging
     strategy:
       matrix:
         include:
@@ -1251,6 +1277,7 @@ jobs:
           if-no-files-found: error
 
   e2e-test-java-integration:
+    if: false # Temporary: debugging the Go E2E jobs; remove before merging
     strategy:
       matrix:
         include:
@@ -1305,6 +1332,7 @@ jobs:
         run: test-compare e2e-tests/template integrations/java/oicana/testOutput/
 
   e2e-test-cli:
+    if: false # Temporary: debugging the Go E2E jobs; remove before merging
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
@@ -1339,6 +1367,7 @@ jobs:
         run: test-compare e2e-tests/template e2e-tests/template/output
 
   typst-integration:
+    if: false # Temporary: debugging the Go E2E jobs; remove before merging
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -1367,6 +1396,7 @@ jobs:
           retention-days: 5
 
   spelling:
+    if: false # Temporary: debugging the Go E2E jobs; remove before merging
     name: Spell Check with Typos
     runs-on: ubuntu-latest
     steps:
@@ -1376,6 +1406,7 @@ jobs:
       uses: crate-ci/typos@v1.35.5
 
   validate-links:
+    if: false # Temporary: debugging the Go E2E jobs; remove before merging
     name: Check for dead links in docs
     runs-on: ubuntu-latest
     steps:
