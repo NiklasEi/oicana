@@ -15,7 +15,7 @@ target="${2:-}"
 cargo="${CARGO:-cargo}"
 
 log="$(mktemp)"
-"$cargo" rustc --release -p oicana_uniffi ${target:+--target "$target"} \
+CARGO_TERM_COLOR=never "$cargo" rustc --release -p oicana_uniffi ${target:+--target "$target"} \
   -- --print native-static-libs 2>&1 | tee "$log"
 
 mkdir -p "$out"
