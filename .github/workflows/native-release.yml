@@ -297,14 +297,14 @@ jobs:
     steps:
       - name: Tag the Go module and the Ruby gem
         run: |
-          # A re-run after a partial failure finds the tags already in place.
           for tag in "integrations/go/v$VERSION" "oicana_ruby-v$VERSION"; do
-            existing=$(gh api "repos/${{ github.repository }}/git/ref/tags/$tag" --jq .object.sha 2>/dev/null || true)
-            if [ -z "$existing" ]; then
+            if existing=$(gh api "repos/${{ github.repository }}/git/ref/tags/$tag" --jq .object.sha 2>/dev/null); then
+              if [ "$existing" != "$GITHUB_SHA" ]; then
+                echo "::error::$tag already points to $existing"
+                exit 1
+              fi
+            else
               gh api "repos/${{ github.repository }}/git/refs" -f ref="refs/tags/$tag" -f sha="$GITHUB_SHA"
-            elif [ "$existing" != "$GITHUB_SHA" ]; then
-              echo "::error::$tag already points to $existing"
-              exit 1
             fi
           done
       - name: Publish the Ruby gems
