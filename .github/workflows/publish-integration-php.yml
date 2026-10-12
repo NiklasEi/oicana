@@ -173,18 +173,13 @@ jobs:
           done
       - name: Setup PHP
         if: matrix.platform.os != 'linux'
-        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2
+        uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2
         with:
           php-version: ${{ matrix.php }}
           extensions: mbstring
         env:
           phpts: ${{ matrix.ts }}
           update: true
-      - name: Show Homebrew PHP install output on failure
-        if: failure() && matrix.platform.os == 'macos'
-        run: |
-          brew list --versions | grep -Ei 'php|openssl' || true
-          brew install --verbose shivammathur/php/php@${{ matrix.php }}${{ matrix.ts == 'zts' && '-zts' || '' }}
       - run: php -v
       - name: Verify active PHP matches the matrix cell
         shell: bash
