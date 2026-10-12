@@ -176,7 +176,7 @@ jobs:
           done
       - uses: actions/upload-artifact@v7
         with:
-          name: oicana-csharp-nuget
+          name: nuget-packages
           path: nupkgs/*.nupkg
       - name: NuGet login (OIDC → temp API key)
         uses: NuGet/login@8d196754b4036150537f80ac539e15c2f1028841 # v1
