@@ -769,12 +769,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@1.98.1
-      - uses: taiki-e/install-action@v2
-        with:
-          tool: typship
-      - name: Install local Typst Oicana package
-        run: typship install local
-        working-directory: ./integrations/typst
+      - uses: ./.github/actions/install-typst-package
       - uses: ./.github/actions/install-tool
         with:
           tool: "oicana-cli"
@@ -822,12 +817,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@1.98.1
-      - uses: taiki-e/install-action@v2
-        with:
-          tool: typship
-      - name: Install local Typst Oicana package
-        run: typship install local
-        working-directory: ./integrations/typst
+      - uses: ./.github/actions/install-typst-package
       - uses: ./.github/actions/install-tool
         with:
           tool: "oicana-cli"
@@ -878,12 +868,7 @@ jobs:
           dotnet-version: 8.0.x
       - uses: dtolnay/rust-toolchain@1.98.1
         if: runner.os == 'Windows' && runner.arch == 'ARM64'
-      - uses: taiki-e/install-action@v2
-        with:
-          tool: typship
-      - name: Install local Typst Oicana package
-        run: typship install local
-        working-directory: ./integrations/typst
+      - uses: ./.github/actions/install-typst-package
       - uses: ./.github/actions/install-tool
         with:
           tool: "oicana-cli"
@@ -936,12 +921,7 @@ jobs:
         with:
           go-version: stable
           cache: false
-      - uses: taiki-e/install-action@v2
-        with:
-          tool: typship
-      - name: Install local Typst Oicana package
-        run: typship install local
-        working-directory: ./integrations/typst
+      - uses: ./.github/actions/install-typst-package
       - uses: ./.github/actions/install-tool
         with:
           tool: "oicana-cli"
@@ -997,12 +977,7 @@ jobs:
         if: '!matrix.alpine'
         with:
           ruby-version: ${{ matrix.ruby }}
-      - uses: taiki-e/install-action@v2
-        with:
-          tool: typship
-      - name: Install local Typst Oicana package
-        run: typship install local
-        working-directory: ./integrations/typst
+      - uses: ./.github/actions/install-typst-package
       - uses: ./.github/actions/install-tool
         with:
           tool: "oicana-cli"
@@ -1059,12 +1034,7 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - uses: dtolnay/rust-toolchain@1.98.1
-      - uses: taiki-e/install-action@v2
-        with:
-          tool: typship
-      - name: Install local Typst Oicana package
-        run: typship install local
-        working-directory: ./integrations/typst
+      - uses: ./.github/actions/install-typst-package
       - uses: ./.github/actions/install-tool
         with:
           tool: "oicana-cli"
@@ -1140,12 +1110,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@1.98.1
-      - uses: taiki-e/install-action@v2
-        with:
-          tool: typship
-      - name: Install local Typst Oicana package
-        run: typship install local
-        working-directory: ./integrations/typst
+      - uses: ./.github/actions/install-typst-package
       - uses: ./.github/actions/install-tool
         with:
           tool: "oicana-cli"
@@ -1267,12 +1232,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@1.98.1
-      - uses: taiki-e/install-action@v2
-        with:
-          tool: typship
-      - name: Install local Typst Oicana package
-        run: typship install local
-        working-directory: ./integrations/typst
+      - uses: ./.github/actions/install-typst-package
       - uses: ./.github/actions/install-tool
         with:
           tool: "oicana-cli"
@@ -1320,12 +1280,7 @@ jobs:
       - uses: ./.github/actions/install-tool
         with:
           tool: "test-compare"
-      - uses: taiki-e/install-action@v2
-        with:
-          tool: typship
-      - name: Install local Typst Oicana package
-        run: typship install local
-        working-directory: ./integrations/typst
+      - uses: ./.github/actions/install-typst-package
       - name: test e2e template
         run: oicana test
         working-directory: ./e2e-tests/template

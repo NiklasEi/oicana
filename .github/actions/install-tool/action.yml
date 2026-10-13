@@ -26,6 +26,9 @@ runs:
         BINARY_NAME="${{ inputs.tool }}"
       fi
 
+      mkdir -p "$HOME/.cargo/bin"
+      echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
+
       # Handle Windows .exe extension
       if [ "${{ runner.os }}" = "Windows" ]; then
         cp "${{ runner.temp }}/download/$BINARY_NAME.exe" "$HOME/.cargo/bin/$BINARY_NAME.exe"
