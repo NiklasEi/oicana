@@ -184,11 +184,10 @@ impl TestRunner {
         pdf: bool,
     ) -> Result<Vec<String>, TestExecutionError> {
         let CompiledDocument { document, warnings } = self.instance.compile(inputs)?;
-        let mut warnings = if let Some(warning) = warnings {
-            vec![warning]
-        } else {
-            vec![]
-        };
+        let mut warnings: Vec<String> = warnings
+            .into_iter()
+            .map(|warning| warning.formatted)
+            .collect();
 
         if pdf {
             let standards = self.instance.manifest().pdf_standards().to_vec();

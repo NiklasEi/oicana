@@ -21,9 +21,9 @@ public sealed class CompiledDocument : IDisposable
     public IReadOnlyList<PageSize> Pages { get; }
 
     /// <summary>
-    /// Warnings produced by the compilation of this document, or <c>null</c> if there were none.
+    /// Warnings produced by the compilation of this document, empty if there were none.
     /// </summary>
-    public string? Warnings { get; }
+    public IReadOnlyList<Diagnostic> Warnings { get; }
 
     /// <summary>
     /// Construct a handle around an already-compiled document. Use <see cref="Template.Compile"/>.

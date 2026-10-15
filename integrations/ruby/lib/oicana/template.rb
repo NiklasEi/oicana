@@ -57,7 +57,7 @@ module Oicana
   #     pdf = template.export_pdf(json_inputs: { "invoice" => { "number" => "2026-001" } })
   #   end
   class Template
-    # Warnings of the warm-up compilation, or nil.
+    # Diagnostic values for the warnings of the warm-up compilation.
     attr_reader :warnings
 
     # Load a packed template and compile it once to warm up its caches.
@@ -69,7 +69,7 @@ module Oicana
         OicanaUniffi::Template.new(template.b, Convert.json_inputs(json_inputs), Convert.blob_inputs(blob_inputs),
                                    Convert.mode(mode), Convert.limits(limits))
       end
-      @warnings = object.warnings
+      @warnings = Convert.diagnostics(object.warnings)
       @handle = NativeHandle.new(object, :uniffi_oicana_uniffi_fn_free_template, "template")
     end
 
@@ -96,7 +96,7 @@ module Oicana
                                  Convert.mode(mode), Convert.format(format, pixels_per_pt), Convert.pages(pages),
                                  Convert.limits(limits))
       end
-      ExportOnceResult.new(document: result.bytes, warnings: result.warnings)
+      ExportOnceResult.new(document: result.bytes, warnings: Convert.diagnostics(result.warnings))
     end
 
     # Compile the template into a CompiledDocument whose pages can be exported repeatedly.
@@ -168,13 +168,13 @@ module Oicana
   class CompiledDocument
     # PageSize of every page, in document order.
     attr_reader :pages
-    # Warnings of the compilation, or nil.
+    # Diagnostic values for the warnings of the compilation.
     attr_reader :warnings
 
     # @api private
     def initialize(object)
       @pages = object.pages.map { |page| PageSize.new(width: page.width, height: page.height) }.freeze
-      @warnings = object.warnings
+      @warnings = Convert.diagnostics(object.warnings)
       @handle = NativeHandle.new(object, :uniffi_oicana_uniffi_fn_free_compileddocument, "document")
     end
 

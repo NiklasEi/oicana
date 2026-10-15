@@ -4,6 +4,9 @@
 
 - Improved error handling for JSON inputs that are not valid JSON
 - Improved error for missing packages in a template
+- Compilation warnings are structured data instead of a single string, in every integration
+  - Each warning is a `Diagnostic` with its severity, message, location in the template (file, line and column), hints, trace and the `formatted` text that was previously returned
+  - Without warnings, the integrations return an empty list instead of `null`, `None`, `undefined` or an empty string
 
 ### CLI
 - `oicana pack` no longer warns about imports with a computed source, since it was mostly false positives

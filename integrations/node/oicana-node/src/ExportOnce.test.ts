@@ -79,7 +79,7 @@ describe('exportOnce', () => {
     expect(Buffer.from(result.document.slice(0, 4)).toString('ascii')).toBe(
       '%PDF',
     );
-    expect(result.warnings).toBeUndefined();
+    expect(result.warnings).toEqual([]);
   });
 
   it('exports asynchronously', async () => {
@@ -94,7 +94,7 @@ describe('exportOnce', () => {
     expect(Buffer.from(result.document.slice(0, 4)).toString('ascii')).toBe(
       '%PDF',
     );
-    expect(result.warnings).toBeUndefined();
+    expect(result.warnings).toEqual([]);
   });
 
   it('surfaces warnings', () => {
@@ -112,7 +112,36 @@ describe('exportOnce', () => {
     );
 
     expect(Buffer.from(result.document).toString('utf-8')).toContain('<svg');
-    expect(result.warnings).toContain('NonexistentFontExportOnce');
+    expect(result.warnings).toHaveLength(1);
+    const [warning] = result.warnings;
+    expect(warning.severity).toBe('warning');
+    expect(warning.message).toBe(
+      'unknown font family: nonexistentfontexportonce',
+    );
+    expect(warning.location).toEqual({
+      file: '/main.typ',
+      line: 1,
+      column: 17,
+      endLine: 1,
+      endColumn: 44,
+    });
+    expect(warning.hints).toEqual([]);
+    expect(warning.trace).toEqual([]);
+    expect(warning.formatted).toContain('NonexistentFontExportOnce');
+  });
+
+  it('keeps structured warnings on templates and compiled documents', () => {
+    using template = new Template(
+      packTemplate({
+        'typst.toml': minimalManifest,
+        'main.typ': '#set text(font: "NonexistentFontDocument")\nContent',
+      }),
+    );
+    expect(template.warnings()[0].message).toContain('nonexistentfontdocument');
+
+    using document = template.compile();
+    expect(document.warnings).toHaveLength(1);
+    expect(document.warnings[0].location?.file).toBe('/main.typ');
   });
 
   it('colors diagnostics only when configured', () => {
@@ -121,7 +150,8 @@ describe('exportOnce', () => {
       'main.typ': '#set text(font: "NonexistentFontColor")\nContent',
     });
     const warnings = () =>
-      Template.exportOnce(template, new Map(), new Map(), Svg).warnings;
+      Template.exportOnce(template, new Map(), new Map(), Svg).warnings[0]
+        .formatted;
 
     try {
       configureDiagnosticColor(DiagnosticColor.Ansi);

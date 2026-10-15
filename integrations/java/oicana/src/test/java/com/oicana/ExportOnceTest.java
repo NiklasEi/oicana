@@ -7,7 +7,9 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
@@ -84,8 +86,17 @@ class ExportOnceTest {
         );
 
         assertTrue(new String(result.document(), StandardCharsets.UTF_8).contains("<svg"));
-        assertTrue(result.warnings().isPresent());
-        assertTrue(result.warnings().get().contains("NonexistentFontExportOnce"));
+        assertEquals(1, result.warnings().size());
+        Diagnostic warning = result.warnings().get(0);
+        assertEquals(DiagnosticSeverity.WARNING, warning.severity());
+        assertEquals("unknown font family: nonexistentfontexportonce", warning.message());
+        assertEquals(
+                Optional.of(new SourceLocation("/main.typ", 1, 17, 1, 44)),
+                warning.location());
+        assertEquals(List.of(), warning.hints());
+        assertEquals(List.of(), warning.trace());
+        assertTrue(warning.formatted().contains("NonexistentFontExportOnce"));
+        assertEquals(warning.formatted(), warning.toString());
     }
 
     @Test

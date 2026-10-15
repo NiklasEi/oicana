@@ -6,7 +6,8 @@ use oicana_ffi_core::{DocumentHandle, TemplateHandle};
 
 use crate::error::OicanaError;
 use crate::types::{
-    core_blobs, BlobInput, CompilationMode, ExportFormat, PageRange, PageSize, ZipLimits,
+    core_blobs, diagnostics, BlobInput, CompilationMode, Diagnostic, ExportFormat, PageRange,
+    PageSize, ZipLimits,
 };
 
 static NEXT_TEMPLATE_ID: AtomicU64 = AtomicU64::new(0);
@@ -19,7 +20,7 @@ static NEXT_TEMPLATE_ID: AtomicU64 = AtomicU64::new(0);
 pub struct Template {
     id: String,
     handle: TemplateHandle,
-    warnings: Option<String>,
+    warnings: Vec<Diagnostic>,
 }
 
 #[uniffi::export]
@@ -45,7 +46,7 @@ impl Template {
             mode.into(),
             limits.and_then(Into::into),
         )?;
-        let warnings = oicana_ffi_core::get_warnings(&warm_up);
+        let warnings = diagnostics(oicana_ffi_core::get_warnings(&warm_up));
         oicana_ffi_core::remove_document(&warm_up);
         let handle = oicana_ffi_core::lookup_template(&id)?;
         Ok(Arc::new(Template {
@@ -55,8 +56,8 @@ impl Template {
         }))
     }
 
-    /// Warnings of the warm-up compilation, if any.
-    pub fn warnings(&self) -> Option<String> {
+    /// Warnings of the warm-up compilation.
+    pub fn warnings(&self) -> Vec<Diagnostic> {
         self.warnings.clone()
     }
 
@@ -107,13 +108,13 @@ impl Drop for Template {
 pub struct CompiledDocument {
     id: String,
     handle: DocumentHandle,
-    warnings: Option<String>,
+    warnings: Vec<Diagnostic>,
 }
 
 impl CompiledDocument {
     fn from_id(id: String) -> Result<Self, OicanaError> {
         let handle = oicana_ffi_core::lookup_document(&id)?;
-        let warnings = oicana_ffi_core::get_warnings(&id);
+        let warnings = diagnostics(oicana_ffi_core::get_warnings(&id));
         Ok(CompiledDocument {
             id,
             handle,
@@ -139,8 +140,8 @@ impl CompiledDocument {
         self.handle.pages().into_iter().map(Into::into).collect()
     }
 
-    /// Warnings of the compilation, if any.
-    pub fn warnings(&self) -> Option<String> {
+    /// Warnings of the compilation.
+    pub fn warnings(&self) -> Vec<Diagnostic> {
         self.warnings.clone()
     }
 }

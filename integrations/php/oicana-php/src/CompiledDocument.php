@@ -32,17 +32,18 @@ final class CompiledDocument
     public readonly array $pages;
 
     /**
-     * Warnings produced by the compilation of this document, or null if there
-     * were none.
+     * Warnings produced by the compilation of this document.
+     *
+     * @var list<Diagnostic>
      */
-    public readonly ?string $warnings;
+    public readonly array $warnings;
 
     private ?string $documentId;
 
     /**
      * @internal Use {@see Template::compile()}.
      *
-     * @throws \JsonException If the page metadata cannot be decoded
+     * @throws \JsonException If the page metadata or warnings cannot be decoded
      */
     public function __construct(string $documentId)
     {
@@ -59,9 +60,7 @@ final class CompiledDocument
             $sizes
         );
 
-        /** @var string|null $warnings */
-        $warnings = \OicanaInternal\get_warnings($documentId);
-        $this->warnings = $warnings;
+        $this->warnings = Diagnostic::listFromJson(\OicanaInternal\get_warnings($documentId));
     }
 
     /**

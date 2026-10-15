@@ -13,6 +13,12 @@ export {
 export * from './BlobInput.js';
 export * from './CompilationMode.js';
 export * from './CompiledDocument.js';
+export type {
+  Diagnostic,
+  DiagnosticSeverity,
+  SourceLocation,
+  TracePoint,
+} from './Diagnostic.js';
 export * from './ExportFormat.js';
 export * from './ExportOnceResult.js';
 export * from './PageRange.js';

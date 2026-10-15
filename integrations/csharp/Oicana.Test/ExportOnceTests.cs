@@ -53,7 +53,7 @@ public class ExportOnceTests
         result.Document.CopyTo(memory);
         var bytes = memory.ToArray();
         Encoding.ASCII.GetString(bytes, 0, 4).Should().Be("%PDF");
-        result.Warnings.Should().BeNull();
+        result.Warnings.Should().BeEmpty();
     }
 
     [Fact]
@@ -68,8 +68,14 @@ public class ExportOnceTests
             exportFormat: ExportFormat.Svg(),
             mode: CompilationMode.Development);
 
-        result.Warnings.Should().NotBeNull();
-        result.Warnings.Should().Contain("NonexistentFontExportOnce");
+        var warning = result.Warnings.Should().ContainSingle().Subject;
+        warning.Severity.Should().Be(DiagnosticSeverity.Warning);
+        warning.Message.Should().Be("unknown font family: nonexistentfontexportonce");
+        warning.Location.Should().Be(new SourceLocation("/main.typ", 1, 17, 1, 44));
+        warning.Hints.Should().BeEmpty();
+        warning.Trace.Should().BeEmpty();
+        warning.Formatted.Should().Contain("NonexistentFontExportOnce");
+        warning.ToString().Should().Be(warning.Formatted);
     }
 
     [Fact]

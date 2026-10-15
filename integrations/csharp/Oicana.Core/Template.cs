@@ -83,7 +83,7 @@ public class Template : ITemplate, IDisposable
         new Dictionary<string, BlobInput>();
 
     /// <inheritdoc />
-    public string? Warnings { get; private set; }
+    public IReadOnlyList<Diagnostic> Warnings { get; private set; }
 
     /// <inheritdoc />
     public Stream Export(IDictionary<string, JsonNode>? jsonInputs = null, IDictionary<string, BlobInput>? blobInputs = null, ExportFormat? exportFormat = null, CompilationMode mode = CompilationMode.Production, PageRange? pages = null)

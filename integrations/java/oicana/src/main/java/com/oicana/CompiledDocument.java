@@ -6,7 +6,6 @@ import com.google.gson.JsonParser;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
 
 /**
  * A compiled document kept in memory so it can be exported on demand without re-compiling.
@@ -25,12 +24,12 @@ public class CompiledDocument implements AutoCloseable {
 
     private volatile String documentId;
     private final List<PageSize> pages;
-    private final String warnings;
+    private final List<Diagnostic> warnings;
 
     CompiledDocument(String documentId) {
         this.documentId = documentId;
         this.pages = parsePageSizes(OicanaNative.documentPages(documentId));
-        this.warnings = OicanaNative.getWarnings(documentId);
+        this.warnings = Diagnostic.listFromJson(OicanaNative.getWarnings(documentId));
     }
 
     /**
@@ -54,10 +53,10 @@ public class CompiledDocument implements AutoCloseable {
     /**
      * Warnings produced by the compilation of this document.
      *
-     * @return the warnings, or an empty Optional if there were none
+     * @return an unmodifiable list of the warnings, empty if there were none
      */
-    public Optional<String> warnings() {
-        return Optional.ofNullable(warnings);
+    public List<Diagnostic> warnings() {
+        return warnings;
     }
 
     /**

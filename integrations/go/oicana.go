@@ -24,7 +24,7 @@ func ExportOnce(files []byte, inputs Inputs, format Format, opts ...Option) (Exp
 	if err != nil {
 		return ExportOnceResult{}, wrapError(err)
 	}
-	return ExportOnceResult{Document: result.Bytes, Warnings: deref(result.Warnings)}, nil
+	return ExportOnceResult{Document: result.Bytes, Warnings: diagnostics(result.Warnings)}, nil
 }
 
 // RegisterFonts makes fonts available to every template created afterwards. Returns the

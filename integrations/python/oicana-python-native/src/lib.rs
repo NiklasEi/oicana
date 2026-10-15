@@ -107,8 +107,8 @@ fn register_template(
 
 /// Compile and export the given template once, without caching anything.
 ///
-/// Returns a `(document_bytes, warnings)` tuple where `warnings` is `None` if
-/// there were none.
+/// Returns a `(document_bytes, warnings)` tuple where `warnings` is a JSON
+/// array of diagnostics.
 #[pyfunction]
 #[pyo3(signature = (files, json_inputs, blob_inputs, compilation_mode, export_format, page_range=None, max_entries=None, max_total_decompressed_bytes=None))]
 #[allow(clippy::too_many_arguments)]
@@ -122,7 +122,7 @@ fn export_once<'py>(
     page_range: Option<String>,
     max_entries: Option<u64>,
     max_total_decompressed_bytes: Option<u64>,
-) -> PyResult<(Bound<'py, PyBytes>, Option<String>)> {
+) -> PyResult<(Bound<'py, PyBytes>, String)> {
     let format = oicana_ffi_core::parse_export_format(&export_format).map_err(into_py_err)?;
     let page = oicana_ffi_core::parse_page_range(page_range.as_deref()).map_err(into_py_err)?;
     let blobs = into_core_blobs(py, blob_inputs)?;
@@ -143,7 +143,10 @@ fn export_once<'py>(
             )
         })
         .map_err(into_py_err)?;
-    Ok((PyBytes::new(py, &result.bytes), result.warnings))
+    Ok((
+        PyBytes::new(py, &result.bytes),
+        oicana_ffi_core::diagnostics_json(&result.warnings),
+    ))
 }
 
 /// Configure the coloring of compilation diagnostics like warnings and errors.
@@ -281,11 +284,11 @@ fn remove_document(py: Python<'_>, document_id: String) -> PyResult<()> {
     Ok(())
 }
 
-/// Return any compilation warnings produced for the given document, or `None`
-/// if there were none. Warnings are cleared when the document is removed.
+/// Return the compilation warnings produced for the given document as a JSON
+/// array of diagnostics. Warnings are cleared when the document is removed.
 #[pyfunction]
-fn get_warnings(py: Python<'_>, document_id: String) -> Option<String> {
-    py.detach(|| oicana_ffi_core::get_warnings(&document_id))
+fn get_warnings(py: Python<'_>, document_id: String) -> String {
+    py.detach(|| oicana_ffi_core::get_warnings_json(&document_id))
 }
 
 /// Enable or disable JSON schema validation for the given template.

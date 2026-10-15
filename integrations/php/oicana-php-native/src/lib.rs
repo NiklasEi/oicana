@@ -156,9 +156,9 @@ pub fn register_template(
 #[php(name = "OicanaInternal\\ExportOnceResult")]
 pub struct ExportOnceResult {
     document: Vec<u8>,
-    /// Compilation warnings, or null if there were none.
+    /// Compilation warnings as a JSON array of diagnostics.
     #[php(prop)]
-    pub warnings: Option<String>,
+    pub warnings: String,
 }
 
 #[php_impl]
@@ -202,7 +202,7 @@ pub fn export_template_once(
         .map_err(into_php_err)?;
         Ok(ExportOnceResult {
             document: result.bytes,
-            warnings: result.warnings,
+            warnings: oicana_ffi_core::diagnostics_json(&result.warnings),
         })
     })
 }
@@ -368,12 +368,12 @@ pub fn remove_document(document_id: String) -> PhpResult<()> {
     })
 }
 
-/// Return any compilation warnings produced for the given document, or `null`
-/// if there were none. Warnings are cleared when the document is removed.
+/// Return the compilation warnings produced for the given document as a JSON
+/// array of diagnostics. Warnings are cleared when the document is removed.
 #[php_function]
 #[php(name = "OicanaInternal\\get_warnings")]
-pub fn get_warnings(document_id: String) -> PhpResult<Option<String>> {
-    catch_panic(|| Ok(oicana_ffi_core::get_warnings(&document_id)))
+pub fn get_warnings(document_id: String) -> PhpResult<String> {
+    catch_panic(|| Ok(oicana_ffi_core::get_warnings_json(&document_id)))
 }
 
 /// Enable or disable JSON schema validation for the given template.

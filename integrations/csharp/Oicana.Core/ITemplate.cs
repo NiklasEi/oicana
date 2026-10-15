@@ -18,7 +18,7 @@ public interface ITemplate : IDisposable
     /// Prefer <see cref="CompiledDocument.Warnings"/>, since every compilation
     /// overwrites the warnings on the template.
     /// </summary>
-    string? Warnings { get; }
+    IReadOnlyList<Diagnostic> Warnings { get; }
 
     /// <summary>
     /// Compile the template with the given inputs to the specified format.

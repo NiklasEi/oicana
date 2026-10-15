@@ -140,8 +140,8 @@ pub fn register_template_async(
 pub struct ExportOnceResult {
   /// The exported document.
   pub data: Buffer,
-  /// Compilation warnings, if any.
-  pub warnings: Option<String>,
+  /// Compilation warnings as a JSON array of diagnostics.
+  pub warnings: String,
 }
 
 /// Compile and export the given template once, without caching the template or document.
@@ -172,7 +172,7 @@ pub fn export_template_once(
   .map_err(into_napi_err)?;
   Ok(ExportOnceResult {
     data: result.bytes.into(),
-    warnings: result.warnings,
+    warnings: oicana_ffi_core::diagnostics_json(&result.warnings),
   })
 }
 
@@ -213,7 +213,7 @@ impl Task for ExportTemplateOnceTask {
   fn resolve(&mut self, _env: Env, output: Self::Output) -> Result<Self::JsValue> {
     Ok(ExportOnceResult {
       data: output.bytes.into(),
-      warnings: output.warnings,
+      warnings: oicana_ffi_core::diagnostics_json(&output.warnings),
     })
   }
 }
@@ -418,11 +418,11 @@ pub fn remove_document(document_id: String) -> Result<()> {
   Ok(())
 }
 
-/// Return any compilation warnings produced for the given document, or `null`
-/// if there were none. Warnings are cleared when the document is removed.
+/// Return the compilation warnings produced for the given document as a JSON
+/// array of diagnostics. Warnings are cleared when the document is removed.
 #[napi(catch_unwind)]
-pub fn get_warnings(document_id: String) -> Option<String> {
-  oicana_ffi_core::get_warnings(&document_id)
+pub fn get_warnings(document_id: String) -> String {
+  oicana_ffi_core::get_warnings_json(&document_id)
 }
 
 /// Enable or disable JSON schema validation for the given template.

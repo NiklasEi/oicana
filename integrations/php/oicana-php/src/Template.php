@@ -30,7 +30,8 @@ use Oicana\Manifest\TemplateManifest;
 class Template
 {
     private string $templateId;
-    private ?string $lastWarnings = null;
+    /** @var list<Diagnostic> */
+    private array $lastWarnings = [];
 
     /**
      * Initialize template and register it with the native extension.
@@ -73,14 +74,16 @@ class Template
             $limits?->maxTotalDecompressedBytes
         );
 
-        $this->lastWarnings = \OicanaInternal\get_warnings($docId);
+        $this->lastWarnings = Diagnostic::listFromJson(\OicanaInternal\get_warnings($docId));
         \OicanaInternal\remove_document($docId);
     }
 
     /**
-     * Warnings produced by the most recent compilation, or null if there were none.
+     * Warnings produced by the most recent compilation, empty if there were none.
+     *
+     * @return list<Diagnostic>
      */
-    public function warnings(): ?string
+    public function warnings(): array
     {
         return $this->lastWarnings;
     }
@@ -115,7 +118,7 @@ class Template
             $mode->toNative()
         );
 
-        $this->lastWarnings = \OicanaInternal\get_warnings($docId);
+        $this->lastWarnings = Diagnostic::listFromJson(\OicanaInternal\get_warnings($docId));
 
         try {
             return \OicanaInternal\export_document(
@@ -264,7 +267,10 @@ class Template
             $limits?->maxTotalDecompressedBytes
         );
 
-        return new ExportOnceResult($result->document(), $result->warnings);
+        return new ExportOnceResult(
+            $result->document(),
+            Diagnostic::listFromJson($result->warnings)
+        );
     }
 
     /**

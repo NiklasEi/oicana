@@ -120,8 +120,8 @@ export declare function exportDocumentAsync(
 export interface ExportOnceResult {
   /** The exported document. */
   data: Buffer
-  /** Compilation warnings, if any. */
-  warnings?: string
+  /** Compilation warnings as a JSON array of diagnostics. */
+  warnings: string
 }
 
 /**
@@ -174,10 +174,10 @@ export declare function getFile(template: string, file: string): Buffer
 export declare function getSource(template: string, file: string): string
 
 /**
- * Return any compilation warnings produced for the given document, or `null`
- * if there were none. Warnings are cleared when the document is removed.
+ * Return the compilation warnings produced for the given document as a JSON
+ * array of diagnostics. Warnings are cleared when the document is removed.
  */
-export declare function getWarnings(documentId: string): string | null
+export declare function getWarnings(documentId: string): string
 
 /**
  * Load the manifest of the given template.

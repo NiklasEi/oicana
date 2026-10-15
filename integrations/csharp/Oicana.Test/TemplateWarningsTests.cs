@@ -46,26 +46,29 @@ public class TemplateWarningsTests
         using var template = new Template(templateFile);
 
         // Constructor warm-up compile already warns.
-        template.Warnings.Should().NotBeNull();
+        template.Warnings.Should().ContainSingle();
 
         using var document = template.ExportSvg(
             mode: CompilationMode.Development);
 
-        template.Warnings.Should().NotBeNull();
-        template.Warnings.Should().Contain("NonexistentFontTemplate");
+        template.Warnings.Should().ContainSingle()
+            .Which.Message.Should().Contain("nonexistentfonttemplate");
+
+        using var compiled = template.Compile();
+        compiled.Warnings.Should().BeEquivalentTo(template.Warnings);
     }
 
     [Fact]
-    public void ExportWithoutWarningsLeavesNull()
+    public void ExportWithoutWarningsLeavesThemEmpty()
     {
         var templateFile = PackTemplate(MinimalManifest, "Content");
         using var template = new Template(templateFile);
 
-        template.Warnings.Should().BeNull();
+        template.Warnings.Should().BeEmpty();
 
         using var document = template.ExportSvg(
             mode: CompilationMode.Development);
 
-        template.Warnings.Should().BeNull();
+        template.Warnings.Should().BeEmpty();
     }
 }

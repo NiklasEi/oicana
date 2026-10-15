@@ -266,26 +266,30 @@ test('export surfaces warnings', function () {
     $template = new Template($templateBytes);
 
     try {
-        expect($template->warnings())->not->toBeNull();
+        expect($template->warnings())->toHaveCount(1);
 
         $svg = $template->export(exportFormat: ExportFormat::svg());
 
         expect($svg)->toContain('<svg')
-            ->and($template->warnings())->not->toBeNull()
-            ->and($template->warnings())->toContain('NonexistentFontTemplate');
+            ->and($template->warnings())->toHaveCount(1)
+            ->and($template->warnings()[0]->message)->toContain('nonexistentfonttemplate');
+
+        $document = $template->compile();
+        expect($document->warnings)->toEqual($template->warnings());
+        $document->close();
     } finally {
         $template->close();
     }
 });
 
-test('export without warnings leaves them null', function () {
+test('export without warnings leaves them empty', function () {
     $template = new Template(pack_minimal_template('Content'));
 
     try {
-        expect($template->warnings())->toBeNull();
+        expect($template->warnings())->toBe([]);
         $template->export(exportFormat: ExportFormat::svg());
 
-        expect($template->warnings())->toBeNull();
+        expect($template->warnings())->toBe([]);
     } finally {
         $template->close();
     }

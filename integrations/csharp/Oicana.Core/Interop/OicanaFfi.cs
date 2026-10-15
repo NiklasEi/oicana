@@ -42,7 +42,7 @@ internal static class OicanaFfi
                 var buffers = OicanaFfiInternal.unsafe_export_template_once(fileBuffer, preparedInputs.JsonInputs, preparedInputs.BlobInputs, ConvertCompilationOptions(compilationMode), ConvertExportFormat(exportFormat), ConvertPageRange(pages), ConvertZipLimits(limits));
                 var warnings = GetStringFromBuffer(buffers.warnings);
                 var document = HandleBuffer(buffers.document);
-                return new ExportOnceResult(document, warnings.Length == 0 ? null : warnings);
+                return new ExportOnceResult(document, warnings.Length == 0 ? [] : Diagnostic.ListFromJson(warnings));
             }
             finally
             {
@@ -267,12 +267,11 @@ internal static class OicanaFfi
     /// Get the compilation warnings produced for the given document.
     /// </summary>
     /// <param name="documentId">Identifier of the compiled document.</param>
-    /// <returns>The warnings text, or <c>null</c> if there were none.</returns>
-    public static string? GetWarnings(string documentId)
+    /// <returns>The warnings, empty if there were none.</returns>
+    public static IReadOnlyList<Diagnostic> GetWarnings(string documentId)
     {
         var buffer = OicanaFfiInternal.get_warnings(documentId);
-        var warnings = HandleStringBuffer(buffer);
-        return warnings.Length == 0 ? null : warnings;
+        return Diagnostic.ListFromJson(HandleStringBuffer(buffer));
     }
 
     /// <summary>

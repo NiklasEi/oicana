@@ -11,11 +11,11 @@ final class ExportOnceResult
 {
     /**
      * @param string $document The exported document bytes
-     * @param string|null $warnings Compilation warnings, or null if there were none
+     * @param list<Diagnostic> $warnings Compilation warnings, empty if there were none
      */
     public function __construct(
         public readonly string $document,
-        public readonly ?string $warnings,
+        public readonly array $warnings,
     ) {
     }
 }

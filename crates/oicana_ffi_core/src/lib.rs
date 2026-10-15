@@ -37,6 +37,8 @@ use oicana_world::world::OicanaWorld;
 
 /// Diagnostic-output coloring (re-exported from `oicana_world`).
 pub use oicana_world::diagnostics::DiagnosticColor;
+/// Structured compilation diagnostics (re-exported from `oicana_world`).
+pub use oicana_world::diagnostics::{Diagnostic, DiagnosticSeverity, SourceLocation, TracePoint};
 
 /// The template manifest
 pub mod manifest;
@@ -219,7 +221,7 @@ type SharedWorld = Arc<RwLock<OicanaWorld<PackedTemplate>>>;
 // Violations can deadlock integrations that call in from multiple threads.
 static WORLD_CACHE: Lazy<DashMap<String, SharedWorld>> = Lazy::new(DashMap::new);
 static DOCUMENT_CACHE: Lazy<DashMap<String, Arc<CachedDocument>>> = Lazy::new(DashMap::new);
-static WARNINGS_CACHE: Lazy<DashMap<String, String>> = Lazy::new(DashMap::new);
+static WARNINGS_CACHE: Lazy<DashMap<String, Vec<Diagnostic>>> = Lazy::new(DashMap::new);
 
 fn get_world(template_id: &str) -> Result<SharedWorld, FfiError> {
     WORLD_CACHE
@@ -554,8 +556,8 @@ impl TemplateHandle {
 pub struct ExportOnceResult {
     /// The exported document.
     pub bytes: Vec<u8>,
-    /// Compilation warnings, if any.
-    pub warnings: Option<String>,
+    /// Compilation warnings.
+    pub warnings: Vec<Diagnostic>,
 }
 
 /// Compile a template once and immediately export it, without caching the world.
@@ -790,17 +792,31 @@ pub fn remove_document(document_id: &str) {
     WARNINGS_CACHE.remove(document_id);
 }
 
-/// Return any compilation warnings produced for the given document.
+/// Return the compilation warnings produced for the given document.
 ///
 /// Warnings are stored when [`register_template`] or [`compile_template`]
 /// successfully produce a document. They are cleared together with the
 /// document by [`remove_document`].
-pub fn get_warnings(document_id: &str) -> Option<String> {
-    WARNINGS_CACHE.get(document_id).map(|entry| entry.clone())
+pub fn get_warnings(document_id: &str) -> Vec<Diagnostic> {
+    WARNINGS_CACHE
+        .get(document_id)
+        .map(|entry| entry.clone())
+        .unwrap_or_default()
 }
 
-fn store_warnings(document_id: &str, warnings: Option<String>) {
-    if let Some(warnings) = warnings {
+/// Return the compilation warnings produced for the given document as a JSON
+/// array of [`Diagnostic`]s.
+pub fn get_warnings_json(document_id: &str) -> String {
+    diagnostics_json(&get_warnings(document_id))
+}
+
+/// Serialize diagnostics to a JSON array.
+pub fn diagnostics_json(diagnostics: &[Diagnostic]) -> String {
+    serde_json::to_string(diagnostics).expect("diagnostics only contain strings and numbers")
+}
+
+fn store_warnings(document_id: &str, warnings: Vec<Diagnostic>) {
+    if !warnings.is_empty() {
         WARNINGS_CACHE.insert(document_id.to_owned(), warnings);
     }
 }
@@ -1632,12 +1648,60 @@ mod tests {
         .expect("export once");
 
         assert!(result.bytes.starts_with(b"<svg"));
-        let warnings = result.warnings.expect("compile warnings");
-        assert!(warnings.contains("NonexistentFontFfiCore"));
+        let [warning] = result.warnings.as_slice() else {
+            panic!("expected one warning, got {:?}", result.warnings);
+        };
+        assert_eq!(warning.severity, DiagnosticSeverity::Warning);
+        assert!(warning.formatted.contains("NonexistentFontFfiCore"));
+        assert_eq!(warning.location.as_ref().expect("location").line, 1);
     }
 
     #[test]
-    fn export_once_without_warnings_returns_none() {
+    fn warnings_json_is_an_array_of_camel_case_diagnostics() {
+        let files = minimal_template_zip("#set text(font: \"NonexistentFontJson\")\nContent");
+        let template_id = format!("warnings-json-{}", Uuid::new_v4());
+        let document_id = register_template(
+            &template_id,
+            &files,
+            HashMap::new(),
+            HashMap::new(),
+            CompilationMode::Development,
+            None,
+        )
+        .expect("register template");
+
+        let json: serde_json::Value =
+            serde_json::from_str(&get_warnings_json(&document_id)).expect("valid JSON");
+        let warning = &json.as_array().expect("array")[0];
+        assert_eq!(warning["severity"], "warning");
+        assert_eq!(
+            warning["message"],
+            "unknown font family: nonexistentfontjson"
+        );
+        assert_eq!(
+            warning["location"],
+            serde_json::json!({
+                "file": "/main.typ",
+                "line": 1,
+                "column": 17,
+                "endLine": 1,
+                "endColumn": 38,
+            })
+        );
+        assert_eq!(warning["hints"], serde_json::json!([]));
+        assert_eq!(warning["trace"], serde_json::json!([]));
+        assert!(warning["formatted"]
+            .as_str()
+            .expect("formatted")
+            .contains("NonexistentFontJson"));
+
+        remove_document(&document_id);
+        remove_world(&template_id);
+        assert_eq!(get_warnings_json(&document_id), "[]");
+    }
+
+    #[test]
+    fn export_once_without_warnings_returns_no_warnings() {
         let files = minimal_template_zip("Content");
 
         let result = export_once(
@@ -1652,7 +1716,7 @@ mod tests {
         .expect("export once");
 
         assert!(result.bytes.starts_with(b"<svg"));
-        assert!(result.warnings.is_none());
+        assert!(result.warnings.is_empty());
     }
 
     #[test]

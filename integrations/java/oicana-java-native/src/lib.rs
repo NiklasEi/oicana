@@ -141,7 +141,7 @@ pub extern "system" fn Java_com_oicana_OicanaNative_registerTemplate<'local>(
 }
 
 /// Compile and export a template once without caching it. Returns a two-element
-/// `Object[]` of the document and compilation warnings or null.
+/// `Object[]` of the document and compilation warnings as a JSON array.
 #[unsafe(no_mangle)]
 pub extern "system" fn Java_com_oicana_OicanaNative_exportTemplateOnce<'local>(
     mut unowned_env: EnvUnowned<'local>,
@@ -190,10 +190,9 @@ pub extern "system" fn Java_com_oicana_OicanaNative_exportTemplateOnce<'local>(
                 let array = JObjectArray::<JObject>::new(env, 2, &JObject::null())?;
                 let document = env.byte_array_from_slice(&result.bytes)?;
                 array.set_element(env, 0, &document)?;
-                if let Some(warnings) = result.warnings {
-                    let warnings = JString::from_str(env, &warnings)?;
-                    array.set_element(env, 1, &warnings)?;
-                }
+                let warnings = oicana_ffi_core::diagnostics_json(&result.warnings);
+                let warnings = JString::from_str(env, &warnings)?;
+                array.set_element(env, 1, &warnings)?;
                 Ok(array)
             },
         )
@@ -370,8 +369,8 @@ pub extern "system" fn Java_com_oicana_OicanaNative_removeDocument<'local>(
         .resolve::<jni::errors::ThrowRuntimeExAndDefault>()
 }
 
-/// Return any compilation warnings produced for the given document, or `null`
-/// if there were none. Warnings are cleared when the document is removed.
+/// Return the compilation warnings produced for the given document as a JSON
+/// array of diagnostics. Warnings are cleared when the document is removed.
 #[unsafe(no_mangle)]
 pub extern "system" fn Java_com_oicana_OicanaNative_getWarnings<'local>(
     mut unowned_env: EnvUnowned<'local>,
@@ -381,10 +380,7 @@ pub extern "system" fn Java_com_oicana_OicanaNative_getWarnings<'local>(
     unowned_env
         .with_env(|env| -> jni::errors::Result<JString<'_>> {
             let id = document_id.try_to_string(env)?;
-            match oicana_ffi_core::get_warnings(&id) {
-                Some(warnings) => JString::from_str(env, &warnings),
-                None => Ok(JString::default()),
-            }
+            JString::from_str(env, oicana_ffi_core::get_warnings_json(&id))
         })
         .resolve::<jni::errors::ThrowRuntimeExAndDefault>()
 }

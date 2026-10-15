@@ -199,10 +199,9 @@ pub unsafe extern "C" fn unsafe_export_template_once(
         ) {
             Ok(result) => ExportOnceBuffers {
                 document: Buffer::from_ok(result.bytes),
-                warnings: match result.warnings {
-                    Some(warnings) => Buffer::from_ok_string(warnings),
-                    None => Buffer::from_ok(Vec::new()),
-                },
+                warnings: Buffer::from_ok_string(oicana_ffi_core::diagnostics_json(
+                    &result.warnings,
+                )),
             },
             Err(error) => ExportOnceBuffers::from_error(error.to_string()),
         }
@@ -420,11 +419,10 @@ pub extern "C" fn remove_document(document_id: AsciiPointer) -> Buffer {
     })
 }
 
-/// Return any compilation warnings produced for the given document.
+/// Return the compilation warnings produced for the given document.
 ///
-/// On success the buffer contains either the warnings text (UTF-8) or is
-/// empty when there were no warnings. Warnings are cleared together with
-/// the document by [`remove_document`].
+/// On success the buffer contains a JSON array of diagnostics (UTF-8).
+/// Warnings are cleared together with the document by [`remove_document`].
 #[ffi_function]
 #[no_mangle]
 pub extern "C" fn get_warnings(document_id: AsciiPointer) -> Buffer {
@@ -433,10 +431,7 @@ pub extern "C" fn get_warnings(document_id: AsciiPointer) -> Buffer {
             Ok(document_id) => document_id,
             Err(error) => return Buffer::from_error(format!("{error:?}")),
         };
-        match oicana_ffi_core::get_warnings(document_id) {
-            Some(warnings) => Buffer::from_ok_string(warnings),
-            None => Buffer::from_ok(Vec::new()),
-        }
+        Buffer::from_ok_string(oicana_ffi_core::get_warnings_json(document_id))
     })
 }
 
@@ -530,7 +525,7 @@ impl Buffer {
 pub struct ExportOnceBuffers {
     /// The exported document, or an error.
     pub document: Buffer,
-    /// Compilation warnings; empty when there were none.
+    /// Compilation warnings as a JSON array of diagnostics; empty on errors.
     pub warnings: Buffer,
 }
 

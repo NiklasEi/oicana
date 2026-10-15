@@ -55,6 +55,7 @@ from oicana_native import (
 from .types import (
     BlobInput,
     CompilationMode,
+    Diagnostic,
     DiagnosticColor,
     ExportFormat,
     ExportOnceResult,
@@ -82,6 +83,10 @@ def _serialize_export_format(export: ExportFormat) -> str:
         if not math.isfinite(pixels_per_pt) or pixels_per_pt <= 0:
             raise ValueError(f"pixelsPerPt must be a positive, finite number, got {pixels_per_pt}")
     return json.dumps(export)
+
+
+def _parse_diagnostics(diagnostics: str) -> list[Diagnostic]:
+    return [Diagnostic.from_json(diagnostic) for diagnostic in json.loads(diagnostics)]
 
 
 def _serialize_page_range(pages: PageRange | None) -> str | None:
@@ -153,12 +158,12 @@ class Template:
             limits.max_entries if limits else None,
             limits.max_total_decompressed_bytes if limits else None,
         )
-        self._last_warnings: str | None = get_warnings(doc_id)
+        self._last_warnings: list[Diagnostic] = _parse_diagnostics(get_warnings(doc_id))
         remove_document(doc_id)
 
     @property
-    def warnings(self) -> str | None:
-        """Warnings from the most recent compilation, or ``None`` if there were none.
+    def warnings(self) -> list[Diagnostic]:
+        """Warnings from the most recent compilation. Empty if there were none.
 
         Prefer ``CompiledDocument.warnings``, since every compilation
         overwrites the warnings on the template.
@@ -327,7 +332,7 @@ class Template:
             limits.max_entries if limits else None,
             limits.max_total_decompressed_bytes if limits else None,
         )
-        return ExportOnceResult(document=bytes(document), warnings=warnings)
+        return ExportOnceResult(document=bytes(document), warnings=_parse_diagnostics(warnings))
 
     def compile(
         self,
@@ -379,7 +384,7 @@ class Template:
             native_blobs,
             native_mode,
         )
-        self._last_warnings = get_warnings(doc_id)
+        self._last_warnings = _parse_diagnostics(get_warnings(doc_id))
         return doc_id
 
     def manifest(self) -> TemplateManifest:
@@ -464,8 +469,8 @@ class CompiledDocument:
             PageSize(width=page["width"], height=page["height"])
             for page in json.loads(document_pages(document_id))
         ]
-        #: Warnings produced by the compilation of this document, or ``None``.
-        self.warnings: str | None = get_warnings(document_id)
+        #: Warnings produced by the compilation of this document.
+        self.warnings: list[Diagnostic] = _parse_diagnostics(get_warnings(document_id))
 
     @property
     def page_count(self) -> int:

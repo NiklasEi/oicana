@@ -214,11 +214,29 @@ class OicanaTest < Minitest::Test
 
     result = Oicana::Template.export_once(minimal_template("#set text(font: \"No Such Font\")\nHello"),
                                           format: :svg, pages: 0)
-    assert_includes result.warnings, "No Such Font"
+    assert_equal 1, result.warnings.length
+    warning = result.warnings.first
+    assert_equal :warning, warning.severity
+    assert_equal "unknown font family: no such font", warning.message
+    assert_equal Oicana::SourceLocation.new(file: "/main.typ", line: 1, column: 17, end_line: 1, end_column: 31),
+                 warning.location
+    assert_empty warning.hints
+    assert_empty warning.trace
+    assert_includes warning.to_s, "No Such Font"
 
     assert_raises(Oicana::CompilationError) do
       Oicana::Template.export_once(minimal_template("#panic(\"broken\")"))
     end
+  end
+
+  def test_template_warnings
+    Oicana::Template.open(minimal_template("#set text(font: \"No Such Font\")\nHello")) do |template|
+      assert_equal 1, template.warnings.length
+      document = template.compile
+      assert_equal template.warnings, document.warnings
+      document.close
+    end
+    Oicana::Template.open(minimal_template("Hello")) { |template| assert_empty template.warnings }
   end
 
   def test_fonts

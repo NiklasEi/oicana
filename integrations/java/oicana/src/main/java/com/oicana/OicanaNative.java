@@ -23,7 +23,7 @@ class OicanaNative {
 
     /**
      * Returns a two-element array of {@code byte[]} document and warnings
-     * {@code String} (or {@code null} if there were none).
+     * {@code String} (a JSON array of diagnostics).
      * {@code pageRange} may be {@code null} to export the whole document.
      */
     static native Object[] exportTemplateOnce(
@@ -49,7 +49,7 @@ class OicanaNative {
 
     static native void removeDocument(String documentId);
 
-    /** Returns the compilation warnings for the document, or {@code null} if there were none. */
+    /** Returns the compilation warnings for the document as a JSON array of diagnostics. */
     static native String getWarnings(String documentId);
 
     static native void removeWorld(String templateId);

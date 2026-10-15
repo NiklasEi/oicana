@@ -146,11 +146,35 @@ end
     end
   end
 
+  # The Record type Diagnostic.
+
+  def self.check_lower_TypeDiagnostic(v)
+    RustBuffer.check_lower_TypeDiagnosticSeverity(v.severity)
+    
+    RustBuffer.check_lower_OptionalTypeSourceLocation(v.location)
+    RustBuffer.check_lower_Sequencestring(v.hints)
+    RustBuffer.check_lower_SequenceTypeTracePoint(v.trace)
+    
+  end
+
+  def self.alloc_from_TypeDiagnostic(v)
+    RustBuffer.allocWithBuilder do |builder|
+      builder.write_TypeDiagnostic(v)
+      return builder.finalize
+    end
+  end
+
+  def consumeIntoTypeDiagnostic
+    consumeWithStream do |stream|
+      return stream.readTypeDiagnostic
+    end
+  end
+
   # The Record type ExportOnceResult.
 
   def self.check_lower_TypeExportOnceResult(v)
     
-    RustBuffer.check_lower_Optionalstring(v.warnings)
+    RustBuffer.check_lower_SequenceTypeDiagnostic(v.warnings)
   end
 
   def self.alloc_from_TypeExportOnceResult(v)
@@ -226,6 +250,49 @@ end
     end
   end
 
+  # The Record type SourceLocation.
+
+  def self.check_lower_TypeSourceLocation(v)
+    
+    
+    
+    
+    
+  end
+
+  def self.alloc_from_TypeSourceLocation(v)
+    RustBuffer.allocWithBuilder do |builder|
+      builder.write_TypeSourceLocation(v)
+      return builder.finalize
+    end
+  end
+
+  def consumeIntoTypeSourceLocation
+    consumeWithStream do |stream|
+      return stream.readTypeSourceLocation
+    end
+  end
+
+  # The Record type TracePoint.
+
+  def self.check_lower_TypeTracePoint(v)
+    
+    RustBuffer.check_lower_OptionalTypeSourceLocation(v.location)
+  end
+
+  def self.alloc_from_TypeTracePoint(v)
+    RustBuffer.allocWithBuilder do |builder|
+      builder.write_TypeTracePoint(v)
+      return builder.finalize
+    end
+  end
+
+  def consumeIntoTypeTracePoint
+    consumeWithStream do |stream|
+      return stream.readTypeTracePoint
+    end
+  end
+
   # The Record type ZipLimits.
 
   def self.check_lower_TypeZipLimits(v)
@@ -280,6 +347,25 @@ end
   def consumeIntoTypeDiagnosticColor
     consumeWithStream do |stream|
       return stream.readTypeDiagnosticColor
+    end
+  end
+  
+
+  # The Enum type DiagnosticSeverity.
+
+  def self.check_lower_TypeDiagnosticSeverity(v)
+  end
+
+  def self.alloc_from_TypeDiagnosticSeverity(v)
+    RustBuffer.allocWithBuilder do |builder|
+      builder.write_TypeDiagnosticSeverity(v)
+      return builder.finalize
+    end
+  end
+
+  def consumeIntoTypeDiagnosticSeverity
+    consumeWithStream do |stream|
+      return stream.readTypeDiagnosticSeverity
     end
   end
   
@@ -378,6 +464,27 @@ end
     end
   end
 
+  # The Optional<T> type for TypeSourceLocation.
+
+  def self.check_lower_OptionalTypeSourceLocation(v)
+    if not v.nil?
+      RustBuffer.check_lower_TypeSourceLocation(v)
+    end
+  end
+
+  def self.alloc_from_OptionalTypeSourceLocation(v)
+    RustBuffer.allocWithBuilder do |builder|
+      builder.write_OptionalTypeSourceLocation(v)
+      return builder.finalize()
+    end
+  end
+
+  def consumeIntoOptionalTypeSourceLocation
+    consumeWithStream do |stream|
+      return stream.readOptionalTypeSourceLocation
+    end
+  end
+
   # The Optional<T> type for TypeZipLimits.
 
   def self.check_lower_OptionalTypeZipLimits(v)
@@ -441,6 +548,27 @@ end
     end
   end
 
+  # The Sequence<T> type for TypeDiagnostic.
+
+  def self.check_lower_SequenceTypeDiagnostic(v)
+    v.each do |item|
+      RustBuffer.check_lower_TypeDiagnostic(item)
+    end
+  end
+
+  def self.alloc_from_SequenceTypeDiagnostic(v)
+    RustBuffer.allocWithBuilder do |builder|
+      builder.write_SequenceTypeDiagnostic(v)
+      return builder.finalize()
+    end
+  end
+
+  def consumeIntoSequenceTypeDiagnostic
+    consumeWithStream do |stream|
+      return stream.readSequenceTypeDiagnostic
+    end
+  end
+
   # The Sequence<T> type for TypePageSize.
 
   def self.check_lower_SequenceTypePageSize(v)
@@ -480,6 +608,27 @@ end
   def consumeIntoSequenceTypeRegisteredFont
     consumeWithStream do |stream|
       return stream.readSequenceTypeRegisteredFont
+    end
+  end
+
+  # The Sequence<T> type for TypeTracePoint.
+
+  def self.check_lower_SequenceTypeTracePoint(v)
+    v.each do |item|
+      RustBuffer.check_lower_TypeTracePoint(item)
+    end
+  end
+
+  def self.alloc_from_SequenceTypeTracePoint(v)
+    RustBuffer.allocWithBuilder do |builder|
+      builder.write_SequenceTypeTracePoint(v)
+      return builder.finalize()
+    end
+  end
+
+  def consumeIntoSequenceTypeTracePoint
+    consumeWithStream do |stream|
+      return stream.readSequenceTypeTracePoint
     end
   end
 
@@ -569,6 +718,10 @@ class RustBufferStream
     data
   end
 
+  def readU32
+    unpack_from 4, 'L>'
+  end
+
   def readU64
     unpack_from 8, 'Q>'
   end
@@ -629,12 +782,25 @@ class RustBufferStream
     )
   end
 
+  # The Record type Diagnostic.
+
+  def readTypeDiagnostic
+    Diagnostic.new(
+      severity: readTypeDiagnosticSeverity,
+      message: readString,
+      location: readOptionalTypeSourceLocation,
+      hints: readSequencestring,
+      trace: readSequenceTypeTracePoint,
+      formatted: readString
+    )
+  end
+
   # The Record type ExportOnceResult.
 
   def readTypeExportOnceResult
     ExportOnceResult.new(
       bytes: readBytes,
-      warnings: readOptionalstring
+      warnings: readSequenceTypeDiagnostic
     )
   end
 
@@ -662,6 +828,27 @@ class RustBufferStream
     RegisteredFont.new(
       family: readString,
       path: readOptionalstring
+    )
+  end
+
+  # The Record type SourceLocation.
+
+  def readTypeSourceLocation
+    SourceLocation.new(
+      file: readString,
+      line: readU32,
+      column: readU32,
+      end_line: readU32,
+      end_column: readU32
+    )
+  end
+
+  # The Record type TracePoint.
+
+  def readTypeTracePoint
+    TracePoint.new(
+      message: readString,
+      location: readOptionalTypeSourceLocation
     )
   end
 
@@ -708,6 +895,25 @@ class RustBufferStream
     end
 
     raise InternalError, 'Unexpected variant tag for TypeDiagnosticColor'
+  end
+
+  
+
+  
+  
+  # The Enum type DiagnosticSeverity.
+
+  def readTypeDiagnosticSeverity
+    variant = unpack_from 4, 'l>'
+    
+    if variant == 1
+      return DiagnosticSeverity::ERROR
+    end
+    if variant == 2
+      return DiagnosticSeverity::WARNING
+    end
+
+    raise InternalError, 'Unexpected variant tag for TypeDiagnosticSeverity'
   end
 
   
@@ -828,6 +1034,20 @@ class RustBufferStream
     end
   end
 
+  # The Optional<T> type for TypeSourceLocation.
+
+  def readOptionalTypeSourceLocation
+    flag = unpack_from 1, 'c'
+
+    if flag == 0
+      return nil
+    elsif flag == 1
+      return readTypeSourceLocation
+    else
+      raise InternalError, 'Unexpected flag byte for OptionalTypeSourceLocation'
+    end
+  end
+
   # The Optional<T> type for TypeZipLimits.
 
   def readOptionalTypeZipLimits
@@ -874,6 +1094,22 @@ class RustBufferStream
     items
   end
 
+  # The Sequence<T> type for TypeDiagnostic.
+
+  def readSequenceTypeDiagnostic
+    count = unpack_from 4, 'l>'
+
+    raise InternalError, 'Unexpected negative sequence length' if count.negative?
+
+    items = []
+
+    count.times do
+      items.append readTypeDiagnostic
+    end
+
+    items
+  end
+
   # The Sequence<T> type for TypePageSize.
 
   def readSequenceTypePageSize
@@ -901,6 +1137,22 @@ class RustBufferStream
 
     count.times do
       items.append readTypeRegisteredFont
+    end
+
+    items
+  end
+
+  # The Sequence<T> type for TypeTracePoint.
+
+  def readSequenceTypeTracePoint
+    count = unpack_from 4, 'l>'
+
+    raise InternalError, 'Unexpected negative sequence length' if count.negative?
+
+    items = []
+
+    count.times do
+      items.append readTypeTracePoint
     end
 
     items
@@ -978,6 +1230,11 @@ class RustBufferBuilder
     end
   end
 
+  def write_U32(v)
+    v = OicanaUniffi::uniffi_in_range(v, "u32", 0, 2**32)
+    pack_into(4, 'L>', v)
+  end
+
   def write_U64(v)
     v = OicanaUniffi::uniffi_in_range(v, "u64", 0, 2**64)
     pack_into(8, 'Q>', v)
@@ -1028,11 +1285,22 @@ class RustBufferBuilder
     self.write_String(v.metadata)
   end
 
+  # The Record type Diagnostic.
+
+  def write_TypeDiagnostic(v)
+    self.write_TypeDiagnosticSeverity(v.severity)
+    self.write_String(v.message)
+    self.write_OptionalTypeSourceLocation(v.location)
+    self.write_Sequencestring(v.hints)
+    self.write_SequenceTypeTracePoint(v.trace)
+    self.write_String(v.formatted)
+  end
+
   # The Record type ExportOnceResult.
 
   def write_TypeExportOnceResult(v)
     self.write_Bytes(v.bytes)
-    self.write_Optionalstring(v.warnings)
+    self.write_SequenceTypeDiagnostic(v.warnings)
   end
 
   # The Record type PageRange.
@@ -1056,6 +1324,23 @@ class RustBufferBuilder
     self.write_Optionalstring(v.path)
   end
 
+  # The Record type SourceLocation.
+
+  def write_TypeSourceLocation(v)
+    self.write_String(v.file)
+    self.write_U32(v.line)
+    self.write_U32(v.column)
+    self.write_U32(v.end_line)
+    self.write_U32(v.end_column)
+  end
+
+  # The Record type TracePoint.
+
+  def write_TypeTracePoint(v)
+    self.write_String(v.message)
+    self.write_OptionalTypeSourceLocation(v.location)
+  end
+
   # The Record type ZipLimits.
 
   def write_TypeZipLimits(v)
@@ -1073,6 +1358,13 @@ class RustBufferBuilder
   # The Enum type DiagnosticColor.
 
   def write_TypeDiagnosticColor(v)
+    pack_into(4, 'l>', v)
+ end
+   
+
+  # The Enum type DiagnosticSeverity.
+
+  def write_TypeDiagnosticSeverity(v)
     pack_into(4, 'l>', v)
  end
    
@@ -1128,6 +1420,17 @@ class RustBufferBuilder
     end
   end
 
+  # The Optional<T> type for TypeSourceLocation.
+
+  def write_OptionalTypeSourceLocation(v)
+    if v.nil?
+      pack_into(1, 'c', 0)
+    else
+      pack_into(1, 'c', 1)
+      self.write_TypeSourceLocation(v)
+    end
+  end
+
   # The Optional<T> type for TypeZipLimits.
 
   def write_OptionalTypeZipLimits(v)
@@ -1159,6 +1462,16 @@ class RustBufferBuilder
     end
   end
 
+  # The Sequence<T> type for TypeDiagnostic.
+
+  def write_SequenceTypeDiagnostic(items)
+    pack_into(4, 'l>', items.size)
+
+    items.each do |item|
+      self.write_TypeDiagnostic(item)
+    end
+  end
+
   # The Sequence<T> type for TypePageSize.
 
   def write_SequenceTypePageSize(items)
@@ -1176,6 +1489,16 @@ class RustBufferBuilder
 
     items.each do |item|
       self.write_TypeRegisteredFont(item)
+    end
+  end
+
+  # The Sequence<T> type for TypeTracePoint.
+
+  def write_SequenceTypeTracePoint(items)
+    pack_into(4, 'l>', items.size)
+
+    items.each do |item|
+      self.write_TypeTracePoint(item)
     end
   end
 
@@ -1259,10 +1582,12 @@ end
 
 
 
+
 # Map error modules to the RustBuffer method name that reads them
 ERROR_MODULE_TO_READER_METHOD = {
 
   OicanaError => :readTypeOicanaError,
+
 
 
 
@@ -1509,6 +1834,17 @@ end
   
   
 
+class DiagnosticSeverity
+  ERROR = 1
+  WARNING = 2
+  
+end
+
+
+  
+  
+  
+
 class ExportFormat
   def initialize
     raise RuntimeError, 'ExportFormat cannot be instantiated directly'
@@ -1652,6 +1988,43 @@ class BlobInput
   end
 end
   
+  # Record type Diagnostic
+class Diagnostic
+  attr_reader :severity, :message, :location, :hints, :trace, :formatted
+
+  def initialize(severity:, message:, location:, hints:, trace:, formatted:)
+    @severity = severity
+    @message = message
+    @location = location
+    @hints = hints
+    @trace = trace
+    @formatted = formatted
+  end
+
+  def ==(other)
+    if @severity != other.severity
+      return false
+    end
+    if @message != other.message
+      return false
+    end
+    if @location != other.location
+      return false
+    end
+    if @hints != other.hints
+      return false
+    end
+    if @trace != other.trace
+      return false
+    end
+    if @formatted != other.formatted
+      return false
+    end
+
+    true
+  end
+end
+  
   # Record type ExportOnceResult
 class ExportOnceResult
   attr_reader :bytes, :warnings
@@ -1729,6 +2102,60 @@ class RegisteredFont
       return false
     end
     if @path != other.path
+      return false
+    end
+
+    true
+  end
+end
+  
+  # Record type SourceLocation
+class SourceLocation
+  attr_reader :file, :line, :column, :end_line, :end_column
+
+  def initialize(file:, line:, column:, end_line:, end_column:)
+    @file = file
+    @line = line
+    @column = column
+    @end_line = end_line
+    @end_column = end_column
+  end
+
+  def ==(other)
+    if @file != other.file
+      return false
+    end
+    if @line != other.line
+      return false
+    end
+    if @column != other.column
+      return false
+    end
+    if @end_line != other.end_line
+      return false
+    end
+    if @end_column != other.end_column
+      return false
+    end
+
+    true
+  end
+end
+  
+  # Record type TracePoint
+class TracePoint
+  attr_reader :message, :location
+
+  def initialize(message:, location:)
+    @message = message
+    @location = location
+  end
+
+  def ==(other)
+    if @message != other.message
+      return false
+    end
+    if @location != other.location
       return false
     end
 
@@ -1929,7 +2356,7 @@ end
   end
   def warnings()
     result = OicanaUniffi.rust_call(:uniffi_oicana_uniffi_fn_method_compileddocument_warnings,uniffi_clone_handle(),)
-    return result.consumeIntoOptionalstring
+    return result.consumeIntoSequenceTypeDiagnostic
   end
   
 end
@@ -2028,7 +2455,7 @@ end
   end
   def warnings()
     result = OicanaUniffi.rust_call(:uniffi_oicana_uniffi_fn_method_template_warnings,uniffi_clone_handle(),)
-    return result.consumeIntoOptionalstring
+    return result.consumeIntoSequenceTypeDiagnostic
   end
   
 end

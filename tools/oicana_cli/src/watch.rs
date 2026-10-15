@@ -79,8 +79,8 @@ fn compile_and_export(
     };
 
     let document = result.document;
-    if let Some(warnings) = result.warnings {
-        println!("{warnings}");
+    for warning in &result.warnings {
+        println!("{warning}\n");
     }
 
     let export_result = match args.format {

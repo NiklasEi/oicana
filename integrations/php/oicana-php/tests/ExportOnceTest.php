@@ -5,8 +5,10 @@ declare(strict_types=1);
 use Oicana\CompilationMode;
 use Oicana\Configuration;
 use Oicana\DiagnosticColor;
+use Oicana\DiagnosticSeverity;
 use Oicana\ExportFormat;
 use Oicana\ExportOnceResult;
+use Oicana\SourceLocation;
 use Oicana\Template;
 use Oicana\ZipLimits;
 
@@ -27,7 +29,7 @@ test('exportOnce exports without warnings', function () {
 
     expect($result)->toBeInstanceOf(ExportOnceResult::class)
         ->and($result->document)->toStartWith('%PDF')
-        ->and($result->warnings)->toBeNull();
+        ->and($result->warnings)->toBe([]);
 });
 
 test('exportOnce surfaces warnings', function () {
@@ -42,8 +44,16 @@ test('exportOnce surfaces warnings', function () {
     );
 
     expect($result->document)->toContain('<svg')
-        ->and($result->warnings)->not->toBeNull()
-        ->and($result->warnings)->toContain('NonexistentFontExportOnce');
+        ->and($result->warnings)->toHaveCount(1);
+
+    $warning = $result->warnings[0];
+    expect($warning->severity)->toBe(DiagnosticSeverity::Warning)
+        ->and($warning->message)->toBe('unknown font family: nonexistentfontexportonce')
+        ->and($warning->location)->toEqual(new SourceLocation('/main.typ', 1, 17, 1, 44))
+        ->and($warning->hints)->toBe([])
+        ->and($warning->trace)->toBe([])
+        ->and($warning->formatted)->toContain('NonexistentFontExportOnce')
+        ->and((string) $warning)->toBe($warning->formatted);
 });
 
 test('exportOnce enforces zip limits', function () {

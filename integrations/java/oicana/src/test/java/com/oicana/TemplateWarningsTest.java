@@ -53,13 +53,17 @@ class TemplateWarningsTest {
 
         try (var template = new Template(templateFile)) {
             // Constructor warm-up compile already warns.
-            assertTrue(template.warnings().isPresent());
+            assertEquals(1, template.warnings().size());
 
             byte[] svg = template.exportSvg(Map.of(), Map.of(), CompilationMode.DEVELOPMENT, null);
 
             assertTrue(new String(svg, StandardCharsets.UTF_8).contains("<svg"));
-            assertTrue(template.warnings().isPresent());
-            assertTrue(template.warnings().get().contains("NonexistentFontTemplate"));
+            assertEquals(1, template.warnings().size());
+            assertTrue(template.warnings().get(0).message().contains("nonexistentfonttemplate"));
+
+            try (var document = template.compile(Map.of(), Map.of())) {
+                assertEquals(template.warnings(), document.warnings());
+            }
         }
     }
 

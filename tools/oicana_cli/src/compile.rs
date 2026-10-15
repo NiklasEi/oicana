@@ -96,8 +96,8 @@ pub fn compile(args: CompileArgs) -> anyhow::Result<()> {
     let result = template.compile(inputs)?;
 
     let document = result.document;
-    if let Some(warnings) = result.warnings {
-        println!("{warnings}");
+    for warning in &result.warnings {
+        println!("{warning}\n");
     }
 
     let out_dir = Path::new(&args.out_dir);

@@ -86,8 +86,8 @@ pub fn register_template(
 pub struct ExportOnceResult {
     /// The exported document.
     pub data: Vec<u8>,
-    /// Compilation warnings, if any.
-    pub warnings: Option<String>,
+    /// Compilation warnings as an array of diagnostic objects.
+    pub warnings: JsValue,
 }
 
 /// Compile and export the given template once, without keeping the template in the cache.
@@ -137,7 +137,7 @@ pub fn export_template_once(
     );
     Ok(ExportOnceResult {
         data: result.bytes,
-        warnings: result.warnings,
+        warnings: diagnostics_to_js(&result.warnings)?,
     })
 }
 
@@ -254,12 +254,15 @@ pub fn remove_document(document_id: String) -> Result<(), String> {
     Ok(())
 }
 
-/// Return any compilation warnings produced for the given document, or
-/// `undefined` if there were none. Warnings are cleared when the document
-/// is removed.
+/// Return the compilation warnings produced for the given document as an array
+/// of diagnostic objects. Warnings are cleared when the document is removed.
 #[wasm_bindgen]
-pub fn get_warnings(document_id: String) -> Option<String> {
-    oicana_ffi_core::get_warnings(&document_id)
+pub fn get_warnings(document_id: String) -> Result<JsValue, String> {
+    diagnostics_to_js(&oicana_ffi_core::get_warnings(&document_id))
+}
+
+fn diagnostics_to_js(diagnostics: &[oicana_ffi_core::Diagnostic]) -> Result<JsValue, String> {
+    to_value(diagnostics).map_err(|error| format!("Failed to serialize warnings: {error}"))
 }
 
 /// Enable or disable JSON schema validation for the given template.
@@ -347,8 +350,8 @@ fn init_logging() {
 }
 
 fn log_warnings(document_id: &str) {
-    if let Some(warnings) = oicana_ffi_core::get_warnings(document_id) {
-        warn!("{warnings}");
+    for warning in oicana_ffi_core::get_warnings(document_id) {
+        warn!("{warning}");
     }
 }
 

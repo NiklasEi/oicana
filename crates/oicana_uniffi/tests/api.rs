@@ -7,8 +7,8 @@ use std::sync::Arc;
 use std::thread;
 
 use oicana_uniffi::{
-    export_once, register_fonts, version, BlobInput, CompilationMode, ExportFormat, OicanaError,
-    PageRange, Template, ZipLimits,
+    export_once, register_fonts, version, BlobInput, CompilationMode, Diagnostic,
+    DiagnosticSeverity, ExportFormat, OicanaError, PageRange, SourceLocation, Template, ZipLimits,
 };
 use zip::write::SimpleFileOptions;
 use zip::{CompressionMethod, ZipWriter};
@@ -104,7 +104,7 @@ fn compiles_and_exports_every_format() {
     let pages = document.pages();
     assert_eq!(pages.len(), 1);
     assert!(pages[0].width > 0.0 && pages[0].height > 0.0);
-    assert_eq!(document.warnings(), None);
+    assert_eq!(document.warnings(), vec![]);
 }
 
 #[test]
@@ -163,7 +163,8 @@ fn matches_oicana_ffi_core_output() {
 
     assert_eq!(once.bytes, core.bytes);
     assert_eq!(compiled, core.bytes);
-    assert_eq!(once.warnings, core.warnings);
+    let core_warnings: Vec<Diagnostic> = core.warnings.into_iter().map(Into::into).collect();
+    assert_eq!(once.warnings, core_warnings);
 }
 
 #[test]
@@ -219,12 +220,27 @@ fn page_ranges_select_pages() {
 #[test]
 fn warnings_are_reported() {
     let template = register(template_zip("", "#set text(font: \"No Such Font\")\nHi"));
-    assert!(template.warnings().is_some());
+    assert_eq!(template.warnings().len(), 1);
 
     let document = template
         .compile(HashMap::new(), HashMap::new(), CompilationMode::Production)
         .unwrap();
-    assert!(document.warnings().unwrap().contains("No Such Font"));
+    let [warning] = document.warnings().try_into().unwrap();
+    assert_eq!(warning.severity, DiagnosticSeverity::Warning);
+    assert_eq!(warning.message, "unknown font family: no such font");
+    assert_eq!(
+        warning.location,
+        Some(SourceLocation {
+            file: "/main.typ".to_owned(),
+            line: 1,
+            column: 17,
+            end_line: 1,
+            end_column: 31,
+        })
+    );
+    assert!(warning.hints.is_empty());
+    assert!(warning.trace.is_empty());
+    assert!(warning.formatted.contains("No Such Font"));
 }
 
 #[test]
