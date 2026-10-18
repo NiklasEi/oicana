@@ -210,8 +210,106 @@ func WithInputs(inputs Inputs) Option {
 // ExportOnceResult is the result of [ExportOnce].
 type ExportOnceResult struct {
 	Document []byte
-	// Warnings of the compilation, or an empty string.
-	Warnings string
+	// Warnings of the compilation.
+	Warnings []Diagnostic
+}
+
+// Diagnostic is a compilation diagnostic, like a warning, with its location in the
+// template.
+type Diagnostic struct {
+	Severity DiagnosticSeverity
+	// Message describes the problem.
+	Message string
+	// Location is where in the template the problem is, or nil if it does not point into
+	// a file.
+	Location *SourceLocation
+	// Hints on how to address the problem.
+	Hints []string
+	// Trace holds the function calls leading to the problem, innermost first.
+	Trace []TracePoint
+	// Formatted is the diagnostic formatted for humans, with source excerpts and the
+	// configured [DiagnosticColor].
+	Formatted string
+}
+
+// String returns the diagnostic formatted for humans.
+func (d Diagnostic) String() string {
+	return d.Formatted
+}
+
+// DiagnosticSeverity is the severity of a [Diagnostic].
+type DiagnosticSeverity int
+
+const (
+	// SeverityError is a fatal error.
+	SeverityError DiagnosticSeverity = iota
+	// SeverityWarning is a non-fatal warning.
+	SeverityWarning
+)
+
+// String returns "error" or "warning".
+func (s DiagnosticSeverity) String() string {
+	if s == SeverityError {
+		return "error"
+	}
+	return "warning"
+}
+
+// SourceLocation is a range in a file of the template.
+//
+// Lines and columns are 1-based. Columns count characters.
+type SourceLocation struct {
+	// File is the path of the file in the template, like /main.typ. Files of packages
+	// are prefixed with the package, like @preview/example:0.1.0/lib.typ.
+	File      string
+	Line      int
+	Column    int
+	EndLine   int
+	EndColumn int // exclusive
+}
+
+// TracePoint is a step in the function calls leading to a [Diagnostic].
+type TracePoint struct {
+	// Message is what happened at this step, like "error occurred in this function call".
+	Message string
+	// Location is where the step happened, or nil if it does not point into a file.
+	Location *SourceLocation
+}
+
+func diagnostics(native []ffi.Diagnostic) []Diagnostic {
+	diagnostics := make([]Diagnostic, len(native))
+	for i, diagnostic := range native {
+		trace := make([]TracePoint, len(diagnostic.Trace))
+		for j, point := range diagnostic.Trace {
+			trace[j] = TracePoint{Message: point.Message, Location: sourceLocation(point.Location)}
+		}
+		severity := SeverityWarning
+		if diagnostic.Severity == ffi.DiagnosticSeverityError {
+			severity = SeverityError
+		}
+		diagnostics[i] = Diagnostic{
+			Severity:  severity,
+			Message:   diagnostic.Message,
+			Location:  sourceLocation(diagnostic.Location),
+			Hints:     diagnostic.Hints,
+			Trace:     trace,
+			Formatted: diagnostic.Formatted,
+		}
+	}
+	return diagnostics
+}
+
+func sourceLocation(native *ffi.SourceLocation) *SourceLocation {
+	if native == nil {
+		return nil
+	}
+	return &SourceLocation{
+		File:      native.File,
+		Line:      int(native.Line),
+		Column:    int(native.Column),
+		EndLine:   int(native.EndLine),
+		EndColumn: int(native.EndColumn),
+	}
 }
 
 // RegisteredFont is a font face registered by the host.

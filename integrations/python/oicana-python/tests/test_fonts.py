@@ -149,7 +149,7 @@ def test_registered_font_renders_without_a_warning() -> None:
     with Template(pack(MANIFEST_PLAIN, main)) as template:
         template.export(export={"format": "svg"})
 
-        assert template.warnings is None
+        assert template.warnings == []
 
 
 def test_unregistered_family_warns() -> None:
@@ -158,5 +158,4 @@ def test_unregistered_family_warns() -> None:
     with Template(pack(MANIFEST_PLAIN, main)) as template:
         template.export(export={"format": "svg"})
 
-        assert template.warnings is not None
-        assert TEST_FAMILY in template.warnings
+        assert any(TEST_FAMILY.lower() in warning.message for warning in template.warnings)

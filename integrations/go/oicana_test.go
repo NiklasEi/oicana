@@ -298,12 +298,46 @@ func TestExportOnce(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(result.Warnings, "No Such Font") {
-		t.Fatalf("expected a warning about the unknown font, got %q", result.Warnings)
+	if len(result.Warnings) != 1 {
+		t.Fatalf("expected one warning about the unknown font, got %+v", result.Warnings)
+	}
+	warning := result.Warnings[0]
+	if warning.Severity != SeverityWarning || warning.Message != "unknown font family: no such font" {
+		t.Fatalf("unexpected warning: %+v", warning)
+	}
+	want := SourceLocation{File: "/main.typ", Line: 1, Column: 17, EndLine: 1, EndColumn: 31}
+	if warning.Location == nil || *warning.Location != want {
+		t.Fatalf("expected the warning at %+v, got %+v", want, warning.Location)
+	}
+	if len(warning.Hints) != 0 || len(warning.Trace) != 0 {
+		t.Fatalf("expected no hints or trace: %+v", warning)
+	}
+	if !strings.Contains(warning.String(), "No Such Font") {
+		t.Fatalf("expected the formatted warning to quote the source: %q", warning)
 	}
 
 	_, err = ExportOnce(minimalTemplate(t, "#panic(\"broken\")"), Inputs{}, PDF)
 	assertKind(t, err, ErrCompilation)
+}
+
+func TestTemplateWarnings(t *testing.T) {
+	template, err := NewTemplate(minimalTemplate(t, "#set text(font: \"No Such Font\")\nHello"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer template.Close()
+	if warnings := template.Warnings(); len(warnings) != 1 {
+		t.Fatalf("expected one warning of the warm-up, got %+v", warnings)
+	}
+
+	document, err := template.Compile(Inputs{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer document.Close()
+	if warnings := document.Warnings(); len(warnings) != 1 || warnings[0].Location.File != "/main.typ" {
+		t.Fatalf("expected one warning in /main.typ, got %+v", warnings)
+	}
 }
 
 func TestFonts(t *testing.T) {

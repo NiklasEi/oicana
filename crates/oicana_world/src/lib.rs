@@ -2,6 +2,7 @@
 
 use std::fmt::Display;
 
+use diagnostics::Diagnostic;
 use thiserror::Error;
 use typst_layout::PagedDocument;
 
@@ -23,8 +24,8 @@ pub use world::{
 pub struct CompiledDocument {
     /// The compiled document.
     pub document: PagedDocument,
-    /// warnings from the compilation.
-    pub warnings: Option<String>,
+    /// Warnings from the compilation.
+    pub warnings: Vec<Diagnostic>,
 }
 
 /// Error while compiling a template.
@@ -32,15 +33,15 @@ pub struct CompiledDocument {
 pub struct TemplateCompilationFailure {
     /// Error message that failed the compilation
     pub error: String,
-    /// Warning messages from the template compilation
-    pub warnings: Option<String>,
+    /// Warnings from the template compilation
+    pub warnings: Vec<Diagnostic>,
 }
 
 impl Display for TemplateCompilationFailure {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         writeln!(f, "{}", self.error)?;
-        if let Some(ref warnings) = self.warnings {
-            writeln!(f, "{warnings}")?;
+        for warning in &self.warnings {
+            writeln!(f, "\n{warning}")?;
         }
         Ok(())
     }

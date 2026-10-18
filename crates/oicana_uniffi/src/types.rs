@@ -155,8 +155,109 @@ impl From<oicana_ffi_core::RegisteredFont> for RegisteredFont {
 pub struct ExportOnceResult {
     /// The exported document.
     pub bytes: Vec<u8>,
-    /// Compilation warnings, if any.
-    pub warnings: Option<String>,
+    /// Compilation warnings.
+    pub warnings: Vec<Diagnostic>,
+}
+
+/// A compilation diagnostic, like a warning, with its location in the template.
+#[derive(Debug, Clone, PartialEq, Eq, uniffi::Record)]
+pub struct Diagnostic {
+    /// Whether this is an error or a warning.
+    pub severity: DiagnosticSeverity,
+    /// The message describing the problem.
+    pub message: String,
+    /// Where in the template the problem is, if it points into a file.
+    pub location: Option<SourceLocation>,
+    /// Hints on how to address the problem.
+    pub hints: Vec<String>,
+    /// The function calls leading to the problem, innermost first.
+    pub trace: Vec<TracePoint>,
+    /// The diagnostic formatted for humans, with source excerpts and the configured
+    /// diagnostic color.
+    pub formatted: String,
+}
+
+impl From<oicana_ffi_core::Diagnostic> for Diagnostic {
+    fn from(diagnostic: oicana_ffi_core::Diagnostic) -> Self {
+        Diagnostic {
+            severity: diagnostic.severity.into(),
+            message: diagnostic.message,
+            location: diagnostic.location.map(Into::into),
+            hints: diagnostic.hints,
+            trace: diagnostic.trace.into_iter().map(Into::into).collect(),
+            formatted: diagnostic.formatted,
+        }
+    }
+}
+
+pub(crate) fn diagnostics(diagnostics: Vec<oicana_ffi_core::Diagnostic>) -> Vec<Diagnostic> {
+    diagnostics.into_iter().map(Into::into).collect()
+}
+
+/// The severity of a [`Diagnostic`].
+#[derive(Debug, Clone, Copy, PartialEq, Eq, uniffi::Enum)]
+pub enum DiagnosticSeverity {
+    /// A fatal error.
+    Error,
+    /// A non-fatal warning.
+    Warning,
+}
+
+impl From<oicana_ffi_core::DiagnosticSeverity> for DiagnosticSeverity {
+    fn from(severity: oicana_ffi_core::DiagnosticSeverity) -> Self {
+        match severity {
+            oicana_ffi_core::DiagnosticSeverity::Error => DiagnosticSeverity::Error,
+            oicana_ffi_core::DiagnosticSeverity::Warning => DiagnosticSeverity::Warning,
+        }
+    }
+}
+
+/// A range in a file of the template.
+///
+/// Lines and columns are 1-based. Columns count characters.
+#[derive(Debug, Clone, PartialEq, Eq, uniffi::Record)]
+pub struct SourceLocation {
+    /// Path of the file in the template, like `/main.typ`.
+    /// Files of packages are prefixed with the package, like `@preview/example:0.1.0/lib.typ`.
+    pub file: String,
+    /// Line of the start of the range.
+    pub line: u32,
+    /// Column of the start of the range.
+    pub column: u32,
+    /// Line of the end of the range.
+    pub end_line: u32,
+    /// Column of the end of the range (exclusive).
+    pub end_column: u32,
+}
+
+impl From<oicana_ffi_core::SourceLocation> for SourceLocation {
+    fn from(location: oicana_ffi_core::SourceLocation) -> Self {
+        SourceLocation {
+            file: location.file,
+            line: saturating_u32(location.line),
+            column: saturating_u32(location.column),
+            end_line: saturating_u32(location.end_line),
+            end_column: saturating_u32(location.end_column),
+        }
+    }
+}
+
+/// A step in the function calls leading to a [`Diagnostic`].
+#[derive(Debug, Clone, PartialEq, Eq, uniffi::Record)]
+pub struct TracePoint {
+    /// What happened at this step, like `error occurred in this function call`.
+    pub message: String,
+    /// Where the step happened, if it points into a file.
+    pub location: Option<SourceLocation>,
+}
+
+impl From<oicana_ffi_core::TracePoint> for TracePoint {
+    fn from(point: oicana_ffi_core::TracePoint) -> Self {
+        TracePoint {
+            message: point.message,
+            location: point.location.map(Into::into),
+        }
+    }
 }
 
 pub(crate) fn core_blobs(blobs: HashMap<String, BlobInput>) -> HashMap<String, BlobWithMetadata> {
@@ -176,4 +277,8 @@ pub(crate) fn core_blobs(blobs: HashMap<String, BlobInput>) -> HashMap<String, B
 
 pub(crate) fn saturating_usize(value: u64) -> usize {
     usize::try_from(value).unwrap_or(usize::MAX)
+}
+
+fn saturating_u32(value: usize) -> u32 {
+    u32::try_from(value).unwrap_or(u32::MAX)
 }

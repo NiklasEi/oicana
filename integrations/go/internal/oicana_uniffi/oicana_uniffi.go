@@ -472,7 +472,7 @@ func uniffiCheckChecksums() {
 		checksum := rustCall(func(_uniffiStatus *C.RustCallStatus) C.uint16_t {
 			return C.uniffi_oicana_uniffi_checksum_method_compileddocument_warnings()
 		})
-		if checksum != 6973 {
+		if checksum != 4493 {
 			// If this happens try cleaning and rebuilding your project
 			panic("oicana_uniffi: uniffi_oicana_uniffi_checksum_method_compileddocument_warnings: UniFFI API checksum mismatch")
 		}
@@ -526,7 +526,7 @@ func uniffiCheckChecksums() {
 		checksum := rustCall(func(_uniffiStatus *C.RustCallStatus) C.uint16_t {
 			return C.uniffi_oicana_uniffi_checksum_method_template_warnings()
 		})
-		if checksum != 12188 {
+		if checksum != 11791 {
 			// If this happens try cleaning and rebuilding your project
 			panic("oicana_uniffi: uniffi_oicana_uniffi_checksum_method_template_warnings: UniFFI API checksum mismatch")
 		}
@@ -541,6 +541,30 @@ func uniffiCheckChecksums() {
 		}
 	}
 }
+
+type FfiConverterUint32 struct{}
+
+var FfiConverterUint32INSTANCE = FfiConverterUint32{}
+
+func (FfiConverterUint32) Lower(value uint32) C.uint32_t {
+	return C.uint32_t(value)
+}
+
+func (FfiConverterUint32) Write(writer io.Writer, value uint32) {
+	writeUint32(writer, value)
+}
+
+func (FfiConverterUint32) Lift(value C.uint32_t) uint32 {
+	return uint32(value)
+}
+
+func (FfiConverterUint32) Read(reader io.Reader) uint32 {
+	return readUint32(reader)
+}
+
+type FfiDestroyerUint32 struct{}
+
+func (FfiDestroyerUint32) Destroy(_ uint32) {}
 
 type FfiConverterUint64 struct{}
 
@@ -821,8 +845,8 @@ type CompiledDocumentInterface interface {
 	Export(format ExportFormat, pages *PageRange) ([]byte, error)
 	// Sizes of every page, in document order.
 	Pages() []PageSize
-	// Warnings of the compilation, if any.
-	Warnings() *string
+	// Warnings of the compilation.
+	Warnings() []Diagnostic
 }
 
 // A compiled document that can be exported repeatedly without compiling again.
@@ -862,11 +886,11 @@ func (_self *CompiledDocument) Pages() []PageSize {
 	}))
 }
 
-// Warnings of the compilation, if any.
-func (_self *CompiledDocument) Warnings() *string {
+// Warnings of the compilation.
+func (_self *CompiledDocument) Warnings() []Diagnostic {
 	_pointer := _self.ffiObject.incrementPointer("*CompiledDocument")
 	defer _self.ffiObject.decrementPointer()
-	return FfiConverterOptionalStringINSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) RustBufferI {
+	return FfiConverterSequenceDiagnosticINSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) RustBufferI {
 		return GoRustBuffer{
 			inner: C.uniffi_oicana_uniffi_fn_method_compileddocument_warnings(
 				_pointer, _uniffiStatus),
@@ -944,8 +968,8 @@ type TemplateInterface interface {
 	SetValidateInputs(validate bool) error
 	// Source text of a file inside the template.
 	Source(path string) (string, error)
-	// Warnings of the warm-up compilation, if any.
-	Warnings() *string
+	// Warnings of the warm-up compilation.
+	Warnings() []Diagnostic
 }
 
 // A registered template, ready for repeated compilation.
@@ -1051,11 +1075,11 @@ func (_self *Template) Source(path string) (string, error) {
 	}
 }
 
-// Warnings of the warm-up compilation, if any.
-func (_self *Template) Warnings() *string {
+// Warnings of the warm-up compilation.
+func (_self *Template) Warnings() []Diagnostic {
 	_pointer := _self.ffiObject.incrementPointer("*Template")
 	defer _self.ffiObject.decrementPointer()
-	return FfiConverterOptionalStringINSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) RustBufferI {
+	return FfiConverterSequenceDiagnosticINSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) RustBufferI {
 		return GoRustBuffer{
 			inner: C.uniffi_oicana_uniffi_fn_method_template_warnings(
 				_pointer, _uniffiStatus),
@@ -1165,17 +1189,85 @@ func (_ FfiDestroyerBlobInput) Destroy(value BlobInput) {
 	value.Destroy()
 }
 
+// A compilation diagnostic, like a warning, with its location in the template.
+type Diagnostic struct {
+	// Whether this is an error or a warning.
+	Severity DiagnosticSeverity
+	// The message describing the problem.
+	Message string
+	// Where in the template the problem is, if it points into a file.
+	Location *SourceLocation
+	// Hints on how to address the problem.
+	Hints []string
+	// The function calls leading to the problem, innermost first.
+	Trace []TracePoint
+	// The diagnostic formatted for humans, with source excerpts and the configured
+	// diagnostic color.
+	Formatted string
+}
+
+func (r *Diagnostic) Destroy() {
+	FfiDestroyerDiagnosticSeverity{}.Destroy(r.Severity)
+	FfiDestroyerString{}.Destroy(r.Message)
+	FfiDestroyerOptionalSourceLocation{}.Destroy(r.Location)
+	FfiDestroyerSequenceString{}.Destroy(r.Hints)
+	FfiDestroyerSequenceTracePoint{}.Destroy(r.Trace)
+	FfiDestroyerString{}.Destroy(r.Formatted)
+}
+
+type FfiConverterDiagnostic struct{}
+
+var FfiConverterDiagnosticINSTANCE = FfiConverterDiagnostic{}
+
+func (c FfiConverterDiagnostic) Lift(rb RustBufferI) Diagnostic {
+	return LiftFromRustBuffer[Diagnostic](c, rb)
+}
+
+func (c FfiConverterDiagnostic) Read(reader io.Reader) Diagnostic {
+	return Diagnostic{
+		FfiConverterDiagnosticSeverityINSTANCE.Read(reader),
+		FfiConverterStringINSTANCE.Read(reader),
+		FfiConverterOptionalSourceLocationINSTANCE.Read(reader),
+		FfiConverterSequenceStringINSTANCE.Read(reader),
+		FfiConverterSequenceTracePointINSTANCE.Read(reader),
+		FfiConverterStringINSTANCE.Read(reader),
+	}
+}
+
+func (c FfiConverterDiagnostic) Lower(value Diagnostic) C.RustBuffer {
+	return LowerIntoRustBuffer[Diagnostic](c, value)
+}
+
+func (c FfiConverterDiagnostic) LowerExternal(value Diagnostic) ExternalCRustBuffer {
+	return RustBufferFromC(LowerIntoRustBuffer[Diagnostic](c, value))
+}
+
+func (c FfiConverterDiagnostic) Write(writer io.Writer, value Diagnostic) {
+	FfiConverterDiagnosticSeverityINSTANCE.Write(writer, value.Severity)
+	FfiConverterStringINSTANCE.Write(writer, value.Message)
+	FfiConverterOptionalSourceLocationINSTANCE.Write(writer, value.Location)
+	FfiConverterSequenceStringINSTANCE.Write(writer, value.Hints)
+	FfiConverterSequenceTracePointINSTANCE.Write(writer, value.Trace)
+	FfiConverterStringINSTANCE.Write(writer, value.Formatted)
+}
+
+type FfiDestroyerDiagnostic struct{}
+
+func (_ FfiDestroyerDiagnostic) Destroy(value Diagnostic) {
+	value.Destroy()
+}
+
 // An exported document with the warnings of its compilation.
 type ExportOnceResult struct {
 	// The exported document.
 	Bytes []byte
-	// Compilation warnings, if any.
-	Warnings *string
+	// Compilation warnings.
+	Warnings []Diagnostic
 }
 
 func (r *ExportOnceResult) Destroy() {
 	FfiDestroyerBytes{}.Destroy(r.Bytes)
-	FfiDestroyerOptionalString{}.Destroy(r.Warnings)
+	FfiDestroyerSequenceDiagnostic{}.Destroy(r.Warnings)
 }
 
 type FfiConverterExportOnceResult struct{}
@@ -1189,7 +1281,7 @@ func (c FfiConverterExportOnceResult) Lift(rb RustBufferI) ExportOnceResult {
 func (c FfiConverterExportOnceResult) Read(reader io.Reader) ExportOnceResult {
 	return ExportOnceResult{
 		FfiConverterBytesINSTANCE.Read(reader),
-		FfiConverterOptionalStringINSTANCE.Read(reader),
+		FfiConverterSequenceDiagnosticINSTANCE.Read(reader),
 	}
 }
 
@@ -1203,7 +1295,7 @@ func (c FfiConverterExportOnceResult) LowerExternal(value ExportOnceResult) Exte
 
 func (c FfiConverterExportOnceResult) Write(writer io.Writer, value ExportOnceResult) {
 	FfiConverterBytesINSTANCE.Write(writer, value.Bytes)
-	FfiConverterOptionalStringINSTANCE.Write(writer, value.Warnings)
+	FfiConverterSequenceDiagnosticINSTANCE.Write(writer, value.Warnings)
 }
 
 type FfiDestroyerExportOnceResult struct{}
@@ -1353,6 +1445,118 @@ func (_ FfiDestroyerRegisteredFont) Destroy(value RegisteredFont) {
 	value.Destroy()
 }
 
+// A range in a file of the template.
+//
+// Lines and columns are 1-based. Columns count characters.
+type SourceLocation struct {
+	// Path of the file in the template, like `/main.typ`.
+	// Files of packages are prefixed with the package, like `@preview/example:0.1.0/lib.typ`.
+	File string
+	// Line of the start of the range.
+	Line uint32
+	// Column of the start of the range.
+	Column uint32
+	// Line of the end of the range.
+	EndLine uint32
+	// Column of the end of the range (exclusive).
+	EndColumn uint32
+}
+
+func (r *SourceLocation) Destroy() {
+	FfiDestroyerString{}.Destroy(r.File)
+	FfiDestroyerUint32{}.Destroy(r.Line)
+	FfiDestroyerUint32{}.Destroy(r.Column)
+	FfiDestroyerUint32{}.Destroy(r.EndLine)
+	FfiDestroyerUint32{}.Destroy(r.EndColumn)
+}
+
+type FfiConverterSourceLocation struct{}
+
+var FfiConverterSourceLocationINSTANCE = FfiConverterSourceLocation{}
+
+func (c FfiConverterSourceLocation) Lift(rb RustBufferI) SourceLocation {
+	return LiftFromRustBuffer[SourceLocation](c, rb)
+}
+
+func (c FfiConverterSourceLocation) Read(reader io.Reader) SourceLocation {
+	return SourceLocation{
+		FfiConverterStringINSTANCE.Read(reader),
+		FfiConverterUint32INSTANCE.Read(reader),
+		FfiConverterUint32INSTANCE.Read(reader),
+		FfiConverterUint32INSTANCE.Read(reader),
+		FfiConverterUint32INSTANCE.Read(reader),
+	}
+}
+
+func (c FfiConverterSourceLocation) Lower(value SourceLocation) C.RustBuffer {
+	return LowerIntoRustBuffer[SourceLocation](c, value)
+}
+
+func (c FfiConverterSourceLocation) LowerExternal(value SourceLocation) ExternalCRustBuffer {
+	return RustBufferFromC(LowerIntoRustBuffer[SourceLocation](c, value))
+}
+
+func (c FfiConverterSourceLocation) Write(writer io.Writer, value SourceLocation) {
+	FfiConverterStringINSTANCE.Write(writer, value.File)
+	FfiConverterUint32INSTANCE.Write(writer, value.Line)
+	FfiConverterUint32INSTANCE.Write(writer, value.Column)
+	FfiConverterUint32INSTANCE.Write(writer, value.EndLine)
+	FfiConverterUint32INSTANCE.Write(writer, value.EndColumn)
+}
+
+type FfiDestroyerSourceLocation struct{}
+
+func (_ FfiDestroyerSourceLocation) Destroy(value SourceLocation) {
+	value.Destroy()
+}
+
+// A step in the function calls leading to a [`Diagnostic`].
+type TracePoint struct {
+	// What happened at this step, like `error occurred in this function call`.
+	Message string
+	// Where the step happened, if it points into a file.
+	Location *SourceLocation
+}
+
+func (r *TracePoint) Destroy() {
+	FfiDestroyerString{}.Destroy(r.Message)
+	FfiDestroyerOptionalSourceLocation{}.Destroy(r.Location)
+}
+
+type FfiConverterTracePoint struct{}
+
+var FfiConverterTracePointINSTANCE = FfiConverterTracePoint{}
+
+func (c FfiConverterTracePoint) Lift(rb RustBufferI) TracePoint {
+	return LiftFromRustBuffer[TracePoint](c, rb)
+}
+
+func (c FfiConverterTracePoint) Read(reader io.Reader) TracePoint {
+	return TracePoint{
+		FfiConverterStringINSTANCE.Read(reader),
+		FfiConverterOptionalSourceLocationINSTANCE.Read(reader),
+	}
+}
+
+func (c FfiConverterTracePoint) Lower(value TracePoint) C.RustBuffer {
+	return LowerIntoRustBuffer[TracePoint](c, value)
+}
+
+func (c FfiConverterTracePoint) LowerExternal(value TracePoint) ExternalCRustBuffer {
+	return RustBufferFromC(LowerIntoRustBuffer[TracePoint](c, value))
+}
+
+func (c FfiConverterTracePoint) Write(writer io.Writer, value TracePoint) {
+	FfiConverterStringINSTANCE.Write(writer, value.Message)
+	FfiConverterOptionalSourceLocationINSTANCE.Write(writer, value.Location)
+}
+
+type FfiDestroyerTracePoint struct{}
+
+func (_ FfiDestroyerTracePoint) Destroy(value TracePoint) {
+	value.Destroy()
+}
+
 // Limits for reading a packed template.
 type ZipLimits struct {
 	// Maximum number of zip entries. `None` keeps the default.
@@ -1476,6 +1680,45 @@ func (FfiConverterDiagnosticColor) Write(writer io.Writer, value DiagnosticColor
 type FfiDestroyerDiagnosticColor struct{}
 
 func (_ FfiDestroyerDiagnosticColor) Destroy(value DiagnosticColor) {
+}
+
+// The severity of a [`Diagnostic`].
+type DiagnosticSeverity uint
+
+const (
+	// A fatal error.
+	DiagnosticSeverityError DiagnosticSeverity = 1
+	// A non-fatal warning.
+	DiagnosticSeverityWarning DiagnosticSeverity = 2
+)
+
+type FfiConverterDiagnosticSeverity struct{}
+
+var FfiConverterDiagnosticSeverityINSTANCE = FfiConverterDiagnosticSeverity{}
+
+func (c FfiConverterDiagnosticSeverity) Lift(rb RustBufferI) DiagnosticSeverity {
+	return LiftFromRustBuffer[DiagnosticSeverity](c, rb)
+}
+
+func (c FfiConverterDiagnosticSeverity) Lower(value DiagnosticSeverity) C.RustBuffer {
+	return LowerIntoRustBuffer[DiagnosticSeverity](c, value)
+}
+
+func (c FfiConverterDiagnosticSeverity) LowerExternal(value DiagnosticSeverity) ExternalCRustBuffer {
+	return RustBufferFromC(LowerIntoRustBuffer[DiagnosticSeverity](c, value))
+}
+func (FfiConverterDiagnosticSeverity) Read(reader io.Reader) DiagnosticSeverity {
+	id := readInt32(reader)
+	return DiagnosticSeverity(id)
+}
+
+func (FfiConverterDiagnosticSeverity) Write(writer io.Writer, value DiagnosticSeverity) {
+	writeInt32(writer, int32(value))
+}
+
+type FfiDestroyerDiagnosticSeverity struct{}
+
+func (_ FfiDestroyerDiagnosticSeverity) Destroy(value DiagnosticSeverity) {
 }
 
 // Format of an exported document.
@@ -1951,6 +2194,47 @@ func (_ FfiDestroyerOptionalPageRange) Destroy(value *PageRange) {
 	}
 }
 
+type FfiConverterOptionalSourceLocation struct{}
+
+var FfiConverterOptionalSourceLocationINSTANCE = FfiConverterOptionalSourceLocation{}
+
+func (c FfiConverterOptionalSourceLocation) Lift(rb RustBufferI) *SourceLocation {
+	return LiftFromRustBuffer[*SourceLocation](c, rb)
+}
+
+func (_ FfiConverterOptionalSourceLocation) Read(reader io.Reader) *SourceLocation {
+	if readInt8(reader) == 0 {
+		return nil
+	}
+	temp := FfiConverterSourceLocationINSTANCE.Read(reader)
+	return &temp
+}
+
+func (c FfiConverterOptionalSourceLocation) Lower(value *SourceLocation) C.RustBuffer {
+	return LowerIntoRustBuffer[*SourceLocation](c, value)
+}
+
+func (c FfiConverterOptionalSourceLocation) LowerExternal(value *SourceLocation) ExternalCRustBuffer {
+	return RustBufferFromC(LowerIntoRustBuffer[*SourceLocation](c, value))
+}
+
+func (_ FfiConverterOptionalSourceLocation) Write(writer io.Writer, value *SourceLocation) {
+	if value == nil {
+		writeInt8(writer, 0)
+	} else {
+		writeInt8(writer, 1)
+		FfiConverterSourceLocationINSTANCE.Write(writer, *value)
+	}
+}
+
+type FfiDestroyerOptionalSourceLocation struct{}
+
+func (_ FfiDestroyerOptionalSourceLocation) Destroy(value *SourceLocation) {
+	if value != nil {
+		FfiDestroyerSourceLocation{}.Destroy(*value)
+	}
+}
+
 type FfiConverterOptionalZipLimits struct{}
 
 var FfiConverterOptionalZipLimitsINSTANCE = FfiConverterOptionalZipLimits{}
@@ -2086,6 +2370,53 @@ func (FfiDestroyerSequenceBytes) Destroy(sequence [][]byte) {
 	}
 }
 
+type FfiConverterSequenceDiagnostic struct{}
+
+var FfiConverterSequenceDiagnosticINSTANCE = FfiConverterSequenceDiagnostic{}
+
+func (c FfiConverterSequenceDiagnostic) Lift(rb RustBufferI) []Diagnostic {
+	return LiftFromRustBuffer[[]Diagnostic](c, rb)
+}
+
+func (c FfiConverterSequenceDiagnostic) Read(reader io.Reader) []Diagnostic {
+	length := readInt32(reader)
+	if length == 0 {
+		return nil
+	}
+	result := make([]Diagnostic, 0, length)
+	for i := int32(0); i < length; i++ {
+		result = append(result, FfiConverterDiagnosticINSTANCE.Read(reader))
+	}
+	return result
+}
+
+func (c FfiConverterSequenceDiagnostic) Lower(value []Diagnostic) C.RustBuffer {
+	return LowerIntoRustBuffer[[]Diagnostic](c, value)
+}
+
+func (c FfiConverterSequenceDiagnostic) LowerExternal(value []Diagnostic) ExternalCRustBuffer {
+	return RustBufferFromC(LowerIntoRustBuffer[[]Diagnostic](c, value))
+}
+
+func (c FfiConverterSequenceDiagnostic) Write(writer io.Writer, value []Diagnostic) {
+	if len(value) > math.MaxInt32 {
+		panic("[]Diagnostic is too large to fit into Int32")
+	}
+
+	writeInt32(writer, int32(len(value)))
+	for _, item := range value {
+		FfiConverterDiagnosticINSTANCE.Write(writer, item)
+	}
+}
+
+type FfiDestroyerSequenceDiagnostic struct{}
+
+func (FfiDestroyerSequenceDiagnostic) Destroy(sequence []Diagnostic) {
+	for _, value := range sequence {
+		FfiDestroyerDiagnostic{}.Destroy(value)
+	}
+}
+
 type FfiConverterSequencePageSize struct{}
 
 var FfiConverterSequencePageSizeINSTANCE = FfiConverterSequencePageSize{}
@@ -2177,6 +2508,53 @@ type FfiDestroyerSequenceRegisteredFont struct{}
 func (FfiDestroyerSequenceRegisteredFont) Destroy(sequence []RegisteredFont) {
 	for _, value := range sequence {
 		FfiDestroyerRegisteredFont{}.Destroy(value)
+	}
+}
+
+type FfiConverterSequenceTracePoint struct{}
+
+var FfiConverterSequenceTracePointINSTANCE = FfiConverterSequenceTracePoint{}
+
+func (c FfiConverterSequenceTracePoint) Lift(rb RustBufferI) []TracePoint {
+	return LiftFromRustBuffer[[]TracePoint](c, rb)
+}
+
+func (c FfiConverterSequenceTracePoint) Read(reader io.Reader) []TracePoint {
+	length := readInt32(reader)
+	if length == 0 {
+		return nil
+	}
+	result := make([]TracePoint, 0, length)
+	for i := int32(0); i < length; i++ {
+		result = append(result, FfiConverterTracePointINSTANCE.Read(reader))
+	}
+	return result
+}
+
+func (c FfiConverterSequenceTracePoint) Lower(value []TracePoint) C.RustBuffer {
+	return LowerIntoRustBuffer[[]TracePoint](c, value)
+}
+
+func (c FfiConverterSequenceTracePoint) LowerExternal(value []TracePoint) ExternalCRustBuffer {
+	return RustBufferFromC(LowerIntoRustBuffer[[]TracePoint](c, value))
+}
+
+func (c FfiConverterSequenceTracePoint) Write(writer io.Writer, value []TracePoint) {
+	if len(value) > math.MaxInt32 {
+		panic("[]TracePoint is too large to fit into Int32")
+	}
+
+	writeInt32(writer, int32(len(value)))
+	for _, item := range value {
+		FfiConverterTracePointINSTANCE.Write(writer, item)
+	}
+}
+
+type FfiDestroyerSequenceTracePoint struct{}
+
+func (FfiDestroyerSequenceTracePoint) Destroy(sequence []TracePoint) {
+	for _, value := range sequence {
+		FfiDestroyerTracePoint{}.Destroy(value)
 	}
 }
 

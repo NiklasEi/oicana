@@ -4,8 +4,8 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.oicana.manifest.TemplateManifest;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -27,7 +27,7 @@ public class Template implements AutoCloseable {
             new GsonBuilder().serializeNulls().disableHtmlEscaping().create();
     private final String templateId;
     private volatile boolean closed = false;
-    private volatile String lastWarnings;
+    private volatile List<Diagnostic> lastWarnings = List.of();
 
     /**
      * Register a template with the given template file.
@@ -73,7 +73,7 @@ public class Template implements AutoCloseable {
                 maxEntries(limits),
                 maxTotalDecompressedBytes(limits)
         );
-        this.lastWarnings = OicanaNative.getWarnings(documentId);
+        this.lastWarnings = Diagnostic.listFromJson(OicanaNative.getWarnings(documentId));
         OicanaNative.removeDocument(documentId);
     }
 
@@ -83,10 +83,10 @@ public class Template implements AutoCloseable {
      * <p>Prefer {@link CompiledDocument#warnings()}, since every compilation
      * overwrites the warnings on the template.
      *
-     * @return the warnings, or an empty Optional if there were none
+     * @return an unmodifiable list of the warnings, empty if there were none
      */
-    public Optional<String> warnings() {
-        return Optional.ofNullable(lastWarnings);
+    public List<Diagnostic> warnings() {
+        return lastWarnings;
     }
 
     /**
@@ -154,7 +154,7 @@ public class Template implements AutoCloseable {
                 convertBlobInputs(blobInputs),
                 mode.value
         );
-        this.lastWarnings = OicanaNative.getWarnings(documentId);
+        this.lastWarnings = Diagnostic.listFromJson(OicanaNative.getWarnings(documentId));
         try {
             return OicanaNative.exportDocument(
                     documentId,
@@ -345,7 +345,7 @@ public class Template implements AutoCloseable {
                 mode.value
         );
         CompiledDocument document = new CompiledDocument(documentId);
-        this.lastWarnings = document.warnings().orElse(null);
+        this.lastWarnings = document.warnings();
         return document;
     }
 
@@ -394,7 +394,8 @@ public class Template implements AutoCloseable {
                 maxEntries(limits),
                 maxTotalDecompressedBytes(limits)
         );
-        return new ExportOnceResult((byte[]) result[0], Optional.ofNullable((String) result[1]));
+        return new ExportOnceResult(
+                (byte[]) result[0], Diagnostic.listFromJson((String) result[1]));
     }
 
     /**

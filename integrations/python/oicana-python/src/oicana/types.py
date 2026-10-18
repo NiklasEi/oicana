@@ -101,12 +101,101 @@ class RegisteredFont:
     path: str | None = None
 
 
+class DiagnosticSeverity(Enum):
+    """The severity of a compilation diagnostic."""
+
+    ERROR = "error"
+    WARNING = "warning"
+
+
+@dataclass
+class SourceLocation:
+    """A range in a file of the template.
+
+    Lines and columns are 1-based. Columns count characters.
+    """
+
+    #: Path of the file in the template, like ``/main.typ``. Files of packages are
+    #: prefixed with the package, like ``@preview/example:0.1.0/lib.typ``.
+    file: str
+    line: int
+    column: int
+    end_line: int
+    #: Column of the end of the range (exclusive).
+    end_column: int
+
+    @classmethod
+    def from_json(cls, data: dict[str, Any]) -> SourceLocation:
+        """Build the location from its JSON representation."""
+        return cls(
+            file=data["file"],
+            line=data["line"],
+            column=data["column"],
+            end_line=data["endLine"],
+            end_column=data["endColumn"],
+        )
+
+
+@dataclass
+class TracePoint:
+    """A step in the function calls leading to a diagnostic."""
+
+    #: What happened at this step, like ``error occurred in this function call``.
+    message: str
+    #: Where the step happened, if it points into a file.
+    location: SourceLocation | None
+
+    @classmethod
+    def from_json(cls, data: dict[str, Any]) -> TracePoint:
+        """Build the trace point from its JSON representation."""
+        location = data.get("location")
+        return cls(
+            message=data["message"],
+            location=SourceLocation.from_json(location) if location else None,
+        )
+
+
+@dataclass
+class Diagnostic:
+    """A compilation diagnostic, like a warning, with its location in the template."""
+
+    severity: DiagnosticSeverity
+    #: The message describing the problem.
+    message: str
+    #: Where in the template the problem is, if it points into a file.
+    location: SourceLocation | None
+    #: Hints on how to address the problem.
+    hints: list[str]
+    #: The function calls leading to the problem, innermost first.
+    trace: list[TracePoint]
+    #: The diagnostic formatted for humans, with source excerpts and the
+    #: configured diagnostic color.
+    formatted: str
+
+    def __str__(self) -> str:
+        return self.formatted
+
+    @classmethod
+    def from_json(cls, data: dict[str, Any]) -> Diagnostic:
+        """Build the diagnostic from its JSON representation."""
+        location = data.get("location")
+        return cls(
+            severity=DiagnosticSeverity(data["severity"]),
+            message=data["message"],
+            location=SourceLocation.from_json(location) if location else None,
+            hints=list(data["hints"]),
+            trace=[TracePoint.from_json(point) for point in data["trace"]],
+            formatted=data["formatted"],
+        )
+
+
 @dataclass
 class ExportOnceResult:
     """Result of a one-shot template export."""
 
     document: bytes
-    warnings: str | None
+    #: Compilation warnings. Empty if there were none.
+    warnings: list[Diagnostic]
 
 
 @dataclass

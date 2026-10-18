@@ -1,9 +1,11 @@
+import type { Diagnostic } from './Diagnostic.js';
+
 /**
  * Result of a one-shot template export.
  */
 export interface ExportOnceResult {
   /** The exported document. */
   document: Uint8Array;
-  /** Compilation warnings, or `undefined` if there were none. */
-  warnings?: string;
+  /** Compilation warnings. Empty if there were none. */
+  warnings: Diagnostic[];
 }

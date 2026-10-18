@@ -198,8 +198,8 @@ class FontsTest {
         try (var template = new Template(templateFile)) {
             template.exportSvg(Map.of(), Map.of(), CompilationMode.DEVELOPMENT, null);
 
-            assertTrue(template.warnings().isPresent());
-            assertTrue(template.warnings().get().contains(TEST_FAMILY));
+            assertTrue(template.warnings().stream().anyMatch(
+                    warning -> warning.formatted().contains(TEST_FAMILY)));
         }
     }
 }

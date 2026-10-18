@@ -13,7 +13,7 @@ import (
 // are garbage collected without Close are freed as well.
 type Template struct {
 	inner    *ffi.Template
-	warnings string
+	warnings []Diagnostic
 	handle   handle
 }
 
@@ -31,12 +31,12 @@ func NewTemplate(files []byte, opts ...Option) (*Template, error) {
 	if err != nil {
 		return nil, wrapError(err)
 	}
-	return &Template{inner: inner, warnings: deref(inner.Warnings())}, nil
+	return &Template{inner: inner, warnings: diagnostics(inner.Warnings())}, nil
 }
 
-// Warnings of the warm-up compilation, or an empty string.
-func (t *Template) Warnings() string {
-	return t.warnings
+// Warnings of the warm-up compilation.
+func (t *Template) Warnings() []Diagnostic {
+	return append([]Diagnostic(nil), t.warnings...)
 }
 
 // Compile compiles the template into a document whose pages can be exported repeatedly.
@@ -147,7 +147,7 @@ func (t *Template) Close() {
 type CompiledDocument struct {
 	inner    *ffi.CompiledDocument
 	pages    []PageSize
-	warnings string
+	warnings []Diagnostic
 	handle   handle
 }
 
@@ -157,7 +157,7 @@ func newCompiledDocument(inner *ffi.CompiledDocument) *CompiledDocument {
 	for i, page := range nativePages {
 		pages[i] = PageSize{Width: page.Width, Height: page.Height}
 	}
-	return &CompiledDocument{inner: inner, pages: pages, warnings: deref(inner.Warnings())}
+	return &CompiledDocument{inner: inner, pages: pages, warnings: diagnostics(inner.Warnings())}
 }
 
 // Pages returns the size of every page, in document order.
@@ -170,9 +170,9 @@ func (d *CompiledDocument) PageCount() int {
 	return len(d.pages)
 }
 
-// Warnings of the compilation, or an empty string.
-func (d *CompiledDocument) Warnings() string {
-	return d.warnings
+// Warnings of the compilation.
+func (d *CompiledDocument) Warnings() []Diagnostic {
+	return append([]Diagnostic(nil), d.warnings...)
 }
 
 // Export exports the document to the given format.

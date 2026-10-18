@@ -4,6 +4,7 @@ import {
   get_warnings,
   remove_document,
 } from '../wasm/oicana_browser_wasm.js';
+import type { Diagnostic } from './Diagnostic.js';
 import { type ExportFormat, Pdf, Png, Svg } from './ExportFormat.js';
 import type { PageRange } from './PageRange.js';
 
@@ -30,11 +31,8 @@ export class CompiledDocument implements Disposable {
   /** Sizes (in points) of every page, in document order. */
   public readonly pages: ReadonlyArray<PageSize>;
 
-  /**
-   * Warnings produced by the compilation of this document, or `undefined` if
-   * there were none.
-   */
-  public readonly warnings: string | undefined;
+  /** Warnings produced by the compilation of this document. */
+  public readonly warnings: ReadonlyArray<Diagnostic>;
 
   /**
    * @internal Construct via {@link Template.compile}.
@@ -42,7 +40,7 @@ export class CompiledDocument implements Disposable {
   public constructor(documentId: string) {
     this.documentId = documentId;
     this.pages = JSON.parse(document_pages(documentId)) as PageSize[];
-    this.warnings = get_warnings(documentId);
+    this.warnings = get_warnings(documentId) as Diagnostic[];
   }
 
   /** Number of pages in the document. */

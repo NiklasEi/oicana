@@ -107,9 +107,10 @@ public class StringFidelityTests
         using var registered = new Template(template);
         using var document = registered.Compile(mode: CompilationMode.Development);
 
-        document.Warnings.Should().NotBeNull();
-        document.Warnings.Should().Contain("NonexistentFontFidelity");
-        document.Warnings.Should().NotContain("\\n", "newlines must not arrive as escape sequences");
+        var warning = document.Warnings.Should().ContainSingle().Subject;
+        warning.Formatted.Should().Contain("NonexistentFontFidelity");
+        warning.Formatted.Should().Contain("\n");
+        warning.Formatted.Should().NotContain("\\n", "newlines must not arrive as escape sequences");
     }
 
     [Fact]

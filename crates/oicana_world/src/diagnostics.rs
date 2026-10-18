@@ -1,5 +1,5 @@
 use codespan_reporting::{
-    diagnostic::{Diagnostic, Label},
+    diagnostic::{Diagnostic as CodespanDiagnostic, Label},
     files::{Error as CodespanError, Files as CodespanFiles},
     term::{
         self,
@@ -8,6 +8,7 @@ use codespan_reporting::{
 };
 use ecow::EcoVec;
 use oicana_files::TemplateFiles;
+use serde::{Deserialize, Serialize};
 use typst::{
     diag::{Severity, SourceDiagnostic},
     syntax::{DiagSpan, FileId, Source, VirtualRoot},
@@ -16,17 +17,22 @@ use typst::{
 
 use crate::world::OicanaWorld;
 
+/// Display name of a file: its path in the template, prefixed with the package for package files.
+fn file_name(id: FileId) -> String {
+    let rooted = id.vpath().get_with_slash();
+    match id.root() {
+        VirtualRoot::Project => rooted.to_string(),
+        VirtualRoot::Package(package) => format!("{package}{rooted}"),
+    }
+}
+
 impl<'a, Files: TemplateFiles> CodespanFiles<'a> for OicanaWorld<Files> {
     type FileId = FileId;
     type Name = String;
     type Source = Source;
 
     fn name(&'a self, id: FileId) -> Result<Self::Name, CodespanError> {
-        let rooted = id.vpath().get_with_slash();
-        Ok(match id.root() {
-            VirtualRoot::Project => rooted.to_string(),
-            VirtualRoot::Package(package) => format!("{package}{rooted}"),
-        })
+        Ok(file_name(id))
     }
 
     fn source(&'a self, id: FileId) -> Result<Self::Source, CodespanError> {
@@ -112,8 +118,8 @@ impl<Files: TemplateFiles> TemplateDiagnostics for OicanaWorld<Files> {
 
         for diagnostic in diagnostics {
             let diag = match diagnostic.severity {
-                Severity::Error => Diagnostic::error(),
-                Severity::Warning => Diagnostic::warning(),
+                Severity::Error => CodespanDiagnostic::error(),
+                Severity::Warning => CodespanDiagnostic::warning(),
             }
             .with_message(diagnostic.message.clone())
             .with_notes(
@@ -141,7 +147,7 @@ impl<Files: TemplateFiles> TemplateDiagnostics for OicanaWorld<Files> {
             // Stacktrace-like helper diagnostics.
             for point in &diagnostic.trace {
                 let message = point.v.to_string();
-                let help = Diagnostic::help()
+                let help = CodespanDiagnostic::help()
                     .with_message(message)
                     .with_labels(self.label(point.span).into_iter().collect());
 
@@ -189,6 +195,123 @@ impl TemplateDiagnostics for PlainDiagnostics {
         }
         buffer.truncate(buffer.trim_end().len());
         buffer.into_bytes()
+    }
+}
+
+/// A compilation diagnostic, like a warning, with its location in the template.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Diagnostic {
+    /// Whether this is an error or a warning.
+    pub severity: DiagnosticSeverity,
+    /// The message describing the problem.
+    pub message: String,
+    /// Where in the template the problem is, if it points into a file.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub location: Option<SourceLocation>,
+    /// Hints on how to address the problem.
+    pub hints: Vec<String>,
+    /// The function calls leading to the problem, innermost first.
+    pub trace: Vec<TracePoint>,
+    /// The diagnostic formatted for humans, with source excerpts and the configured
+    /// [`DiagnosticColor`].
+    pub formatted: String,
+}
+
+impl std::fmt::Display for Diagnostic {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(&self.formatted)
+    }
+}
+
+/// The severity of a [`Diagnostic`].
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum DiagnosticSeverity {
+    /// A fatal error.
+    Error,
+    /// A non-fatal warning.
+    Warning,
+}
+
+/// A range in a file of the template.
+///
+/// Lines and columns are 1-based. Columns count characters.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SourceLocation {
+    /// Path of the file in the template, like `/main.typ`.
+    /// Files of packages are prefixed with the package, like `@preview/example:0.1.0/lib.typ`.
+    pub file: String,
+    /// Line of the start of the range.
+    pub line: usize,
+    /// Column of the start of the range.
+    pub column: usize,
+    /// Line of the end of the range.
+    pub end_line: usize,
+    /// Column of the end of the range (exclusive).
+    pub end_column: usize,
+}
+
+/// A step in the function calls leading to a [`Diagnostic`].
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TracePoint {
+    /// What happened at this step, like `error occurred in this function call`.
+    pub message: String,
+    /// Where the step happened, if it points into a file.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub location: Option<SourceLocation>,
+}
+
+impl<Files: TemplateFiles> OicanaWorld<Files> {
+    /// Resolve Typst source diagnostics into [`Diagnostic`]s.
+    pub fn diagnostics(&self, diagnostics: EcoVec<SourceDiagnostic>) -> Vec<Diagnostic> {
+        diagnostics
+            .into_iter()
+            .map(|diagnostic| Diagnostic {
+                severity: match diagnostic.severity {
+                    Severity::Error => DiagnosticSeverity::Error,
+                    Severity::Warning => DiagnosticSeverity::Warning,
+                },
+                message: diagnostic.message.to_string(),
+                location: self.location(diagnostic.span),
+                hints: diagnostic
+                    .hints
+                    .iter()
+                    .map(|hint| hint.v.to_string())
+                    .collect(),
+                trace: diagnostic
+                    .trace
+                    .iter()
+                    .map(|point| TracePoint {
+                        message: point.v.to_string(),
+                        location: self.location(point.span),
+                    })
+                    .collect(),
+                formatted: String::from_utf8_lossy(
+                    &self.format_diagnostics(EcoVec::from([diagnostic])),
+                )
+                .into_owned(),
+            })
+            .collect()
+    }
+
+    fn location(&self, span: impl Into<DiagSpan>) -> Option<SourceLocation> {
+        let span = span.into();
+        let id = span.id()?;
+        let range = self.range(span)?;
+        let source = self.files.source(id).ok()?;
+        let lines = source.lines();
+        let (line, column) = lines.byte_to_line_column(range.start)?;
+        let (end_line, end_column) = lines.byte_to_line_column(range.end)?;
+        Some(SourceLocation {
+            file: file_name(id),
+            line: line + 1,
+            column: column + 1,
+            end_line: end_line + 1,
+            end_column: end_column + 1,
+        })
     }
 }
 

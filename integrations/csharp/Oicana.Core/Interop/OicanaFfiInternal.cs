@@ -133,11 +133,10 @@ namespace Oicana.Interop
         [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl, EntryPoint = "remove_document")]
         public static extern Buffer remove_document([MarshalAs(UnmanagedType.LPUTF8Str)] string document_id);
 
-        /// Return any compilation warnings produced for the given document.
+        /// Return the compilation warnings produced for the given document.
         ///
-        /// On success the buffer contains either the warnings text (UTF-8) or is
-        /// empty when there were no warnings. Warnings are cleared together with
-        /// the document by [`remove_document`].
+        /// On success the buffer contains a JSON array of diagnostics (UTF-8).
+        /// Warnings are cleared together with the document by [`remove_document`].
         [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl, EntryPoint = "get_warnings")]
         public static extern Buffer get_warnings([MarshalAs(UnmanagedType.LPUTF8Str)] string document_id);
 
@@ -289,7 +288,7 @@ namespace Oicana.Interop
     {
         /// The exported document, or an error.
         public Buffer document;
-        /// Compilation warnings; empty when there were none.
+        /// Compilation warnings as a JSON array of diagnostics; empty on errors.
         public Buffer warnings;
     }
 

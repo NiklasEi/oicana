@@ -24,8 +24,29 @@ module Oicana
   # A font face registered by the host. path is nil for fonts registered from memory.
   RegisteredFont = Data.define(:family, :path)
 
-  # The result of Template.export_once. warnings is nil when there are none.
+  # The result of Template.export_once. warnings is an Array of Diagnostic values.
   ExportOnceResult = Data.define(:document, :warnings)
+
+  # A compilation diagnostic, like a warning, with its location in the template.
+  #
+  # severity is :error or :warning. location is a SourceLocation, or nil if the
+  # diagnostic does not point into a file. hints is an Array of Strings and trace an
+  # Array of TracePoint values, innermost first. formatted is the diagnostic formatted
+  # for humans, with source excerpts and the configured diagnostic color.
+  Diagnostic = Data.define(:severity, :message, :location, :hints, :trace, :formatted) do
+    def to_s
+      formatted
+    end
+  end
+
+  # A range in a file of the template. Lines and columns are 1-based, columns count
+  # characters, and end_column is exclusive. file is the path in the template, like
+  # "/main.typ"; files of packages are prefixed with the package.
+  SourceLocation = Data.define(:file, :line, :column, :end_line, :end_column)
+
+  # A step in the function calls leading to a Diagnostic. location is nil if the step
+  # does not point into a file.
+  TracePoint = Data.define(:message, :location)
 
   # A template's manifest.
   Manifest = Data.define(:package, :oicana)
@@ -154,6 +175,28 @@ module Oicana
 
     def blob_fallback(fallback)
       fallback && BlobFallback.new(file: fallback.fetch("file"), meta: fallback["meta"])
+    end
+
+    def diagnostics(diagnostics)
+      diagnostics.map do |diagnostic|
+        Diagnostic.new(
+          severity: diagnostic.severity == OicanaUniffi::DiagnosticSeverity::ERROR ? :error : :warning,
+          message: diagnostic.message,
+          location: location(diagnostic.location),
+          hints: diagnostic.hints.freeze,
+          trace: diagnostic.trace.map { |point| trace_point(point) }.freeze,
+          formatted: diagnostic.formatted
+        )
+      end.freeze
+    end
+
+    def trace_point(point)
+      TracePoint.new(message: point.message, location: location(point.location))
+    end
+
+    def location(location)
+      location && SourceLocation.new(file: location.file, line: location.line, column: location.column,
+                                     end_line: location.end_line, end_column: location.end_column)
     end
   end
 end

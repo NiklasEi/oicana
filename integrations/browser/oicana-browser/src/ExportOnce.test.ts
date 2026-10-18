@@ -79,7 +79,7 @@ describe('exportOnce', () => {
     expect(Buffer.from(result.document.slice(0, 4)).toString('ascii')).toBe(
       '%PDF',
     );
-    expect(result.warnings).toBeUndefined();
+    expect(result.warnings).toEqual([]);
   });
 
   it('surfaces warnings', () => {
@@ -97,7 +97,22 @@ describe('exportOnce', () => {
     );
 
     expect(Buffer.from(result.document).toString('utf-8')).toContain('<svg');
-    expect(result.warnings).toContain('NonexistentFontExportOnce');
+    expect(result.warnings).toHaveLength(1);
+    const [warning] = result.warnings;
+    expect(warning.severity).toBe('warning');
+    expect(warning.message).toBe(
+      'unknown font family: nonexistentfontexportonce',
+    );
+    expect(warning.location).toEqual({
+      file: '/main.typ',
+      line: 1,
+      column: 17,
+      endLine: 1,
+      endColumn: 44,
+    });
+    expect(warning.hints).toEqual([]);
+    expect(warning.trace).toEqual([]);
+    expect(warning.formatted).toContain('NonexistentFontExportOnce');
   });
 
   it('enforces zip limits', async () => {

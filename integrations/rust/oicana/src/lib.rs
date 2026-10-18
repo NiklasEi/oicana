@@ -91,7 +91,10 @@ pub mod files {
     pub use oicana_files::preloaded;
 }
 
-pub use oicana_world::{diagnostics::DiagnosticColor, CompiledDocument};
+pub use oicana_world::{
+    diagnostics::{Diagnostic, DiagnosticColor, DiagnosticSeverity, SourceLocation, TracePoint},
+    CompiledDocument,
+};
 
 /// Template inputs and compilation configuration.
 pub use oicana_input as input;

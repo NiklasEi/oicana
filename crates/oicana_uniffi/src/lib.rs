@@ -11,8 +11,8 @@ mod types;
 pub use error::OicanaError;
 pub use template::{CompiledDocument, Template};
 pub use types::{
-    BlobInput, CompilationMode, DiagnosticColor, ExportFormat, ExportOnceResult, PageRange,
-    PageSize, RegisteredFont, ZipLimits,
+    BlobInput, CompilationMode, Diagnostic, DiagnosticColor, DiagnosticSeverity, ExportFormat,
+    ExportOnceResult, PageRange, PageSize, RegisteredFont, SourceLocation, TracePoint, ZipLimits,
 };
 
 uniffi::setup_scaffolding!();
@@ -41,7 +41,7 @@ pub fn export_once(
     )?;
     Ok(ExportOnceResult {
         bytes: result.bytes,
-        warnings: result.warnings,
+        warnings: types::diagnostics(result.warnings),
     })
 }
 

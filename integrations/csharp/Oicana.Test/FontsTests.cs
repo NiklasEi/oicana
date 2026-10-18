@@ -176,7 +176,7 @@ public class FontsTests : IDisposable
             exportFormat: ExportFormat.Svg(),
             mode: CompilationMode.Development);
 
-        template.Warnings.Should().BeNull();
+        template.Warnings.Should().BeEmpty();
     }
 
     /// <summary>Without the host font, the same template falls back and warns.</summary>
@@ -190,6 +190,6 @@ public class FontsTests : IDisposable
             exportFormat: ExportFormat.Svg(),
             mode: CompilationMode.Development);
 
-        template.Warnings.Should().Contain(TestFamily);
+        template.Warnings.Should().Contain(warning => warning.Formatted.Contains(TestFamily));
     }
 }

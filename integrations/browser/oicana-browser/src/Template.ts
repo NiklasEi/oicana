@@ -14,6 +14,7 @@ import {
 import type { BlobInput } from './BlobInput.js';
 import { CompilationMode } from './CompilationMode.js';
 import { CompiledDocument } from './CompiledDocument.js';
+import type { Diagnostic } from './Diagnostic.js';
 import { type ExportFormat, Pdf, Png, Svg } from './ExportFormat.js';
 import type { ExportOnceResult } from './ExportOnceResult.js';
 import type { PageRange } from './PageRange.js';
@@ -27,7 +28,7 @@ import type { ZipLimits } from './ZipLimits.js';
  */
 export class Template implements Disposable {
   private readonly template: string;
-  private lastWarnings: string | undefined;
+  private lastWarnings: Diagnostic[] = [];
 
   /**
    * Register a template with the given template file
@@ -79,7 +80,7 @@ export class Template implements Disposable {
       mode ?? CompilationMode.Development,
       limits,
     );
-    this.lastWarnings = get_warnings(documentId);
+    this.lastWarnings = get_warnings(documentId) as Diagnostic[];
     remove_document(documentId);
   }
 
@@ -117,7 +118,7 @@ export class Template implements Disposable {
     );
     return {
       document: result.data as Uint8Array<ArrayBuffer>,
-      warnings: result.warnings,
+      warnings: result.warnings as Diagnostic[],
     };
   }
 
@@ -320,15 +321,15 @@ export class Template implements Disposable {
       blobInputs ?? new Map(),
       mode ?? CompilationMode.Production,
     );
-    this.lastWarnings = get_warnings(documentId);
+    this.lastWarnings = get_warnings(documentId) as Diagnostic[];
     return documentId;
   }
 
   /**
    * Warnings produced by the most recent compilation (constructor warm-up, or a
-   * `compile()` / `export()` call), or `undefined` if there were none.
+   * `compile()` / `export()` call). Empty if there were none.
    */
-  public warnings(): string | undefined {
+  public warnings(): Diagnostic[] {
     return this.lastWarnings;
   }
 

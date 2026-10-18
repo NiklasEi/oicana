@@ -5,6 +5,7 @@ import {
   getWarnings,
   removeDocument,
 } from '@oicana/node-native';
+import { type Diagnostic, parseDiagnostics } from './Diagnostic.js';
 import { type ExportFormat, Pdf, Png, Svg } from './ExportFormat.js';
 import { type PageRange, serializePageRange } from './PageRange.js';
 
@@ -31,11 +32,8 @@ export class CompiledDocument implements Disposable {
   /** Sizes (in points) of every page, in document order. */
   public readonly pages: ReadonlyArray<PageSize>;
 
-  /**
-   * Warnings produced by the compilation of this document, or `undefined` if
-   * there were none.
-   */
-  public readonly warnings: string | undefined;
+  /** Warnings produced by the compilation of this document. */
+  public readonly warnings: ReadonlyArray<Diagnostic>;
 
   /**
    * @internal Construct via {@link Template.compile}.
@@ -43,7 +41,7 @@ export class CompiledDocument implements Disposable {
   public constructor(documentId: string) {
     this.documentId = documentId;
     this.pages = JSON.parse(documentPages(documentId)) as PageSize[];
-    this.warnings = getWarnings(documentId) ?? undefined;
+    this.warnings = parseDiagnostics(getWarnings(documentId));
   }
 
   /** Number of pages in the document. */

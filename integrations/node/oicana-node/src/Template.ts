@@ -21,6 +21,7 @@ import {
 import type { BlobInput } from './BlobInput.js';
 import { CompilationMode } from './CompilationMode.js';
 import { CompiledDocument } from './CompiledDocument.js';
+import { type Diagnostic, parseDiagnostics } from './Diagnostic.js';
 import { type ExportFormat, Pdf, Png, Svg } from './ExportFormat.js';
 import type { ExportOnceResult } from './ExportOnceResult.js';
 import { type PageRange, serializePageRange } from './PageRange.js';
@@ -36,7 +37,7 @@ const alreadyRegistered = Symbol('oicana-already-registered');
 interface CompletedRegistration {
   readonly token: typeof alreadyRegistered;
   readonly templateId: string;
-  readonly warnings: string | undefined;
+  readonly warnings: Diagnostic[];
 }
 
 /**
@@ -60,7 +61,7 @@ function isCompletedRegistration(
  */
 export class Template implements Disposable {
   private readonly template: string;
-  private lastWarnings: string | undefined;
+  private lastWarnings: Diagnostic[] = [];
 
   /**
    * Register a template with the given template file
@@ -125,7 +126,7 @@ export class Template implements Disposable {
       Template.mapCompilationMode(mode ?? CompilationMode.Development),
       limits,
     );
-    this.lastWarnings = getWarnings(documentId) ?? undefined;
+    this.lastWarnings = parseDiagnostics(getWarnings(documentId));
     removeDocument(documentId);
   }
 
@@ -158,7 +159,7 @@ export class Template implements Disposable {
       Template.mapCompilationMode(mode ?? CompilationMode.Development),
       limits,
     );
-    const warnings = getWarnings(documentId) ?? undefined;
+    const warnings = parseDiagnostics(getWarnings(documentId));
     removeDocument(documentId);
 
     const registration: CompletedRegistration = {
@@ -201,7 +202,10 @@ export class Template implements Disposable {
       serializePageRange(pages),
       limits,
     );
-    return { document: result.data, warnings: result.warnings ?? undefined };
+    return {
+      document: result.data,
+      warnings: parseDiagnostics(result.warnings),
+    };
   }
 
   /**
@@ -235,7 +239,10 @@ export class Template implements Disposable {
       serializePageRange(pages),
       limits,
     );
-    return { document: result.data, warnings: result.warnings ?? undefined };
+    return {
+      document: result.data,
+      warnings: parseDiagnostics(result.warnings),
+    };
   }
 
   /**
@@ -577,7 +584,7 @@ export class Template implements Disposable {
       Template.convertBlobInputs(blobInputs ?? new Map<string, BlobInput>()),
       Template.mapCompilationMode(mode ?? CompilationMode.Production),
     );
-    this.lastWarnings = getWarnings(documentId) ?? undefined;
+    this.lastWarnings = parseDiagnostics(getWarnings(documentId));
     return documentId;
   }
 
@@ -592,18 +599,18 @@ export class Template implements Disposable {
       Template.convertBlobInputs(blobInputs ?? new Map<string, BlobInput>()),
       Template.mapCompilationMode(mode ?? CompilationMode.Production),
     );
-    this.lastWarnings = getWarnings(documentId) ?? undefined;
+    this.lastWarnings = parseDiagnostics(getWarnings(documentId));
     return documentId;
   }
 
   /**
    * Warnings produced by the most recent compilation (constructor warm-up, or a
-   * `compile()` / `export()` call), or `undefined` if there were none.
+   * `compile()` / `export()` call). Empty if there were none.
    *
    * Prefer {@link CompiledDocument.warnings}, since every compilation
    * overwrites the warnings on the template.
    */
-  public warnings(): string | undefined {
+  public warnings(): Diagnostic[] {
     return this.lastWarnings;
   }
 

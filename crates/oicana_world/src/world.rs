@@ -272,11 +272,7 @@ impl<Files: TemplateFiles> OicanaWorld<Files> {
         let start = get_current_time();
         let Warned { output, warnings } = typst::compile(self);
         info!("Compiled Document in {}ms", get_current_time() - start);
-        let warnings = if warnings.is_empty() {
-            None
-        } else {
-            Some(String::from_utf8_lossy(&self.format_diagnostics(warnings)).into())
-        };
+        let warnings = self.diagnostics(warnings);
 
         match output {
             Ok(document) => Ok(CompiledDocument { document, warnings }),
@@ -543,6 +539,7 @@ pub fn evict_cache(max_age: usize) {
 
 #[cfg(test)]
 mod tests {
+    use crate::diagnostics::{DiagnosticSeverity, SourceLocation};
     use crate::manifest::{OicanaWorldFiles, OicanaWorldManifestError};
     use crate::world::{
         InputError, InputValidationError, OicanaWorld, WorldCreationError, WrongInputKind,
@@ -723,7 +720,7 @@ mod tests {
 
         assert!(result.is_ok());
         let compiled = result.unwrap();
-        assert!(compiled.warnings.is_none());
+        assert!(compiled.warnings.is_empty());
         assert_eq!(compiled.document.pages().len(), 1);
     }
 
@@ -771,7 +768,22 @@ mod tests {
 
         let compiled = world.compile().unwrap();
 
-        assert!(compiled.warnings.is_some());
+        let [warning] = compiled.warnings.as_slice() else {
+            panic!("expected one warning, got {:?}", compiled.warnings);
+        };
+        assert_eq!(warning.severity, DiagnosticSeverity::Warning);
+        assert!(warning.message.contains("nonexistentfont"), "{warning:?}");
+        assert!(warning.formatted.contains(&warning.message));
+        assert_eq!(
+            warning.location,
+            Some(SourceLocation {
+                file: "/main.typ".to_owned(),
+                line: 1,
+                column: 17,
+                end_line: 1,
+                end_column: 34,
+            })
+        );
     }
 
     #[test]

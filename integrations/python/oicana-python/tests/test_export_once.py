@@ -11,6 +11,8 @@ import pytest
 from oicana import (
     CompilationMode,
     DiagnosticColor,
+    DiagnosticSeverity,
+    SourceLocation,
     Template,
     ZipLimits,
     configure_diagnostic_color,
@@ -51,7 +53,7 @@ def test_export_once_without_warnings() -> None:
     )
 
     assert result.document[:4] == b"%PDF"
-    assert result.warnings is None
+    assert result.warnings == []
 
 
 def test_export_once_surfaces_warnings() -> None:
@@ -66,8 +68,16 @@ def test_export_once_surfaces_warnings() -> None:
     )
 
     assert b"<svg" in result.document
-    assert result.warnings is not None
-    assert "NonexistentFontExportOnce" in result.warnings
+    [warning] = result.warnings
+    assert warning.severity == DiagnosticSeverity.WARNING
+    assert warning.message == "unknown font family: nonexistentfontexportonce"
+    assert warning.location == SourceLocation(
+        file="/main.typ", line=1, column=17, end_line=1, end_column=44
+    )
+    assert warning.hints == []
+    assert warning.trace == []
+    assert "NonexistentFontExportOnce" in warning.formatted
+    assert str(warning) == warning.formatted
 
 
 def test_export_once_enforces_zip_limits() -> None:

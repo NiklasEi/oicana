@@ -47,20 +47,23 @@ def test_export_surfaces_warnings() -> None:
         '#set text(font: "NonexistentFontTemplate")\nContent'
     )
     with Template(template) as tmpl:
-        assert tmpl.warnings is not None
+        assert len(tmpl.warnings) == 1
 
         svg = tmpl.export(export={"format": "svg"})
 
         assert b"<svg" in svg
-        assert tmpl.warnings is not None
-        assert "NonexistentFontTemplate" in tmpl.warnings
+        assert len(tmpl.warnings) == 1
+        assert "nonexistentfonttemplate" in tmpl.warnings[0].message
+
+        with tmpl.compile() as document:
+            assert document.warnings == tmpl.warnings
 
 
 def test_export_without_warnings_has_none() -> None:
     with Template(pack_minimal_template("Content")) as tmpl:
         tmpl.export(export={"format": "svg"})
 
-        assert tmpl.warnings is None
+        assert tmpl.warnings == []
 
 
 def future_manifest_template() -> bytes:
