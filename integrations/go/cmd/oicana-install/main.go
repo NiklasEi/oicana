@@ -27,7 +27,7 @@ import (
 )
 
 // version is the Oicana release this installer belongs to.
-const version = "0.10.0-rc.1"
+const version = "0.10.0-rc.2"
 
 const (
 	staticLibrary = "liboicana_uniffi.a"
