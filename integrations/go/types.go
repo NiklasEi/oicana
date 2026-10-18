@@ -247,6 +247,14 @@ const (
 	SeverityWarning
 )
 
+// String returns "error" or "warning".
+func (s DiagnosticSeverity) String() string {
+	if s == SeverityError {
+		return "error"
+	}
+	return "warning"
+}
+
 // SourceLocation is a range in a file of the template.
 //
 // Lines and columns are 1-based. Columns count characters.
