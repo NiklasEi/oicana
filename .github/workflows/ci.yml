@@ -304,21 +304,15 @@ jobs:
   check-dart-integration:
     runs-on: ubuntu-latest
     needs:
-      - build-tools
       - build-uniffi-bindgen-dart
       - build-uniffi
     steps:
       - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@1.98.1
       - uses: dart-lang/setup-dart@v1
-      - uses: ./.github/actions/install-typst-package
       - uses: ./.github/actions/install-tool
         with:
           tool: "uniffi_bindgen_dart"
-      - uses: ./.github/actions/install-tool
-        with:
-          tool: "oicana-cli"
-          bin: "oicana"
       - uses: actions/download-artifact@v8
         with:
           name: oicana_uniffi_x86_64-unknown-linux-gnu
@@ -342,12 +336,6 @@ jobs:
         working-directory: ./integrations/dart
       - name: analyze
         run: dart analyze --fatal-infos
-        working-directory: ./integrations/dart
-      - name: pack e2e template
-        run: oicana pack -n '{template}-x.y.z.zip'
-        working-directory: ./e2e-tests/template
-      - name: test
-        run: dart test
         working-directory: ./integrations/dart
 
   check-php-integration:
@@ -1082,6 +1070,46 @@ jobs:
       - name: compare test output
         run: test-compare e2e-tests/template integrations/ruby/test/testOutput/
 
+  e2e-test-dart-integration:
+    name: Dart E2E (${{ matrix.target }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: ubuntu-latest, target: x86_64-unknown-linux-gnu }
+          - { os: macos-latest, target: aarch64-apple-darwin }
+          - { os: windows-latest, target: x86_64-pc-windows-msvc }
+    runs-on: ${{ matrix.os }}
+    needs:
+      - build-tools
+      - build-uniffi
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dart-lang/setup-dart@v1
+      - uses: ./.github/actions/install-typst-package
+      - uses: ./.github/actions/install-tool
+        with:
+          tool: "oicana-cli"
+          bin: "oicana"
+      - uses: ./.github/actions/install-tool
+        with:
+          tool: "test-compare"
+      - name: pack e2e template
+        run: oicana pack -n '{template}-x.y.z.zip'
+        working-directory: ./e2e-tests/template
+      - uses: actions/download-artifact@v8
+        with:
+          name: oicana_uniffi_${{ matrix.target }}
+          path: target/release
+      - name: test dart integration
+        run: dart test
+        working-directory: ./integrations/dart
+      - name: compare test output
+        run: test-compare e2e-tests/template integrations/dart/test/testOutput/
+
   e2e-test-python-integration:
     name: Python E2E (${{ matrix.libc }} / ${{ matrix.os }}${{ matrix.python-version && format(' / py{0}', matrix.python-version) || '' }})
     strategy:
@@ -1448,6 +1476,7 @@ jobs:
         check-python-integration,
         check-go-integration,
         check-ruby-integration,
+        check-dart-integration,
         check-php-integration,
         build-csharp,
         build-browser-wasm,
@@ -1455,6 +1484,7 @@ jobs:
         build-tools,
         build-uniffi-bindgen,
         build-uniffi-bindgen-go,
+        build-uniffi-bindgen-dart,
         build-uniffi,
         build-python-native,
         build-php-native,
@@ -1464,6 +1494,7 @@ jobs:
         e2e-test-csharp-integration,
         e2e-test-go-integration,
         e2e-test-ruby-integration,
+        e2e-test-dart-integration,
         e2e-test-python-integration,
         e2e-test-php-integration,
         e2e-test-java-integration,
