@@ -26,12 +26,13 @@
     * integrations/java/build.gradle.kts (version in `subprojects` block)
   * Go: `version` in integrations/go/cmd/oicana-install/main.go
   * Ruby: integrations/ruby/lib/oicana/version.rb (prereleases use a dot: `0.10.0.rc.1` for `0.10.0-rc.1`)
+  * Dart: `version` in integrations/dart/pubspec.yaml and `packageVersion` in integrations/dart/lib/src/version.dart
   * Typst package
     * Bump version in integrations/typst/typst.toml
     * Bump code version and version in docs in integrations/typst/src/lib.typ
 4. Run `cargo publish --workspace` to publish the rust integration and CLI to crates.io
 5.
-  * tag Go and Ruby natives `oicana_uniffi-v*` => will trigger CD pipeline, which also tags Go and Ruby and publishes Ruby
+  * tag natives `oicana_uniffi-v*` => will trigger CD pipeline, which also tags Go, Ruby and Dart and publishes Ruby and Dart
   * tag CLI version `oicana_cli-v*` => will trigger CD pipeline
   * tag crates version `oicana_rust-v*`
   * tag C# version `oicana_csharp-v*` => will trigger CD pipeline

@@ -254,7 +254,10 @@ fn an_invalid_archive_is_an_invalid_template() {
     )
     .err()
     .unwrap();
-    assert!(matches!(error, OicanaError::InvalidTemplate(_)), "{error}");
+    assert!(
+        matches!(error, OicanaError::InvalidTemplate { .. }),
+        "{error}"
+    );
 }
 
 #[test]
@@ -271,7 +274,10 @@ fn zip_limits_are_enforced() {
     )
     .err()
     .unwrap();
-    assert!(matches!(error, OicanaError::InvalidTemplate(_)), "{error}");
+    assert!(
+        matches!(error, OicanaError::InvalidTemplate { .. }),
+        "{error}"
+    );
 }
 
 #[test]
@@ -285,7 +291,7 @@ fn a_failing_warm_up_carries_the_diagnostics() {
     )
     .err()
     .unwrap();
-    assert!(matches!(error, OicanaError::Compilation(_)), "{error}");
+    assert!(matches!(error, OicanaError::Compilation { .. }), "{error}");
     assert!(error.to_string().contains("broken on purpose"), "{error}");
 }
 
@@ -303,7 +309,7 @@ fn a_failing_compilation_carries_the_diagnostics() {
         )
         .err()
         .unwrap();
-    assert!(matches!(error, OicanaError::Compilation(_)), "{error}");
+    assert!(matches!(error, OicanaError::Compilation { .. }), "{error}");
     assert!(error.to_string().contains("failed on request"), "{error}");
 }
 
@@ -320,7 +326,7 @@ fn invalid_inputs_are_rejected() {
         .err()
         .unwrap();
     assert!(
-        matches!(undeclared, OicanaError::InvalidInput(_)),
+        matches!(undeclared, OicanaError::InvalidInput { .. }),
         "{undeclared}"
     );
 
@@ -339,7 +345,7 @@ fn invalid_inputs_are_rejected() {
         .err()
         .unwrap();
     assert!(
-        matches!(bad_meta, OicanaError::InvalidInput(_)),
+        matches!(bad_meta, OicanaError::InvalidInput { .. }),
         "{bad_meta}"
     );
 }
@@ -348,9 +354,15 @@ fn invalid_inputs_are_rejected() {
 fn missing_files_and_pages_are_reported() {
     let template = register(payload_template());
     let missing = template.source("missing.typ".into()).unwrap_err();
-    assert!(matches!(missing, OicanaError::FileNotFound(_)), "{missing}");
+    assert!(
+        matches!(missing, OicanaError::FileNotFound { .. }),
+        "{missing}"
+    );
     let missing = template.file("missing.bin".into()).unwrap_err();
-    assert!(matches!(missing, OicanaError::FileNotFound(_)), "{missing}");
+    assert!(
+        matches!(missing, OicanaError::FileNotFound { .. }),
+        "{missing}"
+    );
 
     let document = template
         .compile(HashMap::new(), HashMap::new(), CompilationMode::Production)
@@ -365,7 +377,7 @@ fn missing_files_and_pages_are_reported() {
         )
         .unwrap_err();
     assert!(
-        matches!(out_of_range, OicanaError::Export(_)),
+        matches!(out_of_range, OicanaError::Export { .. }),
         "{out_of_range}"
     );
 }

@@ -1839,19 +1839,28 @@ var ErrOicanaErrorInternal = fmt.Errorf("OicanaErrorInternal")
 // Variant structs
 // The packed template could not be read or its manifest is invalid.
 type OicanaErrorInvalidTemplate struct {
-	message string
+	Message string
 }
 
 // The packed template could not be read or its manifest is invalid.
-func NewOicanaErrorInvalidTemplate() *OicanaError {
-	return &OicanaError{err: &OicanaErrorInvalidTemplate{}}
+func NewOicanaErrorInvalidTemplate(
+	message string,
+) *OicanaError {
+	return &OicanaError{err: &OicanaErrorInvalidTemplate{
+		Message: message}}
 }
 
 func (e OicanaErrorInvalidTemplate) destroy() {
+	FfiDestroyerString{}.Destroy(e.Message)
 }
 
 func (err OicanaErrorInvalidTemplate) Error() string {
-	return fmt.Sprintf("InvalidTemplate: %s", err.message)
+	return fmt.Sprint("InvalidTemplate",
+		": ",
+
+		"Message=",
+		err.Message,
+	)
 }
 
 func (self OicanaErrorInvalidTemplate) Is(target error) bool {
@@ -1860,19 +1869,28 @@ func (self OicanaErrorInvalidTemplate) Is(target error) bool {
 
 // An input value, its blob metadata, or a page range is invalid.
 type OicanaErrorInvalidInput struct {
-	message string
+	Message string
 }
 
 // An input value, its blob metadata, or a page range is invalid.
-func NewOicanaErrorInvalidInput() *OicanaError {
-	return &OicanaError{err: &OicanaErrorInvalidInput{}}
+func NewOicanaErrorInvalidInput(
+	message string,
+) *OicanaError {
+	return &OicanaError{err: &OicanaErrorInvalidInput{
+		Message: message}}
 }
 
 func (e OicanaErrorInvalidInput) destroy() {
+	FfiDestroyerString{}.Destroy(e.Message)
 }
 
 func (err OicanaErrorInvalidInput) Error() string {
-	return fmt.Sprintf("InvalidInput: %s", err.message)
+	return fmt.Sprint("InvalidInput",
+		": ",
+
+		"Message=",
+		err.Message,
+	)
 }
 
 func (self OicanaErrorInvalidInput) Is(target error) bool {
@@ -1881,19 +1899,28 @@ func (self OicanaErrorInvalidInput) Is(target error) bool {
 
 // Compiling the template failed.
 type OicanaErrorCompilation struct {
-	message string
+	Message string
 }
 
 // Compiling the template failed.
-func NewOicanaErrorCompilation() *OicanaError {
-	return &OicanaError{err: &OicanaErrorCompilation{}}
+func NewOicanaErrorCompilation(
+	message string,
+) *OicanaError {
+	return &OicanaError{err: &OicanaErrorCompilation{
+		Message: message}}
 }
 
 func (e OicanaErrorCompilation) destroy() {
+	FfiDestroyerString{}.Destroy(e.Message)
 }
 
 func (err OicanaErrorCompilation) Error() string {
-	return fmt.Sprintf("Compilation: %s", err.message)
+	return fmt.Sprint("Compilation",
+		": ",
+
+		"Message=",
+		err.Message,
+	)
 }
 
 func (self OicanaErrorCompilation) Is(target error) bool {
@@ -1902,19 +1929,28 @@ func (self OicanaErrorCompilation) Is(target error) bool {
 
 // A file requested from the template could not be loaded.
 type OicanaErrorFileNotFound struct {
-	message string
+	Message string
 }
 
 // A file requested from the template could not be loaded.
-func NewOicanaErrorFileNotFound() *OicanaError {
-	return &OicanaError{err: &OicanaErrorFileNotFound{}}
+func NewOicanaErrorFileNotFound(
+	message string,
+) *OicanaError {
+	return &OicanaError{err: &OicanaErrorFileNotFound{
+		Message: message}}
 }
 
 func (e OicanaErrorFileNotFound) destroy() {
+	FfiDestroyerString{}.Destroy(e.Message)
 }
 
 func (err OicanaErrorFileNotFound) Error() string {
-	return fmt.Sprintf("FileNotFound: %s", err.message)
+	return fmt.Sprint("FileNotFound",
+		": ",
+
+		"Message=",
+		err.Message,
+	)
 }
 
 func (self OicanaErrorFileNotFound) Is(target error) bool {
@@ -1923,19 +1959,28 @@ func (self OicanaErrorFileNotFound) Is(target error) bool {
 
 // Encoding the document to the requested format failed.
 type OicanaErrorExport struct {
-	message string
+	Message string
 }
 
 // Encoding the document to the requested format failed.
-func NewOicanaErrorExport() *OicanaError {
-	return &OicanaError{err: &OicanaErrorExport{}}
+func NewOicanaErrorExport(
+	message string,
+) *OicanaError {
+	return &OicanaError{err: &OicanaErrorExport{
+		Message: message}}
 }
 
 func (e OicanaErrorExport) destroy() {
+	FfiDestroyerString{}.Destroy(e.Message)
 }
 
 func (err OicanaErrorExport) Error() string {
-	return fmt.Sprintf("Export: %s", err.message)
+	return fmt.Sprint("Export",
+		": ",
+
+		"Message=",
+		err.Message,
+	)
 }
 
 func (self OicanaErrorExport) Is(target error) bool {
@@ -1944,19 +1989,28 @@ func (self OicanaErrorExport) Is(target error) bool {
 
 // A template or document is no longer registered.
 type OicanaErrorNotFound struct {
-	message string
+	Message string
 }
 
 // A template or document is no longer registered.
-func NewOicanaErrorNotFound() *OicanaError {
-	return &OicanaError{err: &OicanaErrorNotFound{}}
+func NewOicanaErrorNotFound(
+	message string,
+) *OicanaError {
+	return &OicanaError{err: &OicanaErrorNotFound{
+		Message: message}}
 }
 
 func (e OicanaErrorNotFound) destroy() {
+	FfiDestroyerString{}.Destroy(e.Message)
 }
 
 func (err OicanaErrorNotFound) Error() string {
-	return fmt.Sprintf("NotFound: %s", err.message)
+	return fmt.Sprint("NotFound",
+		": ",
+
+		"Message=",
+		err.Message,
+	)
 }
 
 func (self OicanaErrorNotFound) Is(target error) bool {
@@ -1965,19 +2019,28 @@ func (self OicanaErrorNotFound) Is(target error) bool {
 
 // An unexpected internal failure.
 type OicanaErrorInternal struct {
-	message string
+	Message string
 }
 
 // An unexpected internal failure.
-func NewOicanaErrorInternal() *OicanaError {
-	return &OicanaError{err: &OicanaErrorInternal{}}
+func NewOicanaErrorInternal(
+	message string,
+) *OicanaError {
+	return &OicanaError{err: &OicanaErrorInternal{
+		Message: message}}
 }
 
 func (e OicanaErrorInternal) destroy() {
+	FfiDestroyerString{}.Destroy(e.Message)
 }
 
 func (err OicanaErrorInternal) Error() string {
-	return fmt.Sprintf("Internal: %s", err.message)
+	return fmt.Sprint("Internal",
+		": ",
+
+		"Message=",
+		err.Message,
+	)
 }
 
 func (self OicanaErrorInternal) Is(target error) bool {
@@ -2003,44 +2066,63 @@ func (c FfiConverterOicanaError) LowerExternal(value *OicanaError) ExternalCRust
 func (c FfiConverterOicanaError) Read(reader io.Reader) *OicanaError {
 	errorID := readUint32(reader)
 
-	message := FfiConverterStringINSTANCE.Read(reader)
 	switch errorID {
 	case 1:
-		return &OicanaError{&OicanaErrorInvalidTemplate{message}}
+		return &OicanaError{&OicanaErrorInvalidTemplate{
+			Message: FfiConverterStringINSTANCE.Read(reader),
+		}}
 	case 2:
-		return &OicanaError{&OicanaErrorInvalidInput{message}}
+		return &OicanaError{&OicanaErrorInvalidInput{
+			Message: FfiConverterStringINSTANCE.Read(reader),
+		}}
 	case 3:
-		return &OicanaError{&OicanaErrorCompilation{message}}
+		return &OicanaError{&OicanaErrorCompilation{
+			Message: FfiConverterStringINSTANCE.Read(reader),
+		}}
 	case 4:
-		return &OicanaError{&OicanaErrorFileNotFound{message}}
+		return &OicanaError{&OicanaErrorFileNotFound{
+			Message: FfiConverterStringINSTANCE.Read(reader),
+		}}
 	case 5:
-		return &OicanaError{&OicanaErrorExport{message}}
+		return &OicanaError{&OicanaErrorExport{
+			Message: FfiConverterStringINSTANCE.Read(reader),
+		}}
 	case 6:
-		return &OicanaError{&OicanaErrorNotFound{message}}
+		return &OicanaError{&OicanaErrorNotFound{
+			Message: FfiConverterStringINSTANCE.Read(reader),
+		}}
 	case 7:
-		return &OicanaError{&OicanaErrorInternal{message}}
+		return &OicanaError{&OicanaErrorInternal{
+			Message: FfiConverterStringINSTANCE.Read(reader),
+		}}
 	default:
 		panic(fmt.Sprintf("Unknown error code %d in FfiConverterOicanaError.Read()", errorID))
 	}
-
 }
 
 func (c FfiConverterOicanaError) Write(writer io.Writer, value *OicanaError) {
 	switch variantValue := value.err.(type) {
 	case *OicanaErrorInvalidTemplate:
 		writeInt32(writer, 1)
+		FfiConverterStringINSTANCE.Write(writer, variantValue.Message)
 	case *OicanaErrorInvalidInput:
 		writeInt32(writer, 2)
+		FfiConverterStringINSTANCE.Write(writer, variantValue.Message)
 	case *OicanaErrorCompilation:
 		writeInt32(writer, 3)
+		FfiConverterStringINSTANCE.Write(writer, variantValue.Message)
 	case *OicanaErrorFileNotFound:
 		writeInt32(writer, 4)
+		FfiConverterStringINSTANCE.Write(writer, variantValue.Message)
 	case *OicanaErrorExport:
 		writeInt32(writer, 5)
+		FfiConverterStringINSTANCE.Write(writer, variantValue.Message)
 	case *OicanaErrorNotFound:
 		writeInt32(writer, 6)
+		FfiConverterStringINSTANCE.Write(writer, variantValue.Message)
 	case *OicanaErrorInternal:
 		writeInt32(writer, 7)
+		FfiConverterStringINSTANCE.Write(writer, variantValue.Message)
 	default:
 		_ = variantValue
 		panic(fmt.Sprintf("invalid error value `%v` in FfiConverterOicanaError.Write", value))

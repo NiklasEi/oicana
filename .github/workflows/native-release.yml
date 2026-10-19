@@ -62,6 +62,15 @@ jobs:
             ERRORS+=("the Ruby gem has version $RUBY_VERSION, expected ${VERSION//-/.}")
           fi
 
+          DART_VERSION=$(sed -n 's/^version: //p' integrations/dart/pubspec.yaml)
+          if [[ "$DART_VERSION" != "$VERSION" ]]; then
+            ERRORS+=("the Dart package has version $DART_VERSION")
+          fi
+          DART_CONSTANT=$(sed -n "s/^const packageVersion = '\(.*\)';/\1/p" integrations/dart/lib/src/version.dart)
+          if [[ "$DART_CONSTANT" != "$VERSION" ]]; then
+            ERRORS+=("packageVersion of the Dart package is $DART_CONSTANT")
+          fi
+
           if [[ ${#ERRORS[@]} -gt 0 ]]; then
             echo "::error::Version mismatch for ${VERSION}:"
             for err in "${ERRORS[@]}"; do
@@ -88,6 +97,12 @@ jobs:
           - { target: x86_64-pc-windows-msvc, os: windows-2025, files: oicana_uniffi.dll }
           - { target: aarch64-pc-windows-msvc, os: windows-2025, files: oicana_uniffi.dll }
           - { target: x86_64-pc-windows-gnu, os: windows-2025, files: liboicana_uniffi.a }
+          - { target: aarch64-linux-android, os: ubuntu-24.04, android: true, files: liboicana_uniffi.so }
+          - { target: armv7-linux-androideabi, os: ubuntu-24.04, android: true, files: liboicana_uniffi.so }
+          - { target: x86_64-linux-android, os: ubuntu-24.04, android: true, files: liboicana_uniffi.so }
+          - { target: aarch64-apple-ios, os: macos-26, ios: true, files: liboicana_uniffi.dylib }
+          - { target: aarch64-apple-ios-sim, os: macos-26, ios: true, files: liboicana_uniffi.dylib }
+          - { target: x86_64-apple-ios, os: macos-26, ios: true, files: liboicana_uniffi.dylib }
     runs-on: ${{ matrix.os }}
     container: ${{ matrix.container }}
     env:
@@ -109,11 +124,33 @@ jobs:
         if: matrix.zig
         with:
           tool: cargo-zigbuild
+      - uses: taiki-e/install-action@9983c65e42da123ff25d1f78505eb6de315aa172 # v2
+        if: matrix.android
+        with:
+          tool: cargo-ndk
       - name: Build oicana_uniffi
+        if: '!matrix.android'
         run: ./.github/scripts/build-uniffi.sh build ${{ matrix.target }}
         env:
           CARGO: ${{ matrix.zig && 'cargo-zigbuild' || 'cargo' }}
           RUSTFLAGS: ${{ matrix.zig && '-C target-feature=-crt-static' || '' }}
+          IPHONEOS_DEPLOYMENT_TARGET: ${{ matrix.ios && '13.0' || '' }}
+      - name: Build oicana_uniffi for Android
+        if: matrix.android
+        run: |
+          export ANDROID_NDK_HOME="$ANDROID_NDK_LATEST_HOME"
+          cargo ndk --target ${{ matrix.target }} --platform 21 build --release -p oicana_uniffi
+          mkdir build
+          cp target/${{ matrix.target }}/release/liboicana_uniffi.so build/
+      - name: Assert 16 KB page alignment
+        if: matrix.android && matrix.target != 'armv7-linux-androideabi'
+        run: |
+          readelf="$(rustc --print sysroot)/lib/rustlib/$(rustc -vV | sed -n 's/^host: //p')/bin/llvm-readelf"
+          if "$readelf" -lW build/liboicana_uniffi.so | awk '$1 == "LOAD" && $NF != "0x4000" { found = 1 } END { exit !found }'; then
+            "$readelf" -lW build/liboicana_uniffi.so
+            echo "::error::a LOAD segment is not aligned to 16 KB"
+            exit 1
+          fi
       - name: Assert glibc floor
         if: matrix.container != ''
         run: ./.github/scripts/assert-glibc-floor.sh 2.28 build/liboicana_uniffi.so
@@ -167,12 +204,12 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { target: x86_64-unknown-linux-gnu, os: ubuntu-24.04, go: true, ruby: true, library: liboicana_uniffi.so }
-          - { target: aarch64-unknown-linux-gnu, os: ubuntu-24.04-arm, go: true, ruby: true, library: liboicana_uniffi.so }
+          - { target: x86_64-unknown-linux-gnu, os: ubuntu-24.04, go: true, ruby: true, dart: true, library: liboicana_uniffi.so }
+          - { target: aarch64-unknown-linux-gnu, os: ubuntu-24.04-arm, go: true, ruby: true, dart: true, library: liboicana_uniffi.so }
           - { target: x86_64-unknown-linux-musl, os: ubuntu-24.04, alpine: true }
           - { target: aarch64-unknown-linux-musl, os: ubuntu-24.04-arm, alpine: true }
-          - { target: aarch64-apple-darwin, os: macos-26, go: true, ruby: true, library: liboicana_uniffi.dylib }
-          - { target: x86_64-pc-windows-msvc, os: windows-2025, ruby: true, library: oicana_uniffi.dll }
+          - { target: aarch64-apple-darwin, os: macos-26, go: true, ruby: true, dart: true, library: liboicana_uniffi.dylib }
+          - { target: x86_64-pc-windows-msvc, os: windows-2025, ruby: true, dart: true, library: oicana_uniffi.dll }
           - { target: aarch64-pc-windows-msvc, os: windows-11-arm, ruby: true, library: oicana_uniffi.dll }
           - { target: x86_64-pc-windows-gnu, os: windows-2025, go: true }
     runs-on: ${{ matrix.os }}
@@ -223,6 +260,15 @@ jobs:
           gem install ffi minitest --no-document
           OICANA_LIBRARY_PATH="$NATIVE/${{ matrix.library }}" ruby -Ilib -Itest test/oicana_test.rb
         working-directory: ./integrations/ruby
+      - uses: dart-lang/setup-dart@6afc89df92d6eb3834022f73cd65adc8cdfcb92d # v1.8.1
+        if: matrix.dart
+      - name: Dart tests
+        if: matrix.dart
+        run: |
+          mkdir -p ../../target/release
+          cp "$NATIVE/${{ matrix.library }}" ../../target/release/
+          dart test
+        working-directory: ./integrations/dart
       - name: Go and Ruby tests in Alpine
         if: matrix.alpine
         run: |
@@ -273,13 +319,13 @@ jobs:
           tag_name: oicana_uniffi-v${{ env.VERSION }}
           name: oicana_uniffi v${{ env.VERSION }}
           body: |
-            Native oicana_uniffi libraries for the Go and Ruby integrations of Oicana v${{ env.VERSION }}.
+            Native oicana_uniffi libraries for the Go, Ruby and Dart integrations of Oicana v${{ env.VERSION }}.
             Verify downloads against `SHA256SUMS`.
           files: release/*
           prerelease: ${{ contains(env.VERSION, '-') }}
 
   release-integrations:
-    name: Release Go and Ruby
+    name: Release Go, Ruby and Dart
     needs: [validate-version, release]
     if: github.event_name == 'push'
     runs-on: ubuntu-24.04
@@ -290,9 +336,9 @@ jobs:
       VERSION: ${{ needs.validate-version.outputs.version }}
       GH_TOKEN: ${{ github.token }}
     steps:
-      - name: Tag the Go module and the Ruby gem
+      - name: Tag the Go module, the Ruby gem and the Dart package
         run: |
-          for tag in "integrations/go/v$VERSION" "oicana_ruby-v$VERSION"; do
+          for tag in "integrations/go/v$VERSION" "oicana_ruby-v$VERSION" "oicana_dart-v$VERSION"; do
             if existing=$(gh api "repos/${{ github.repository }}/git/ref/tags/$tag" --jq .object.sha 2>/dev/null); then
               if [ "$existing" != "$GITHUB_SHA" ]; then
                 echo "::error::$tag already points to $existing"
@@ -306,3 +352,7 @@ jobs:
         run: |
           gh workflow run publish-integration-ruby.yml --repo "${{ github.repository }}" \
             --ref "$GITHUB_REF_NAME" -f version="$VERSION"
+      - name: Publish the Dart package
+        run: |
+          gh workflow run publish-integration-dart.yml --repo "${{ github.repository }}" \
+            --ref "oicana_dart-v$VERSION"

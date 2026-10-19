@@ -1,0 +1,74 @@
+name: publish dart
+
+# Publishes the Dart package to pub.dev. The native release workflow dispatches this flow on the
+# oicana_dart-v<version> tag once the release exists; pub.dev only accepts runs on that tag.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      id-token: write
+    defaults:
+      run:
+        working-directory: integrations/dart
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Validate version
+        run: |
+          if [[ "$GITHUB_REF_TYPE" != tag || "$GITHUB_REF_NAME" != oicana_dart-v* ]]; then
+            echo "::error::Run this workflow on an oicana_dart-v<version> tag, not $GITHUB_REF_TYPE $GITHUB_REF_NAME"
+            exit 1
+          fi
+          VERSION="${GITHUB_REF_NAME#oicana_dart-v}"
+          PUBSPEC_VERSION=$(sed -n 's/^version: //p' pubspec.yaml)
+          CONSTANT=$(sed -n "s/^const packageVersion = '\(.*\)';/\1/p" lib/src/version.dart)
+          if [[ "$PUBSPEC_VERSION" != "$VERSION" || "$CONSTANT" != "$VERSION" ]]; then
+            echo "::error::pubspec.yaml has $PUBSPEC_VERSION and lib/src/version.dart $CONSTANT, expected $VERSION"
+            exit 1
+          fi
+          echo "VERSION=${VERSION}" >> "$GITHUB_ENV"
+
+      - name: Bundle the changelog
+        run: cp ../../CHANGELOG.md .
+
+      - name: Bundle the checksums of the native libraries
+        run: gh release download "oicana_uniffi-v$VERSION" --repo "${{ github.repository }}" --pattern SHA256SUMS --dir hook
+        env:
+          GH_TOKEN: ${{ github.token }}
+      - name: Check that every target of the build hook has a library
+        run: |
+          missing=()
+          for target in $(grep -oE "'[a-z0-9_]+(-[a-z0-9_]+)+'" hook/build.dart | tr -d "'"); do
+            grep -qE "  oicana_uniffi-$VERSION-$target\.(so|dylib|dll)\.gz$" hook/SHA256SUMS || missing+=("$target")
+          done
+          if [[ ${#missing[@]} -gt 0 ]]; then
+            echo "::error::The release oicana_uniffi-v$VERSION has no library for ${missing[*]}"
+            exit 1
+          fi
+
+      - uses: dtolnay/rust-toolchain@ce678459e9fc7500d337468f904b95f1b5c10b5e # 1.98.1
+        with:
+          targets: wasm32-unknown-unknown
+      - uses: taiki-e/install-action@9983c65e42da123ff25d1f78505eb6de315aa172 # v2
+        with:
+          tool: wasm-pack
+      - name: Build wasm
+        # wasm-pack also writes a .gitignore, which would hide the files from pub
+        run: |
+          wasm-pack build ../browser/oicana_browser_wasm --release --target web --no-pack --out-dir "$RUNNER_TEMP/wasm"
+          mkdir web
+          cp "$RUNNER_TEMP/wasm/oicana_browser_wasm.js" "$RUNNER_TEMP/wasm/oicana_browser_wasm_bg.wasm" web/
+
+      - uses: dart-lang/setup-dart@6afc89df92d6eb3834022f73cd65adc8cdfcb92d # v1.8.1
+      - name: Publish
+        run: |
+          dart pub get
+          dart pub publish --force

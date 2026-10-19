@@ -1,0 +1,5 @@
+.dart_tool/
+pubspec.lock
+doc/api/
+Development.md
+uniffi.toml

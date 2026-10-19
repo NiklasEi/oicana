@@ -301,6 +301,55 @@ jobs:
             exit 1
           fi
 
+  check-dart-integration:
+    runs-on: ubuntu-latest
+    needs:
+      - build-tools
+      - build-uniffi-bindgen-dart
+      - build-uniffi
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@1.98.1
+      - uses: dart-lang/setup-dart@v1
+      - uses: ./.github/actions/install-typst-package
+      - uses: ./.github/actions/install-tool
+        with:
+          tool: "uniffi_bindgen_dart"
+      - uses: ./.github/actions/install-tool
+        with:
+          tool: "oicana-cli"
+          bin: "oicana"
+      - uses: actions/download-artifact@v8
+        with:
+          name: oicana_uniffi_x86_64-unknown-linux-gnu
+          path: target/release
+      - name: get dependencies
+        run: dart pub get
+        working-directory: ./integrations/dart
+      - name: create bindings
+        run: |
+          uniffi_bindgen_dart target/release/liboicana_uniffi.so --config integrations/dart/uniffi.toml \
+            --out-dir integrations/dart/lib/src/native
+      - name: validate no changes
+        run: |
+          if [ -n "$(git status --porcelain './integrations/dart/')" ]; then
+            echo "::error::Generated Dart bindings are out of date! Update them and check in any changes."
+            git --no-pager diff --color=always './integrations/dart/'
+            exit 1
+          fi
+      - name: check format
+        run: dart format --output=none --set-exit-if-changed .
+        working-directory: ./integrations/dart
+      - name: analyze
+        run: dart analyze --fatal-infos
+        working-directory: ./integrations/dart
+      - name: pack e2e template
+        run: oicana pack -n '{template}-x.y.z.zip'
+        working-directory: ./e2e-tests/template
+      - name: test
+        run: dart test
+        working-directory: ./integrations/dart
+
   check-php-integration:
     runs-on: ubuntu-latest
     steps:
@@ -586,6 +635,29 @@ jobs:
         with:
           name: uniffi-bindgen-go_${{ runner.os }}
           path: ~/.cargo/bin/uniffi-bindgen-go
+          if-no-files-found: error
+
+  build-uniffi-bindgen-dart:
+    runs-on: ubuntu-latest
+    env:
+      # uniffi-dart has no release with its command line tool yet
+      REVISION: e2dd2bb7180609184d0c70ddde0353f5e11d4c3b
+    steps:
+      - uses: actions/cache@v5
+        id: cache
+        with:
+          key: ${{ runner.os }}-uniffi-bindgen-dart-${{ env.REVISION }}
+          path: ~/.cargo/bin/uniffi_bindgen_dart
+      - uses: dtolnay/rust-toolchain@1.98.1
+        if: steps.cache.outputs.cache-hit != 'true'
+      - name: Build and install uniffi_bindgen_dart
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: cargo install --locked --git https://github.com/Uniffi-Dart/uniffi-dart --rev "$REVISION" --features binary uniffi-dart
+      - name: Upload uniffi_bindgen_dart
+        uses: actions/upload-artifact@v7
+        with:
+          name: uniffi_bindgen_dart_${{ runner.os }}
+          path: ~/.cargo/bin/uniffi_bindgen_dart
           if-no-files-found: error
 
   build-uniffi:

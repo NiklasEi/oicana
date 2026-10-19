@@ -1,0 +1,13 @@
+include: package:lints/recommended.yaml
+
+analyzer:
+  errors:
+    # The web assets are added by the publish workflow.
+    asset_does_not_exist: ignore
+  exclude:
+    - lib/src/native/oicana_uniffi.dart
+    - lib/src/native/uniffi_runtime.dart
+
+linter:
+  rules:
+    - public_member_api_docs
