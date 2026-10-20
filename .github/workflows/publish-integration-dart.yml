@@ -37,7 +37,7 @@ jobs:
           echo "VERSION=${VERSION}" >> "$GITHUB_ENV"
 
       - name: Bundle the changelog
-        run: cp ../../CHANGELOG.md .
+        run: python3 ../../.github/scripts/dart-changelog.py ../../CHANGELOG.md "$VERSION" CHANGELOG.md
 
       - name: Bundle the checksums of the native libraries
         run: gh release download "oicana_uniffi-v$VERSION" --repo "${{ github.repository }}" --pattern SHA256SUMS --dir hook
