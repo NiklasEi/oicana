@@ -39,6 +39,10 @@
 ### Ruby
 - New integration: the `oicana` gem, with platform gems that bring the native library
 
+### Dart and Flutter
+- `oicana` package on pub.dev, for Flutter apps and plain Dart programs
+  - Runs on the web, Android, iOS, Linux, macOS and Windows
+
 ## v0.9.0
 
 - registering fonts by path accepts a directory and adds every font file in its tree, like the CLI's `--font-path` already did

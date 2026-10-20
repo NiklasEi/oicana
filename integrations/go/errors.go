@@ -2,7 +2,6 @@ package oicana
 
 import (
 	"errors"
-	"strings"
 
 	ffi "go.oicana.com/oicana/internal/oicana_uniffi"
 )
@@ -44,20 +43,6 @@ func (e *Error) Unwrap() error {
 	return e.kind
 }
 
-var errorKinds = []struct {
-	native error
-	kind   error
-	prefix string
-}{
-	{ffi.ErrOicanaErrorInvalidTemplate, ErrInvalidTemplate, "InvalidTemplate: "},
-	{ffi.ErrOicanaErrorInvalidInput, ErrInvalidInput, "InvalidInput: "},
-	{ffi.ErrOicanaErrorCompilation, ErrCompilation, "Compilation: "},
-	{ffi.ErrOicanaErrorFileNotFound, ErrFileNotFound, "FileNotFound: "},
-	{ffi.ErrOicanaErrorExport, ErrExport, "Export: "},
-	{ffi.ErrOicanaErrorNotFound, ErrNotFound, "NotFound: "},
-	{ffi.ErrOicanaErrorInternal, ErrInternal, "Internal: "},
-}
-
 func wrapError(err error) error {
 	if err == nil {
 		return nil
@@ -66,13 +51,24 @@ func wrapError(err error) error {
 	if !errors.As(err, &native) {
 		return &Error{kind: ErrInternal, Message: err.Error()}
 	}
-	variant := native.Unwrap()
-	for _, k := range errorKinds {
-		if errors.Is(variant, k.native) {
-			return &Error{kind: k.kind, Message: strings.TrimPrefix(variant.Error(), k.prefix)}
-		}
+	switch variant := native.Unwrap().(type) {
+	case *ffi.OicanaErrorInvalidTemplate:
+		return &Error{kind: ErrInvalidTemplate, Message: variant.Message}
+	case *ffi.OicanaErrorInvalidInput:
+		return &Error{kind: ErrInvalidInput, Message: variant.Message}
+	case *ffi.OicanaErrorCompilation:
+		return &Error{kind: ErrCompilation, Message: variant.Message}
+	case *ffi.OicanaErrorFileNotFound:
+		return &Error{kind: ErrFileNotFound, Message: variant.Message}
+	case *ffi.OicanaErrorExport:
+		return &Error{kind: ErrExport, Message: variant.Message}
+	case *ffi.OicanaErrorNotFound:
+		return &Error{kind: ErrNotFound, Message: variant.Message}
+	case *ffi.OicanaErrorInternal:
+		return &Error{kind: ErrInternal, Message: variant.Message}
+	default:
+		return &Error{kind: ErrInternal, Message: native.Error()}
 	}
-	return &Error{kind: ErrInternal, Message: variant.Error()}
 }
 
 func closedError(what string) error {

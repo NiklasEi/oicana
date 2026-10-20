@@ -1,0 +1,51 @@
+name: oicana
+description: >-
+  Generate typeset PDFs in Dart and Flutter from Typst templates. Runs in
+  process on Android, iOS, Linux, macOS and Windows, and as WebAssembly on the
+  web.
+version: 0.10.0-rc.3
+homepage: https://oicana.com
+repository: https://github.com/oicana/oicana/tree/main/integrations/dart
+issue_tracker: https://github.com/oicana/oicana/issues
+topics:
+  - pdf
+  - typst
+  - templating
+  - document
+  - oicana
+
+environment:
+  sdk: ^3.11.0
+
+platforms:
+  android:
+  ios:
+  linux:
+  macos:
+  windows:
+  web:
+
+dependencies:
+  code_assets: '>=1.0.0 <3.0.0'
+  crypto: ^3.0.0
+  ffi: ^2.1.0
+  hooks: '>=1.0.0 <3.0.0'
+
+dev_dependencies:
+  lints: ^6.0.0
+  test: ^1.33.0
+
+# Only Flutter reads this section. It bundles the WebAssembly build into web apps
+# and leaves it out of every other target.
+flutter:
+  assets:
+    - path: web/oicana_browser_wasm.js
+      platforms: [web]
+    - path: web/oicana_browser_wasm_bg.wasm
+      platforms: [web]
+
+# Only applies while developing this package; apps set their own user defines.
+hooks:
+  user_defines:
+    oicana:
+      native_library_dir: ../../target/release

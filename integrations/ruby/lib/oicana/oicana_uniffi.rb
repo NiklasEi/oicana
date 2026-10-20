@@ -953,39 +953,39 @@ class RustBufferStream
     variant = unpack_from 4, 'l>'
     
     if variant == 1
-      return OicanaError::InvalidTemplate.new(
-        readString()
-      )
+        return OicanaError::InvalidTemplate.new(
+            readString()
+        )
     end
     if variant == 2
-      return OicanaError::InvalidInput.new(
-        readString()
-      )
+        return OicanaError::InvalidInput.new(
+            readString()
+        )
     end
     if variant == 3
-      return OicanaError::Compilation.new(
-        readString()
-      )
+        return OicanaError::Compilation.new(
+            readString()
+        )
     end
     if variant == 4
-      return OicanaError::FileNotFound.new(
-        readString()
-      )
+        return OicanaError::FileNotFound.new(
+            readString()
+        )
     end
     if variant == 5
-      return OicanaError::Export.new(
-        readString()
-      )
+        return OicanaError::Export.new(
+            readString()
+        )
     end
     if variant == 6
-      return OicanaError::NotFound.new(
-        readString()
-      )
+        return OicanaError::NotFound.new(
+            readString()
+        )
     end
     if variant == 7
-      return OicanaError::Internal.new(
-        readString()
-      )
+        return OicanaError::Internal.new(
+            readString()
+        )
     end
 
     raise InternalError, 'Unexpected variant tag for TypeOicanaError'
@@ -1567,14 +1567,98 @@ CALL_ERROR = 1
 CALL_PANIC = 2
 
 
-class OicanaError
-    InvalidTemplate = Class.new StandardError
-    InvalidInput = Class.new StandardError
-    Compilation = Class.new StandardError
-    FileNotFound = Class.new StandardError
-    Export = Class.new StandardError
-    NotFound = Class.new StandardError
-    Internal = Class.new StandardError
+module OicanaError
+  class InvalidTemplate < StandardError
+    def initialize(message)
+        @message = message
+        super()
+      end
+
+    attr_reader :message
+    
+
+    def to_s
+     "#{self.class.name}(message=#{@message.inspect})"
+    end
+  end
+  class InvalidInput < StandardError
+    def initialize(message)
+        @message = message
+        super()
+      end
+
+    attr_reader :message
+    
+
+    def to_s
+     "#{self.class.name}(message=#{@message.inspect})"
+    end
+  end
+  class Compilation < StandardError
+    def initialize(message)
+        @message = message
+        super()
+      end
+
+    attr_reader :message
+    
+
+    def to_s
+     "#{self.class.name}(message=#{@message.inspect})"
+    end
+  end
+  class FileNotFound < StandardError
+    def initialize(message)
+        @message = message
+        super()
+      end
+
+    attr_reader :message
+    
+
+    def to_s
+     "#{self.class.name}(message=#{@message.inspect})"
+    end
+  end
+  class Export < StandardError
+    def initialize(message)
+        @message = message
+        super()
+      end
+
+    attr_reader :message
+    
+
+    def to_s
+     "#{self.class.name}(message=#{@message.inspect})"
+    end
+  end
+  class NotFound < StandardError
+    def initialize(message)
+        @message = message
+        super()
+      end
+
+    attr_reader :message
+    
+
+    def to_s
+     "#{self.class.name}(message=#{@message.inspect})"
+    end
+  end
+  class Internal < StandardError
+    def initialize(message)
+        @message = message
+        super()
+      end
+
+    attr_reader :message
+    
+
+    def to_s
+     "#{self.class.name}(message=#{@message.inspect})"
+    end
+  end
 
 end
 
