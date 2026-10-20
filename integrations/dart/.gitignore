@@ -4,4 +4,4 @@ doc/api/
 # Added by the publish workflow
 CHANGELOG.md
 hook/SHA256SUMS
-web/
+/web/
