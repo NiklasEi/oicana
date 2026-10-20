@@ -1,7 +1,7 @@
 {
   "name": "@oicana/browser",
   "author": "Oicana <hello@oicana.com>",
-  "version": "0.10.0-rc.2",
+  "version": "0.10.0-rc.3",
   "description": "Generate typeset PDFs in the browser from Typst templates, compiled to WebAssembly. No server, no headless browser, no data egress.",
   "keywords": [
     "pdf",
