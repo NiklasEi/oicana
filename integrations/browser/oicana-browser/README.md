@@ -18,9 +18,8 @@ npm install @oicana/browser
 
 ```typescript
 import { Template, initialize } from '@oicana/browser';
-import wasmUrl from '@oicana/browser/oicana.wasm?url';
 
-await initialize(wasmUrl);
+await initialize();
 
 const templateFile = await fetch('/invoice-0.1.0.zip');
 const template = new Template(new Uint8Array(await templateFile.arrayBuffer()));
