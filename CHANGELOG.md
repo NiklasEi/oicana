@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## v0.10.0
 
 - Improved error handling for JSON inputs that are not valid JSON
 - Improved error for missing packages in a template
