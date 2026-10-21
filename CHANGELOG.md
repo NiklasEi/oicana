@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## v0.10.0
 
 - Improved error handling for JSON inputs that are not valid JSON
 - Improved error for missing packages in a template
@@ -21,10 +21,11 @@
 
 ### Browser
 - `@oicana/browser` now bundles the WASM module, so `@oicana/browser-wasm` is no longer needed
-  - Uninstall `@oicana/browser-wasm` and import the module URL from `@oicana/browser/oicana.wasm` instead
+  - Uninstall `@oicana/browser-wasm` and call `initialize()` without an argument
 - `initialize()` takes the WASM URL as an optional argument and defaults to the module shipped in the package
-  - Bundlers that resolve `new URL(..., import.meta.url)` don't need the WASM import anymore
-  - If using Vite and the import is dropped, add `@oicana/browser` to `optimizeDeps.exclude` for the dev server
+  - Vite 8, webpack 5, Next.js, Parcel and Rspack load the shipped module without further setup
+  - Vite 7 and older need `@oicana/browser` in `optimizeDeps.exclude` for the dev server
+  - To pass the URL explicitly, import it from `@oicana/browser/oicana.wasm`
 
 ### C#
 - New platforms: Alpine and other musl-based Linux (`linux-musl-x64`, `linux-musl-arm64`) and Windows arm64 (`win-arm64`)

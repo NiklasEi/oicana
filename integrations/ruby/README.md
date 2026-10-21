@@ -35,6 +35,15 @@ JSON inputs take Strings holding JSON, or any value `JSON.generate` accepts. Blo
 
 Creating a `Template` compiles it once to warm up the Typst cache, so create it once per process, not per request. Oicana cannot compile in a process forked after its parent compiled, so with forking servers and job runners like Puma in cluster mode or Solid Queue, create templates on first use instead of during boot. A template is safe to use from multiple threads, and native calls release the GVL. Templates and compiled documents are freed by the garbage collector, or right away with `close`.
 
+## Why Oicana
+
+- **Runs in your infrastructure**: PDFs are generated inside your own application. No data is sent to a third-party service.
+- **Multi-platform**: the same template works in the browser, Node.js, C#, Java, Rust, Python, PHP, Go, Ruby, and Dart.
+- **Powerful typesetting**: templates have all of Typst, including its package ecosystem.
+- **Performant**: a warmed up template renders a PDF in single-digit milliseconds.
+- **AI and version control ready**: templates are text files. They live next to your code, and AI can help write them.
+- **No proprietary format**: templates are plain Typst projects. The Typst compiler is open source.
+
 ## Licensing
 
 Oicana is source-available under the [PolyForm Noncommercial License 1.0.0](https://github.com/oicana/oicana/blob/main/LICENSE.md) and free for noncommercial use. Commercial use is free for 30 days; see [pricing](https://oicana.com/#pricing) for subscriptions, or write to `hello@oicana.com`.

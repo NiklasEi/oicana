@@ -41,7 +41,7 @@ from .types import (
     ZipLimits,
 )
 
-__version__ = "0.10.0rc3"
+__version__ = "0.10.0"
 
 __all__ = [
     "Template",

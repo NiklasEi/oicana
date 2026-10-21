@@ -91,8 +91,8 @@ Creating a `Template` compiles it once in development mode to warm up the Typst 
 ## Why Oicana
 
 - **Runs in your infrastructure**: PDFs are generated inside your own application. No data is sent to a third-party service.
-- **Multi-platform**: the same template works in the browser, Node.js, C#, Java, Rust, Python, and PHP.
-- **Powerful layouting**: templates have all of Typst, including its package ecosystem.
+- **Multi-platform**: the same template works in the browser, Node.js, C#, Java, Rust, Python, PHP, Go, Ruby, and Dart.
+- **Powerful typesetting**: templates have all of Typst, including its package ecosystem.
 - **Performant**: a warmed up template renders a PDF in single-digit milliseconds.
 - **AI and version control ready**: templates are text files. They live next to your code, and AI can help write them.
 - **No proprietary format**: templates are plain Typst projects. The Typst compiler is open source.

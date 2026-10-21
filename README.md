@@ -4,14 +4,14 @@
 
 [https://oicana.com](https://oicana.com)
 
-Oicana compiles [Typst](https://typst.app/) templates to PDF, PNG, and SVG from Node.js, Python, Java, C#, Rust, PHP, and the browser. No headless Chrome, no per-document fees, no document data leaving your infrastructure. One template format works everywhere.
+Oicana compiles [Typst](https://typst.app/) templates to PDF, PNG, and SVG from Node.js, Python, Java, C#, Rust, PHP, Go, Ruby, Dart, and the browser. No headless Chrome, no per-document fees, no document data leaving your infrastructure. One template format works everywhere.
 
 > **Free for noncommercial use.** Commercial use is free for 30 days, then needs a [per-application subscription](https://oicana.com/#pricing) with unlimited seats.
 
 ## Why Oicana
 
 - **Runs in your infrastructure**: PDFs are generated inside your own application. No data is sent to a third-party service.
-- **Multi-platform**: the same template works in the browser, Node.js, C#, Java, Rust, Python, and PHP.
+- **Multi-platform**: the same template works in the browser, Node.js, C#, Java, Rust, Python, PHP, Go, Ruby, and Dart.
 - **Powerful layouting**: templates have all of Typst, including its package ecosystem.
 - **Performant**: a warmed up template renders a PDF in single-digit milliseconds.
 - **AI and version control ready**: templates are text files. They live next to your code, and AI can help write them.
@@ -66,6 +66,9 @@ The `development` value lets the template preview with real data in any Typst ed
 | Rust | [`oicana`](https://crates.io/crates/oicana) | [Rust / Axum](https://oicana.com/docs/getting-started/4-5-rust/) |
 | Python | [`oicana`](https://pypi.org/project/oicana/) | [Python / FastAPI](https://oicana.com/docs/getting-started/4-6-python/) |
 | PHP | [`oicana/oicana`](https://composer.oicana.com) | [PHP / Slim](https://oicana.com/docs/getting-started/4-7-php/) |
+| Go | [`go.oicana.com/oicana`](https://go.oicana.com) | [Go / net/http](https://oicana.com/docs/getting-started/4-8-go/) |
+| Ruby | [`oicana`](https://rubygems.org/gems/oicana) | [Ruby / Rails](https://oicana.com/docs/getting-started/4-9-ruby/) |
+| Dart / Flutter | [`oicana`](https://pub.dev/packages/oicana) | [Dart / Flutter](https://oicana.com/docs/getting-started/4-10-dart/) |
 
 Every integration has an open source example project in the [Oicana GitHub organization](https://github.com/oicana). The browser example is deployed at [example.oicana.com](https://example.oicana.com).
 

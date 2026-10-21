@@ -3,7 +3,7 @@ description: >-
   Generate typeset PDFs in Dart and Flutter from Typst templates. Runs in
   process on Android, iOS, Linux, macOS and Windows, and as WebAssembly on the
   web.
-version: 0.10.0-rc.3
+version: 0.10.0
 homepage: https://oicana.com
 repository: https://github.com/oicana/oicana/tree/main/integrations/dart
 issue_tracker: https://github.com/oicana/oicana/issues
