@@ -29,6 +29,8 @@ When you build or run an app for a native target, a build hook downloads the nat
 
 ## Quick start
 
+Oicana templates are Typst projects packed with the [Oicana CLI](https://oicana.com/docs/cli/). This example uses the certificate template from [oicana-example-templates](https://github.com/oicana/oicana-example-templates). Download the packed `certificate-0.1.0.zip` from its releases, or pack it yourself with `oicana pack templates/certificate`. The [getting started guide](https://oicana.com/docs/getting-started/1-setup/) walks you through writing your own.
+
 ```dart
 import 'dart:io';
 
@@ -36,15 +38,15 @@ import 'package:oicana/oicana.dart';
 
 Future<void> main() async {
   final template = await Template.load(
-    File('invoice-0.1.0.zip').readAsBytesSync(),
+    File('certificate-0.1.0.zip').readAsBytesSync(),
   );
 
   final pdf = await template.exportPdf(
     jsonInputs: {
-      'invoice': {'number': '2026-001', 'customer': 'Acme GmbH', 'total': '€1,190.00'},
+      'certificate': {'name': 'Ada Lovelace'},
     },
   );
-  File('invoice.pdf').writeAsBytesSync(pdf);
+  File('certificate.pdf').writeAsBytesSync(pdf);
 
   template.dispose();
 }
@@ -57,7 +59,7 @@ JSON inputs take a `String` holding a JSON document, or any value `jsonEncode` a
 You can add packed Oicana templates to the assets of your app and load them with `rootBundle`:
 
 ```dart
-final bytes = await rootBundle.load('assets/invoice-0.1.0.zip');
+final bytes = await rootBundle.load('assets/certificate-0.1.0.zip');
 final template = await Template.load(bytes.buffer.asUint8List());
 ```
 
