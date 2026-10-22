@@ -1,5 +1,10 @@
 # Changelog
 
+## Next version
+
+### Python
+- Stricter handling of compilation modes: musst be a `CompilationMode` variant
+
 ## v0.10.0
 
 - Improved error handling for JSON inputs that are not valid JSON
