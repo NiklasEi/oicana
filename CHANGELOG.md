@@ -2,8 +2,16 @@
 
 ## Next version
 
+- Templates packed with deflate compression can be loaded
+- Templates with entries in other compression methods than stored, deflate or zstd now fail loudly
+
+### CLI
+- `oicana test` removes the `.compare.png` image of a green snapshot test
+- `oicana test -u` creates missing directories for new snapshots
+- Fuzzing a JSON input with a schema that declares a draft other than 2020-12 fails loudly
+
 ### Python
-- Stricter handling of compilation modes: musst be a `CompilationMode` variant
+- Stricter handling of compilation modes: must be a `CompilationMode` variant
 
 ## v0.10.0
 
